@@ -1,0 +1,19 @@
+--dependencies install--
+
+# download node.js 
+https://nodejs.org/en/download
+
+# verify node.js version
+node -v, npm -v
+
+# If cannot check npm version
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+
+#create package.json file
+npm init
+
+# install typescript
+npm install -g typescript
+
+# create tsconfig.json
+tsc --init
