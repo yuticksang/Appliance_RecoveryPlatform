@@ -26,3 +26,6 @@ npm install
 
 #direct to app directory
 cd Appliance_Recovery_System
+
+#create new component
+ng g c (component name)
