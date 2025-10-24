@@ -6,34 +6,10 @@
 /out-tsc
 /bazel-out
 
-# Angular specific
-/dist/
-/out-tsc/
-/tmp/
-/coverage/
-/e2e/test-output/
-/.angular/
-.angular/
-
-
 # Node
 /node_modules
-/package-lock.json
-/yarn.lock
-/.pnp
-.pnp.js
 npm-debug.log
 yarn-error.log
-
-# Environment files
-/.env
-
-# Angular CLI and build artefacts
-/.angular-cli.json
-/.ng/
-
-# TypeScript cache
-*.tsbuildinfo
 
 # IDEs and editors
 .idea/

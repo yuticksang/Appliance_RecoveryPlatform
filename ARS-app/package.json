@@ -1,5 +1,5 @@
 {
-  "name": "appliance-recovery-system",
+  "name": "ars-app",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
@@ -7,7 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:Appliance_Recovery_System": "node dist/Appliance_Recovery_System/server/server.mjs"
+    "serve:ssr:ARS-app": "node dist/ARS-app/server/server.mjs"
   },
   "prettier": {
     "printWidth": 100,
@@ -30,16 +30,15 @@
     "@angular/platform-browser": "^20.3.0",
     "@angular/platform-server": "^20.3.0",
     "@angular/router": "^20.3.0",
-    "@angular/ssr": "^20.3.6",
-    "bootstrap": "^5.3.8",
-    "bootstrap-icons": "^1.13.1",
+    "@angular/ssr": "^20.3.7",
     "express": "^5.1.0",
     "rxjs": "~7.8.0",
-    "tslib": "^2.3.0"
+    "tslib": "^2.3.0",
+    "zone.js": "~0.15.0"
   },
   "devDependencies": {
-    "@angular/build": "^20.1.6",
-    "@angular/cli": "^20.3.6",
+    "@angular/build": "^20.3.7",
+    "@angular/cli": "^20.3.7",
     "@angular/compiler-cli": "^20.3.0",
     "@types/express": "^5.0.1",
     "@types/jasmine": "~5.1.0",
@@ -50,6 +49,6 @@
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "typescript": "^5.8.3"
+    "typescript": "~5.9.2"
   }
 }

@@ -8,5 +8,5 @@ import { RouterOutlet } from '@angular/router';
   styleUrl: './app.scss'
 })
 export class App {
-  protected readonly title = signal('Appliance_Recovery_System');
+  protected readonly title = signal('ARS-app');
 }

@@ -35,3 +35,10 @@ npm install bootstrap bootstrap-icons
 
 #run server
 ng serve
+
+#express ssr dependencies
+npm install @angular/ssr express
+npm install --save-dev @types/express
+
+#run SSR
+npm run serve:ssr:ARS-app
