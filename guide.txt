@@ -29,3 +29,6 @@ cd Appliance_Recovery_System
 
 #create new component
 ng g c (component name)
+
+#bootstrap library
+npm install bootstrap bootstrap-icons
