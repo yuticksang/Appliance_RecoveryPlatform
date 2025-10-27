@@ -32,6 +32,7 @@ ng g c (component name)
 
 #bootstrap library
 npm install bootstrap bootstrap-icons
+npm install @ng-bootstrap/ng-bootstrap@next
 
 #run server
 ng serve

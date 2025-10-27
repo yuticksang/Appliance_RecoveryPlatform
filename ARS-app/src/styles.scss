@@ -1,1 +1,21 @@
 /* You can add global styles to this file, and also import other style files */
+// Ensure complete reset (in addition to Bootstrap's reset)
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+// If you're using Angular's default app-root
+app-root {
+  display: block;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
