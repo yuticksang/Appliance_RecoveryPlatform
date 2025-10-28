@@ -1,6 +1,11 @@
 import { bootstrapApplication } from '@angular/platform-browser';
-import { appConfig } from './app/shared/app.config';
+import { provideRouter } from '@angular/router';
 import { App } from './app/shared/app';
+import { routes } from './app/shared/app.routes';
 
-bootstrapApplication(App, appConfig)
-  .catch((err) => console.error(err));
+bootstrapApplication(App, {
+  providers: [
+    provideRouter(routes)
+    // other providers...
+  ]
+});

@@ -1,0 +1,175 @@
+ /* Card Base Mixin Applied */
+        .card-base, .stat-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+        .card-base:hover, .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        /* Stat Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+            margin-right: 10px;
+        }
+
+        .stat-card {
+            border: none;
+        }
+        .stat-card.bg-blue {
+            background: #D0E8F3;
+        }
+        .stat-card.bg-pink {
+            background: #F2B8B5;
+        }
+        .stat-card.bg-green {
+            background: #FFEE8C;
+        }
+        .stat-card.bg-purple {
+            background: #CFBDFE;
+        }
+        .stat-card .stat-label {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .stat-card .stat-value {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        .stat-card .stat-change {
+            font-size: 12px;
+            color: #32b14f;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 600;
+        }
+
+         .title h1 {
+            font-size: 26px;
+            font-weight: 600;
+            color: #333;
+            font-family: 'Kumbh Sans', sans-serif;
+            margin-bottom: 15px;
+
+        }
+    
+         /* Chart Card */
+        .chart-card {
+            margin-bottom: 30px;
+        }
+        .chart-card .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .chart-card .chart-tabs {
+            display: flex;
+            gap: 30px;
+        }
+        .chart-card .chart-tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            color: #999;
+            border: none;
+            background: none;
+            border-bottom: 2px solid transparent;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .chart-card .chart-tab:hover:not(.active) {
+            color: #007bff;
+        }
+       
+        .chart-card .chart-tab.active {
+            color: #007bff;
+            border-bottom-color: #007bff;
+        }
+        .chart-card .chart-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        /* Custom Dropdown Styles */
+        .custom-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-trigger {
+            background: transparent;
+            border: none;
+            padding: 8px 12px;
+            font-size: 14px;
+            color: #666;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+
+        .dropdown-trigger:hover {
+            background-color: #f8f9fa;
+        }
+
+        .dropdown-trigger i {
+            font-size: 12px;
+            transition: transform 0.3s ease;
+        }
+
+       .dropdown-content {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: white;
+        min-width: 160px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        opacity: 0;
+        z-index: 9999;
+        transform: translateY(-10px);
+        transition: all 0.3s;
+        pointer-events: none;
+        border-radius: 0.5rem;
+        }
+
+        .custom-dropdown:hover .dropdown-content {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+        }
+
+        .dropdown-content a {
+        color: #374151;
+        font-size: 14px;
+        padding: 0.5rem 1rem;
+        text-decoration: none;
+        display: block;
+        }
+
+        .dropdown-content a:hover {
+        background: #f3f4f6;
+    }
+
+        .chart-card .chart-placeholder {
+            height: 300px;
+            position: relative;
+            background: linear-gradient(to bottom, transparent, #f8f9fa);
+        }
+    
