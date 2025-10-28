@@ -27,8 +27,14 @@
     <div class="chart-card">
             <div class="chart-header">
                 <div class="chart-tabs">
-                    <button class="chart-tab active">Appliance Recovered</button>
-                    <button class="chart-tab">Active Users</button>
+                    <button class="chart-tab"
+                    [class.active]="activeTab === 'appliance'"
+                    (click)="switchTab('appliance')">
+                    Appliance Recovered</button>
+                    <button class="chart-tab"
+                    [class.active]="activeTab === 'users'"
+                    (click)="switchTab('users')">
+                    Active Users</button>
                 </div>
                 <div class="chart-controls">
                     <div class="custom-dropdown">
@@ -72,34 +78,32 @@
                     
                    
 
-                    <polyline points="80,200 150,200 220,240 290,180 360,120 430,140 500,160 570,120 640,100 710,135 780,150" 
+                    <polyline [attr.points]="polylinePoints"
                       fill="none" stroke="#E8B3E8" stroke-width="2"/>
                     
                     <!-- Data points (adjusted x positions) -->
-                    <circle cx="80" cy="200" r="4" fill="#333"/>
-                    <circle cx="150" cy="200" r="4" fill="white" stroke="#333" stroke-width="2"/>
-                    <circle cx="220" cy="240" r="4" fill="white" stroke="#333" stroke-width="2"/>
-                    <circle cx="290" cy="180" r="4" fill="#333"/>
-                    <circle cx="360" cy="120" r="4" fill="white" stroke="#333" stroke-width="2"/>
-                    <circle cx="430" cy="140" r="4" fill="white" stroke="#333" stroke-width="2"/>
-                    <circle cx="500" cy="160" r="4" fill="white" stroke="#333" stroke-width="2"/>
-                    <circle cx="570" cy="120" r="4" fill="white" stroke="#333" stroke-width="2"/>
-                    <circle cx="640" cy="100" r="4" fill="white" stroke="#333" stroke-width="2"/>
-                    <circle cx="710" cy="135" r="4" fill="white" stroke="#333" stroke-width="2"/>
-                    <circle cx="780" cy="150" r="4" fill="white" stroke="#333" stroke-width="2"/>
-                    
+                    @for (point of currentChart.points; track $index) {
+                    <circle
+                        [attr.cx]="point.x"
+                        [attr.cy]="point.y"
+                        r="4"
+                        [attr.fill]="$index % 2 === 0 ? '#333' : '#fff'"
+                        [attr.stroke]="$index % 2 === 0 ? '#none' : '#333'"
+                        [attr.stroke-width]="$index % 2 === 0 ? '0' : '2'"/>
+                    }
+
                     <!-- X-axis labels (adjusted x positions) -->
-                    <text x="80" y="285" text-anchor="middle" font-size="12" fill="#999">Jan</text>
-                    <text x="150" y="285" text-anchor="middle" font-size="12" fill="#999">Feb</text>
-                    <text x="220" y="285" text-anchor="middle" font-size="12" fill="#999">Mar</text>
-                    <text x="290" y="285" text-anchor="middle" font-size="12" fill="#999">Apr</text>
-                    <text x="360" y="285" text-anchor="middle" font-size="12" fill="#999">Jun</text>
-                    <text x="430" y="285" text-anchor="middle" font-size="12" fill="#999">Jul</text>
-                    <text x="500" y="285" text-anchor="middle" font-size="12" fill="#999">Aug</text>
-                    <text x="570" y="285" text-anchor="middle" font-size="12" fill="#999">Sep</text>
-                    <text x="640" y="285" text-anchor="middle" font-size="12" fill="#999">Oct</text>
-                    <text x="710" y="285" text-anchor="middle" font-size="12" fill="#999">Nov</text>
-                    <text x="780" y="285" text-anchor="middle" font-size="12" fill="#999">Dec</text>
+                    @for (month of months; track $index) {
+                        @if ($index < 13){
+                            <text
+                                [attr.x]="80 + ($index* 70)"
+                                y="285"
+                                text-anchor="middle"
+                                font-size="12"
+                                fill="#999">{{ month }}
+                            </text>
+                        }
+                    }
                 </svg>
             </div>
         </div>
