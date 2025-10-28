@@ -24,7 +24,10 @@
             </div>
 </div>
 
-    <div class="chart-card">
+<div class="chart-and-panel-container">
+
+    <div class="chart-section">
+        <div class="chart-card">
             <div class="chart-header">
                 <div class="chart-tabs">
                     <button class="chart-tab"
@@ -51,59 +54,100 @@
                     <button class="btn"><i class="bi bi-three-dots"></i></button>
                 </div>
             </div>
-            <div class="chart-placeholder">
-                <svg width="100%" height="300">
-
-                     <!-- Y-axis line -->
-                    <line x1="50" y1="40" x2="50" y2="260" stroke="#e0e0e0" stroke-width="1"/>
-                    
-                    <!-- Y-axis labels and grid lines -->
-                    <text x="40" y="45" text-anchor="end" font-size="12" fill="#999">120</text>
-                    <line x1="50" y1="40" x2="750" y2="40" stroke="#f5f5f5" stroke-width="1"/>
-                    
-                    <text x="40" y="85" text-anchor="end" font-size="12" fill="#999">100</text>
-                    <line x1="50" y1="80" x2="750" y2="80" stroke="#f5f5f5" stroke-width="1"/>
-                    
-                    <text x="40" y="125" text-anchor="end" font-size="12" fill="#999">80</text>
-                    <line x1="50" y1="120" x2="750" y2="120" stroke="#f5f5f5" stroke-width="1"/>
-                    
-                    <text x="40" y="165" text-anchor="end" font-size="12" fill="#999">60</text>
-                    <line x1="50" y1="160" x2="750" y2="160" stroke="#f5f5f5" stroke-width="1"/>
-                    
-                    <text x="40" y="205" text-anchor="end" font-size="12" fill="#999">40</text>
-                    <line x1="50" y1="200" x2="750" y2="200" stroke="#f5f5f5" stroke-width="1"/>
-                    
-                    <text x="40" y="245" text-anchor="end" font-size="12" fill="#999">20</text>
-                    <line x1="50" y1="240" x2="750" y2="240" stroke="#f5f5f5" stroke-width="1"/>
-                    
-                   
-
-                    <polyline [attr.points]="polylinePoints"
-                      fill="none" stroke="#E8B3E8" stroke-width="2"/>
-                    
-                    <!-- Data points (adjusted x positions) -->
-                    @for (point of currentChart.points; track $index) {
-                    <circle
-                        [attr.cx]="point.x"
-                        [attr.cy]="point.y"
-                        r="4"
-                        [attr.fill]="$index % 2 === 0 ? '#333' : '#fff'"
-                        [attr.stroke]="$index % 2 === 0 ? '#none' : '#333'"
-                        [attr.stroke-width]="$index % 2 === 0 ? '0' : '2'"/>
-                    }
-
-                    <!-- X-axis labels (adjusted x positions) -->
-                    @for (month of months; track $index) {
-                        @if ($index < 13){
-                            <text
-                                [attr.x]="80 + ($index* 70)"
-                                y="285"
-                                text-anchor="middle"
-                                font-size="12"
-                                fill="#999">{{ month }}
-                            </text>
-                        }
-                    }
-                </svg>
+            <div class="chart-container">
+                @if (isBrowser) {
+                    <canvas baseChart
+                        [data]="lineChartData"
+                        [options]="lineChartOptions"
+                        type="line">
+                    </canvas>
+                } @else{
+                    <div class="chart-placeholder">
+                        <p>Chart loading...</p>
+              </div>
+                }
             </div>
+           
         </div>
+    </div>
+
+    <div class="panel-section">
+        <div class="panel">
+            <div class="top-list">
+                <span class="top-list-star">⭐</span>
+                <div class="panel-title">Top 5 Appliance Recovered 2025</div>
+            </div>
+            
+                <div class="top-item">
+                    <div class="item-name">LG Front Load Washer with 6 motion Inverter Direct Drive</div>
+                    <div class="item-bar"><div class="item-bar-fill" style="width: 90%;"></div></div>
+                    <div class="item-count">133</div>
+                </div>
+                <div class="top-item">
+                    <div class="item-name">LG A2.5L Top Freezer Fridge</div>
+                    <div class="item-bar"><div class="item-bar-fill" style="width: 85%;"></div></div>
+                    <div class="item-count">121</div>
+                </div>
+                <div class="top-item">
+                    <div class="item-name">Samsung 27CL Refrigerator TMF Digital Inverter Technology</div>
+                    <div class="item-bar"><div class="item-bar-fill" style="width: 80%;"></div></div>
+                    <div class="item-count">115</div>
+                </div>
+                <div class="top-item">
+                    <div class="item-name">Samsung 23L Solo Microwave Oven Quick</div>
+                    <div class="item-bar"><div class="item-bar-fill" style="width: 70%;"></div></div>
+                    <div class="item-count">92</div>
+                </div>
+                <div class="top-item">
+                    <div class="item-name">Toshiba 10.5kg Front Load Washer</div>
+                    <div class="item-bar"><div class="item-bar-fill" style="width: 60%;"></div></div>
+                    <div class="item-count">74</div>
+                </div>
+        </div>
+    </div>
+</div>
+
+<div class="bar-and-pie-chart-container">
+
+    <div class="bar-chart-section">
+        <div class="bar-chart">
+            <div class="chart-header">
+                <div class="chart-tabs">
+                    <button class="chart-tab">
+                    Total Recovered Activities by Category</button>
+
+                </div>
+                <div class="chart-controls">
+                    <div class="custom-dropdown">
+                        <button class="dropdown-trigger">
+                            Category <i class="bi bi-chevron-down"></i>
+                        </button>
+                        <div class="dropdown-content">
+                            <a href="#">Category</a>
+                            <a href="#">Brand</a>
+                        </div>
+                    </div>
+                    <button class="btn"><i class="bi bi-three-dots"></i></button>
+                </div>
+            </div>
+            <div class="chart-container">
+                @if (isBrowser) {
+                    <canvas baseChart
+                        [data]="lineChartData"
+                        [options]="lineChartOptions"
+                        type="line">
+                    </canvas>
+                } @else{
+                    <div class="chart-placeholder">
+                        <p>Chart loading...</p>
+              </div>
+                }
+            </div>
+           
+        </div>
+    </div>
+
+
+</div>
+
+     

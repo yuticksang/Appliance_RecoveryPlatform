@@ -1,73 +1,123 @@
-import { Component } from '@angular/core';
+import { Component, Inject, PLATFORM_ID } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { BaseChartDirective } from 'ng2-charts';
+import { ChartConfiguration, ChartOptions, ChartType } from 'chart.js';
+
+// Add these imports for Chart.js registration
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  LineController,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+
+// Register Chart.js components only in browser
+if (typeof window !== 'undefined') {
+  ChartJS.register(
+    CategoryScale,
+    LinearScale,
+    PointElement,
+    LineElement,
+    LineController,
+    Title,
+    Tooltip,
+    Legend
+  );
+}
+
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CommonModule],
+  imports: [CommonModule, BaseChartDirective],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
 export class Dashboard {
-    activeTab: string = 'appliance';
-
+  isBrowser: boolean;
+  activeTab: string = 'appliance';
+  
+  constructor(@Inject(PLATFORM_ID) private platformId: Object) {
+        this.isBrowser = isPlatformBrowser(this.platformId);
+  }
     // Chart data for both tabs
 
-    chartData = {
-  
-      appliance: {
-        title: 'Appliance Recovered',
-        color: '#E8B3E8',
-        points: [
-        { x: 80, y: 200, value: 40 },
-        { x: 150, y: 200, value: 40 },
-        { x: 220, y: 240, value: 25 },
-        { x: 290, y: 180, value: 42 },
-        { x: 360, y: 120, value: 65 },
-        { x: 430, y: 140, value: 55 },
-        { x: 500, y: 160, value: 48 },
-        { x: 570, y: 120, value: 65 },
-        { x: 640, y: 100, value: 75 },
-        { x: 710, y: 135, value: 57 },
-        { x: 780, y: 150, value: 52 },
-        { x: 850, y: 150, value: 60 },
-      ]
-      },
-      users: {
-        title: 'Active Users',
-        color: '#E8B3E8',
-        points: [
-        { x: 80, y: 200, value: 40 },
-        { x: 150, y: 200, value: 40 },
-        { x: 220, y: 240, value: 25 },
-        { x: 290, y: 180, value: 42 },
-        { x: 360, y: 120, value: 65 },
-        { x: 430, y: 140, value: 55 },
-        { x: 500, y: 160, value: 48 },
-        { x: 570, y: 120, value: 65 },
-        { x: 640, y: 100, value: 75 },
-        { x: 710, y: 135, value: 57 },
-        { x: 780, y: 150, value: 52 },
-        { x: 850, y: 150, value: 50 },
-      ]
-    }
-};
+  public lineChartData: ChartConfiguration<'line'>['data'] = {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+       datasets: [
+            {
+                data: [40, 40, 25, 42, 65, 55, 48, 65, 75, 57, 52, 60],
+                label: 'Appliance Recovered',
+                fill: false,
+                tension: 0.5,
+                borderColor: '#E8B3E8',
+                backgroundColor: 'rgba(232, 179, 232, 0.3)',
+                pointBackgroundColor: '#333',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: '#333'
+            }
+        ]
+    };
 
-months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  public lineChartOptions: ChartOptions<'line'> = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 120,
+                grid: {
+                    color: '#f5f5f5'
+                }
+            },
+            x: {
+                grid: {
+                    display: false
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    };
 
-// Get current chart data based on active tab
-get currentChart(){
-    return this.chartData[this.activeTab as keyof typeof this.chartData];
-}
+  public lineChartType: ChartType = 'line';
 
-// Get polyline points string
-get polylinePoints() {
-    return this.currentChart.points.map(p => `${p.x},${p.y}`).join(' ');
-}
+  chartData = {
+     appliance: {
+            data: [40, 40, 25, 42, 65, 55, 48, 65, 75, 57, 52, 60],
+            label: 'Appliance Recovered',
+            color: '#E8B3E8'
+        },
+        users: {
+            data: [30, 45, 50, 58, 72, 65, 68, 80, 85, 70, 78, 55],
+            label: 'Active Users',
+            color: '#4F94CD'
+        }
+  };
+
 
 //switch between tabs
 switchTab(tab: string) {
     this.activeTab = tab;
+    const currentData = this.chartData[tab as keyof typeof this.chartData];
+
+    this.lineChartData.datasets[0] = {
+        ...this.lineChartData.datasets[0],
+        data: currentData.data,
+        label: currentData.label,
+        borderColor: currentData.color,
+        backgroundColor: `${currentData.color}33`
+    };
+    
   }
 
 
