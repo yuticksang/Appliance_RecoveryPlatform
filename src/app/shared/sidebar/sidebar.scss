@@ -1,0 +1,92 @@
+@import url('https://fonts.googleapis.com/css2?family=Kumbh+Sans:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+/* Sidebar Component */
+        .sidebar {
+            font-family: 'Kumbh Sans', sans-serif;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 200px;
+            background: white;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar .logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 40px;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .sidebar .logo img {
+            width: 120px;
+            height: 52px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
+        .sidebar .nav-item {
+            padding: 12px 16px;
+            font-size: 15px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            color: #333;
+            position: relative;
+            text-decoration: none;
+        }
+        
+        .sidebar .nav-item::after {
+                content: '';
+                position: absolute;
+                width: 0;
+                height: 2px;
+                bottom: 8px;
+                left: 16px;
+                background-color: #007bff;
+                transition: width 0.3s ease;
+            }
+        
+        .sidebar .nav-item:hover {
+            background: #f0f0f0;
+            transform: translateX(5px);
+            
+            /* Show underline on hover */
+            &::after {
+                width: calc(100% - 32px);
+            }
+        }
+        
+        /* Active state with permanent underline */
+        .sidebar .nav-item.active {
+            background: #f0f0f0;
+            color: #007bff;
+            
+            &::after {
+                width: calc(100% - 32px);
+            }
+        }
+
+        .sidebar .logout-btn {
+            margin-top: auto;
+            padding: 12px 16px;
+            color: #999;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .sidebar .logout-btn:hover {
+            background: #f0f0f0;
+            color: #007bff;
+        }
+    
+    

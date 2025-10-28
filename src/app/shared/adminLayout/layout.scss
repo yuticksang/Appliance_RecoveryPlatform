@@ -1,0 +1,32 @@
+/* Main Layout */
+        .main-content {
+            font-family: 'Kumbh Sans', sans-serif;
+            margin-left: 230px;
+            padding-top: 30px;
+            
+           
+        }
+        @media (max-width: 768px) {
+            .main-content {
+                margin-left: 60px;
+                padding: 20px;
+            }
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content:right;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: #d1d1d1 1px solid;
+        }
+       
+        .header .user-name {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+            margin-right: 20px;
+        }
+    
+    

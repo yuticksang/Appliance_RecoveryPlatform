@@ -1,0 +1,136 @@
+/* ========== Variables (tuned to your screenshot) ========== */
+$blue-1: #d7ecf7; // bar background (light sky blue)
+$blue-2: #438db8;
+$text-900: #2b2f33;
+$text-600: #6b7177;
+$white: #ffffff;
+$Space: 'Space Grotesk', sans-serif;
+
+/* Container used across header */
+.er-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 20px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 24px;
+}
+
+/* ========== Header bar ========== */
+.er-header {
+    background: #d7ecf7;
+    width: 100%;
+    border-radius: 0;
+    margin: 0;
+}
+
+.er-logo {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.er-logo__img {
+    height: 60px;
+    /* adjust to match your mock */
+    width: auto;
+    display: block;
+    image-rendering: -webkit-optimize-contrast;
+}
+
+
+/* ========== Nav ========== */
+.er-nav {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+}
+
+.er-nav__link {
+    font-size: 20px;
+    font-family: $Space;
+    color: $text-900;
+    text-decoration: none;
+    position: relative;
+    padding: 6px 2px;
+
+    &:hover {
+        color: $blue-2;
+    }
+
+    &.is-active::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -6px;
+        height: 2px;
+        background: $blue-2;
+        border-radius: 2px;
+    }
+}
+
+/* ========== CTA button ========== */
+.er-cta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.er-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: $white;
+    color: $text-900;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 15px 20px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-size: 20px;
+    font-family: $Space;
+    line-height: 1;
+
+    &:hover {
+        border-color: rgba(0, 0, 0, 0.2);
+    }
+}
+
+.er-btn__icon {
+    width: 16px;
+    height: 16px;
+}
+
+/* ========== Mobile (optional collapse) ========== */
+.er-burger {
+    display: none;
+    background: transparent;
+    border: 0;
+    padding: 6px;
+    margin-left: 6px;
+    cursor: pointer;
+
+    span {
+        display: block;
+        width: 20px;
+        height: 2px;
+        background: $text-900;
+        margin: 4px 0;
+    }
+}
+
+/* Basic responsiveness */
+@media (max-width: 900px) {
+    .er-container {
+        grid-template-columns: auto auto;
+    }
+
+    .er-nav {
+        display: none;
+    }
+
+    .er-burger {
+        display: inline-block;
+    }
+}

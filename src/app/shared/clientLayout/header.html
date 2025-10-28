@@ -1,0 +1,24 @@
+<header class="er-header">
+  <div class="er-container">
+    <!-- Left: Logo (image) -->
+    <a routerLink="/" class="er-logo" aria-label="Ez Recover Home">
+      <img src="assets/logo/ez-recover.png" alt="Ez Recover" class="er-logo__img" />
+    </a>
+
+    <!-- Center: Nav -->
+    <nav class="er-nav" aria-label="Primary">
+      <a routerLink="/" class="er-nav__link" routerLinkActive="is-active" [routerLinkActiveOptions]="{exact:true}">Home</a>
+      <a routerLink="/trade-in" class="er-nav__link" routerLinkActive="is-active">Trade In</a>
+      <a routerLink="/contact" class="er-nav__link" routerLinkActive="is-active">Contact us</a>
+    </nav>
+
+    <!-- Right: CTA -->
+    <div class="er-cta">
+     <a routerLink="/login" class="er-btn">Register / Login</a>
+    </div>
+
+    <button class="er-burger" aria-label="Menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</header>

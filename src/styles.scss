@@ -1,0 +1,10 @@
+
+/* Reset default page gaps */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+/* Optional: global box sizing */
+*, *::before, *::after { box-sizing: border-box; }
