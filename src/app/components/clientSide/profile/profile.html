@@ -1,0 +1,123 @@
+<section class="er-profile">
+  <div class="wrap">
+    <aside class="side">
+      <a class="side-item active"><img src="assets/image/profile.png" alt="Account" class="ico"> Account</a>
+      <a class="side-item"><img src="assets/image/transaction.png" alt="Transactions" class="ico"> Transactions</a>
+      <a class="side-item danger" (click)="logout()"><img src="assets/image/logout.png" alt="Log Out" class="ico"> Log Out</a>
+    </aside>
+
+    <section class="content">
+      <!-- Profile -->
+      <div class="block">
+        <div class="block-head">
+          <h2>Profile</h2>
+          <button class="btn sm" (click)="saveProfile()">Update</button>
+        </div>
+        <form [formGroup]="profileForm" class="grid g2">
+          <label><input formControlName="firstName" placeholder="SHI YING" /></label>
+          <label><input formControlName="lastName" placeholder="CHUA" /></label>
+          <label class="full"><input formControlName="email" placeholder="chuasy-wm21@student.tarc.edu.my" /></label>
+          <label class="full"><input formControlName="phone" placeholder="+60123456789" /></label>
+        </form>
+      </div>
+
+      <!-- Home Address -->
+      <div class="block">
+        <div class="block-head">
+          <h2>Home Address</h2>
+          <button *ngIf="addresses().length > 0" class="btn sm" (click)="openAddressModal()">Add</button>
+          <button *ngIf="addresses().length === 0" class="btn sm" (click)="saveAddressInline()">Save</button>
+        </div>
+
+        <!-- Inline form when no addresses -->
+        <form class="grid g2" [formGroup]="addressForm" *ngIf="addresses().length === 0">
+          <label class="full"><span class="lbl">Name</span><input formControlName="name"
+              placeholder="Enter your name" /></label>
+          <label><span class="lbl">Phone No.</span><input formControlName="phone"
+              placeholder="Enter your phone no" /></label>
+          <label><span class="lbl">State</span><input formControlName="state" placeholder="Enter state" /></label>
+          <label><span class="lbl">City</span><input formControlName="city" placeholder="Enter city" /></label>
+          <label><span class="lbl">Zip Code</span><input formControlName="zip" placeholder="Enter zip code" /></label>
+          <label class="full"><span class="lbl">Pickup Address</span><input formControlName="pickup"
+              placeholder="Enter Pickup Address" /></label>
+        </form>
+
+        <!-- Cards when addresses exist -->
+        <div class="stack" *ngIf="addresses().length">
+          <article class="card" *ngFor="let a of addresses()">
+            <button class="edit" title="Edit" (click)="editAddress(a)">✎</button>
+            <p><strong>Name:</strong> {{ a.name }}</p>
+            <p><strong>Phone No:</strong> {{ a.phone }}</p>
+            <p><strong>Address:</strong> {{ a.pickup }}</p>
+            <p><strong>City:</strong> {{ a.city }}</p>
+            <p><strong>State:</strong> {{ a.state }}</p>
+            <p><strong>Postcode:</strong> {{ a.zip }}</p>
+          </article>
+        </div>
+      </div>
+
+      <!-- Bank Details -->
+      <div class="block">
+        <div class="block-head">
+          <h2>Bank Details</h2>
+          <button *ngIf="!bank()" class="btn sm" (click)="saveBankInline()">Save</button>
+          <button *ngIf="bank()" class="btn sm" (click)="openBankModal()">Update</button>
+        </div>
+
+        <!-- Inline form when no bank -->
+        <form class="grid g1" [formGroup]="bankForm" *ngIf="!bank()">
+          <label class="full"><span class="lbl">Bank Name</span><input formControlName="bankName"
+              placeholder="Enter bank name" /></label>
+          <label class="full"><span class="lbl">Bank Holder Name</span><input formControlName="holderName"
+              placeholder="Enter bank holder name" /></label>
+          <label class="full"><span class="lbl">Account Number</span><input formControlName="accountNumber"
+              placeholder="Enter account number" /></label>
+        </form>
+
+        <!-- View card when bank exists -->
+        <article class="card" *ngIf="bank()">
+          <button class="edit" title="Edit" (click)="openBankModal()">✎</button>
+          <p><strong>Bank Name:</strong> {{ bank()!.bankName }}</p>
+          <p><strong>Bank Holder Name:</strong> {{ bank()!.holderName }}</p>
+          <p><strong>Account Number:</strong> {{ bank()!.accountNumber }}</p>
+        </article>
+
+      </div>
+    </section>
+  </div>
+
+  <!-- Address Modal -->
+  <div class="modal" *ngIf="showAddressModal()">
+    <div class="sheet">
+      <div class="sheet-head">
+        <h3>{{ editingAddressId() ? 'Edit Address' : 'Add Address' }}</h3>
+        <button class="x" (click)="closeAddressModal()">✕</button>
+      </div>
+      <form [formGroup]="addressForm" class="grid g2">
+        <label class="full"><span class="lbl">Name</span><input formControlName="name" /></label>
+        <label><span class="lbl">Phone No.</span><input formControlName="phone" /></label>
+        <label><span class="lbl">State</span><input formControlName="state" /></label>
+        <label><span class="lbl">City</span><input formControlName="city" /></label>
+        <label><span class="lbl">Zip Code</span><input formControlName="zip" /></label>
+        <label class="full"><span class="lbl">Pickup Address</span><input formControlName="pickup" /></label>
+        <div class="full"><button class="btn full" type="button" (click)="saveAddressFromModal()">Save</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Bank Modal -->
+  <div class="modal" *ngIf="showBankModal()">
+    <div class="sheet">
+      <div class="sheet-head">
+        <h3>{{ bank() ? 'Update Bank' : 'Add Bank' }}</h3>
+        <button class="x" (click)="closeBankModal()">✕</button>
+      </div>
+      <form [formGroup]="bankForm" class="grid g1">
+        <label class="full"><span class="lbl">Bank Name</span><input formControlName="bankName" /></label>
+        <label class="full"><span class="lbl">Bank Holder Name</span><input formControlName="holderName" /></label>
+        <label class="full"><span class="lbl">Account Number</span><input formControlName="accountNumber" /></label>
+        <div class="full"><button class="btn full" type="button" (click)="saveBankFromModal()">Save</button></div>
+      </form>
+    </div>
+  </div>
+</section>

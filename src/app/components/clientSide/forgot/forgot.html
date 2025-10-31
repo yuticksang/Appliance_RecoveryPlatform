@@ -1,0 +1,14 @@
+<section class="auth-shell">
+  <h1 class="title">Reset Password</h1>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <label class="field">
+      <span>Enter Your Email address</span>
+      <input type="email" formControlName="email" placeholder="you@example.com" />
+      <small class="error" *ngIf="f.email.touched && f.email.errors?.['required']">Email is required.</small>
+      <small class="error" *ngIf="f.email.touched && f.email.errors?.['email']">Enter a valid email.</small>
+    </label>
+
+    <button class="btn-primary" type="submit">Reset</button>
+  </form>
+</section>

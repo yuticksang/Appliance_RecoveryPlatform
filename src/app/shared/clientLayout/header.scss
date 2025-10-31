@@ -73,34 +73,75 @@ $Space: 'Space Grotesk', sans-serif;
 
 /* ========== CTA button ========== */
 .er-cta {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  .er-btn,
+  .er-user-btn {
+    background: #e8f4fb;
+    border: 1px solid #cbd8e6;
+    border-radius: 8px;
+    padding: 10px 15px;
+    font-weight: 500;
+    color: #0f172a;
+    cursor: pointer;
     display: flex;
+    font-size: 15px;
     align-items: center;
-    justify-content: flex-end;
-}
-
-.er-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    background: $white;
-    color: $text-900;
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    padding: 15px 20px;
-    border-radius: 999px;
+    gap: 6px;
     text-decoration: none;
-    font-size: 20px;
-    font-family: $Space;
-    line-height: 1;
+  }
 
-    &:hover {
-        border-color: rgba(0, 0, 0, 0.2);
+  .er-user-icon {
+    width: 20px;
+    height: 15px;
+    object-fit: contain;
+  }
+
+  .er-dropdown {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 1px);
+    background: #fff;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    min-width: 200px;
+    z-index: 100;
+    padding: 8px 0;
+
+    &__item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      color: #1f2937;
+      text-decoration: none;
+      width: 100%;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 15px;
+      font-family: $Space;
+
+      &:hover {
+        background: #f3f8fb;
+      }
+
+      i {
+        width: 18px;
+        text-align: center;
+      }
     }
+
+    &__icon {
+      width: 15px;
+      height: 15px;
+      object-fit: contain;
+    }
+  }
 }
 
-.er-btn__icon {
-    width: 16px;
-    height: 16px;
-}
 
 /* ========== Mobile (optional collapse) ========== */
 .er-burger {

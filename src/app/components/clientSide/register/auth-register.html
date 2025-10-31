@@ -4,12 +4,31 @@
     <p class="er-sub">Already have an account? <a routerLink="/login">Log in</a></p>
 
     <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="er-form">
-      <label>What should we call you?</label>
-      <input formControlName="name" placeholder="Enter your profile name" />
-      <small class="er-error" *ngIf="f.name.touched && f.name.invalid">
-        <span *ngIf="f.name.errors?.['required']">Name is required.</span>
-        <span *ngIf="f.name.errors?.['minlength']">Min 2 characters.</span>
+      <div class="er-name-fields">
+        <label>What's your name?</label>
+        <div class="er-name-inputs">
+          <input formControlName="firstName" placeholder="First name" />
+          <input formControlName="lastName" placeholder="Last name" />
+        </div>
+
+        <small class="er-error" *ngIf="f.firstName.touched && f.firstName.invalid">
+          <span *ngIf="f.firstName.errors?.['required']">First name is required.</span>
+          <span *ngIf="f.firstName.errors?.['minlength']">Min 2 characters.</span>
+        </small>
+        <small class="er-error" *ngIf="f.lastName.touched && f.lastName.invalid">
+          <span *ngIf="f.lastName.errors?.['required']">Last name is required.</span>
+          <span *ngIf="f.lastName.errors?.['minlength']">Min 2 characters.</span>
+        </small>
+      </div>
+
+      <label>What's your username</label>
+      <input formControlName="username" placeholder="Enter a unique username" />
+      <small class="er-error" *ngIf="f.username.touched && f.username.invalid">
+        <span *ngIf="f.username.errors?.['required']">Username is required.</span>
+        <span *ngIf="f.username.errors?.['minlength']">Min 3 characters.</span>
+        <span *ngIf="f.username.errors?.['pattern']">Only letters, numbers, underscores allowed.</span>
       </small>
+
 
       <label>What's your email?</label>
       <input type="email" formControlName="email" placeholder="Enter your email address" />
@@ -24,9 +43,6 @@
         <span *ngIf="f.phone.errors?.['required']">Phone is required.</span>
         <span *ngIf="f.phone.errors?.['pattern']">Enter a valid phone.</span>
       </small>
-
-      <label>What's your address?</label>
-      <input formControlName="address" placeholder="Enter your address" />
 
       <label>Create a password</label>
       <div class="er-password">

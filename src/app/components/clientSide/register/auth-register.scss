@@ -41,6 +41,30 @@ $Space: 'Space Grotesk', sans-serif;
   }
 }
 
+
+
+.er-name-inputs {
+  display: flex;
+  gap: 12px;
+
+  input {
+    flex: 1;
+    height: 42px;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    padding: 0 12px;
+    background: #fff;
+    font-family: $Space;
+
+    &:focus {
+      border-color: $blue-2;
+      box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.12);
+    }
+  }
+}
+
+
+
 .er-form {
   display: grid;
   gap: 10px;

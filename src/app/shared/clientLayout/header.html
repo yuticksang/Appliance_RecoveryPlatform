@@ -1,24 +1,47 @@
 <header class="er-header">
   <div class="er-container">
-    <!-- Left: Logo (image) -->
-    <a routerLink="/" class="er-logo" aria-label="Ez Recover Home">
-      <img src="assets/logo/ez-recover.png" alt="Ez Recover" class="er-logo__img" />
+    <!-- Logo -->
+    <a routerLink="/" class="er-logo">
+      <img src="./image/EzRecover_Icon.png" alt="EasyRecovery" class="er-logo__img">
     </a>
 
-    <!-- Center: Nav -->
-    <nav class="er-nav" aria-label="Primary">
-      <a routerLink="/" class="er-nav__link" routerLinkActive="is-active" [routerLinkActiveOptions]="{exact:true}">Home</a>
-      <a routerLink="/trade-in" class="er-nav__link" routerLinkActive="is-active">Trade In</a>
-      <a routerLink="/contact" class="er-nav__link" routerLinkActive="is-active">Contact us</a>
+    <!-- Navigation -->
+    <nav class="er-nav">
+      <a routerLink="/dashboard" routerLinkActive="is-active" class="er-nav__link">Home</a>
+      <a routerLink="/trade-in" routerLinkActive="is-active" class="er-nav__link">Trade In</a>
+      <a routerLink="/contact" routerLinkActive="is-active" class="er-nav__link">Contact</a>
     </nav>
 
-    <!-- Right: CTA -->
-    <div class="er-cta">
-     <a routerLink="/login" class="er-btn">Register / Login</a>
-    </div>
+    <!-- CTA / User Menu -->
+    <div class="er-cta"
+         (mouseenter)="menuOpen = true" (mouseleave)="menuOpen = false">
 
-    <button class="er-burger" aria-label="Menu" aria-expanded="false">
-      <span></span><span></span><span></span>
-    </button>
+      <!-- show when NOT logged in -->
+      <a *ngIf="!(user$ | async)" routerLink="/login" class="er-btn">
+        <img src="assets/image/profile.png" alt="Profile" class="er-user-icon"> Register / Login
+      </a>
+
+      <!-- show when logged in -->
+      <ng-container *ngIf="user$ | async as user">
+        <button type="button" class="er-user-btn">
+          <img src="assets/image/profile.png" alt="Profile" class="er-user-icon"> {{ user.username }}
+        </button>
+
+        <div class="er-dropdown" *ngIf="menuOpen">
+          <a routerLink="/profile" class="er-dropdown__item">
+            <img src="assets/image/profile.png" alt="Profile" class="er-dropdown__icon">
+            My Profile
+          </a>
+          <a routerLink="/transactions" class="er-dropdown__item">
+            <img src="assets/image/transaction.png" alt="Transactions" class="er-dropdown__icon">
+            Transactions
+          </a>
+          <button class="er-dropdown__item danger" (click)="mockLogout()">
+            <img src="assets/image/logout.png" alt="Logout" class="er-dropdown__icon">
+            Log Out
+          </button>
+        </div>
+      </ng-container>
+    </div>
   </div>
 </header>

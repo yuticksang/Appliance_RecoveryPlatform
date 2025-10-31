@@ -8,4 +8,4 @@ import { RouterLink } from '@angular/router';
   templateUrl: './footer.html',
   styleUrls: ['./footer.scss']
 })
-export class FooterComponent {}
+export class ClientFooterComponent {}
