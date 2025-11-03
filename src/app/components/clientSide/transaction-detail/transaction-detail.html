@@ -1,0 +1,143 @@
+<main class="transaction-detail-page">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading transaction details...</p>
+  </div>
+
+  <!-- Transaction Detail Content -->
+  <div *ngIf="!loading && transaction" class="detail-container">
+    <!-- Header with Action Buttons -->
+    <div class="detail-header">
+      <div class="top-actions">
+        <span class="back-link" (click)="goBack()">BACK</span>
+        <div class="action-links">
+          <span class="action-link" (click)="viewRecoverySlip()">RECOVERY SLIP</span>
+          <span class="action-link" (click)="viewPackagingInstruction()">PACKAGING INSTRUCTION</span>
+        </div>
+      </div>
+      <div class="title-status-row">
+        <h1 class="page-title">APPLIANCE INFORMATION</h1>
+        <span class="status-badge" [ngClass]="getStatusClass(transaction.transactionStatus)">
+          {{ transaction.transactionStatus }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="content-grid">
+      <!-- Left Column - Customer Info -->
+      <div class="left-column">
+        <!-- Customer Information -->
+        <div class="info-section">
+          <h3 class="section-title">CUSTOMER ID</h3>
+          <p class="info-value">{{ transaction.sellerId }}</p>
+        </div>
+
+        <div class="info-section">
+          <h3 class="section-title">CUSTOMER NAME</h3>
+          <p class="info-value">{{ customerInfo.name }}</p>
+        </div>
+
+        <div class="info-section">
+          <h3 class="section-title">EMAIL ADDRESS</h3>
+          <p class="info-value">{{ customerInfo.email }}</p>
+        </div>
+
+        <div class="info-section">
+          <h3 class="section-title">CONTACT NUMBER</h3>
+          <p class="info-value">{{ customerInfo.contactNumber }}</p>
+        </div>
+
+        <div class="info-section">
+          <h3 class="section-title">ADDRESS</h3>
+          <p class="info-value">{{ customerInfo.address }}</p>
+        </div>
+
+        <div class="info-section-row">
+          <div class="info-section">
+            <h3 class="section-title">CITY</h3>
+            <p class="info-value">{{ customerInfo.city }}</p>
+          </div>
+          <div class="info-section">
+            <h3 class="section-title">STATE</h3>
+            <p class="info-value">{{ customerInfo.state }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column - Appliance Information -->
+      <div class="right-column">
+        <div class="appliance-info-card">
+          <!-- Appliance Image -->
+          <div class="appliance-image-section">
+            <img [src]="transaction.image" [alt]="transaction.modelName" class="appliance-image">
+            <div class="image-dots">
+              <span class="dot active"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            </div>
+          </div>
+          
+          <!-- Estimated Price -->
+          <div class="price-section">
+            <span class="price-label">RM</span>
+            <span class="price-value">{{ applianceInfo.estimatedPrice }}</span>
+          </div>
+
+          <!-- Appliance Details Grid -->
+          <div class="details-grid">
+            <div class="detail-item">
+              <h4 class="detail-label">BRAND</h4>
+              <p class="detail-value">{{ applianceInfo.brand }}</p>
+            </div>
+            <div class="detail-item">
+              <h4 class="detail-label">MODEL</h4>
+              <p class="detail-value">{{ applianceInfo.model }}</p>
+            </div>
+            <div class="detail-item">
+              <h4 class="detail-label">CATEGORY</h4>
+              <p class="detail-value">{{ applianceInfo.category }}</p>
+            </div>
+            <div class="detail-item">
+              <h4 class="detail-label">FUNCTIONAL STATUS</h4>
+              <p class="detail-value">{{ applianceInfo.functionalStatus }}</p>
+            </div>
+            <div class="detail-item">
+              <h4 class="detail-label">CONDITION</h4>
+              <p class="detail-value">{{ applianceInfo.condition }}</p>
+            </div>
+            <div class="detail-item">
+              <h4 class="detail-label">SCORE</h4>
+              <p class="detail-value">{{ applianceInfo.score }}</p>
+            </div>
+          </div>
+
+          <!-- Note -->
+          <div class="note-section">
+            <h4 class="note-label">NOTE</h4>
+            <p class="note-value">{{ applianceInfo.note }}</p>
+          </div>
+
+          <!-- Selected Issue -->
+          <div class="idea-section">
+            <h4 class="idea-label">SELECTED ISSUE</h4>
+            <ul class="idea-list">
+              <li *ngFor="let issue of applianceInfo.selectedIssue" class="idea-item">
+                <span class="check-icon">✓</span> {{ issue }}
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="!loading && !transaction" class="error-container">
+    <p>Transaction not found</p>
+    <button class="btn-back" (click)="goBack()">Go Back to Transactions</button>
+  </div>
+</main>
