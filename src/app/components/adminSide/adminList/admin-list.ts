@@ -78,7 +78,7 @@ export class AdminListComponent implements OnInit {
               console.log(`🔍 User ${user.username}: admin_id = ${user.admin_id} (type: ${typeof user.admin_id})`);
               return {
                 id: user.id,
-                adminId: user.admin_id ? String(user.admin_id).padStart(3, '0') : '---',
+                adminId: user.admin_id ? String(user.admin_id) : '---',
                 fullName: user.name,
                 username: user.username,
                 role: user.user_type === 'superadmin' ? 'SUPER ADMIN' as AdminRole : 'ADMIN' as AdminRole,

@@ -62,8 +62,8 @@ export const createUser = async (req: Request, res: Response) => {
     console.log('🔒 Hashing password...');
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    // Get next admin_id from sequence
-    const adminIdResult = await pool.query("SELECT nextval('admin_id_seq') as admin_id");
+    // Get next admin_id from sequence and format as prefixed ID (A002, A003, etc.)
+    const adminIdResult = await pool.query("SELECT 'A' || LPAD(nextval('admin_id_seq')::text, 3, '0') as admin_id");
     const nextAdminId = adminIdResult.rows[0].admin_id;
 
     // Create user without email

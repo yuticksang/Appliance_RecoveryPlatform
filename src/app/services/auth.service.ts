@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { AuthService as AdminAuthService } from '../../auth/auth-service';
+import { environment } from '../../environments/environment';
 
 interface User {
   id: number;
@@ -28,7 +29,7 @@ export class AuthService {
   private router = inject(Router);
   private adminAuthService = inject(AdminAuthService);
 
-  private apiUrl = 'http://localhost:3000/api';
+  private apiUrl = environment.apiUrl + '/api';
   
   // User state
   private currentUserSubject = new BehaviorSubject<User | null>(null);
