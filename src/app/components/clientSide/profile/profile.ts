@@ -2,6 +2,8 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { AuthService } from '../../../services/auth.service';
+import { AlertService } from '../../../services/alert.service';
+import { AlertComponent } from '../../../shared/alert/alert.component';
 
 interface Address {
   id?: number;
@@ -20,21 +22,23 @@ interface BankDetails {
   accountNumber: string;
 }
 
+
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, AlertComponent],
   templateUrl: './profile.html',
   styleUrls: ['./profile.scss']
 })
 export class ProfileComponent implements OnInit {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
+  private alertService = inject(AlertService);
 
   loading = false;
   error = '';
   success = '';
-  
+
   // Signals for reactive state
   addresses = signal<Address[]>([]);
   bank = signal<BankDetails | null>(null);
@@ -42,9 +46,7 @@ export class ProfileComponent implements OnInit {
   showBankModal = signal(false);
   editingAddressId = signal<number | null>(null);
 
-  // Custom modal signals
-  showSuccessModal = signal(false);
-  successMessage = signal('');
+  // Confirmation modal signals
   showConfirmModal = signal(false);
   confirmMessage = signal('');
   confirmCallback: (() => void) | null = null;
@@ -181,7 +183,7 @@ export class ProfileComponent implements OnInit {
     this.addressForm.reset();
 
     console.log('Address saved:', addressData);
-    this.showSuccessMessage('Address saved successfully!');
+    this.alertService.success('Address saved successfully!');
   }
 
   saveAddressFromModal() {
@@ -295,7 +297,7 @@ export class ProfileComponent implements OnInit {
     this.bankForm.reset();
 
     console.log('Bank details saved:', bankData);
-    this.showSuccessMessage('Bank details saved successfully!');
+    this.alertService.success('Bank details saved successfully!');
   }
 
   saveBankFromModal() {
@@ -370,20 +372,11 @@ export class ProfileComponent implements OnInit {
   logout() {
     this.showConfirmDialog('Are you sure you want to logout?', () => {
       this.authService.logout();
+      this.alertService.success('Logged out successfully!');
     });
   }
 
-  // Modal utility methods
-  showSuccessMessage(message: string) {
-    this.successMessage.set(message);
-    this.showSuccessModal.set(true);
-  }
-
-  closeSuccessModal() {
-    this.showSuccessModal.set(false);
-    this.successMessage.set('');
-  }
-
+  // Confirmation modal utility methods
   showConfirmDialog(message: string, callback: () => void) {
     this.confirmMessage.set(message);
     this.confirmCallback = callback;

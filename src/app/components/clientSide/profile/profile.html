@@ -1,4 +1,5 @@
 <section class="er-profile">
+  <app-alert></app-alert>
   <div class="wrap">
     <aside class="side">
       <a class="side-item active"><img src="assets/icons/profile.png" alt="Account" class="ico"> Account</a>
@@ -120,18 +121,6 @@
         <label class="full"><span class="lbl">Account Number</span><input formControlName="accountNumber" /></label>
         <div class="full"><button class="btn full" type="button" (click)="saveBankFromModal()">Save</button></div>
       </form>
-    </div>
-  </div>
-
-  <!-- Success Modal -->
-  <div class="modal" *ngIf="showSuccessModal()">
-    <div class="sheet success-modal">
-      <div class="sheet-body">
-        <p>{{ successMessage() }}</p>
-      </div>
-      <div class="sheet-footer">
-        <button class="btn full" (click)="closeSuccessModal()">OK</button>
-      </div>
     </div>
   </div>
 
