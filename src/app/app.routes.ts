@@ -10,13 +10,13 @@ export const routes: Routes = [
     path: '',
     component: ClientLayoutComponent, // header+footer live here
     children: [
-      { path: 'dashboard', loadComponent: () => import('./components/clientSide/home/home').then(m => m.HomeComponent) },
+      { path: 'home', loadComponent: () => import('./components/clientSide/home/home').then(m => m.HomeComponent) },
+      { path: 'profile', canActivate: [customerGuard], loadComponent: () => import('./components/clientSide/profile/profile').then(m => m.ProfileComponent) },
       { path: 'login', canActivate: [guestGuard], loadComponent: () => import('./components/clientSide/login/auth-login').then(m => m.AuthLoginComponent) },
       { path: 'register', canActivate: [guestGuard], loadComponent: () => import('./components/clientSide/register/auth-register').then(m => m.AuthRegisterComponent) },
       { path: 'forgot-password', canActivate: [guestGuard], loadComponent: () => import('./components/clientSide/forgot/forgot').then(m => m.ForgotPasswordComponent) },
       { path: 'reset-password/:token', canActivate: [guestGuard], loadComponent: () => import('./components/clientSide/reset/reset').then(m => m.ResetPasswordComponent) },
-      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      { path: 'profile', canActivate: [customerGuard], loadComponent: () => import('./components/clientSide/profile/profile').then(m => m.ProfileComponent) }
+      { path: '', redirectTo: 'home', pathMatch: 'full' }
     ]
   },
 

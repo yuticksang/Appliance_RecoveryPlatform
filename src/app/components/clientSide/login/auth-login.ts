@@ -59,8 +59,8 @@ export class AuthLoginComponent {
             // Show success message
             this.alertService.success('Logged in successfully!');
 
-            // Redirect to customer dashboard
-            this.router.navigate(['/dashboard']);
+            // Redirect to customer home
+            this.router.navigate(['/home']);
           } else {
             // Show alert for wrong user type
             this.alertService.error('Access denied. Please use customer account to login.');

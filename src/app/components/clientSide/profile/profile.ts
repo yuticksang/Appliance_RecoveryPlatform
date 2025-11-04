@@ -175,15 +175,26 @@ export class ProfileComponent implements OnInit {
     if (this.addressForm.invalid) return;
 
     const addressData = this.addressForm.value as Address;
+    const user = this.currentUser();
+    if (!user) return;
 
-    // Add to addresses array
-    this.addresses.update(addresses => [...addresses, { ...addressData, id: Date.now() }]);
+    this.loading = true;
 
-    // Reset form
-    this.addressForm.reset();
-
-    console.log('Address saved:', addressData);
-    this.alertService.success('Address saved successfully!');
+    // Save to database via API
+    this.authService.createAddress(user.id, addressData).subscribe({
+      next: (newAddress) => {
+        this.addresses.update(addresses => [...addresses, newAddress]);
+        this.addressForm.reset();
+        this.alertService.success('Address saved successfully!');
+        this.loading = false;
+      },
+      error: (err) => {
+        this.error = 'Failed to save address';
+        this.loading = false;
+        console.error('Save address error:', err);
+        this.alertService.error('Failed to save address');
+      }
+    });
   }
 
   saveAddressFromModal() {
@@ -205,11 +216,13 @@ export class ProfileComponent implements OnInit {
           );
           this.closeAddressModal();
           this.success = 'Address updated successfully!';
+          this.alertService.success('Address updated successfully!');
           this.loading = false;
           setTimeout(() => this.success = '', 3000);
         },
         error: (err) => {
           this.error = 'Failed to update address';
+          this.alertService.error('Failed to update address');
           this.loading = false;
           console.error('Update address error:', err);
         }
@@ -221,11 +234,13 @@ export class ProfileComponent implements OnInit {
           this.addresses.update(addresses => [...addresses, newAddress]);
           this.closeAddressModal();
           this.success = 'Address added successfully!';
+          this.alertService.success('Address added successfully!');
           this.loading = false;
           setTimeout(() => this.success = '', 3000);
         },
         error: (err) => {
           this.error = 'Failed to add address';
+          this.alertService.error('Failed to add address');
           this.loading = false;
           console.error('Add address error:', err);
         }
@@ -244,11 +259,13 @@ export class ProfileComponent implements OnInit {
         next: () => {
           this.addresses.update(addresses => addresses.filter(addr => addr.id !== id));
           this.success = 'Address deleted successfully!';
+          this.alertService.success('Address deleted successfully!');
           this.loading = false;
           setTimeout(() => this.success = '', 3000);
         },
         error: (err) => {
           this.error = 'Failed to delete address';
+          this.alertService.error('Failed to delete address');
           this.loading = false;
           console.error('Delete address error:', err);
         }
@@ -291,13 +308,26 @@ export class ProfileComponent implements OnInit {
     if (this.bankForm.invalid) return;
 
     const bankData = this.bankForm.value as BankDetails;
-    this.bank.set({ ...bankData, id: Date.now() });
+    const user = this.currentUser();
+    if (!user) return;
 
-    // Reset form
-    this.bankForm.reset();
+    this.loading = true;
 
-    console.log('Bank details saved:', bankData);
-    this.alertService.success('Bank details saved successfully!');
+    // Save to database via API
+    this.authService.createBankDetails(user.id, bankData).subscribe({
+      next: (newBank) => {
+        this.bank.set(newBank);
+        this.bankForm.reset();
+        this.alertService.success('Bank details saved successfully!');
+        this.loading = false;
+      },
+      error: (err) => {
+        this.error = 'Failed to save bank details';
+        this.loading = false;
+        console.error('Save bank error:', err);
+        this.alertService.error('Failed to save bank details');
+      }
+    });
   }
 
   saveBankFromModal() {
@@ -317,11 +347,13 @@ export class ProfileComponent implements OnInit {
           this.bank.set(updatedBank);
           this.closeBankModal();
           this.success = 'Bank details updated successfully!';
+          this.alertService.success('Bank details updated successfully!');
           this.loading = false;
           setTimeout(() => this.success = '', 3000);
         },
         error: (err) => {
           this.error = 'Failed to update bank details';
+          this.alertService.error('Failed to update bank details');
           this.loading = false;
           console.error('Update bank error:', err);
         }
@@ -356,11 +388,13 @@ export class ProfileComponent implements OnInit {
         next: () => {
           this.bank.set(null);
           this.success = 'Bank details deleted successfully!';
+          this.alertService.success('Bank details deleted successfully!');
           this.loading = false;
           setTimeout(() => this.success = '', 3000);
         },
         error: (err) => {
           this.error = 'Failed to delete bank details';
+          this.alertService.error('Failed to delete bank details');
           this.loading = false;
           console.error('Delete bank error:', err);
         }

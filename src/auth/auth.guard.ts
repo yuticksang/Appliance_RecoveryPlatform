@@ -66,8 +66,8 @@ export const adminGuard: CanActivateFn = (route, state) => {
   const isAdminUser = user.userType === 'admin' || user.userType === 'superadmin';
 
   if (!isAdminUser) {
-    // Not an admin - redirect to customer dashboard
-    router.navigate(['/dashboard']);
+    // Not an admin - redirect to customer home
+    router.navigate(['/home']);
     return false;
   }
 
