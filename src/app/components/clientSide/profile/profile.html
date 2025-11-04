@@ -1,9 +1,9 @@
 <section class="er-profile">
   <div class="wrap">
     <aside class="side">
-      <a class="side-item active"><img src="assets/image/profile.png" alt="Account" class="ico"> Account</a>
-      <a class="side-item"><img src="assets/image/transaction.png" alt="Transactions" class="ico"> Transactions</a>
-      <a class="side-item danger" (click)="logout()"><img src="assets/image/logout.png" alt="Log Out" class="ico"> Log Out</a>
+      <a class="side-item active"><img src="assets/icons/profile.png" alt="Account" class="ico"> Account</a>
+      <a class="side-item"><img src="assets/icons/transaction.png" alt="Transactions" class="ico"> Transactions</a>
+      <a class="side-item danger" (click)="logout()"><img src="assets/icons/logout.png" alt="Log Out" class="ico"> Log Out</a>
     </aside>
 
     <section class="content">
@@ -46,6 +46,7 @@
         <div class="stack" *ngIf="addresses().length">
           <article class="card" *ngFor="let a of addresses()">
             <button class="edit" title="Edit" (click)="editAddress(a)">✎</button>
+            <button class="delete" title="Delete" (click)="deleteAddress(a.id!)">🗑</button>
             <p><strong>Name:</strong> {{ a.name }}</p>
             <p><strong>Phone No:</strong> {{ a.phone }}</p>
             <p><strong>Address:</strong> {{ a.pickup }}</p>
@@ -77,6 +78,7 @@
         <!-- View card when bank exists -->
         <article class="card" *ngIf="bank()">
           <button class="edit" title="Edit" (click)="openBankModal()">✎</button>
+          <button class="delete" title="Delete" (click)="deleteBank()">🗑</button>
           <p><strong>Bank Name:</strong> {{ bank()!.bankName }}</p>
           <p><strong>Bank Holder Name:</strong> {{ bank()!.holderName }}</p>
           <p><strong>Account Number:</strong> {{ bank()!.accountNumber }}</p>
@@ -118,6 +120,31 @@
         <label class="full"><span class="lbl">Account Number</span><input formControlName="accountNumber" /></label>
         <div class="full"><button class="btn full" type="button" (click)="saveBankFromModal()">Save</button></div>
       </form>
+    </div>
+  </div>
+
+  <!-- Success Modal -->
+  <div class="modal" *ngIf="showSuccessModal()">
+    <div class="sheet success-modal">
+      <div class="sheet-body">
+        <p>{{ successMessage() }}</p>
+      </div>
+      <div class="sheet-footer">
+        <button class="btn full" (click)="closeSuccessModal()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div class="modal" *ngIf="showConfirmModal()">
+    <div class="sheet confirm-modal">
+      <div class="sheet-body">
+        <p>{{ confirmMessage() }}</p>
+      </div>
+      <div class="sheet-footer">
+        <button class="btn secondary" (click)="closeConfirmModal()">Cancel</button>
+        <button class="btn" (click)="confirmAction()">Confirm</button>
+      </div>
     </div>
   </div>
 </section>

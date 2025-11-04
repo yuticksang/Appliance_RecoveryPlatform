@@ -2,12 +2,14 @@
 
 # Compiled output
 /dist
+**/dist/
 /tmp
 /out-tsc
 /bazel-out
 
 # Node
 /node_modules
+**/node_modules/
 npm-debug.log
 yarn-error.log
 /package-lock.json
@@ -46,7 +48,7 @@ yarn-error.log
 /libpeerconnection.log
 testem.log
 /typings
-__screenshots__/
+_screenshots_/
 /e2e/test-output/
 
 # Environment files

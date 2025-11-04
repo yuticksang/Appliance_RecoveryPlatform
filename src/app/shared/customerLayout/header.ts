@@ -1,8 +1,8 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
-import { BehaviorSubject } from 'rxjs';
 import { AlertService } from '../../services/alert.service';
+import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-header',
@@ -14,17 +14,21 @@ import { AlertService } from '../../services/alert.service';
 export class ClientHeaderComponent {
   private router = inject(Router);
   private alertService = inject(AlertService);
+  private authService = inject(AuthService);
 
   menuOpen = false;
 
-  // Mock user observable - replace with real auth service later
-  user$ = new BehaviorSubject<{ username: string } | null>({ username: 'ChuaSY' });
+  // Use real auth service
+  user = computed(() => {
+    const profile = this.authService.userProfile();
+    if (!profile) return null;
+    return { username: profile.name || profile.username };
+  });
 
-  mockLogout() {
-    this.user$.next(null);
+  logout() {
+    this.authService.logout();
     this.menuOpen = false;
     this.alertService.success('Logged out successfully!');
-    this.router.navigate(['/login']);
   }
 
 }

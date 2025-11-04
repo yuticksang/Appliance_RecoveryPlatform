@@ -1,15 +1,31 @@
-
-
-<app-sidebar></app-sidebar>
-
-<div class="main-content">
-        <!-- Header -->
-    <div class="header">    
-            <span class="user-name">Derek Alvarado</span>
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">
+      <img src="assets/image/EzRecover_Icon.png" alt="Ez Recover" />
     </div>
+  </div>
 
-   
+  <a class="nav-item" routerLink="/admin/dashboard" routerLinkActive="active">Dashboard</a>
 
-        <router-outlet></router-outlet>
+  <!-- SUPER ADMIN ONLY -->
+  <a class="nav-item" *ngIf="auth.isSuperAdmin()" routerLink="/admin/admins" routerLinkActive="active">Admin</a>
+  <a class="nav-item" *ngIf="auth.isSuperAdmin()" routerLink="/admin/buyers" routerLinkActive="active">Buyer</a>
+
+  <!-- Visible to both ADMIN & SUPER_ADMIN -->
+  <a class="nav-item" routerLink="/admin/customers" routerLinkActive="active">Customer</a>
+  <a class="nav-item" routerLink="/admin/transactions" routerLinkActive="active">Transaction</a>
+  <a class="nav-item" routerLink="/admin/appliances" routerLinkActive="active">Appliances</a>
+  <a class="nav-item" routerLink="/admin/reporting" routerLinkActive="active">Reporting</a>
+
+  <button class="logout-btn" (click)="logout()">Log out</button>
 </div>
 
+<!-- Main Content -->
+<div class="main-content">
+  <div class="header">
+    <span class="user-name">{{ auth.user()?.username || 'User' }}</span>
+  </div>
+
+  <router-outlet></router-outlet>
+</div>

@@ -1,0 +1,314 @@
+import { Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import pool from '../config/database';
+
+// Define JWT payload interface
+interface JwtPayload {
+  userId: number;
+  email: string | null; // Admins don't have email
+  username: string;
+  userType: string;
+}
+
+export const register = async (req: Request, res: Response) => {
+  try {
+    const { email, password, name, username, phone } = req.body;
+
+    // Validate required fields
+    if (!email || !password || !name || !username) {
+      return res.status(400).json({ message: 'Email, password, name, and username are required' });
+    }
+
+    // Check if user exists
+    const userExists = await pool.query(
+      'SELECT id FROM users WHERE email = $1 OR username = $2',
+      [email, username]
+    );
+
+    if (userExists.rows.length > 0) {
+      return res.status(400).json({ message: 'User with this email or username already exists' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, Number(process.env.BCRYPT_SALT_ROUNDS) || 12);
+
+    // Generate email verification token
+    const emailVerificationToken = crypto.randomBytes(32).toString('hex');
+
+    // Create user (customers only via registration)
+    // Set status to ACTIVE for now (email verification will be implemented later)
+    const result = await pool.query(
+      `INSERT INTO users (email, password, name, username, phone, user_type, user_status, email_verified, can_change_password)
+       VALUES ($1, $2, $3, $4, $5, 'customer', 'ACTIVE', false, true)
+       RETURNING id, email, name, username, user_type, user_status`,
+      [email, hashedPassword, name, username, phone]
+    );
+
+    // Store verification token (skip if auth_tokens table doesn't exist yet)
+    try {
+      await pool.query(
+        `INSERT INTO auth_tokens (token, user_id, token_type, expires_at) 
+         VALUES ($1, $2, 'email_verification', NOW() + INTERVAL '24 hours')`,
+        [emailVerificationToken, result.rows[0].id]
+      );
+    } catch (tokenError) {
+      console.log('Auth tokens table not found, skipping token storage');
+    }
+
+    // TODO: Send verification email
+    console.log(`Verification link: http://localhost:4200/verify-email/${emailVerificationToken}`);
+
+    res.status(201).json({
+      message: 'User registered successfully. Please check your email to verify your account.',
+      user: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Register error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const login = async (req: Request, res: Response) => {
+  try {
+    const { emailOrUsername, password } = req.body;
+
+    console.log('🔐 Login attempt:', { emailOrUsername });
+
+    if (!emailOrUsername || !password) {
+      console.log('❌ Missing credentials');
+      return res.status(400).json({ message: 'Username/admin ID and password are required' });
+    }
+
+    // Find user by username, admin_id, or email
+    // Check if input is a number (could be admin_id)
+    const isNumeric = /^\d+$/.test(emailOrUsername);
+    let result;
+
+    if (isNumeric) {
+      // Try to find by admin_id first, then fallback to username/email
+      result = await pool.query(
+        'SELECT * FROM users WHERE admin_id = $1 OR username = $2 OR (email IS NOT NULL AND email = $2)',
+        [parseInt(emailOrUsername), emailOrUsername]
+      );
+    } else {
+      // Find by username or email (customers have email, admins don't)
+      result = await pool.query(
+        'SELECT * FROM users WHERE username = $1 OR (email IS NOT NULL AND email = $1)',
+        [emailOrUsername]
+      );
+    }
+
+    if (result.rows.length === 0) {
+      console.log('❌ User not found:', emailOrUsername);
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const user = result.rows[0];
+    console.log('👤 User found:', {
+      username: user.username,
+      admin_id: user.admin_id,
+      user_type: user.user_type,
+      user_status: user.user_status,
+      has_email: !!user.email
+    });
+
+    // Check if account is active
+    if (user.user_status !== 'ACTIVE') {
+      console.log('❌ Account not active:', user.user_status);
+
+      // Different messages for admins vs customers
+      const isAdmin = user.user_type === 'admin' || user.user_type === 'superadmin';
+      const message = isAdmin
+        ? 'Your admin account is inactive. Please contact the Super Admin.'
+        : (user.user_status === 'INACTIVE' ? 'Please verify your email first' : 'Account is blocked');
+
+      return res.status(401).json({ message });
+    }
+
+    // Check password
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
+      console.log('❌ Invalid password');
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    console.log('✅ Login successful for:', user.username || user.email);
+
+    // Update last login
+    await pool.query('UPDATE users SET last_login = NOW() WHERE id = $1', [user.id]);
+
+    // Generate JWT - simplified approach
+    const jwtSecret = process.env.JWT_SECRET;
+
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET is not defined');
+    }
+
+    // Build payload
+    const payload: JwtPayload = {
+      userId: user.id,
+      email: user.email,
+      username: user.username,
+      userType: user.user_type
+    };
+
+    const token = jwt.sign(payload, jwtSecret, { expiresIn: '24h' } as jwt.SignOptions);
+
+    res.json({
+      message: 'Login successful',
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        username: user.username,
+        userType: user.user_type,
+        adminRole: user.admin_role || null,
+        phone: user.phone
+      }
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    // Check if user exists
+    const result = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+
+    // Update user with reset token
+    await pool.query(
+      'UPDATE users SET reset_token = $1, reset_token_expires = NOW() + INTERVAL \'1 hour\' WHERE email = $2',
+      [resetToken, email]
+    );
+
+    // TODO: Send email with reset link
+    console.log(`Reset link: http://localhost:4200/reset-password/${resetToken}`);
+
+    res.json({ message: 'Reset password email sent' });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    // Find user with valid token
+    const result = await pool.query(
+      'SELECT id FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()',
+      [token]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(400).json({ message: 'Invalid or expired token' });
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, Number(process.env.BCRYPT_SALT_ROUNDS) || 12);
+
+    // Update password and clear reset token
+    await pool.query(
+      'UPDATE users SET password = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2',
+      [hashedPassword, result.rows[0].id]
+    );
+
+    res.json({ message: 'Password reset successful' });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const verifyEmail = async (req: Request, res: Response) => {
+  res.json({ message: 'Email verification not implemented yet' });
+};
+
+export const validateToken = async (req: Request, res: Response) => {
+  // If we reach here, the token is valid (verified by middleware)
+  res.json({
+    valid: true,
+    message: 'Token is valid'
+  });
+};
+
+export const getProfile = async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.id);
+
+    const result = await pool.query(
+      'SELECT id, email, name, username, user_type, user_status, phone, last_login, created_at FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updateProfile = async (req: Request, res: Response) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const { name, username, phone } = req.body;
+
+    // Build dynamic update query
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramCount = 1;
+
+    if (name !== undefined) {
+      updates.push(`name = $${paramCount++}`);
+      values.push(name);
+    }
+    if (username !== undefined) {
+      updates.push(`username = $${paramCount++}`);
+      values.push(username);
+    }
+    if (phone !== undefined) {
+      updates.push(`phone = $${paramCount++}`);
+      values.push(phone);
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ message: 'No fields to update' });
+    }
+
+    values.push(userId);
+
+    const result = await pool.query(
+      `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramCount}
+       RETURNING id, email, name, username, user_type, user_status, phone, last_login, created_at`,
+      values
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

@@ -2,7 +2,7 @@
   <div class="er-container">
     <!-- Logo -->
     <a routerLink="/" class="er-logo">
-      <img src="./image/EzRecover_Icon.png" alt="EasyRecovery" class="er-logo__img">
+      <img src="../assets/image/EzRecover_Icon.png" alt="EasyRecovery" class="er-logo__img">
     </a>
 
     <!-- Navigation -->
@@ -17,27 +17,27 @@
          (mouseenter)="menuOpen = true" (mouseleave)="menuOpen = false">
 
       <!-- show when NOT logged in -->
-      <a *ngIf="!(user$ | async)" routerLink="/login" class="er-btn">
-        <img src="assets/image/profile.png" alt="Profile" class="er-user-icon"> Register / Login
+      <a *ngIf="!user()" routerLink="/login" class="er-btn">
+        <img src="assets/icons/profile.png" alt="Profile" class="er-user-icon"> Register / Login
       </a>
 
       <!-- show when logged in -->
-      <ng-container *ngIf="user$ | async as user">
+      <ng-container *ngIf="user() as userData">
         <button type="button" class="er-user-btn">
-          <img src="assets/image/profile.png" alt="Profile" class="er-user-icon"> {{ user.username }}
+          <img src="assets/icons/profile.png" alt="Profile" class="er-user-icon"> {{ userData.username }}
         </button>
 
         <div class="er-dropdown" *ngIf="menuOpen">
           <a routerLink="/profile" class="er-dropdown__item">
-            <img src="assets/image/profile.png" alt="Profile" class="er-dropdown__icon">
+            <img src="assets/icons/profile.png" alt="Profile" class="er-dropdown__icon">
             My Profile
           </a>
           <a routerLink="/transactions" class="er-dropdown__item">
-            <img src="assets/image/transaction.png" alt="Transactions" class="er-dropdown__icon">
+            <img src="assets/icons/transaction.png" alt="Transactions" class="er-dropdown__icon">
             Transactions
           </a>
-          <button class="er-dropdown__item danger" (click)="mockLogout()">
-            <img src="assets/image/logout.png" alt="Logout" class="er-dropdown__icon">
+          <button class="er-dropdown__item danger" (click)="logout()">
+            <img src="assets/icons/logout.png" alt="Logout" class="er-dropdown__icon">
             Log Out
           </button>
         </div>
