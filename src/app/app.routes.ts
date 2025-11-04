@@ -71,7 +71,7 @@ export const routes: Routes = [
       //   })
       // },
       {
-         path: 'dashboard',
+         path: 'dashboardOverview',
          loadComponent: () => import('./components/adminSide/dashboard/dashboard').then(m => m.Dashboard)
          
        },
