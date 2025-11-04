@@ -1,0 +1,27 @@
+<section class="auth-shell">
+  <h1 class="title">Reset Password</h1>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="field password">
+      <label>Enter New Password</label>
+      <div class="input-wrap">
+        <input [type]="hide1 ? 'password' : 'text'" formControlName="password" [formGroup]="g" placeholder="At least 8 characters" />
+        <button type="button" class="peek" (click)="hide1 = !hide1">{{ hide1 ? 'Show' : 'Hide' }}</button>
+      </div>
+      <small class="error" *ngIf="password.touched && password.errors?.['required']">Password is required.</small>
+      <small class="error" *ngIf="password.touched && password.errors?.['minLength']">Min 8 characters.</small>
+    </div>
+
+    <div class="field password">
+      <label>Enter Again Your Password</label>
+      <div class="input-wrap">
+        <input [type]="hide2 ? 'password' : 'text'" formControlName="confirm" [formGroup]="g" placeholder="Re-enter password" />
+        <button type="button" class="peek" (click)="hide2 = !hide2">{{ hide2 ? 'Show' : 'Hide' }}</button>
+      </div>
+      <small class="error" *ngIf="(g.touched && g.errors?.['mismatch'])">Passwords do not match.</small>
+      <small class="error" *ngIf="confirm.touched && confirm.errors?.['required']">Please confirm your password.</small>
+    </div>
+
+    <button class="btn-primary" type="submit">Reset</button>
+  </form>
+</section>

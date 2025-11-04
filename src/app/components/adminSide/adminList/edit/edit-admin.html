@@ -1,0 +1,91 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Edit Admin</h3>
+      <button class="close-btn" (click)="onClose()">×</button>
+    </div>
+
+    <form [formGroup]="editAdminForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="fullName">Full Name</label>
+        <div class="input-with-reset">
+          <input id="fullName" type="text" formControlName="fullName" placeholder="Enter full name (optional)">
+        </div>
+
+        <small class="help-text">Leave empty to keep current value</small>
+      </div>
+
+      <div class="form-group">
+        <label for="username">Username</label>
+        <div class="input-with-reset">
+          <input id="username" type="text" formControlName="username" placeholder="Enter username (optional)"
+            [class.error]="username?.value && username?.value.length > 0 && username?.value.length < 3">
+        </div>
+
+        <div *ngIf="username?.value && username?.value.length > 0 && username?.value.length < 3" class="error-message">
+          <small>Username must be at least 3 characters if provided</small>
+        </div>
+
+        <small class="help-text">Leave empty to keep current value. Must be at least 3 characters if changed.</small>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group half-width">
+          <label for="password">Password</label>
+          <input
+            id="password"
+            type="password"
+            formControlName="password"
+            [placeholder]="isSuperAdmin ? 'Enter new password (min 8 chars)' : '••••••••••'"
+            [class.readonly-field]="!isSuperAdmin"
+            [class.error]="password?.value && password?.value.length > 0 && password?.value.length < 8">
+
+          <div *ngIf="password?.value && password?.value.length > 0 && password?.value.length < 8" class="error-message">
+            <small>Password must be at least 8 characters</small>
+          </div>
+
+          <small class="help-text">{{ isSuperAdmin ? 'Leave empty to keep current password' : 'Only SuperAdmin can change passwords' }}</small>
+        </div>
+
+        <div class="form-group half-width">
+          <label for="confirmPassword">Confirm Password</label>
+          <input
+            id="confirmPassword"
+            type="password"
+            formControlName="confirmPassword"
+            [placeholder]="isSuperAdmin ? 'Confirm new password' : '••••••••••'"
+            [class.readonly-field]="!isSuperAdmin"
+            [class.error]="confirmPassword?.value && !passwordsMatch">
+
+          <div *ngIf="confirmPassword?.value && !passwordsMatch" class="error-message">
+            <small>Passwords do not match</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Show changes summary -->
+      <div *ngIf="hasChanges" class="changes-summary">
+        <h4>Changes to be saved:</h4>
+        <ul>
+          <li *ngIf="fullName?.value?.trim() && fullName?.value !== originalData?.fullName">
+            Full Name: "{{ originalData?.fullName }}" → "{{ fullName?.value?.trim() }}"
+          </li>
+          <li *ngIf="username?.value?.trim() && username?.value !== originalData?.username">
+            Username: "{{ originalData?.username }}" → "{{ username?.value?.trim() }}"
+          </li>
+          <li *ngIf="password?.value?.trim() && password?.value.length >= 8 && passwordsMatch">
+            Password: Will be updated (new password set)
+          </li>
+        </ul>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="onClose()">Cancel</button>
+        <button type="submit" class="btn-success" [disabled]="!canSave"
+          [title]="!hasChanges ? 'No changes to save' : !canSave ? 'Please provide valid values' : 'Save changes'">
+          {{ hasChanges ? 'Save Changes' : 'No Changes' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -1,26 +1,10 @@
-/* You can add global styles to this file, and also import other style files */
-// Ensure complete reset (in addition to Bootstrap's reset)
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
 
+/* Reset default page gaps */
 html, body {
-  height: 100%;
   margin: 0;
   padding: 0;
-}
-
-// If you're using Angular's default app-root
-app-root {
-  display: block;
   height: 100%;
-  margin: 0;
-  padding: 0;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
-  line-height: 1.2;
-}
+/* Optional: global box sizing */
+*, *::before, *::after { box-sizing: border-box; }

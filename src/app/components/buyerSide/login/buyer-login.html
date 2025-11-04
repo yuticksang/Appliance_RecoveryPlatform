@@ -1,0 +1,21 @@
+<section class="auth-shell">
+  <header class="bar">
+    <img src="assets/image/EzRecover_Icon.png" alt="Ez Recover" />
+  </header>
+
+  <div class="card">
+    <h1>Buyer Login</h1>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="form">
+      <label>Email address</label>
+      <input type="email" formControlName="email" placeholder="Enter your email" />
+
+      <label>Your password
+        <button type="button" class="link" (click)="hide=!hide">{{ hide ? 'Show' : 'Hide' }}</button>
+      </label>
+      <input [type]="hide ? 'password' : 'text'" formControlName="password" placeholder="Enter your password" />
+
+      <button class="cta" type="submit" [disabled]="form.invalid">Log in</button>
+    </form>
+  </div>
+</section>

@@ -1,0 +1,88 @@
+<section class="er-register">
+  <div class="er-register__card">
+    <h1>Create an account</h1>
+    <p class="er-sub">Already have an account? <a routerLink="/login">Log in</a></p>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="er-form">
+      <div class="er-name-fields">
+        <label>What's your name?</label>
+        <div class="er-name-inputs">
+          <input formControlName="firstName" placeholder="First name" />
+          <input formControlName="lastName" placeholder="Last name" />
+        </div>
+
+        <small class="er-error" *ngIf="f.firstName.touched && f.firstName.invalid">
+          <span *ngIf="f.firstName.errors?.['required']">First name is required.</span>
+          <span *ngIf="f.firstName.errors?.['minlength']">Min 2 characters.</span>
+        </small>
+        <small class="er-error" *ngIf="f.lastName.touched && f.lastName.invalid">
+          <span *ngIf="f.lastName.errors?.['required']">Last name is required.</span>
+          <span *ngIf="f.lastName.errors?.['minlength']">Min 2 characters.</span>
+        </small>
+      </div>
+
+      <label>What's your username</label>
+      <input formControlName="username" placeholder="Enter a unique username" />
+      <small class="er-error" *ngIf="f.username.touched && f.username.invalid">
+        <span *ngIf="f.username.errors?.['required']">Username is required.</span>
+        <span *ngIf="f.username.errors?.['minlength']">Min 3 characters.</span>
+        <span *ngIf="f.username.errors?.['pattern']">Only letters, numbers, underscores allowed.</span>
+      </small>
+
+
+      <label>What's your email?</label>
+      <input type="email" formControlName="email" placeholder="Enter your email address" />
+      <small class="er-error" *ngIf="f.email.touched && f.email.invalid">
+        <span *ngIf="f.email.errors?.['required']">Email is required.</span>
+        <span *ngIf="f.email.errors?.['email']">Enter a valid email.</span>
+      </small>
+
+      <label>What's your phone number?</label>
+      <input formControlName="phone" placeholder="Enter your phone number" />
+      <small class="er-error" *ngIf="f.phone.touched && f.phone.invalid">
+        <span *ngIf="f.phone.errors?.['required']">Phone is required.</span>
+        <span *ngIf="f.phone.errors?.['pattern']">Enter a valid phone.</span>
+      </small>
+
+      <label>Create a password</label>
+      <div class="er-password">
+        <input [type]="hide1 ? 'password' : 'text'" formControlName="password" placeholder="Enter your password" />
+      </div>
+      <!-- <small class="er-hint">Use 8 or more characters with a mix of letters, numbers & symbols</small> -->
+      <small class="er-error" *ngIf="f.password.touched && f.password.invalid">
+        <span *ngIf="f.password.errors?.['required']">Password is required.</span>
+        <span *ngIf="f.password.errors?.['minlength']">Minimum 8 characters.</span>
+      </small>
+
+      <label>Confirm Your Password</label>
+      <div class="er-password">
+
+        <input [type]="hide2 ? 'password' : 'text'" formControlName="confirmPassword"
+          placeholder="Enter your password" />
+      </div>
+      <small class="er-error"
+        *ngIf="f.confirmPassword.touched && (f.confirmPassword.invalid || f.confirmPassword.value !== f.password.value)">
+        <span *ngIf="f.confirmPassword.errors?.['required']">Confirm your password.</span>
+        <span *ngIf="f.confirmPassword.value !== f.password.value">Passwords do not match.</span>
+      </small>
+
+      <label class="er-terms">
+        By creating an account, you agree to the <a href="#">Terms of use</a> and <a href="#">Privacy Policy</a>.
+      </label>
+
+      <button class="er-primary" type="submit" [disabled]="!isFormValid()">Create an account</button>
+    </form>
+
+    <p class="er-or">OR Continue with</p>
+
+
+    <div class="er-register__social">
+      <button type="button" class="er-social er-social--fb">
+        <i class="fa-brands fa-facebook-f"></i> Continue with Facebook
+      </button>
+      <button type="button" class="er-social er-social--gg">
+        <i class="fa-brands fa-google"></i> Continue with Google
+      </button>
+    </div>
+  </div>
+</section>

@@ -1,11 +1,7 @@
 import { bootstrapApplication } from '@angular/platform-browser';
-import { provideRouter } from '@angular/router';
-import { App } from './app/shared/app';
-import { routes } from './app/shared/app.routes';
+import { AppComponent } from './app/app';
+import { appConfig } from './app/app.config';
+import '@angular/compiler'; // Enable JIT compilation for lazy-loaded components
 
-bootstrapApplication(App, {
-  providers: [
-    provideRouter(routes)
-    // other providers...
-  ]
-});
+bootstrapApplication(AppComponent, appConfig)
+  .catch(err => console.error(err));

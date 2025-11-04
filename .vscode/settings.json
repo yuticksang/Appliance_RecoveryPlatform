@@ -1,0 +1,16 @@
+{
+    "sqltools.connections": [
+        {
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 4000,
+            "driver": "PostgreSQL",
+            "name": "EasyRecovery DB",
+            "database": "easyrecovery",
+            "username": "postgres",
+            "password": "0000",
+            "connectionTimeout": 30
+        }
+    ]
+}

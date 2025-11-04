@@ -1,0 +1,222 @@
+$blue-1: #d7ecf7;
+$blue-2: #438db8;
+$text-1: #2b2f33;
+$text-2: #6b7177;
+$Space: 'Space Grotesk', sans-serif;
+
+.er-register {
+  display: grid;
+  place-items: start center;
+  padding: 40px 16px 64px;
+  font-family: $Space;
+}
+
+.er-register__card {
+  width: 100%;
+  max-width: 680px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 28px 22px 32px;
+  font-family: $Space;
+
+  h1 {
+    text-align: center;
+    font-size: 24px;
+    margin: 0 0 6px;
+    color: $text-1;
+    font-weight: 700;
+    font-family: $Space;
+  }
+
+  .er-sub {
+    text-align: center;
+    margin: 0 0 16px;
+    color: $text-2;
+    font-family: $Space;
+
+    a {
+      color: inherit;
+      text-decoration: underline;
+    }
+  }
+}
+
+
+
+.er-name-inputs {
+  display: flex;
+  gap: 12px;
+
+  input {
+    flex: 1;
+    height: 42px;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    padding: 0 12px;
+    background: #fff;
+    font-family: $Space;
+
+    &:focus {
+      border-color: $blue-2;
+      box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.12);
+    }
+  }
+}
+
+
+
+.er-form {
+  display: grid;
+  gap: 10px;
+  font-family: $Space;
+
+  label {
+    font-size: 14px;
+    color: $text-1;
+    margin-top: 10px;
+    font-family: $Space;
+  }
+
+  input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid #e3e6ea;
+    font-size: 14px;
+    outline: none;
+    font-family: $Space;
+
+    &::placeholder {
+      color: #b6bcc2;
+    }
+
+    &:focus {
+      border-color: $blue-2;
+      box-shadow: 0 0 0 3px rgba($blue-2, 0.12);
+    }
+  }
+}
+
+.er-password {
+  position: relative;
+
+  .er-link {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: 0;
+    cursor: pointer;
+    color: $text-2;
+    text-decoration: underline;
+    font-size: 14px;
+    font-family: $Space;
+  }
+}
+
+.er-hint {
+  color: #9aa1a8;
+  font-size: 12px;
+  margin-top: -6px;
+  font-family: $Space;
+}
+
+.er-error {
+  color: #d12b2b;
+  font-size: 12px;
+  font-family: $Space;
+}
+
+.er-terms {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 13px;
+  color: $text-2;
+  font-family: $Space;
+
+  a {
+    color: inherit;
+    text-decoration: underline;
+  }
+
+  input {
+    margin-top: 3px;
+  }
+}
+
+.er-primary {
+  margin-top: 10px;
+  background: $blue-1;
+  color: #0c0c0c;
+  border: 0;
+  padding: 12px 16px;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: $Space;
+
+  &:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+  }
+}
+
+.er-or {
+  text-align: center;
+  color: $text-2;
+  margin: 50px 0 20px;
+  font-family: $Space;
+}
+
+.er-register__social {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  margin-top: 20px;
+  width: 100%;
+  max-width: 680px;
+}
+
+.er-social {
+  flex: 1;
+  text-align: center;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1.5px solid #2c2c2c;
+  background: #fff;
+  font-weight: 700;
+  font-family: $Space;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+
+  i {
+    font-size: 16px;
+  }
+
+  &--fb {
+    color: #1877f2;
+    border-color: #c9d6ff;
+
+    &:hover {
+      background: #1877f2;
+      color: #fff;
+    }
+  }
+
+  &--gg {
+    color: #db4437;
+    border-color: #f8d2cf;
+
+    &:hover {
+      background: #db4437;
+      color: #fff;
+    }
+  }
+}

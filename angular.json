@@ -53,8 +53,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "50kB",
-                  "maximumError": "100kB"
+                  "maximumWarning": "4kB",
+                  "maximumError": "8kB"
                 }
               ],
               "outputHashing": "all"
@@ -71,10 +71,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "ARS-app:build:production"
+              "buildTarget": "easyrecovery:build:production"
             },
             "development": {
-              "buildTarget": "ARS-app:build:development"
+              "buildTarget": "easyrecovery:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -106,6 +106,6 @@
     }
   },
   "cli": {
-    "analytics": "0e5b7e24-2ae3-4400-92ac-51cd5a602954"
+    "analytics": false
   }
 }
