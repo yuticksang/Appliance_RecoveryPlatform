@@ -81,19 +81,22 @@ export const login = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Username/admin ID and password are required' });
     }
 
-    // Find user by username, admin_id, or email
-    // Check if input is a number (could be admin_id)
-    const isNumeric = /^\d+$/.test(emailOrUsername);
+    // Find user by username, prefixed IDs (A001, B001, C001), or email
+    // Check if input matches prefixed ID pattern (A001, B001, C001, etc.)
+    const isPrefixedId = /^[ABC]\d+$/i.test(emailOrUsername);
     let result;
 
-    if (isNumeric) {
-      // Try to find by admin_id first, then fallback to username/email
+    if (isPrefixedId) {
+      // Find by admin_id, buyer_id, or customer_id (all are prefixed now)
       result = await pool.query(
-        'SELECT * FROM users WHERE admin_id = $1 OR username = $2 OR (email IS NOT NULL AND email = $2)',
-        [parseInt(emailOrUsername), emailOrUsername]
+        `SELECT * FROM users
+         WHERE UPPER(admin_id) = UPPER($1)
+         OR UPPER(buyer_id) = UPPER($1)
+         OR UPPER(customer_id) = UPPER($1)`,
+        [emailOrUsername.toUpperCase()]
       );
     } else {
-      // Find by username or email (customers have email, admins don't)
+      // Find by username or email
       result = await pool.query(
         'SELECT * FROM users WHERE username = $1 OR (email IS NOT NULL AND email = $1)',
         [emailOrUsername]
