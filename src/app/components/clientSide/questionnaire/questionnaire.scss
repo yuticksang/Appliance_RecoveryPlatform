@@ -1,0 +1,157 @@
+.page-bg {
+  background-color: #f8fbff;
+  min-height: 100vh;
+}
+
+.progress-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+  margin-top: 30px;
+}
+
+.steps {
+  display: flex;
+  gap: 40px;
+}
+
+.step-circle {
+  width: 40px;
+  height: 40px;
+  border: 2px solid #ccc;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 36px;
+  font-weight: 500;
+  color: #999;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.step-circle.active {
+  border-color: #131a1e;
+  color: #131a1e;
+}
+
+.page-title {
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  font-family: 'Space Grotesk', sans-serif;
+  color: #334155;
+}
+
+.page-p {
+  text-align: center;
+  font-family: 'Space Grotesk', sans-serif;
+  color: #334155;
+  font-size: 13px;
+}
+
+.form-container {
+  background: white;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  font-family: 'Space Grotesk', sans-serif;
+  color: #334155;
+  font-size: 13px;
+}
+
+.form-section {
+  margin-bottom: 30px;
+}
+
+.question {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.form-select {
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+}
+
+.checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.physical-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 15px;
+}
+
+.physical-card {
+  border: 2px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: 0.3s;
+}
+
+.physical-card img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.physical-card.selected {
+  border-color: #3498db;
+}
+
+.upload-box {
+  border: 2px dashed #ccc;
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  color: #666;
+}
+
+.upload-btn {
+  margin-top: 10px;
+  background-color: #eee;
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+.text-area {
+  width: 100%;
+  border-radius: 8px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  min-height: 100px;
+}
+
+.button-group {
+  text-align: center;
+  margin-top: 40px;
+}
+
+.btn {
+  padding: 10px 25px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+}
+
+.back-btn {
+  background: #f2f2f2;
+  color: #555;
+  margin-right: 15px;
+}
+
+.next-btn {
+  background: #3498db;
+  color: white;
+}

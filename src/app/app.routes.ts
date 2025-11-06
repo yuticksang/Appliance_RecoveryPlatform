@@ -12,7 +12,9 @@ export const routes: Routes = [
       { path: 'forgot-password', loadComponent: () => import('./components/clientSide/forgot/forgot').then(m => m.ForgotPasswordComponent) },
       { path: 'reset-password/:token', loadComponent: () => import('./components/clientSide/reset/reset').then(m => m.ResetPasswordComponent) },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
-      { path: 'profile', loadComponent: () => import('./components/clientSide/profile/profile').then(m => m.ProfileComponent) }
+      { path: 'profile', loadComponent: () => import('./components/clientSide/profile/profile').then(m => m.ProfileComponent) },
+      { path: 'questionnaire', loadComponent: () => import('./components/clientSide/questionnaire/step2/step2').then(m => m.Step2Component) }
+
     ]
   },
 
