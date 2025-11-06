@@ -16,6 +16,15 @@ const PORT = process.env.PORT || 3000;
 // Connect to PostgreSQL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false // Supabase requires SSL
+  },
+  // Force IPv4
+  host: 'db.eoswarqcyddigaxhlgyb.supabase.co',
+  port: 5432,
+  database: 'postgres',
+  user: 'postgres.eoswarqcyddigaxhlgyb',
+  password: 'easyrecovery'
 });
 
 pool.connect()
