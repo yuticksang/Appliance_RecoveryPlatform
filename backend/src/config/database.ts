@@ -4,11 +4,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const pool = new Pool({
-  connectionString: 'postgres://postgres.eoswarqcyddigaxhlgyb:easyrecovery@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres',
-
-  ssl: {
-    rejectUnauthorized: false
-  },
+  connectionString: process.env.DATABASE_URL,
+  // Transaction Pooler doesn't need SSL configuration
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
