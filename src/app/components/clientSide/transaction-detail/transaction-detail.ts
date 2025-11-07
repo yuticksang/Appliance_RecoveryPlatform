@@ -31,6 +31,33 @@ export class TransactionDetailComponent implements OnInit {
     state: ''
   };
 
+  // Before review - seller's original submission
+  beforeReview = {
+    estimatedPrice: 0,
+    brand: '',
+    model: '',
+    category: '',
+    functionalStatus: '',
+    condition: '',
+    score: 0,
+    note: '',
+    selectedIssue: [] as string[]
+  };
+
+  // After review - admin's assessment
+  afterReview = {
+    estimatedPrice: 0,
+    brand: '',
+    model: '',
+    category: '',
+    functionalStatus: '',
+    condition: '',
+    score: 0,
+    note: '',
+    selectedIssue: [] as string[]
+  };
+
+  // For non-awaiting status, use single appliance info
   applianceInfo = {
     estimatedPrice: 0,
     brand: '',
@@ -42,6 +69,11 @@ export class TransactionDetailComponent implements OnInit {
     note: '',
     selectedIssue: [] as string[]
   };
+
+  // Check if transaction needs review comparison
+  get isAwaitingConfirmation(): boolean {
+    return this.transaction?.transactionStatus === 'Awaiting Confirmation';
+  }
 
   ngOnInit(): void {
     // Get transaction ID from route
@@ -92,24 +124,64 @@ export class TransactionDetailComponent implements OnInit {
       state: 'MALACCA'
     };
 
-    // Mock appliance info (TODO: fetch from backend API)
-    this.applianceInfo = {
-      estimatedPrice: this.transaction.estimatedPrice || 3500,
-      brand: this.transaction.brand,
-      model: this.transaction.model,
-      category: this.transaction.category,
-      functionalStatus: 'Fully Functioning',
-      condition: '100% New',
-      score: 85,
-      note: 'Samsung',
-      selectedIssue: [
-        'Does the appliance show any external damage when examining?',
-        'Are there any unusual noises or vibrations during operation?',
-        'Are all the buttons, switches, and dials fully working perfectly?',
-        'Is there any sign of corrosion on the appliance?',
-        'Does the appliance come with all its required parts and components? (e.g., hoses, manuals)'
-      ]
-    };
+    // If awaiting confirmation, show before/after review
+    if (this.isAwaitingConfirmation) {
+      // Before review - original seller submission
+      this.beforeReview = {
+        estimatedPrice: 3500,
+        brand: this.transaction.brand,
+        model: this.transaction.model,
+        category: this.transaction.category,
+        functionalStatus: 'Fully Functioning',
+        condition: '100% New',
+        score: 100,
+        note: 'Owner input',
+        selectedIssue: [
+          'Does the appliance show any external damage when examining?',
+          'Are there any unusual noises or vibrations during operation?',
+          'Are all the buttons, switches, and dials fully working perfectly?',
+          'Is there any sign of corrosion on the appliance?',
+          'Does the appliance come with all its required parts and components? (e.g., hoses, manuals)'
+        ]
+      };
+
+      // After review - admin's assessment (revised price & condition)
+      this.afterReview = {
+        estimatedPrice: 3000, // Admin revised price
+        brand: this.transaction.brand,
+        model: this.transaction.model,
+        category: this.transaction.category,
+        functionalStatus: 'Fully Functioning',
+        condition: '100% New',
+        score: 95, // Admin adjusted score
+        note: 'Overall in good condition with minor wear',
+        selectedIssue: [
+          'Does the appliance show any external damage when examining?',
+          'Are all the buttons, switches, and dials fully working perfectly?',
+          'Is there any sign of corrosion on the appliance?',
+          'Does the appliance come with all its required parts and components? (e.g., hoses, manuals)'
+        ]
+      };
+    } else {
+      // For other statuses, use regular appliance info
+      this.applianceInfo = {
+        estimatedPrice: this.transaction.estimatedPrice || 3500,
+        brand: this.transaction.brand,
+        model: this.transaction.model,
+        category: this.transaction.category,
+        functionalStatus: 'Fully Functioning',
+        condition: '100% New',
+        score: 85,
+        note: 'Samsung',
+        selectedIssue: [
+          'Does the appliance show any external damage when examining?',
+          'Are there any unusual noises or vibrations during operation?',
+          'Are all the buttons, switches, and dials fully working perfectly?',
+          'Is there any sign of corrosion on the appliance?',
+          'Does the appliance come with all its required parts and components? (e.g., hoses, manuals)'
+        ]
+      };
+    }
   }
 
   goBack(): void {
@@ -124,6 +196,32 @@ export class TransactionDetailComponent implements OnInit {
   viewPackagingInstruction(): void {
     // TODO: Navigate to packaging instruction page or open PDF
     console.log('View packaging instruction');
+  }
+
+  acceptOffer(): void {
+    if (!this.transaction) return;
+    
+    // TODO: Call API to accept the offer
+    console.log('Accept offer for transaction:', this.transactionId);
+    
+    // Example API call:
+    // this.transactionService.acceptOffer(this.transactionId).subscribe(() => {
+    //   this.alertService.success('Offer accepted successfully!');
+    //   this.router.navigate(['/transactions']);
+    // });
+  }
+
+  rejectOffer(): void {
+    if (!this.transaction) return;
+    
+    // TODO: Call API to reject offer and return appliance
+    console.log('Reject offer and return appliance for transaction:', this.transactionId);
+    
+    // Example API call:
+    // this.transactionService.rejectOffer(this.transactionId).subscribe(() => {
+    //   this.alertService.success('Offer rejected. Appliance will be returned.');
+    //   this.router.navigate(['/transactions']);
+    // });
   }
 
   getStatusClass(status: string): string {

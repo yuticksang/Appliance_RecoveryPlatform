@@ -10,17 +10,88 @@
     <!-- Header with Action Buttons -->
     <div class="detail-header">
       <div class="top-actions">
-        <span class="back-link" (click)="goBack()">BACK</span>
-        <div class="action-links">
-          <span class="action-link" (click)="viewRecoverySlip()">RECOVERY SLIP</span>
-          <span class="action-link" (click)="viewPackagingInstruction()">PACKAGING INSTRUCTION</span>
+        <span class="back-link" (click)="goBack()">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M10 18L2 10L10 2L11.4 3.4L5.8 9H18V11H5.8L11.4 16.6L10 18Z"/>
+          </svg>
+          Back to Transactions
+        </span>
+      </div>
+
+      <!-- Action Buttons for Awaiting Confirmation (Top Priority) -->
+      <div *ngIf="isAwaitingConfirmation" class="decision-section">
+        <div class="decision-content">
+          <div class="decision-header">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 6v6l4 2"/>
+            </svg>
+            <div>
+              <h3>Review Required</h3>
+              <p>Please review the offer and make your decision</p>
+            </div>
+          </div>
+          <div class="decision-actions">
+            <button class="btn-reject" (click)="rejectOffer()">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 0C4.5 0 0 4.5 0 10s4.5 10 10 10 10-4.5 10-10S15.5 0 10 0zm5 13.6L13.6 15 10 11.4 6.4 15 5 13.6 8.6 10 5 6.4 6.4 5 10 8.6 13.6 5 15 6.4 11.4 10 15 13.6z"/>
+              </svg>
+              Reject Offer & Return Appliance
+            </button>
+            <button class="btn-accept" (click)="acceptOffer()">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 0C4.5 0 0 4.5 0 10s4.5 10 10 10 10-4.5 10-10S15.5 0 10 0zm-2 15l-5-5 1.4-1.4L8 12.2l7.6-7.6L17 6l-9 9z"/>
+              </svg>
+              Accept Offer
+            </button>
+          </div>
         </div>
       </div>
+
       <div class="title-status-row">
         <h1 class="page-title">APPLIANCE INFORMATION</h1>
         <span class="status-badge" [ngClass]="getStatusClass(transaction.transactionStatus)">
           {{ transaction.transactionStatus }}
         </span>
+      </div>
+
+      <!-- Document Actions as Cards -->
+      <div class="document-actions">
+        <button class="document-card" (click)="viewRecoverySlip()">
+          <div class="document-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+              <polyline points="10 9 9 9 8 9"/>
+            </svg>
+          </div>
+          <div class="document-info">
+            <h4>Recovery Slip</h4>
+            <p>View pickup details</p>
+          </div>
+          <svg class="document-arrow" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M7 4l6 6-6 6V4z"/>
+          </svg>
+        </button>
+
+        <button class="document-card" (click)="viewPackagingInstruction()">
+          <div class="document-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+              <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+          </div>
+          <div class="document-info">
+            <h4>Packaging Guide</h4>
+            <p>How to pack your appliance</p>
+          </div>
+          <svg class="document-arrow" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M7 4l6 6-6 6V4z"/>
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -68,7 +139,111 @@
 
       <!-- Right Column - Appliance Information -->
       <div class="right-column">
-        <div class="appliance-info-card">
+        <!-- Show Before/After Review for Awaiting Confirmation -->
+        <div *ngIf="isAwaitingConfirmation" class="review-comparison">
+          <!-- Before Review -->
+          <div class="review-card">
+            <h3 class="review-title">BEFORE REVIEW</h3>
+            <div class="appliance-image-section">
+              <img [src]="transaction.image" [alt]="transaction.modelName" class="appliance-image">
+            </div>
+            <div class="price-section">
+              <span class="price-label">RM</span>
+              <span class="price-value">{{ beforeReview.estimatedPrice }}</span>
+            </div>
+            <div class="details-grid">
+              <div class="detail-item">
+                <h4 class="detail-label">BRAND</h4>
+                <p class="detail-value">{{ beforeReview.brand }}</p>
+              </div>
+              <div class="detail-item">
+                <h4 class="detail-label">MODEL</h4>
+                <p class="detail-value">{{ beforeReview.model }}</p>
+              </div>
+              <div class="detail-item">
+                <h4 class="detail-label">CATEGORY</h4>
+                <p class="detail-value">{{ beforeReview.category }}</p>
+              </div>
+              <div class="detail-item">
+                <h4 class="detail-label">FUNCTIONAL STATUS</h4>
+                <p class="detail-value">{{ beforeReview.functionalStatus }}</p>
+              </div>
+              <div class="detail-item">
+                <h4 class="detail-label">CONDITION</h4>
+                <p class="detail-value">{{ beforeReview.condition }}</p>
+              </div>
+              <div class="detail-item">
+                <h4 class="detail-label">SCORE</h4>
+                <p class="detail-value">{{ beforeReview.score }}</p>
+              </div>
+            </div>
+            <div class="note-section">
+              <h4 class="note-label">NOTE</h4>
+              <p class="note-value">{{ beforeReview.note }}</p>
+            </div>
+            <div class="idea-section">
+              <h4 class="idea-label">SELECTED ISSUE</h4>
+              <ul class="idea-list">
+                <li *ngFor="let issue of beforeReview.selectedIssue" class="idea-item">
+                  <span class="check-icon">✓</span> {{ issue }}
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- After Review -->
+          <div class="review-card after-review">
+            <h3 class="review-title after">AFTER REVIEW</h3>
+            <div class="appliance-image-section">
+              <img [src]="transaction.image" [alt]="transaction.modelName" class="appliance-image">
+            </div>
+            <div class="price-section after">
+              <span class="price-label">RM</span>
+              <span class="price-value">{{ afterReview.estimatedPrice }}</span>
+            </div>
+            <div class="details-grid">
+              <div class="detail-item">
+                <h4 class="detail-label">BRAND</h4>
+                <p class="detail-value">{{ afterReview.brand }}</p>
+              </div>
+              <div class="detail-item">
+                <h4 class="detail-label">MODEL</h4>
+                <p class="detail-value">{{ afterReview.model }}</p>
+              </div>
+              <div class="detail-item">
+                <h4 class="detail-label">CATEGORY</h4>
+                <p class="detail-value">{{ afterReview.category }}</p>
+              </div>
+              <div class="detail-item">
+                <h4 class="detail-label">FUNCTIONAL STATUS</h4>
+                <p class="detail-value">{{ afterReview.functionalStatus }}</p>
+              </div>
+              <div class="detail-item">
+                <h4 class="detail-label">CONDITION</h4>
+                <p class="detail-value">{{ afterReview.condition }}</p>
+              </div>
+              <div class="detail-item">
+                <h4 class="detail-label">SCORE</h4>
+                <p class="detail-value">{{ afterReview.score }}</p>
+              </div>
+            </div>
+            <div class="note-section">
+              <h4 class="note-label">NOTE</h4>
+              <p class="note-value">{{ afterReview.note }}</p>
+            </div>
+            <div class="idea-section">
+              <h4 class="idea-label">SELECTED ISSUE</h4>
+              <ul class="idea-list">
+                <li *ngFor="let issue of afterReview.selectedIssue" class="idea-item">
+                  <span class="check-icon">✓</span> {{ issue }}
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Show Regular View for Other Statuses -->
+        <div *ngIf="!isAwaitingConfirmation" class="appliance-info-card">
           <!-- Appliance Image -->
           <div class="appliance-image-section">
             <img [src]="transaction.image" [alt]="transaction.modelName" class="appliance-image">
