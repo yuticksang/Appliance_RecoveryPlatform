@@ -1,0 +1,102 @@
+$blue-1: #d7ecf7;
+$blue-2: #438db8;
+$text-1: #2b2f33;
+$text-2: #6b7177;
+$Space: 'Space Grotesk', sans-serif;
+
+/* Header */
+.admin-header {
+  background: $blue-1;
+  width: 100%;
+  border-radius: 0;
+  margin: 0;
+}
+
+.admin-header-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 20px;
+  display: block;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-logo {
+  height: 60px;
+  width: auto;
+  display: block;
+}
+
+.auth-shell {
+  padding: 40px 16px 64px;
+}
+
+.auth-card {
+  width: min(560px, 92%);
+  margin: 56px auto 0;
+}
+
+.auth-title {
+  font-family: $Space;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  margin: 12px 0 28px;
+}
+
+/* labels + inputs */
+.form-field {
+  margin-bottom: 18px;
+}
+
+.form-label {
+  font-size: 14px;
+  font-family: $Space;
+  color: $text-1;
+  margin-top: 8px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid #e3e6ea;
+  font-size: 14px;
+  font-family: $Space;
+  outline: none;
+
+  &::placeholder {
+    color: #b6bcc2;
+  }
+
+  &:focus {
+    border-color: $blue-1;
+    box-shadow: 0 0 0 3px rgba($blue-1, .12);
+  }
+}
+
+.error-message {
+  margin-top: 6px;
+  color: #ef4444;
+  font-size: 12px;
+  font-family: $Space;
+}
+
+/* login button */
+.btn-login {
+  width: 100%;
+  margin-top: 8px;
+  background: $blue-1;
+  color: $text-1;
+  border: 0;
+  padding: 12px 16px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+  }
+}

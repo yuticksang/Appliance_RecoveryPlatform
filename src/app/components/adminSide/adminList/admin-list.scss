@@ -1,0 +1,325 @@
+$line: #e5e7eb;
+$ink: #111827;
+$muted: #6b7280;
+$brand: #cfe7f5;
+$blue-2: #1a73e8;
+$Space: 'Space Grotesk', sans-serif;
+
+* {
+    font-family: $Space;
+}
+
+.page-head {
+    display: grid;
+    gap: 6px;
+    margin-bottom: 14px;
+
+    .page-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: $ink;
+    }
+
+    .breadcrumb {
+        font-size: 15px;
+        color: $muted;
+    }
+}
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+
+    .btn-primary {
+        padding: 15px 30px;
+        border-radius: 8px;
+        background: white;
+        border: 2px solid $blue-2;
+        font-weight: 600;
+        cursor: pointer;
+        color: $blue-2;
+    }
+
+    .toolbar-right {
+        display: flex;
+        gap: 10px;
+    }
+
+    .search {
+        position: relative;
+
+        input {
+            height: 36px;
+            border: 1px solid $line;
+            border-radius: 8px;
+            padding: 0 32px 0 12px;
+            width: 260px;
+
+            &:focus {
+                outline: none;
+                border-color: #99c8ff;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+            }
+        }
+
+        .ico {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: $muted;
+        }
+    }
+}
+
+.table-wrap {
+    border: 1px solid $line;
+    border-radius: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.grid {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+
+    thead th {
+        background: #f9fafb;
+        text-align: left;
+        color: $muted;
+        font-weight: 600;
+        height: 40px;
+        border-bottom: 1px solid $line;
+        border-right: 1px solid $line;
+        padding: 20px 20px;
+        white-space: nowrap;
+
+        &:last-child {
+            border-right: none;
+        }
+
+        &.sortable {
+            cursor: pointer;
+        }
+
+        .sort {
+            margin-left: 6px;
+            color: #9ca3af;
+        }
+    }
+
+    tbody td {
+        border-bottom: 1px solid $line;
+        border-right: 1px solid $line;
+        padding: 15px 20px;
+
+        &:last-child {
+            border-right: none;
+        }
+    }
+
+    tbody tr:nth-child(even) {
+        background: #f9fafb;
+    }
+
+    tbody tr:nth-child(odd) {
+        background: white;
+    }
+
+    .narrow {
+        width: 56px;
+    }
+
+    .actions {
+        text-align: left;
+        white-space: nowrap;
+
+        .icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: transparent;
+            cursor: pointer;
+            margin: 0 2px;
+            transition: all 0.2s ease;
+
+            .action-icon {
+                width: 15px;
+                height: 15px;
+                object-fit: contain;
+            }
+
+            &:hover {
+                background-color: #f5f5f5;
+                border-color: #999;
+            }
+        }
+    }
+
+    .icon {
+        height: 30px;
+        width: 30px;
+        border-radius: 6px;
+        border: 1px solid $line;
+        background: #fff;
+        margin-left: 6px;
+        cursor: pointer;
+
+    }
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid $line;
+    font-size: 12px;
+
+    .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+    }
+}
+
+.badge-active {
+    border-color: #c9efd5;
+    color: #065f46;
+    background: #ecfdf5;
+
+    .dot {
+        background: #10b981;
+    }
+}
+
+.badge-inactive {
+    border-color: #f3d1d1;
+    color: #7f1d1d;
+    background: #fef2f2;
+
+    .dot {
+        background: #ef4444;
+    }
+}
+
+.pager {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+
+    .page-btn {
+        min-width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        border: 1px solid $line;
+        background: #fff;
+
+        &:hover {
+            border: 2px solid $blue-2;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        &.active {
+            background: #fff;
+            border: 2px solid $blue-2;
+            font-weight: 700;
+        }
+    }
+
+    .page-size {
+        margin-left: auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        color: $muted;
+
+        select {
+            height: 34px;
+            border: 1px solid $line;
+            border-radius: 8px;
+            padding: 0 8px;
+        }
+    }
+}
+
+/* Confirmation Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.confirm-modal {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 450px;
+    width: 90%;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.confirm-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: $ink;
+    margin-bottom: 15px;
+}
+
+.confirm-message {
+    font-size: 15px;
+    color: $muted;
+    margin-bottom: 25px;
+    line-height: 1.5;
+}
+
+.confirm-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.btn-cancel {
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: 1px solid $line;
+    background: white;
+    color: $ink;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+
+    &:hover {
+        background: #f9fafb;
+    }
+}
+
+.btn-confirm {
+    padding: 10px 24px;
+    font-family: $Space;
+    border-radius: 8px;
+    border: none;
+    background: $blue-2;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+}

@@ -133,6 +133,16 @@ input {
     height: 32px;
     padding: 4px 12px;
   }
+
+  &.full {
+    width: 100%;
+  }
+
+  &.danger {
+    background: #fee;
+    border-color: #fcc;
+    color: #c00;
+  }
 }
 
 @media (max-width: 900px) {
@@ -164,9 +174,9 @@ input {
   }
 }
 
-.edit {
+.edit,
+.delete {
   position: absolute;
-  right: 20px;
   top: 20px;
   border: 1px solid #e5e7eb;
   background: #fff;
@@ -176,6 +186,20 @@ input {
   display: grid;
   place-items: center;
   cursor: pointer;
+}
+
+.edit {
+  right: 20px;
+}
+
+.delete {
+  right: 54px;
+
+  &:hover {
+    background: #fee;
+    border-color: #fcc;
+    color: #c00;
+  }
 }
 
 /* simple modal */
@@ -210,4 +234,42 @@ input {
   width: 28px;
   height: 28px;
   cursor: pointer;
+}
+
+/* Success & Confirm modals */
+.success-modal,
+.confirm-modal {
+  width: min(400px, 90%);
+  padding: 30px;
+  text-align: center;
+}
+
+.sheet-body {
+  padding: 20px 0;
+
+  p {
+    margin: 0;
+    font-size: 15px;
+    color: $ink;
+    line-height: 1.5;
+  }
+}
+
+.sheet-footer {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+
+  .btn {
+    flex: 1;
+    height: 42px;
+    font-size: 14px;
+    border-radius: 8px;
+
+    &.secondary {
+      background: #f3f4f6;
+      border-color: #e5e7eb;
+      color: #6b7280;
+    }
+  }
 }

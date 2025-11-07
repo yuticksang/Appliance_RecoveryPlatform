@@ -2,7 +2,20 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { AlertService } from '../../../services/alert.service';
+
+interface RegisterResponse {
+  message: string;
+  user: {
+    id: number;
+    email: string;
+    name: string;
+    username: string;
+    user_type: string;
+    user_status: string;
+  };
+}
 
 @Component({
   selector: 'app-auth-register',
@@ -14,10 +27,13 @@ import { AlertService } from '../../../services/alert.service';
 export class AuthRegisterComponent {
   private fb = inject(FormBuilder);
   private router = inject(Router);
+  private http = inject(HttpClient);
   private alertService = inject(AlertService);
 
   hide1 = true;
   hide2 = true;
+  loading = false;
+  private apiBase = 'http://localhost:3000';
 
   form = this.fb.group({
     firstName: ['', [Validators.required, Validators.minLength(2)]],
@@ -50,21 +66,43 @@ export class AuthRegisterComponent {
   }
 
   submit() {
-    if (this.form.invalid) return;
+    if (this.form.invalid || this.loading) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    // Check if passwords match
+    if (this.f.password.value !== this.f.confirmPassword.value) {
+      this.alertService.error('Passwords do not match!');
+      return;
+    }
+
+    this.loading = true;
 
     const payload = {
       username: this.form.value.username,
-      full_name: `${this.form.value.firstName} ${this.form.value.lastName}`,
+      name: `${this.form.value.firstName} ${this.form.value.lastName}`,
       email: this.form.value.email,
       phone: this.form.value.phone,
-      address: this.form.value.address,
       password: this.form.value.password
     };
 
     console.log('Register payload:', payload);
-    // TODO: POST this to backend
-    // TODO: Add registration API integration here
-    this.alertService.success('Registration successful!');
-    this.router.navigate(['/login']);
+
+    this.http.post<RegisterResponse>(`${this.apiBase}/api/auth/register`, payload)
+      .subscribe({
+        next: (res) => {
+          console.log('Registration response:', res);
+          this.alertService.success('Registration successful! You can now log in with your credentials.');
+          this.router.navigate(['/login']);
+          this.loading = false;
+        },
+        error: (err) => {
+          console.error('Registration error:', err);
+          const errorMsg = err?.error?.message || 'Registration failed. Please try again.';
+          this.alertService.error(errorMsg);
+          this.loading = false;
+        }
+      });
   }
 }

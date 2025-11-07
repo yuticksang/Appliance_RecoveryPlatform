@@ -17,3 +17,21 @@ npm install -g typescript
 
 # create tsconfig.json
 tsc --init
+
+
+
+
+# 1. Go to backend directory
+cd D:\EasyRecovery\backend
+
+# 2. Initialize package.json (if not exists)
+npm init -y
+
+# 3. Install all dependencies at once
+npm install express cors dotenv pg bcryptjs jsonwebtoken
+
+# 4. Install development dependencies
+npm install --save-dev nodemon typescript ts-node @types/node @types/express @types/pg @types/bcryptjs @types/jsonwebtoken
+
+# 5. Verify installation
+ls node_modules  # (or 'dir node_modules' on Windows)

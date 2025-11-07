@@ -1,13 +1,24 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
-import { Sidebar } from '../sidebar/sidebar';
+import { CommonModule } from '@angular/common';
+import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { AuthService } from '../../../auth/auth-service';
 
 @Component({
   selector: 'app-layout',
-  imports: [Sidebar, RouterOutlet],
+  standalone: true,
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './layout.html',
-  styleUrl: './layout.scss',
+  styleUrls: ['./layout.scss'],
 })
 export class Layout {
+  constructor(
+    public auth: AuthService,
+    private router: Router
+  ) {}
 
+  logout() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    this.router.navigate(['/admin-login']);
+  }
 }

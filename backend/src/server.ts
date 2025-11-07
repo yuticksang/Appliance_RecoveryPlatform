@@ -6,6 +6,8 @@ import dotenv from 'dotenv';
 import { Pool } from 'pg';
 import path from 'path';
 import authRoutes from './routes/auth';
+import adminRoutes from './routes/admin';
+import profileRoutes from './routes/profile';
 
 dotenv.config();
 const app = express();
@@ -28,6 +30,8 @@ app.use(express.json());
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api', profileRoutes);
 
 // Health route
 app.get('/health', (req, res) => res.json({ ok: true, message: 'Server is running' }));
@@ -35,7 +39,8 @@ app.get('/health', (req, res) => res.json({ ok: true, message: 'Server is runnin
 // Serve Angular frontend (when built) - using CommonJS __dirname
 const clientPath = path.join(__dirname, '../../dist/easyrecovery');
 app.use(express.static(clientPath));
-app.get('*', (req, res) => res.sendFile(path.join(clientPath, 'index.html')));
+// Use regex pattern instead of * for Express 5.x compatibility
+app.get(/^\/(?!api).*/, (req, res) => res.sendFile(path.join(clientPath, 'index.html')));
 
 // Start server
 app.listen(PORT, () => console.log(`🚀 Running at http://localhost:${PORT}`));

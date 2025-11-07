@@ -1,0 +1,64 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Add Admin</h3>
+      <button class="close-btn" (click)="onClose()">×</button>
+    </div>
+    
+    <form [formGroup]="addAdminForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="fullName">Full Name</label>
+        <input id="fullName" type="text" formControlName="fullName" placeholder="Enter full name"
+          [class.error]="fullName?.invalid && fullName?.touched">
+        
+        <div *ngIf="fullName?.invalid && fullName?.touched" class="error-message">
+          <small *ngIf="fullName?.errors?.['required']">Full name is required</small>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input id="username" type="text" formControlName="username" placeholder="Enter username"
+          [class.error]="username?.invalid && username?.touched">
+        
+        <div *ngIf="username?.invalid && username?.touched" class="error-message">
+          <small *ngIf="username?.errors?.['required']">Username is required</small>
+          <small *ngIf="username?.errors?.['minlength']">Username must be at least 3 characters</small>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group half-width">
+          <label for="password">Password</label>
+          <input id="password" type="password" formControlName="password" placeholder="Enter password"
+            [class.error]="password?.invalid && password?.touched">
+          
+          <div *ngIf="password?.invalid && password?.touched" class="error-message">
+            <small *ngIf="password?.errors?.['required']">Password is required</small>
+            <small *ngIf="password?.errors?.['minlength']">Password must be at least 6 characters</small>
+          </div>
+        </div>
+
+        <div class="form-group half-width">
+          <label for="confirmPassword">Confirm Password</label>
+          <input id="confirmPassword" type="password" formControlName="confirmPassword" placeholder="Confirm password"
+            [class.error]="confirmPassword?.invalid && confirmPassword?.touched">
+          
+          <div *ngIf="confirmPassword?.invalid && confirmPassword?.touched" class="error-message">
+            <small *ngIf="confirmPassword?.errors?.['required']">Please confirm password</small>
+          </div>
+          <div *ngIf="passwordMismatch && confirmPassword?.touched" class="error-message">
+            <small>Passwords do not match</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="onClose()">Cancel</button>
+        <button type="submit" class="btn-primary" [disabled]="addAdminForm.invalid || passwordMismatch">
+          Add Admin
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

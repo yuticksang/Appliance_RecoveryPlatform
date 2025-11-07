@@ -1,0 +1,47 @@
+<header class="er-header">
+  <div class="er-container">
+    <!-- Logo -->
+    <a routerLink="/" class="er-logo">
+      <img src="../assets/image/EzRecover_Icon.png" alt="EasyRecovery" class="er-logo__img">
+    </a>
+
+    <!-- Navigation -->
+    <nav class="er-nav">
+      <a routerLink="/home" routerLinkActive="is-active" class="er-nav__link">Home</a>
+      <a routerLink="/trade-in" routerLinkActive="is-active" class="er-nav__link">Trade In</a>
+      <a routerLink="/contact" routerLinkActive="is-active" class="er-nav__link">Contact</a>
+    </nav>
+
+    <!-- CTA / User Menu -->
+    <div class="er-cta"
+         (mouseenter)="menuOpen = true" (mouseleave)="menuOpen = false">
+
+      <!-- show when NOT logged in -->
+      <a *ngIf="!user()" routerLink="/login" class="er-btn">
+        <img src="assets/icons/profile.png" alt="Profile" class="er-user-icon"> Register / Login
+      </a>
+
+      <!-- show when logged in -->
+      <ng-container *ngIf="user() as userData">
+        <button type="button" class="er-user-btn">
+          <img src="assets/icons/profile.png" alt="Profile" class="er-user-icon"> {{ userData.username }}
+        </button>
+
+        <div class="er-dropdown" *ngIf="menuOpen">
+          <a routerLink="/profile" class="er-dropdown__item">
+            <img src="assets/icons/profile.png" alt="Profile" class="er-dropdown__icon">
+            My Profile
+          </a>
+          <a routerLink="/transactions" class="er-dropdown__item">
+            <img src="assets/icons/transaction.png" alt="Transactions" class="er-dropdown__icon">
+            Transactions
+          </a>
+          <button class="er-dropdown__item danger" (click)="logout()">
+            <img src="assets/icons/logout.png" alt="Logout" class="er-dropdown__icon">
+            Log Out
+          </button>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</header>

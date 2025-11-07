@@ -1,154 +1,433 @@
-import { Component, signal, inject } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angular/forms';
-import { Router } from '@angular/router';
+import { AuthService } from '../../../services/auth.service';
 import { AlertService } from '../../../services/alert.service';
+import { AlertComponent } from '../../../shared/alert/alert.component';
 
-type Address = {
-  id: number;
+interface Address {
+  id?: number;
   name: string;
   phone: string;
-  pickup: string;  // full address line
-  city: string;
   state: string;
+  city: string;
   zip: string;
-};
+  pickup: string;
+}
 
-type Bank = {
+interface BankDetails {
+  id?: number;
   bankName: string;
   holderName: string;
   accountNumber: string;
-};
+}
+
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, AlertComponent],
   templateUrl: './profile.html',
   styleUrls: ['./profile.scss']
 })
-export class ProfileComponent {
+export class ProfileComponent implements OnInit {
+  private fb = inject(FormBuilder);
+  private authService = inject(AuthService);
   private alertService = inject(AlertService);
-  private router = inject(Router);
 
-  // Declare form groups
-  profileForm!: FormGroup;
-  addressForm!: FormGroup;
-  bankForm!: FormGroup;
+  loading = false;
+  error = '';
+  success = '';
 
-  // Reactive signals
+  // Signals for reactive state
   addresses = signal<Address[]>([]);
-  bank = signal<Bank | null>(null);
+  bank = signal<BankDetails | null>(null);
   showAddressModal = signal(false);
   showBankModal = signal(false);
   editingAddressId = signal<number | null>(null);
 
-  constructor(private fb: FormBuilder) {
-    // ✅ Initialize forms inside constructor so fb exists
+  // Confirmation modal signals
+  showConfirmModal = signal(false);
+  confirmMessage = signal('');
+  confirmCallback: (() => void) | null = null;
+  
+  // Access auth service signals
+  userProfile = this.authService.userProfile;
+  currentUser = this.authService.currentUser;
+
+  // Forms
+  profileForm: FormGroup;
+  addressForm: FormGroup;
+  bankForm: FormGroup;
+
+  constructor() {
+    // Initialize forms
     this.profileForm = this.fb.group({
-      firstName: ['SHI YING', [Validators.required, Validators.minLength(2)]],
-      lastName: ['CHUA', [Validators.required, Validators.minLength(2)]],
-      email: ['chuasy-wm21@student.tarc.edu.my', [Validators.required, Validators.email]],
-      phone: ['+60123456789', [Validators.required]],
+      firstName: ['', [Validators.required]],
+      lastName: ['', [Validators.required]],
+      email: [{value: '', disabled: true}],
+      phone: ['', [Validators.required]]
     });
 
     this.addressForm = this.fb.group({
-      id: [0],
-      name: ['', Validators.required],
-      phone: ['', Validators.required],
-      state: ['', Validators.required],
-      city: ['', Validators.required],
-      zip: ['', Validators.required],
-      pickup: ['', Validators.required],
+      name: ['', [Validators.required]],
+      phone: ['', [Validators.required]],
+      state: ['', [Validators.required]],
+      city: ['', [Validators.required]],
+      zip: ['', [Validators.required]],
+      pickup: ['', [Validators.required]]
     });
 
     this.bankForm = this.fb.group({
-      bankName: ['', Validators.required],
-      holderName: ['', Validators.required],
-      accountNumber: ['', Validators.required],
+      bankName: ['', [Validators.required]],
+      holderName: ['', [Validators.required]],
+      accountNumber: ['', [Validators.required]]
     });
   }
-  
-  // Profile
+
+  ngOnInit() {
+    this.loadProfileData();
+    this.loadAddresses();
+    this.loadBankDetails();
+  }
+
+  // Profile methods
+  loadProfileData() {
+    const profile = this.userProfile();
+    if (profile) {
+      // Split full name into first and last name
+      const nameParts = profile.name.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      this.profileForm.patchValue({
+        firstName: firstName,
+        lastName: lastName,
+        email: profile.email,
+        phone: profile.phone || ''
+      });
+    }
+  }
+
   saveProfile() {
     if (this.profileForm.invalid) return;
-    console.log('Profile Saved:', this.profileForm.value);
-    this.alertService.success('Profile updated successfully!');
+
+    this.loading = true;
+    this.error = '';
+    this.success = '';
+
+    const formValues = this.profileForm.value;
+    const updates = {
+      name: `${formValues.firstName} ${formValues.lastName}`.trim(),
+      phone: formValues.phone
+    };
+
+    this.authService.updateProfile(updates).subscribe({
+      next: (updatedProfile) => {
+        this.authService.setProfile(updatedProfile);
+        this.success = 'Profile updated successfully!';
+        this.loading = false;
+        setTimeout(() => this.success = '', 3000);
+      },
+      error: (err) => {
+        this.error = err.error?.message || 'Failed to update profile';
+        this.loading = false;
+        console.error('Update profile error:', err);
+      }
+    });
   }
 
-  // Address helpers
-  openAddressModal(addr?: Address) {
-    this.editingAddressId.set(addr?.id ?? null);
-    this.addressForm.reset({
-      id: addr?.id ?? 0,
-      name: addr?.name ?? '',
-      phone: addr?.phone ?? '',
-      state: addr?.state ?? '',
-      city: addr?.city ?? '',
-      zip: addr?.zip ?? '',
-      pickup: addr?.pickup ?? '',
+  // Address methods
+  loadAddresses() {
+    const user = this.currentUser();
+    if (!user) return;
+
+    // TODO: Replace with actual API call
+    this.authService.getAddresses(user.id).subscribe({
+      next: (addresses) => {
+        this.addresses.set(addresses);
+      },
+      error: (err) => {
+        console.error('Failed to load addresses:', err);
+      }
     });
+  }
+
+  openAddressModal() {
+    this.addressForm.reset();
+    this.editingAddressId.set(null);
     this.showAddressModal.set(true);
   }
-  closeAddressModal() { this.showAddressModal.set(false); }
 
-  saveAddressFromModal() {
-    if (this.addressForm.invalid) return;
-    const v = this.addressForm.value as Address;
-    if (this.editingAddressId()) {
-      this.addresses.update(list => list.map(a => a.id === v.id ? v : a));
-      this.alertService.success('Address updated successfully!');
-    } else {
-      const nextId = (this.addresses().at(-1)?.id ?? 0) + 1;
-      this.addresses.update(list => [...list, { ...v, id: nextId }]);
-      this.alertService.success('Address added successfully!');
-    }
-    this.closeAddressModal();
+  closeAddressModal() {
+    this.showAddressModal.set(false);
+    this.editingAddressId.set(null);
+    this.addressForm.reset();
+  }
+
+  editAddress(address: Address) {
+    this.addressForm.patchValue(address);
+    this.editingAddressId.set(address.id || null);
+    this.showAddressModal.set(true);
   }
 
   saveAddressInline() {
     if (this.addressForm.invalid) return;
-    const v = this.addressForm.value as Address;
-    const nextId = (this.addresses().at(-1)?.id ?? 0) + 1;
-    this.addresses.update(list => [...list, { ...v, id: nextId }]);
-    this.alertService.success('Address added successfully!');
-    this.addressForm.reset();
-  }
 
-  editAddress(a: Address) { this.openAddressModal(a); }
-  removeAddress(id: number) {
-    this.addresses.update(list => list.filter(a => a.id !== id));
-  }
+    const addressData = this.addressForm.value as Address;
+    const user = this.currentUser();
+    if (!user) return;
 
-  // Bank helpers
-  openBankModal() {
-    const b = this.bank();
-    this.bankForm.reset({
-      bankName: b?.bankName ?? '',
-      holderName: b?.holderName ?? '',
-      accountNumber: b?.accountNumber ?? '',
+    this.loading = true;
+
+    // Save to database via API
+    this.authService.createAddress(user.id, addressData).subscribe({
+      next: (newAddress) => {
+        this.addresses.update(addresses => [...addresses, newAddress]);
+        this.addressForm.reset();
+        this.alertService.success('Address saved successfully!');
+        this.loading = false;
+      },
+      error: (err) => {
+        this.error = 'Failed to save address';
+        this.loading = false;
+        console.error('Save address error:', err);
+        this.alertService.error('Failed to save address');
+      }
     });
+  }
+
+  saveAddressFromModal() {
+    if (this.addressForm.invalid) return;
+
+    const addressData = this.addressForm.value as Address;
+    const editingId = this.editingAddressId();
+    const user = this.currentUser();
+    if (!user) return;
+
+    this.loading = true;
+
+    if (editingId) {
+      // Update existing address
+      this.authService.updateAddress(user.id, editingId, addressData).subscribe({
+        next: (updatedAddress) => {
+          this.addresses.update(addresses =>
+            addresses.map(addr => addr.id === editingId ? updatedAddress : addr)
+          );
+          this.closeAddressModal();
+          this.success = 'Address updated successfully!';
+          this.alertService.success('Address updated successfully!');
+          this.loading = false;
+          setTimeout(() => this.success = '', 3000);
+        },
+        error: (err) => {
+          this.error = 'Failed to update address';
+          this.alertService.error('Failed to update address');
+          this.loading = false;
+          console.error('Update address error:', err);
+        }
+      });
+    } else {
+      // Add new address
+      this.authService.createAddress(user.id, addressData).subscribe({
+        next: (newAddress) => {
+          this.addresses.update(addresses => [...addresses, newAddress]);
+          this.closeAddressModal();
+          this.success = 'Address added successfully!';
+          this.alertService.success('Address added successfully!');
+          this.loading = false;
+          setTimeout(() => this.success = '', 3000);
+        },
+        error: (err) => {
+          this.error = 'Failed to add address';
+          this.alertService.error('Failed to add address');
+          this.loading = false;
+          console.error('Add address error:', err);
+        }
+      });
+    }
+  }
+
+  deleteAddress(id: number) {
+    this.showConfirmDialog('Are you sure you want to delete this address?', () => {
+      const user = this.currentUser();
+      if (!user) return;
+
+      this.loading = true;
+
+      this.authService.deleteAddress(user.id, id).subscribe({
+        next: () => {
+          this.addresses.update(addresses => addresses.filter(addr => addr.id !== id));
+          this.success = 'Address deleted successfully!';
+          this.alertService.success('Address deleted successfully!');
+          this.loading = false;
+          setTimeout(() => this.success = '', 3000);
+        },
+        error: (err) => {
+          this.error = 'Failed to delete address';
+          this.alertService.error('Failed to delete address');
+          this.loading = false;
+          console.error('Delete address error:', err);
+        }
+      });
+    });
+  }
+
+  // Bank methods
+  loadBankDetails() {
+    const user = this.currentUser();
+    if (!user) return;
+
+    this.authService.getBankDetails(user.id).subscribe({
+      next: (bank) => {
+        this.bank.set(bank);
+      },
+      error: (err) => {
+        console.error('Failed to load bank details:', err);
+        this.bank.set(null);
+      }
+    });
+  }
+
+  openBankModal() {
+    const currentBank = this.bank();
+    if (currentBank) {
+      this.bankForm.patchValue(currentBank);
+    } else {
+      this.bankForm.reset();
+    }
     this.showBankModal.set(true);
   }
-  closeBankModal() { this.showBankModal.set(false); }
 
-  saveBankFromModal() {
-    if (this.bankForm.invalid) return;
-    const isUpdate = !!this.bank();
-    this.bank.set(this.bankForm.value as Bank);
-    this.alertService.success(isUpdate ? 'Bank details updated successfully!' : 'Bank details added successfully!');
-    this.closeBankModal();
+  closeBankModal() {
+    this.showBankModal.set(false);
+    this.bankForm.reset();
   }
 
   saveBankInline() {
     if (this.bankForm.invalid) return;
-    this.bank.set(this.bankForm.value as Bank);
-    this.alertService.success('Bank details added successfully!');
+
+    const bankData = this.bankForm.value as BankDetails;
+    const user = this.currentUser();
+    if (!user) return;
+
+    this.loading = true;
+
+    // Save to database via API
+    this.authService.createBankDetails(user.id, bankData).subscribe({
+      next: (newBank) => {
+        this.bank.set(newBank);
+        this.bankForm.reset();
+        this.alertService.success('Bank details saved successfully!');
+        this.loading = false;
+      },
+      error: (err) => {
+        this.error = 'Failed to save bank details';
+        this.loading = false;
+        console.error('Save bank error:', err);
+        this.alertService.error('Failed to save bank details');
+      }
+    });
   }
 
-  // Logout
+  saveBankFromModal() {
+    if (this.bankForm.invalid) return;
+
+    const bankData = this.bankForm.value as BankDetails;
+    const currentBank = this.bank();
+    const user = this.currentUser();
+    if (!user) return;
+
+    this.loading = true;
+
+    if (currentBank?.id) {
+      // Update existing bank
+      this.authService.updateBankDetails(user.id, bankData).subscribe({
+        next: (updatedBank) => {
+          this.bank.set(updatedBank);
+          this.closeBankModal();
+          this.success = 'Bank details updated successfully!';
+          this.alertService.success('Bank details updated successfully!');
+          this.loading = false;
+          setTimeout(() => this.success = '', 3000);
+        },
+        error: (err) => {
+          this.error = 'Failed to update bank details';
+          this.alertService.error('Failed to update bank details');
+          this.loading = false;
+          console.error('Update bank error:', err);
+        }
+      });
+    } else {
+      // Create new bank
+      this.authService.createBankDetails(user.id, bankData).subscribe({
+        next: (newBank) => {
+          this.bank.set(newBank);
+          this.closeBankModal();
+          this.success = 'Bank details added successfully!';
+          this.loading = false;
+          setTimeout(() => this.success = '', 3000);
+        },
+        error: (err) => {
+          this.error = 'Failed to add bank details';
+          this.loading = false;
+          console.error('Add bank error:', err);
+        }
+      });
+    }
+  }
+
+  deleteBank() {
+    this.showConfirmDialog('Are you sure you want to delete your bank details?', () => {
+      const user = this.currentUser();
+      if (!user) return;
+
+      this.loading = true;
+
+      this.authService.deleteBankDetails(user.id).subscribe({
+        next: () => {
+          this.bank.set(null);
+          this.success = 'Bank details deleted successfully!';
+          this.alertService.success('Bank details deleted successfully!');
+          this.loading = false;
+          setTimeout(() => this.success = '', 3000);
+        },
+        error: (err) => {
+          this.error = 'Failed to delete bank details';
+          this.alertService.error('Failed to delete bank details');
+          this.loading = false;
+          console.error('Delete bank error:', err);
+        }
+      });
+    });
+  }
+
+  // Utility methods
   logout() {
-    this.alertService.success('Logged out successfully!');
-    this.router.navigate(['/login']);
+    this.showConfirmDialog('Are you sure you want to logout?', () => {
+      this.authService.logout();
+      this.alertService.success('Logged out successfully!');
+    });
+  }
+
+  // Confirmation modal utility methods
+  showConfirmDialog(message: string, callback: () => void) {
+    this.confirmMessage.set(message);
+    this.confirmCallback = callback;
+    this.showConfirmModal.set(true);
+  }
+
+  confirmAction() {
+    if (this.confirmCallback) {
+      this.confirmCallback();
+      this.confirmCallback = null;
+    }
+    this.closeConfirmModal();
+  }
+
+  closeConfirmModal() {
+    this.showConfirmModal.set(false);
+    this.confirmMessage.set('');
+    this.confirmCallback = null;
   }
 }
