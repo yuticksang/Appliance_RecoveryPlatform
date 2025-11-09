@@ -19,8 +19,9 @@
                 <div class="stat-change">+15.03% <i class="bi bi-arrow-up-right"></i></div>
             </div>
             <div class="stat-card bg-purple">
-                <div class="stat-label">Total Appliances Covered</div>
-                <div class="stat-value">61</div>
+                <div class="stat-label">Active Users</div>
+                <div class="stat-value">1061</div>
+                <div class="stat-change">+15.03% <i class="bi bi-arrow-up-right"></i></div>
             </div>
 </div>
 
@@ -31,24 +32,24 @@
             <div class="chart-header">
                 <div class="chart-tabs">
                     <button class="chart-tab"
-                    [class.active]="activeTab === 'appliance'"
-                    (click)="switchTab('appliance')">
+                    [class.active]="activeGraphTab === 'appliance'"
+                    (click)="switchGraphTab('appliance')">
                     Appliance Recovered</button>
                     <button class="chart-tab"
-                    [class.active]="activeTab === 'users'"
-                    (click)="switchTab('users')">
-                    Active Users</button>
+                    [class.active]="activeGraphTab === 'recoveryValue'"
+                    (click)="switchGraphTab('recoveryValue')">
+                    Recovery Value</button>
                 </div>
                 <div class="chart-controls">
                     <div class="custom-dropdown">
                         <button class="dropdown-trigger">
-                            2025 <i class="bi bi-chevron-down"></i>
+                            {{ getTimeRangeLabel() }} <i class="bi bi-chevron-down"></i>
                         </button>
                         <div class="dropdown-content">
-                            <a href="#">2025</a>
-                            <a href="#">2024</a>
-                            <a href="#">2023</a>
-                            <a href="#">2022</a>
+                            <a (click)="switchTimeRange('weekly')">Weekly</a>
+                            <a (click)="switchTimeRange('monthly')">Monthly</a>
+    
+
                         </div>
                     </div>
                     <button class="btn"><i class="bi bi-three-dots"></i></button>
@@ -72,37 +73,39 @@
     </div>
 
     <div class="panel-section">
-        <div class="panel">
-            <div class="top-list">
-                <span class="top-list-star">⭐</span>
-                <div class="panel-title">Top 5 Appliance Recovered 2025</div>
+         <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">Top Appliances</div>
+                <div class="panel-controls">
+                    <button class="btn"><i class="bi bi-three-dots"></i></button>
+                </div>
+            </div>
+
+            <div class="panel-subheader">
+                <div class="subheader-label">Appliance</div>
+                <div class="subheader-label">Total Recovered</div>
             </div>
             
-                <div class="top-item">
-                    <div class="item-name">LG Front Load Washer with 6 motion Inverter Direct Drive</div>
-                    <div class="item-bar"><div class="item-bar-fill" style="width: 90%;"></div></div>
-                    <div class="item-count">133</div>
-                </div>
-                <div class="top-item">
-                    <div class="item-name">LG A2.5L Top Freezer Fridge</div>
-                    <div class="item-bar"><div class="item-bar-fill" style="width: 85%;"></div></div>
-                    <div class="item-count">121</div>
-                </div>
-                <div class="top-item">
-                    <div class="item-name">Samsung 27CL Refrigerator TMF Digital Inverter Technology</div>
-                    <div class="item-bar"><div class="item-bar-fill" style="width: 80%;"></div></div>
-                    <div class="item-count">115</div>
-                </div>
-                <div class="top-item">
-                    <div class="item-name">Samsung 23L Solo Microwave Oven Quick</div>
-                    <div class="item-bar"><div class="item-bar-fill" style="width: 70%;"></div></div>
-                    <div class="item-count">92</div>
-                </div>
-                <div class="top-item">
-                    <div class="item-name">Toshiba 10.5kg Front Load Washer</div>
-                    <div class="item-bar"><div class="item-bar-fill" style="width: 60%;"></div></div>
-                    <div class="item-count">74</div>
-                </div>
+            <div class="top-item">
+                <div class="item-name">LG Front Load Washer with 6 motion Inverter Direct Drive</div>
+                <div class="item-count">325</div>
+            </div>
+            <div class="top-item">
+                <div class="item-name">Washing Machines</div>
+                <div class="item-count">286</div>
+            </div>
+            <div class="top-item">
+                <div class="item-name">Air Conditioners</div>
+                <div class="item-count">211</div>
+            </div>
+            <div class="top-item">
+                <div class="item-name">Microwaves</div>
+                <div class="item-count">191</div>
+            </div>
+            <div class="top-item">
+                <div class="item-name">Freezers</div>
+                <div class="item-count">165</div>
+            </div>
         </div>
     </div>
 </div>
@@ -114,17 +117,17 @@
             <div class="chart-header">
                 <div class="chart-tabs">
                     <button class="chart-tab">
-                    Total Recovered Activities by Category</button>
+                    {{ getBarTabLabel() }} Recovered Activities </button>
 
                 </div>
                 <div class="chart-controls">
                     <div class="custom-dropdown">
                         <button class="dropdown-trigger">
-                            Category <i class="bi bi-chevron-down"></i>
+                            {{ getBarTabLabel() }} <i class="bi bi-chevron-down"></i>
                         </button>
                         <div class="dropdown-content">
-                            <a href="#">Category</a>
-                            <a href="#">Brand</a>
+                            <a (click)="switchBarTab('category')">Category</a>
+                            <a (click)="switchBarTab('brand')">Brand</a>
                         </div>
                     </div>
                     <button class="btn"><i class="bi bi-three-dots"></i></button>
@@ -133,9 +136,9 @@
             <div class="chart-container">
                 @if (isBrowser) {
                     <canvas baseChart
-                        [data]="lineChartData"
-                        [options]="lineChartOptions"
-                        type="line">
+                        [data]="barChartData"
+                        [options]="barChartOptions"
+                        type="bar">
                     </canvas>
                 } @else{
                     <div class="chart-placeholder">
@@ -147,7 +150,79 @@
         </div>
     </div>
 
+    <div class="pie-chart-section">
+        <div class="pie-chart">
+            <div class="chart-header">
+                <div class="chart-tabs">
+                    <button class="chart-tab">
+                     Condition Score by Appliance </button>
 
+                </div>
+                <div class="chart-controls">
+                    <button class="btn"><i class="bi bi-three-dots"></i></button>
+                </div>
+            </div>
+            <div class="chart-container">
+                @if (isBrowser) {
+                    <canvas baseChart
+                        [data]="pieChartData"
+                        [options]="pieChartOptions"
+                        type="doughnut">
+                    </canvas>
+                } @else{
+                    <div class="chart-placeholder">
+                        <p>Chart loading...</p>
+              </div>
+                }
+            </div>
+           
+        </div>
+    </div>
+
+</div>
+
+<!-- Recent Orders Section -->
+<div class="recent-orders-section">
+    <div class="recent-orders-card">
+        <div class="orders-header">
+            <div class="orders-title">Recent Orders</div>
+            <div class="orders-controls">
+                 <button class="view-all-btn">View All Orders <i class="bi bi-arrow-right"></i></button>
+                <button class="btn"><i class="bi bi-three-dots"></i></button>
+            </div>
+        </div>
+
+        <div class="orders-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Transaction ID</th>
+                        <th>Appliance</th>
+                        <th>Category</th>
+                        <th>Offer Price</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (order of dashboardData.recentOrders; track order.id){
+                        <tr>
+                            <td>#{{order.id}}</td>
+                            <td>{{order.appliance}}</td>
+                            <td>{{order.category}}</td>
+                            <td>{{formatCurrency(order.offerPrice)}}</td>
+                            <td>{{formatDate(order.date)}}</td>
+                            <td><span class="status" [ngClass]="getStatusClass(order.status)">{{order.status}}</span></td>
+                        </tr>
+                   }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="orders-footer">
+           
+        </div>
+    </div>
 </div>
 
      
