@@ -67,8 +67,8 @@ export class AuthService {
             this.currentUser.set(userData);
             this.isLoggedIn.set(true);
 
-            // Sync with admin auth service
-            this.adminAuthService.setUser(userData);
+            // Don't sync with admin auth service - they use separate storage now
+            // this.adminAuthService.setUser(userData);
 
             if (profile) {
               const profileData = JSON.parse(profile);
@@ -95,7 +95,7 @@ export class AuthService {
 
   private clearAuthState() {
     console.log('🧹 Clearing auth state...');
-    // Clear localStorage
+    // Clear localStorage (customer-specific keys only)
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('userProfile');
@@ -107,8 +107,8 @@ export class AuthService {
     this.userProfile.set(null);
     this.isLoggedIn.set(false);
 
-    // Sync with admin auth service
-    this.adminAuthService.clearUser();
+    // Don't clear admin auth service - they're separate sessions now
+    // this.adminAuthService.clearUser();
     console.log('✅ Auth state cleared');
   }
 
@@ -120,7 +120,7 @@ export class AuthService {
   }
 
   setAuthData(response: any) {
-    // Store in localStorage
+    // Store in localStorage (customer-specific keys)
     localStorage.setItem('token', response.token);
     localStorage.setItem('user', JSON.stringify(response.user));
 
@@ -129,8 +129,8 @@ export class AuthService {
     this.currentUser.set(response.user);
     this.isLoggedIn.set(true);
 
-    // Sync with admin auth service
-    this.adminAuthService.setUser(response.user);
+    // Don't sync with admin auth service - they use separate storage now
+    // this.adminAuthService.setUser(response.user);
   }
 
   validateToken(): Observable<boolean> {
@@ -203,8 +203,8 @@ export class AuthService {
     this.userProfile.set(null);
     this.isLoggedIn.set(false);
 
-    // Sync with admin auth service
-    this.adminAuthService.clearUser();
+    // Don't clear admin auth service - they're separate sessions now
+    // this.adminAuthService.clearUser();
 
     console.log('✅ Logout complete, redirecting to login...');
 

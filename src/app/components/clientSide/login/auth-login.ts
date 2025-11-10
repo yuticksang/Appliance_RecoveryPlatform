@@ -31,8 +31,14 @@ export class AuthLoginComponent {
 
   submit() {
     if (this.form.invalid) return;
-    
+
     this.loading = true;
+
+    // Don't clear admin session - only clear customer session
+    // This allows keeping both admin and customer logged in simultaneously
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('userProfile');
 
     this.authService.login(this.f.email.value!, this.f.password.value!)
       .subscribe({

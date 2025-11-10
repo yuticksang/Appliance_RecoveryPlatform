@@ -78,9 +78,9 @@ export class AdminLoginComponent {
           // optional: check specific admin role from backend
           const role: AdminRole | null = (user.adminRole ?? null) as AdminRole | null;
 
-          // Save auth
-          localStorage.setItem('token', res.token);
-          localStorage.setItem('user', JSON.stringify(user));
+          // Save auth using admin-specific storage keys
+          localStorage.setItem('admin_token', res.token);
+          localStorage.setItem('admin_user', JSON.stringify(user));
 
           // Update AuthService signal (IMPORTANT: This ensures the UI updates immediately)
           this.authService.user.set(user as any);

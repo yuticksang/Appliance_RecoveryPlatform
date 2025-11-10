@@ -72,9 +72,9 @@ export class BuyerLoginComponent {
             return;
           }
 
-          // Save auth
-          localStorage.setItem('token', res.token);
-          localStorage.setItem('user', JSON.stringify(user));
+          // Save auth using buyer-specific storage keys
+          localStorage.setItem('buyer_token', res.token);
+          localStorage.setItem('buyer_user', JSON.stringify(user));
 
           // Update AuthService signal (IMPORTANT: This ensures the UI updates immediately)
           this.authService.user.set(user as any);

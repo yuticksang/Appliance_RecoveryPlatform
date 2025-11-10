@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { ClientLayoutComponent } from './shared/customerLayout/customer-layout';
 import { Layout } from './shared/adminLayout/layout';
 import { AdminListComponent } from './components/adminSide/adminList/admin-list';
+import { BuyerListComponent } from './components/adminSide/buyerList/buyer-list';
 import { authGuard, superAdminGuard, adminGuard } from '../auth/auth.guard';
 import { customerGuard, guestGuard } from '../auth/customer.guard';
 
@@ -30,6 +31,11 @@ export const routes: Routes = [
       {
         path: 'admins',
         component: AdminListComponent,
+        canActivate: [superAdminGuard] // Only superadmin can access
+      },
+      {
+        path: 'buyers',
+        component: BuyerListComponent,
         canActivate: [superAdminGuard] // Only superadmin can access
       },
 
@@ -74,8 +80,8 @@ export const routes: Routes = [
   },
 
   // Auth pages WITHOUT any layout
-  { path: 'admin-login', loadComponent: () => import('./components/adminSide/login/admin-login').then(m => m.AdminLoginComponent) },
-  { path: 'buyer-login', loadComponent: () => import('./components/buyerSide/login/buyer-login').then(m => m.BuyerLoginComponent) },
+  { path: 'admin-login', canActivate: [guestGuard], loadComponent: () => import('./components/adminSide/login/admin-login').then(m => m.AdminLoginComponent) },
+  { path: 'buyer-login', canActivate: [guestGuard], loadComponent: () => import('./components/buyerSide/login/buyer-login').then(m => m.BuyerLoginComponent) },
 
   { path: '**', redirectTo: '' }
 ];

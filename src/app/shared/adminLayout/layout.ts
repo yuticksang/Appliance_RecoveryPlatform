@@ -17,8 +17,9 @@ export class Layout {
   ) {}
 
   logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    // Clear admin auth service state (this clears admin_token and admin_user)
+    this.auth.clearUser();
+
     this.router.navigate(['/admin-login']);
   }
 }
