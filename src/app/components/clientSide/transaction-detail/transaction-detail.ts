@@ -85,11 +85,11 @@ export class TransactionDetailComponent implements OnInit {
 
   loadTransactionDetail(): void {
     this.loading = true;
-    const currentUserId = this.authService.getCurrentUserId();
+    const sellerId = this.authService.getSellerId();
 
     // Get all seller transactions and find the specific one
-    if (currentUserId) {
-      this.transactionService.getTransactionsBySeller(currentUserId).subscribe({
+    if (sellerId) {
+      this.transactionService.getTransactionsBySeller(sellerId).subscribe({
         next: (transactions) => {
           this.transaction = transactions.find(t => t.id === this.transactionId) || null;
           

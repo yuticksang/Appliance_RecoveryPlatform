@@ -32,7 +32,7 @@ export class TransactionsComponent implements OnInit {
   brands: string[] = ['LG', 'SAMSUNG', 'PANASONIC'];
 
   loading: boolean = false;
-  currentSellerId: number | null = null;
+  currentSellerId: string | null = null;
 
   ngOnInit(): void {
     this.loadSellerTransactions();
@@ -40,15 +40,17 @@ export class TransactionsComponent implements OnInit {
 
   loadSellerTransactions(): void {
     this.loading = true;
-    
-    // Get current logged-in seller ID
-    this.currentSellerId = this.authService.getCurrentUserId();
-    
+
+    // Get current logged-in seller ID (e.g., 'S001')
+    this.currentSellerId = this.authService.getSellerId();
+
     if (!this.currentSellerId) {
-      console.error('No seller logged in');
+      console.error('No seller logged in or user is not a seller');
       this.loading = false;
       return;
     }
+
+    console.log('📦 Fetching transactions for seller:', this.currentSellerId);
 
     // Fetch transactions for this seller only
     this.transactionService.getTransactionsBySeller(this.currentSellerId).subscribe({

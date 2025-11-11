@@ -8,6 +8,7 @@ import path from 'path';
 import authRoutes from './routes/auth';
 import adminRoutes from './routes/admin';
 import profileRoutes from './routes/profile';
+import transactionRoutes from './routes/transaction';
 
 dotenv.config();
 const app = express();
@@ -41,6 +42,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api', profileRoutes);
+app.use('/api/transactions', transactionRoutes);
 
 // Health route
 app.get('/health', (req, res) => res.json({ ok: true, message: 'Server is running' }));
