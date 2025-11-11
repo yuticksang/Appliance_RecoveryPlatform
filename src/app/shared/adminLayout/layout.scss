@@ -11,16 +11,17 @@ $blue-2: #1a73e8;
   height: 100vh;
   width: 300px;
   background: #e2e2e2;
-  padding: 20px 18px;
+  padding: 8px 18px;
   z-index: 1000;
   display: flex;
   flex-direction: column;
   overflow-y: auto; 
   transition: width 0.3s ease, padding 0.3s ease;
+  
 
   &.collapsed {
     width: 80px;
-    padding: 20px 8px;
+    padding: 8px 8px;
 
     .logo .logo-icon {
       display: none;
@@ -42,32 +43,7 @@ $blue-2: #1a73e8;
       display: none;
     }
 
-    .nav-item {
-      justify-content: center;
-      padding: 12px 8px;
-      
-      i:first-child {
-        margin: 0;
-      }
-    }
-
-    .sidebar .nav-item.dropdown {
-      justify-content: center;
-      padding: 12px 18px;
-      
-      i:first-child {
-        margin: 0;
-      }
-    }
-
-    .logout-btn {
-      justify-content: center;
-      padding: 12px 8px;
-
-      i {
-        margin: 0;
-      }
-    }
+    
   }
   &::-webkit-scrollbar {
     display: none;
@@ -81,7 +57,7 @@ $blue-2: #1a73e8;
   align-items: center;
   justify-content: space-between; 
   gap: 8px;
-  margin-bottom: 20px;
+  margin-bottom: 8px;
   font-weight: 600;
   font-size: 16px;
   width: 100%; 
@@ -125,6 +101,7 @@ $blue-2: #1a73e8;
   i {
     font-size: 26px;
     transition: transform 0.3s ease;
+    margin-top: 2px;
 
     &.rotate-180 { // ADD THIS
       transform: rotate(180deg);
@@ -139,8 +116,8 @@ $blue-2: #1a73e8;
 .sidebar .nav-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 12px;
+  gap: 15px;
+  padding: 14px 12px;
   font-size: 15px;
   cursor: pointer;
   border-radius: 8px;
@@ -150,6 +127,7 @@ $blue-2: #1a73e8;
   text-decoration: none;
   border-left: 3px solid transparent;
 
+
   i:first-child {
     font-size: 22px; // Match icon size with nav-item
     min-width: 22px;
@@ -158,12 +136,13 @@ $blue-2: #1a73e8;
   .nav-text {
     margin-left: 2px;
     margin-top: 2px;
-    white-space: nowrap; 
-    transition: opacity 0.3s ease, width 0.3s ease;
+   
+    
   }
 
   &:hover { 
      color: $blue-2;
+     transform: translateX(5px);
   }
 
   &.active { 
@@ -177,8 +156,8 @@ $blue-2: #1a73e8;
   width: 100%;
   display: flex;
   align-items: center;
-   gap: 12px;
-  padding: 12px 12px;
+   gap: 15px;
+  padding: 14px 12px;
   font-size: 15px;
   cursor: pointer;
   border-radius: 8px;
@@ -193,6 +172,7 @@ $blue-2: #1a73e8;
  
   i:first-child {
     font-size: 22px; // Match icon size with nav-item
+    min-width: 22px;
   }
 
   &:hover {
@@ -226,9 +206,10 @@ $blue-2: #1a73e8;
 
 }
 
-.sidebar .nav-item:hover {
-  transform: translateX(5px);
+.sidebar.collapsed .nav-item:hover {
+  transform: none !important;
 }
+
 
 .sidebar .nav-item.active {
   
@@ -300,10 +281,20 @@ $blue-2: #1a73e8;
   margin-bottom: 2px;
   text-decoration: none;
   display: block;
+  opacity: 0;
+  transform: translateX(-10px);
+  animation: slideInItem 0.4s ease-out forwards;
   
+  &:nth-child(1) { animation-delay: 0s; }
+  &:nth-child(2) { animation-delay: 0.05s; }
+  &:nth-child(3) { animation-delay: 0.1s; }
+  &:nth-child(4) { animation-delay: 0.15s; }
+  &:nth-child(5) { animation-delay: 0.2s; }
+  &:nth-child(6) { animation-delay: 0.25s; }
+  &:nth-child(7) { animation-delay: 0.3s; }
   
   &:hover {
-    color: #333;
+    color: $blue-2;
     transform: translateX(5px);
   }
 
@@ -311,6 +302,18 @@ $blue-2: #1a73e8;
    
     color: $blue-2;
     font-weight: 500;
+    
+  }
+}
+
+@keyframes slideInItem {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
@@ -337,6 +340,7 @@ $blue-2: #1a73e8;
   color: #333;
   border-radius: 8px; 
   transition: all 0.3s ease; 
+  
 
   i {
     font-size: 22px; // Match icon size
@@ -359,7 +363,7 @@ $blue-2: #1a73e8;
 .main-content {
   font-family: $Space;
   margin-left: 300px;
-  padding: 30px 50px;
+  padding: 30px 30px;
   transition: margin-left 0.3s ease, padding 0.3s ease;
 
    &.expanded { 
