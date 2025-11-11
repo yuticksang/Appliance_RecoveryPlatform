@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormGroup } from '@angular/forms';
 import { AuthService } from '../../../services/auth.service';
@@ -6,7 +6,7 @@ import { AlertService } from '../../../services/alert.service';
 import { AlertComponent } from '../../../shared/alert/alert.component';
 
 interface Address {
-  id?: number;
+  id?: string; // Changed to string for new ID format (PA001, PA002, etc.)
   name: string;
   phone: string;
   state: string;
@@ -16,7 +16,7 @@ interface Address {
 }
 
 interface BankDetails {
-  id?: number;
+  id?: string; // Changed to string for new ID format (BNK001, BNK002, etc.)
   bankName: string;
   holderName: string;
   accountNumber: string;
@@ -30,7 +30,7 @@ interface BankDetails {
   templateUrl: './profile.html',
   styleUrls: ['./profile.scss']
 })
-export class ProfileComponent implements OnInit {
+export class ProfileComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private alertService = inject(AlertService);
@@ -44,12 +44,15 @@ export class ProfileComponent implements OnInit {
   bank = signal<BankDetails | null>(null);
   showAddressModal = signal(false);
   showBankModal = signal(false);
-  editingAddressId = signal<number | null>(null);
+  editingAddressId = signal<string | null>(null);
 
   // Confirmation modal signals
   showConfirmModal = signal(false);
   confirmMessage = signal('');
   confirmCallback: (() => void) | null = null;
+
+  // Subscription management
+  private userSubscription: any;
   
   // Access auth service signals
   userProfile = this.authService.userProfile;
@@ -87,14 +90,31 @@ export class ProfileComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.loadProfileData();
-    this.loadAddresses();
-    this.loadBankDetails();
+    // Wait for user to be loaded before fetching data
+    // Subscribe to currentUser$ observable to handle async auth restoration
+    this.userSubscription = this.authService.currentUser$.subscribe(user => {
+      if (user) {
+        // Small delay to ensure signals are updated
+        setTimeout(() => {
+          this.loadProfileData();
+          this.loadAddresses();
+          this.loadBankDetails();
+        }, 0);
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    // Clean up subscription to prevent memory leaks
+    if (this.userSubscription) {
+      this.userSubscription.unsubscribe();
+    }
   }
 
   // Profile methods
   loadProfileData() {
     const profile = this.userProfile();
+
     if (profile) {
       // Split full name into first and last name
       const nameParts = profile.name.split(' ');
@@ -148,7 +168,6 @@ export class ProfileComponent implements OnInit {
     const user = this.currentUser();
     if (!user) return;
 
-    // TODO: Replace with actual API call
     this.authService.getAddresses(user.id).subscribe({
       next: (addresses) => {
         this.addresses.set(addresses);
@@ -254,7 +273,7 @@ export class ProfileComponent implements OnInit {
     }
   }
 
-  deleteAddress(id: number) {
+  deleteAddress(id: string) {
     this.showConfirmDialog('Are you sure you want to delete this address?', () => {
       const user = this.currentUser();
       if (!user) return;

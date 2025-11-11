@@ -18,7 +18,7 @@ interface SellerRow {
   createdAt: string;
 }
 
-type SortKey = 'fullName' | 'email' | 'status';
+type SortKey = 'sellerId' | 'fullName' | 'email' | 'status';
 type SortDir = 'asc' | 'desc';
 
 @Component({
@@ -97,7 +97,7 @@ export class SellerListComponent implements OnInit {
       r.fullName.toLowerCase().includes(q) ||
       r.email.toLowerCase().includes(q) ||
       r.phone.toLowerCase().includes(q) ||
-      r.address.toLowerCase().includes(q) ||
+      r.sellerId.toLowerCase().includes(q) ||
       r.status.toLowerCase().includes(q)
     );
 
