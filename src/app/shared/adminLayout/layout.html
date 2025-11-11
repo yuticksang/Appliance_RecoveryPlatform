@@ -1,28 +1,72 @@
 <!-- Sidebar -->
-<div class="sidebar">
+<div class="sidebar" [class.collapsed]="isSidebarCollapsed">
   <div class="logo">
     <div class="logo-icon">
       <img src="assets/image/EzRecover_Icon.png" alt="Ez Recover" />
     </div>
+     <button class="sidebar-btn" (click)="toggleSidebar()">
+      <i class="ri-arrow-right-circle-line" [class.rotate-180]="isSidebarCollapsed"></i>
+    </button>
   </div>
 
-  <a class="nav-item" routerLink="/admin/dashboard" routerLinkActive="active">Dashboard</a>
+  <a class="nav-item" routerLink="/admin/dashboard" routerLinkActive="active">
+    <i class="ri-dashboard-line"></i>
+    <span class="nav-text">Dashboard</span>
+  </a>
 
   <!-- SUPER ADMIN ONLY -->
-  <a class="nav-item" *ngIf="auth.isSuperAdmin()" routerLink="/admin/admins" routerLinkActive="active">Admin</a>
-  <a class="nav-item" *ngIf="auth.isSuperAdmin()" routerLink="/admin/buyers" routerLinkActive="active">Buyer</a>
+   <a class="nav-item" *ngIf="auth.isSuperAdmin()" routerLink="/admin/admins" routerLinkActive="active">
+    <i class="ri-admin-line"></i>
+    <span class="nav-text">Admin</span>
+  </a>
+  <a class="nav-item" *ngIf="auth.isSuperAdmin()" routerLink="/admin/buyers" routerLinkActive="active">
+    <i class="ri-service-line"></i>
+    <span class="nav-text">Buyer</span>
+  </a>
 
   <!-- Visible to both ADMIN & SUPER_ADMIN -->
-  <a class="nav-item" routerLink="/admin/customers" routerLinkActive="active">Customer</a>
-  <a class="nav-item" routerLink="/admin/transactions" routerLinkActive="active">Transaction</a>
-  <a class="nav-item" routerLink="/admin/appliances" routerLinkActive="active">Appliances</a>
-  <a class="nav-item" routerLink="/admin/reporting" routerLinkActive="active">Reporting</a>
+  <a class="nav-item" routerLink="/admin/customers" routerLinkActive="active">
+    <i class="ri-group-3-line"></i>
+    <span class="nav-text">Customer</span>
+  </a>
+  <a class="nav-item" routerLink="/admin/transactions" routerLinkActive="active">
+    <i class="ri-receipt-line"></i>
+    <span class="nav-text">Transaction</span>
+  </a>
+  
+  <div class="nav-item dropdown">
+    <a class="appliances-toggle"
+       (click)="toggleDropdown()"
+       [class.active]="isAppliancesActive()">
+      <i class="ri-box-3-line"></i>
+      <span class="nav-text">Appliances</span>
+       <i class="fa-solid fa-chevron-down ms-auto" 
+       [class.rotate-180]="isDropdownOpen"></i>
+    </a>
+    <ul class="drop-menu" *ngIf="isDropdownOpen" [@slideDown] >
+      <li><a class="menu-item" routerLink="/admin/appliances" routerLinkActive="active-dropdown">All Appliances</a></li>
+      <li><a class="menu-item" routerLink="/admin/appliances/price-list" routerLinkActive="active-dropdown">Price List</a></li>
+      <li><a class="menu-item" routerLink="/admin/appliances/category" routerLinkActive="active-dropdown">Category</a></li>
+      <li><a class="menu-item" routerLink="/admin/appliances/brand" routerLinkActive="active-dropdown">Brand</a></li>
+      <li><a class="menu-item" routerLink="/admin/appliances/condition" routerLinkActive="active-dropdown">Condition</a></li>
+      <li><a class="menu-item" routerLink="/admin/appliances/markdown-list" routerLinkActive="active-dropdown">Markdown List</a></li>
+      <li><a class="menu-item" routerLink="/admin/appliances/scoring" routerLinkActive="active-dropdown">Scoring Configuration</a></li>
+    </ul>
+  </div>
+  
+  <a class="nav-item" routerLink="/admin/reporting" routerLinkActive="active">
+    <i class="ri-file-chart-line"></i>
+    <span class="nav-text">Reporting</span>
+  </a>
 
-  <button class="logout-btn" (click)="logout()">Log out</button>
+ <button class="logout-btn" (click)="logout()">
+    <i class="ri-logout-circle-r-line"></i>
+    <span class="nav-text">Log out</span>
+  </button>
 </div>
 
 <!-- Main Content -->
-<div class="main-content">
+<div class="main-content" [class.expanded]="isSidebarCollapsed">
   <div class="header">
     <span class="user-name">{{ auth.user()?.username || 'User' }}</span>
   </div>
