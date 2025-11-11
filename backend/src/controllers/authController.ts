@@ -6,7 +6,7 @@ import pool from '../config/database';
 
 // Define JWT payload interface
 interface JwtPayload {
-  userId: number;
+  userId: string; // Changed to string for new userID format
   email: string | null; // Admins don't have email
   username: string;
   userType: string;
@@ -23,7 +23,7 @@ export const register = async (req: Request, res: Response) => {
 
     // Check if user exists
     const userExists = await pool.query(
-      'SELECT id FROM users WHERE email = $1 OR username = $2',
+      'SELECT "userID" FROM users WHERE email = $1 OR username = $2',
       [email, username]
     );
 
@@ -37,21 +37,25 @@ export const register = async (req: Request, res: Response) => {
     // Generate email verification token
     const emailVerificationToken = crypto.randomBytes(32).toString('hex');
 
-    // Create user (customers only via registration)
+    // Get next seller_id from sequence and format as prefixed ID (S001, S002, etc.)
+    const sellerIdResult = await pool.query("SELECT 'S' || LPAD(nextval('seller_id_seq')::text, 3, '0') as seller_id");
+    const nextSellerId = sellerIdResult.rows[0].seller_id;
+
+    // Create user (sellers only via registration)
     // Set status to ACTIVE for now (email verification will be implemented later)
     const result = await pool.query(
-      `INSERT INTO users (email, password, name, username, phone, user_type, user_status, email_verified, can_change_password)
-       VALUES ($1, $2, $3, $4, $5, 'customer', 'ACTIVE', false, true)
-       RETURNING id, email, name, username, user_type, user_status`,
-      [email, hashedPassword, name, username, phone]
+      `INSERT INTO users (email, password, name, username, phone, user_type, user_status, email_verified, can_change_password, seller_id)
+       VALUES ($1, $2, $3, $4, $5, 'seller', 'ACTIVE', false, true, $6)
+       RETURNING "userID", email, name, username, user_type, user_status, seller_id`,
+      [email, hashedPassword, name, username, phone, nextSellerId]
     );
 
     // Store verification token (skip if auth_tokens table doesn't exist yet)
     try {
       await pool.query(
-        `INSERT INTO auth_tokens (token, user_id, token_type, expires_at) 
+        `INSERT INTO auth_tokens (token, "userID", token_type, expires_at)
          VALUES ($1, $2, 'email_verification', NOW() + INTERVAL '24 hours')`,
-        [emailVerificationToken, result.rows[0].id]
+        [emailVerificationToken, result.rows[0].userID]
       );
     } catch (tokenError) {
       console.log('Auth tokens table not found, skipping token storage');
@@ -81,18 +85,18 @@ export const login = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Username/admin ID and password are required' });
     }
 
-    // Find user by username, prefixed IDs (A001, B001, C001), or email
-    // Check if input matches prefixed ID pattern (A001, B001, C001, etc.)
-    const isPrefixedId = /^[ABC]\d+$/i.test(emailOrUsername);
+    // Find user by username, prefixed IDs (A001, B001, S001), or email
+    // Check if input matches prefixed ID pattern (A001, B001, S001, etc.)
+    const isPrefixedId = /^[ABS]\d+$/i.test(emailOrUsername);
     let result;
 
     if (isPrefixedId) {
-      // Find by admin_id, buyer_id, or customer_id (all are prefixed now)
+      // Find by admin_id, buyer_id, or seller_id (all are prefixed now)
       result = await pool.query(
         `SELECT * FROM users
          WHERE UPPER(admin_id) = UPPER($1)
          OR UPPER(buyer_id) = UPPER($1)
-         OR UPPER(customer_id) = UPPER($1)`,
+         OR UPPER(seller_id) = UPPER($1)`,
         [emailOrUsername.toUpperCase()]
       );
     } else {
@@ -105,7 +109,7 @@ export const login = async (req: Request, res: Response) => {
 
     if (result.rows.length === 0) {
       console.log('❌ User not found:', emailOrUsername);
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Invalid username or email.' });
     }
 
     const user = result.rows[0];
@@ -133,14 +137,14 @@ export const login = async (req: Request, res: Response) => {
     // Check password
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
-      console.log('❌ Invalid password');
-      return res.status(401).json({ message: 'Invalid credentials' });
+      console.log('❌ Invalid password for user:', user.username);
+      return res.status(401).json({ message: 'Invalid password. Please try again.' });
     }
 
     console.log('✅ Login successful for:', user.username || user.email);
 
     // Update last login
-    await pool.query('UPDATE users SET last_login = NOW() WHERE id = $1', [user.id]);
+    await pool.query('UPDATE users SET last_login = NOW() WHERE "userID" = $1', [user.userID]);
 
     // Generate JWT - simplified approach
     const jwtSecret = process.env.JWT_SECRET;
@@ -151,7 +155,7 @@ export const login = async (req: Request, res: Response) => {
 
     // Build payload
     const payload: JwtPayload = {
-      userId: user.id,
+      userId: user.userID,
       email: user.email,
       username: user.username,
       userType: user.user_type
@@ -163,7 +167,7 @@ export const login = async (req: Request, res: Response) => {
       message: 'Login successful',
       token,
       user: {
-        id: user.id,
+        id: user.userID,
         email: user.email,
         name: user.name,
         username: user.username,
@@ -184,7 +188,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const { email } = req.body;
 
     // Check if user exists
-    const result = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    const result = await pool.query('SELECT "userID" FROM users WHERE email = $1', [email]);
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'User not found' });
     }
@@ -214,7 +218,7 @@ export const resetPassword = async (req: Request, res: Response) => {
 
     // Find user with valid token
     const result = await pool.query(
-      'SELECT id FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()',
+      'SELECT "userID" FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()',
       [token]
     );
 
@@ -227,8 +231,8 @@ export const resetPassword = async (req: Request, res: Response) => {
 
     // Update password and clear reset token
     await pool.query(
-      'UPDATE users SET password = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2',
-      [hashedPassword, result.rows[0].id]
+      'UPDATE users SET password = $1, reset_token = NULL, reset_token_expires = NULL WHERE "userID" = $2',
+      [hashedPassword, result.rows[0].userID]
     );
 
     res.json({ message: 'Password reset successful' });
@@ -252,10 +256,10 @@ export const validateToken = async (req: Request, res: Response) => {
 
 export const getProfile = async (req: Request, res: Response) => {
   try {
-    const userId = parseInt(req.params.id);
+    const userId = req.params.id; // Now a string ID
 
     const result = await pool.query(
-      'SELECT id, email, name, username, user_type, user_status, phone, last_login, created_at FROM users WHERE id = $1',
+      'SELECT "userID", email, name, username, user_type, user_status, phone, last_login, created_at FROM users WHERE "userID" = $1',
       [userId]
     );
 
@@ -272,8 +276,20 @@ export const getProfile = async (req: Request, res: Response) => {
 
 export const updateProfile = async (req: Request, res: Response) => {
   try {
-    const userId = parseInt(req.params.id);
+    const userId = req.params.id; // Now a string ID
     const { name, username, phone } = req.body;
+
+    // Check if username is being updated and if it's unique
+    if (username !== undefined) {
+      const existingUser = await pool.query(
+        'SELECT "userID" FROM users WHERE username = $1 AND "userID" != $2',
+        [username, userId]
+      );
+
+      if (existingUser.rows.length > 0) {
+        return res.status(400).json({ message: 'Username already exists. Please choose a different username.' });
+      }
+    }
 
     // Build dynamic update query
     const updates: string[] = [];
@@ -300,8 +316,8 @@ export const updateProfile = async (req: Request, res: Response) => {
     values.push(userId);
 
     const result = await pool.query(
-      `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramCount}
-       RETURNING id, email, name, username, user_type, user_status, phone, last_login, created_at`,
+      `UPDATE users SET ${updates.join(', ')} WHERE "userID" = $${paramCount}
+       RETURNING "userID", email, name, username, user_type, user_status, phone, last_login, created_at`,
       values
     );
 
