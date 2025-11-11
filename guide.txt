@@ -1,5 +1,6 @@
 --dependencies install--
 
+
 # download node.js 
 https://nodejs.org/en/download
 
@@ -18,8 +19,34 @@ npm install -g typescript
 # create tsconfig.json
 tsc --init
 
+#install Angular CLI globally
+npm install -g @angular/cli
 
+#install dependencies
+npm install
 
+#direct to app directory
+cd Appliance_Recovery_System
+
+#create new component
+ng g c (component name)
+
+#bootstrap library
+npm install bootstrap bootstrap-icons
+npm install @ng-bootstrap/ng-bootstrap@next
+
+#run server
+ng serve
+
+#express ssr dependencies
+npm install @angular/ssr express
+npm install --save-dev @types/express
+
+#run SSR
+npm run serve:ssr:ARS-app
+
+#chart
+npm install chart.js ng2-charts
 
 # 1. Go to backend directory
 cd D:\EasyRecovery\backend

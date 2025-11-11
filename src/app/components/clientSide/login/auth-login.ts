@@ -24,23 +24,29 @@ export class AuthLoginComponent {
 
   form = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]]
+    password: ['', [Validators.required, Validators.minLength(8)]]
   });
 
   get f() { return this.form.controls; }
 
   submit() {
     if (this.form.invalid) return;
-    
+
     this.loading = true;
+
+    // Don't clear admin session - only clear seller session
+    // This allows keeping both admin and seller logged in simultaneously
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('userProfile');
 
     this.authService.login(this.f.email.value!, this.f.password.value!)
       .subscribe({
         next: (response) => {
           const userType = response.user.userType;
 
-          // Only allow customers to login here
-          if (userType === 'customer') {
+          // Only allow sellers to login here
+          if (userType === 'seller') {
             // Set auth data
             this.authService.setAuthData(response);
 
@@ -59,11 +65,11 @@ export class AuthLoginComponent {
             // Show success message
             this.alertService.success('Logged in successfully!');
 
-            // Redirect to customer home
+            // Redirect to seller home
             this.router.navigate(['/home']);
           } else {
             // Show alert for wrong user type
-            this.alertService.error('Access denied. Please use customer account to login.');
+            this.alertService.error('Access denied. Please use seller account to login.');
             this.loading = false;
           }
         },

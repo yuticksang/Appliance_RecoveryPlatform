@@ -1,4 +1,4 @@
-# Appliance_RecoveryPlatform
+# ARSApp
 
 # Easyrecovery
 
