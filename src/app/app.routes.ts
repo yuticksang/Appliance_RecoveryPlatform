@@ -20,8 +20,10 @@ export const routes: Routes = [
       { path: '', redirectTo: 'home', pathMatch: 'full' },
       { path: 'questionnaire', loadComponent: () => import('./components/clientSide/questionnaires/questionnaires').then(m => m.QuestionnairesComponent) },
       { path: 'recovery-slip', loadComponent: () => import('./components/clientSide/recovery-slip/recovery-slip').then(m => m.RecoverySlipComponent) },
-      { path: 'packaging-instruction', loadComponent: () => import('./components/clientSide/packaging-instruction/packaging-instruction').then(m => m.PackagingInstruction) }
-
+      { path: 'packaging-instruction', loadComponent: () => import('./components/clientSide/packaging-instruction/packaging-instruction').then(m => m.PackagingInstruction) },
+      { path: 'transactions', canActivate: [sellerGuard], loadComponent: () => import('./components/clientSide/transactions/transactions').then(m => m.TransactionsComponent) },
+      { path: 'transactions/:id', canActivate: [sellerGuard], loadComponent: () => import('./components/clientSide/transaction-detail/transaction-detail').then(m => m.TransactionDetailComponent) },
+      { path: '', redirectTo: 'home', pathMatch: 'full' }
     ]
   },
 

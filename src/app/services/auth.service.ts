@@ -5,7 +5,7 @@ import { Observable, BehaviorSubject } from 'rxjs';
 import { AuthService as AdminAuthService } from '../../auth/auth-service';
 import { environment } from '../../environments/environment';
 
-interface User {
+export interface User {
   id: number;
   email: string;
   name: string;
@@ -14,7 +14,7 @@ interface User {
   phone?: string;
 }
 
-interface UserProfile extends User {
+export interface UserProfile extends User {
   emailVerified?: boolean;
   lastLogin?: string;
   createdAt?: string;
@@ -273,5 +273,26 @@ export class AuthService {
     return this.http.delete<any>(`${this.apiUrl}/bank/${userId}`, {
       headers: this.getAuthHeaders()
     });
+  }
+
+  // Backward-compatible methods for components using the old API
+  getCurrentUser(): User | null {
+    return this.currentUserSubject.value;
+  }
+
+  getCurrentUserId(): number | null {
+    return this.currentUserSubject.value?.id || null;
+  }
+
+  setCurrentUser(user: User | null): void {
+    this.currentUserSubject.next(user);
+    this.currentUser.set(user);
+    if (user) {
+      this.isLoggedIn.set(true);
+      localStorage.setItem('user', JSON.stringify(user));
+    } else {
+      this.isLoggedIn.set(false);
+      localStorage.removeItem('user');
+    }
   }
 }
