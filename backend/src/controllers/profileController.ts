@@ -6,18 +6,17 @@ import { AuthRequest } from '../middleware/authMiddleware';
 
 export const getAddresses = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = parseInt(req.params.userId);
+    const userId = req.params.userId; // Now a string ID
 
     const result = await pool.query(
-      `SELECT id, name as "receiverName", phone as "phoneNum", state, city, zip_code as "zipCode",
-       pickup_address as "pickupAddress"
-       FROM pickup_address WHERE seller_id = $1 ORDER BY id DESC`,
+      `SELECT "addressID", "receiverName", "phoneNum", state, city, "zipCode", "pickupAddress"
+       FROM "PickupAddress" WHERE "sellerID" = $1 ORDER BY "addressID" DESC`,
       [userId]
     );
 
     // Transform database column names to frontend format
     const addresses = result.rows.map(row => ({
-      id: row.id,
+      id: row.addressID,
       name: row.receiverName,
       phone: row.phoneNum,
       state: row.state,
@@ -35,7 +34,7 @@ export const getAddresses = async (req: AuthRequest, res: Response) => {
 
 export const createAddress = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = parseInt(req.params.userId);
+    const userId = req.params.userId; // Now a string ID
     const { name, phone, state, city, zip, pickup } = req.body;
 
     if (!name || !phone || !state || !city || !zip || !pickup) {
@@ -43,15 +42,14 @@ export const createAddress = async (req: AuthRequest, res: Response) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO pickup_address (seller_id, name, phone, state, city, zip_code, pickup_address)
+      `INSERT INTO "PickupAddress" ("sellerID", "receiverName", "phoneNum", state, city, "zipCode", "pickupAddress")
        VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id, name as "receiverName", phone as "phoneNum", state, city, zip_code as "zipCode",
-       pickup_address as "pickupAddress"`,
+       RETURNING "addressID", "receiverName", "phoneNum", state, city, "zipCode", "pickupAddress"`,
       [userId, name, phone, state, city, zip, pickup]
     );
 
     const address = {
-      id: result.rows[0].id,
+      id: result.rows[0].addressID,
       name: result.rows[0].receiverName,
       phone: result.rows[0].phoneNum,
       state: result.rows[0].state,
@@ -69,16 +67,15 @@ export const createAddress = async (req: AuthRequest, res: Response) => {
 
 export const updateAddress = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = parseInt(req.params.userId);
-    const addressId = parseInt(req.params.addressId);
+    const userId = req.params.userId; // Now a string ID
+    const addressId = req.params.addressId; // Now a string ID
     const { name, phone, state, city, zip, pickup } = req.body;
 
     const result = await pool.query(
-      `UPDATE pickup_address
-       SET name = $1, phone = $2, state = $3, city = $4, zip_code = $5, pickup_address = $6
-       WHERE id = $7 AND seller_id = $8
-       RETURNING id, name as "receiverName", phone as "phoneNum", state, city, zip_code as "zipCode",
-       pickup_address as "pickupAddress"`,
+      `UPDATE "PickupAddress"
+       SET "receiverName" = $1, "phoneNum" = $2, state = $3, city = $4, "zipCode" = $5, "pickupAddress" = $6
+       WHERE "addressID" = $7 AND "sellerID" = $8
+       RETURNING "addressID", "receiverName", "phoneNum", state, city, "zipCode", "pickupAddress"`,
       [name, phone, state, city, zip, pickup, addressId, userId]
     );
 
@@ -87,7 +84,7 @@ export const updateAddress = async (req: AuthRequest, res: Response) => {
     }
 
     const address = {
-      id: result.rows[0].id,
+      id: result.rows[0].addressID,
       name: result.rows[0].receiverName,
       phone: result.rows[0].phoneNum,
       state: result.rows[0].state,
@@ -105,11 +102,11 @@ export const updateAddress = async (req: AuthRequest, res: Response) => {
 
 export const deleteAddress = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = parseInt(req.params.userId);
-    const addressId = parseInt(req.params.addressId);
+    const userId = req.params.userId; // Now a string ID
+    const addressId = req.params.addressId; // Now a string ID
 
     const result = await pool.query(
-      'DELETE FROM pickup_address WHERE id = $1 AND seller_id = $2 RETURNING id',
+      'DELETE FROM "PickupAddress" WHERE "addressID" = $1 AND "sellerID" = $2 RETURNING "addressID"',
       [addressId, userId]
     );
 
@@ -128,11 +125,11 @@ export const deleteAddress = async (req: AuthRequest, res: Response) => {
 
 export const getBankDetails = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = parseInt(req.params.userId);
+    const userId = req.params.userId; // Now a string ID
 
     const result = await pool.query(
-      `SELECT id, bank_name as "bankName", account_holder_name as "holderName", account_number as "accountNumber"
-       FROM seller_bank WHERE seller_id = $1`,
+      `SELECT "bankID", "bankName", "accountHolderName", "accountNumber"
+       FROM "SellerBank" WHERE "sellerID" = $1`,
       [userId]
     );
 
@@ -141,9 +138,9 @@ export const getBankDetails = async (req: AuthRequest, res: Response) => {
     }
 
     const bank = {
-      id: result.rows[0].id,
+      id: result.rows[0].bankID,
       bankName: result.rows[0].bankName,
-      holderName: result.rows[0].holderName,
+      holderName: result.rows[0].accountHolderName,
       accountNumber: result.rows[0].accountNumber
     };
 
@@ -156,7 +153,7 @@ export const getBankDetails = async (req: AuthRequest, res: Response) => {
 
 export const createBankDetails = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = parseInt(req.params.userId);
+    const userId = req.params.userId; // Now a string ID
     const { bankName, holderName, accountNumber } = req.body;
 
     if (!bankName || !holderName || !accountNumber) {
@@ -165,7 +162,7 @@ export const createBankDetails = async (req: AuthRequest, res: Response) => {
 
     // Check if bank details already exist
     const existing = await pool.query(
-      'SELECT id FROM seller_bank WHERE seller_id = $1',
+      'SELECT "bankID" FROM "SellerBank" WHERE "sellerID" = $1',
       [userId]
     );
 
@@ -174,16 +171,16 @@ export const createBankDetails = async (req: AuthRequest, res: Response) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO seller_bank (seller_id, bank_name, account_holder_name, account_number)
+      `INSERT INTO "SellerBank" ("sellerID", "bankName", "accountHolderName", "accountNumber")
        VALUES ($1, $2, $3, $4)
-       RETURNING id, bank_name as "bankName", account_holder_name as "holderName", account_number as "accountNumber"`,
+       RETURNING "bankID", "bankName", "accountHolderName", "accountNumber"`,
       [userId, bankName, holderName, accountNumber]
     );
 
     const bank = {
-      id: result.rows[0].id,
+      id: result.rows[0].bankID,
       bankName: result.rows[0].bankName,
-      holderName: result.rows[0].holderName,
+      holderName: result.rows[0].accountHolderName,
       accountNumber: result.rows[0].accountNumber
     };
 
@@ -196,14 +193,14 @@ export const createBankDetails = async (req: AuthRequest, res: Response) => {
 
 export const updateBankDetails = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = parseInt(req.params.userId);
+    const userId = req.params.userId; // Now a string ID
     const { bankName, holderName, accountNumber } = req.body;
 
     const result = await pool.query(
-      `UPDATE seller_bank
-       SET bank_name = $1, account_holder_name = $2, account_number = $3
-       WHERE seller_id = $4
-       RETURNING id, bank_name as "bankName", account_holder_name as "holderName", account_number as "accountNumber"`,
+      `UPDATE "SellerBank"
+       SET "bankName" = $1, "accountHolderName" = $2, "accountNumber" = $3
+       WHERE "sellerID" = $4
+       RETURNING "bankID", "bankName", "accountHolderName", "accountNumber"`,
       [bankName, holderName, accountNumber, userId]
     );
 
@@ -212,9 +209,9 @@ export const updateBankDetails = async (req: AuthRequest, res: Response) => {
     }
 
     const bank = {
-      id: result.rows[0].id,
+      id: result.rows[0].bankID,
       bankName: result.rows[0].bankName,
-      holderName: result.rows[0].holderName,
+      holderName: result.rows[0].accountHolderName,
       accountNumber: result.rows[0].accountNumber
     };
 
@@ -227,10 +224,10 @@ export const updateBankDetails = async (req: AuthRequest, res: Response) => {
 
 export const deleteBankDetails = async (req: AuthRequest, res: Response) => {
   try {
-    const userId = parseInt(req.params.userId);
+    const userId = req.params.userId; // Now a string ID
 
     const result = await pool.query(
-      'DELETE FROM seller_bank WHERE seller_id = $1 RETURNING id',
+      'DELETE FROM "SellerBank" WHERE "sellerID" = $1 RETURNING "bankID"',
       [userId]
     );
 
