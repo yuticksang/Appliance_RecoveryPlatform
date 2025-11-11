@@ -101,11 +101,11 @@ export const login = async (req: Request, res: Response) => {
         'SELECT * FROM users WHERE username = $1 OR (email IS NOT NULL AND email = $1)',
         [emailOrUsername]
       );
-    }
+    }n
 
     if (result.rows.length === 0) {
       console.log('❌ User not found:', emailOrUsername);
-      return res.status(401).json({ message: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Invalid username or email.' });
     }
 
     const user = result.rows[0];
@@ -133,8 +133,8 @@ export const login = async (req: Request, res: Response) => {
     // Check password
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
-      console.log('❌ Invalid password');
-      return res.status(401).json({ message: 'Invalid credentials' });
+      console.log('❌ Invalid password for user:', user.username);
+      return res.status(401).json({ message: 'Invalid password. Please try again.' });
     }
 
     console.log('✅ Login successful for:', user.username || user.email);
