@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -24,7 +24,7 @@ interface LoginResponse {
   templateUrl: './buyer-login.html',
   styleUrls: ['./buyer-login.scss']
 })
-export class BuyerLoginComponent {
+export class BuyerLoginComponent implements OnInit {
   hide = true;
   loading = false;
   error = '';
@@ -46,6 +46,10 @@ export class BuyerLoginComponent {
     });
   }
 
+  ngOnInit() {
+    // Handle dynamic form state here if needed in the future
+  }
+
   get emailOrUsername() { return this.form.get('emailOrUsername'); }
   get password() { return this.form.get('password'); }
 
@@ -57,6 +61,8 @@ export class BuyerLoginComponent {
 
     this.loading = true;
     this.error = '';
+    // Disable form while loading
+    this.form.disable();
 
     this.http.post<LoginResponse>(`${this.apiBase}/api/auth/login`, this.form.value)
       .subscribe({
@@ -69,6 +75,7 @@ export class BuyerLoginComponent {
             this.error = 'Access denied. Buyer credentials required.';
             this.alertService.error('Access denied. Buyer credentials required.');
             this.loading = false;
+            this.form.enable();
             return;
           }
 
@@ -93,6 +100,7 @@ export class BuyerLoginComponent {
           this.error = err?.error?.message || 'Login failed. Please try again.';
           this.alertService.error(this.error);
           this.loading = false;
+          this.form.enable();
         }
       });
   }
