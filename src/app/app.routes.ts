@@ -70,13 +70,11 @@ export const routes: Routes = [
       //     return import('./components/adminSide/adminList/admin-list').then(m => m.AdminListComponent);
       //   })
       // },
-      // {
-      //   path: 'dashboard',
-      //   loadComponent: () => import('./components/adminSide/dashboard/dashboard').then(m => m.DashboardComponent).catch(() => {
-      //     // Redirect to customers if dashboard doesn't exist
-      //     return import('./components/adminSide/adminList/admin-list').then(m => m.AdminListComponent);
-      //   })
-      // },
+      {
+         path: 'dashboard',
+         loadComponent: () => import('./components/adminSide/dashboard/dashboard').then(m => m.Dashboard)
+         
+       },
       { path: '', redirectTo: 'sellers', pathMatch: 'full' } // Default redirect to sellers
     ]
   },

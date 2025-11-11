@@ -48,7 +48,7 @@ yarn-error.log
 /libpeerconnection.log
 testem.log
 /typings
-_screenshots_/
+__screenshots__/
 /e2e/test-output/
 
 # Environment files

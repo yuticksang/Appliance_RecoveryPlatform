@@ -7,10 +7,10 @@ console.log('🔥🔥🔥 adminController.ts loaded! 🔥🔥🔥');
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
     const result = await pool.query(
-      'SELECT id, email, name, username, phone, user_type, user_status, admin_role, admin_id, created_at FROM users ORDER BY admin_id ASC NULLS LAST, id ASC'
+      'SELECT "userID", email, name, username, phone, user_type, user_status, admin_role, admin_id, buyer_id, seller_id, created_at FROM users ORDER BY admin_id ASC NULLS LAST, "userID" ASC'
     );
 
-    console.log('👥 Fetched users:', result.rows.map(u => ({ id: u.id, username: u.username, admin_id: u.admin_id, user_type: u.user_type })));
+    console.log('👥 Fetched users:', result.rows.map(u => ({ userID: u.userID, username: u.username, admin_id: u.admin_id, user_type: u.user_type })));
     res.json(result.rows);
   } catch (error) {
     console.error('Get all users error:', error);
@@ -24,7 +24,7 @@ export const checkUsername = async (req: Request, res: Response) => {
     const { username } = req.params;
 
     const result = await pool.query(
-      'SELECT id FROM users WHERE username = $1',
+      'SELECT "userID" FROM users WHERE username = $1',
       [username]
     );
 
@@ -35,7 +35,7 @@ export const checkUsername = async (req: Request, res: Response) => {
   }
 };
 
-// Create new admin user
+// Create new user (admin or buyer)
 export const createUser = async (req: Request, res: Response) => {
   try {
     console.log('📝 Create user request:', req.body);
@@ -49,7 +49,7 @@ export const createUser = async (req: Request, res: Response) => {
 
     // Check if username already exists
     const existingUser = await pool.query(
-      'SELECT id FROM users WHERE username = $1',
+      'SELECT "userID" FROM users WHERE username = $1',
       [username]
     );
 
@@ -93,7 +93,7 @@ export const createUser = async (req: Request, res: Response) => {
     const result = await pool.query(
       `INSERT INTO users (${queryFields})
        VALUES (${queryValues})
-       RETURNING id, name, username, email, phone, user_type, user_status, admin_role, admin_id, buyer_id`,
+       RETURNING "userID", name, username, email, phone, user_type, user_status, admin_role, admin_id, buyer_id`,
       queryParams
     );
 
@@ -111,12 +111,12 @@ export const createUser = async (req: Request, res: Response) => {
 // Update user
 export const updateUser = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params; // This is now userID (string)
     const { name, username, password, email, phone } = req.body;
 
     // Check if username is taken by another user
     const existingUser = await pool.query(
-      'SELECT id FROM users WHERE username = $1 AND id != $2',
+      'SELECT "userID" FROM users WHERE username = $1 AND "userID" != $2',
       [username, id]
     );
 
@@ -165,7 +165,7 @@ export const updateUser = async (req: Request, res: Response) => {
     updateValues.push(id);
 
     const result = await pool.query(
-      `UPDATE users SET ${updateFields.join(', ')} WHERE id = $${paramCount} RETURNING id, name, username, email, phone`,
+      `UPDATE users SET ${updateFields.join(', ')} WHERE "userID" = $${paramCount} RETURNING "userID", name, username, email, phone`,
       updateValues
     );
 
@@ -187,7 +187,7 @@ export const updateUser = async (req: Request, res: Response) => {
 // Update user status
 export const updateUserStatus = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params; // This is now userID (string)
     const { status } = req.body;
 
     if (!['ACTIVE', 'INACTIVE'].includes(status)) {
@@ -196,7 +196,7 @@ export const updateUserStatus = async (req: Request, res: Response) => {
 
     // Check if user is superadmin
     const userCheck = await pool.query(
-      'SELECT user_type FROM users WHERE id = $1',
+      'SELECT user_type FROM users WHERE "userID" = $1',
       [id]
     );
 
@@ -209,7 +209,7 @@ export const updateUserStatus = async (req: Request, res: Response) => {
     }
 
     const result = await pool.query(
-      'UPDATE users SET user_status = $1 WHERE id = $2 RETURNING id, user_status',
+      'UPDATE users SET user_status = $1 WHERE "userID" = $2 RETURNING "userID", user_status',
       [status, id]
     );
 
@@ -226,11 +226,11 @@ export const updateUserStatus = async (req: Request, res: Response) => {
 // Delete user
 export const deleteUser = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params; // This is now userID (string)
 
     // Check user type before deleting
     const userCheck = await pool.query(
-      'SELECT user_type FROM users WHERE id = $1',
+      'SELECT user_type FROM users WHERE "userID" = $1',
       [id]
     );
 
@@ -246,7 +246,7 @@ export const deleteUser = async (req: Request, res: Response) => {
     }
 
     const result = await pool.query(
-      'DELETE FROM users WHERE id = $1 RETURNING id',
+      'DELETE FROM users WHERE "userID" = $1 RETURNING "userID"',
       [id]
     );
 
@@ -256,4 +256,3 @@ export const deleteUser = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Failed to delete user' });
   }
 };
-
