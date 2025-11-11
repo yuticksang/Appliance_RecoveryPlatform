@@ -101,7 +101,7 @@ export const login = async (req: Request, res: Response) => {
         'SELECT * FROM users WHERE username = $1 OR (email IS NOT NULL AND email = $1)',
         [emailOrUsername]
       );
-    }n
+    }
 
     if (result.rows.length === 0) {
       console.log('❌ User not found:', emailOrUsername);
