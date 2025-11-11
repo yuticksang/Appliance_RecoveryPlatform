@@ -66,6 +66,7 @@ export class ProfileComponent implements OnInit {
     this.profileForm = this.fb.group({
       firstName: ['', [Validators.required]],
       lastName: ['', [Validators.required]],
+      username: ['', [Validators.required, Validators.minLength(3)]],
       email: [{value: '', disabled: true}],
       phone: ['', [Validators.required]]
     });
@@ -104,6 +105,7 @@ export class ProfileComponent implements OnInit {
       this.profileForm.patchValue({
         firstName: firstName,
         lastName: lastName,
+        username: profile.username,
         email: profile.email,
         phone: profile.phone || ''
       });
@@ -120,18 +122,22 @@ export class ProfileComponent implements OnInit {
     const formValues = this.profileForm.value;
     const updates = {
       name: `${formValues.firstName} ${formValues.lastName}`.trim(),
+      username: formValues.username,
       phone: formValues.phone
     };
 
     this.authService.updateProfile(updates).subscribe({
       next: (updatedProfile) => {
         this.authService.setProfile(updatedProfile);
+        this.alertService.success('Profile updated successfully!');
         this.success = 'Profile updated successfully!';
         this.loading = false;
         setTimeout(() => this.success = '', 3000);
       },
       error: (err) => {
-        this.error = err.error?.message || 'Failed to update profile';
+        const errorMessage = err.error?.message || 'Failed to update profile';
+        this.error = errorMessage;
+        this.alertService.error(errorMessage);
         this.loading = false;
         console.error('Update profile error:', err);
       }

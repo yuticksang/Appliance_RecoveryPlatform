@@ -1,9 +1,10 @@
 import { Routes } from '@angular/router';
-import { ClientLayoutComponent } from './shared/customerLayout/customer-layout';
+import { ClientLayoutComponent } from './shared/sellerLayout/seller-layout';
 import { Layout } from './shared/adminLayout/layout';
 import { AdminListComponent } from './components/adminSide/adminList/admin-list';
+import { BuyerListComponent } from './components/adminSide/buyerList/buyer-list';
 import { authGuard, superAdminGuard, adminGuard } from '../auth/auth.guard';
-import { customerGuard, guestGuard } from '../auth/customer.guard';
+import { sellerGuard, guestGuard } from '../auth/seller.guard';
 
 export const routes: Routes = [
   {
@@ -11,7 +12,7 @@ export const routes: Routes = [
     component: ClientLayoutComponent, // header+footer live here
     children: [
       { path: 'home', loadComponent: () => import('./components/clientSide/home/home').then(m => m.HomeComponent) },
-      { path: 'profile', canActivate: [customerGuard], loadComponent: () => import('./components/clientSide/profile/profile').then(m => m.ProfileComponent) },
+      { path: 'profile', canActivate: [sellerGuard], loadComponent: () => import('./components/clientSide/profile/profile').then(m => m.ProfileComponent) },
       { path: 'login', canActivate: [guestGuard], loadComponent: () => import('./components/clientSide/login/auth-login').then(m => m.AuthLoginComponent) },
       { path: 'register', canActivate: [guestGuard], loadComponent: () => import('./components/clientSide/register/auth-register').then(m => m.AuthRegisterComponent) },
       { path: 'forgot-password', canActivate: [guestGuard], loadComponent: () => import('./components/clientSide/forgot/forgot').then(m => m.ForgotPasswordComponent) },
@@ -34,11 +35,16 @@ export const routes: Routes = [
         component: AdminListComponent,
         canActivate: [superAdminGuard] // Only superadmin can access
       },
+      {
+        path: 'buyers',
+        component: BuyerListComponent,
+        canActivate: [superAdminGuard] // Only superadmin can access
+      },
 
       // Routes accessible by both admin and superadmin
       {
-        path: 'customers',
-        loadComponent: () => import('./components/adminSide/customerList/customer-list').then(m => m.CustomerListComponent).catch(() => {
+        path: 'sellers',
+        loadComponent: () => import('./components/adminSide/sellerList/seller-list').then(m => m.SellerListComponent).catch(() => {
           // Placeholder if not exists
           return import('./components/adminSide/adminList/admin-list').then(m => m.AdminListComponent);
         })
@@ -71,13 +77,13 @@ export const routes: Routes = [
       //     return import('./components/adminSide/adminList/admin-list').then(m => m.AdminListComponent);
       //   })
       // },
-      { path: '', redirectTo: 'customers', pathMatch: 'full' } // Default redirect to customers
+      { path: '', redirectTo: 'sellers', pathMatch: 'full' } // Default redirect to sellers
     ]
   },
 
   // Auth pages WITHOUT any layout
-  { path: 'admin-login', loadComponent: () => import('./components/adminSide/login/admin-login').then(m => m.AdminLoginComponent) },
-  { path: 'buyer-login', loadComponent: () => import('./components/buyerSide/login/buyer-login').then(m => m.BuyerLoginComponent) },
+  { path: 'admin-login', canActivate: [guestGuard], loadComponent: () => import('./components/adminSide/login/admin-login').then(m => m.AdminLoginComponent) },
+  { path: 'buyer-login', canActivate: [guestGuard], loadComponent: () => import('./components/buyerSide/login/buyer-login').then(m => m.BuyerLoginComponent) },
 
   { path: '**', redirectTo: '' }
 ];

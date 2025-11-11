@@ -14,7 +14,7 @@ interface LoginResponse {
     id: number;
     email: string;
     username: string;
-    userType: 'admin' | 'customer' | 'buyer' | string;
+    userType: 'admin' | 'seller' | 'buyer' | string;
     adminRole?: AdminRole | null; // expect from backend for admins
     // ...anything else you send back
   };
@@ -78,9 +78,9 @@ export class AdminLoginComponent {
           // optional: check specific admin role from backend
           const role: AdminRole | null = (user.adminRole ?? null) as AdminRole | null;
 
-          // Save auth
-          localStorage.setItem('token', res.token);
-          localStorage.setItem('user', JSON.stringify(user));
+          // Save auth using admin-specific storage keys
+          localStorage.setItem('admin_token', res.token);
+          localStorage.setItem('admin_user', JSON.stringify(user));
 
           // Update AuthService signal (IMPORTANT: This ensures the UI updates immediately)
           this.authService.user.set(user as any);
@@ -90,7 +90,7 @@ export class AdminLoginComponent {
 
           // Route based on user role
           const isSuperAdmin = user.userType === 'superadmin' || user.adminRole === 'SUPER_ADMIN';
-          const targetRoute = isSuperAdmin ? '/admin/admins' : '/admin/customers';
+          const targetRoute = isSuperAdmin ? '/admin/admins' : '/admin/sellers';
 
           console.log(`Navigating to ${targetRoute}...`);
           this.router.navigate([targetRoute]).then(

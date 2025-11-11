@@ -40,8 +40,8 @@ export const superAdminGuard: CanActivateFn = (route, state) => {
   // Check if user is superadmin
   if (!authService.isSuperAdmin()) {
     // Not a superadmin - redirect to dashboard or show error
-    // Since dashboard doesn't exist yet, redirect to customers or another allowed page
-    router.navigate(['/admin/customers']);
+    // Since dashboard doesn't exist yet, redirect to sellers or another allowed page
+    router.navigate(['/admin/sellers']);
     return false;
   }
 
@@ -66,7 +66,7 @@ export const adminGuard: CanActivateFn = (route, state) => {
   const isAdminUser = user.userType === 'admin' || user.userType === 'superadmin';
 
   if (!isAdminUser) {
-    // Not an admin - redirect to customer home
+    // Not an admin - redirect to seller home
     router.navigate(['/home']);
     return false;
   }

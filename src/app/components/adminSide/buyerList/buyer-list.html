@@ -1,0 +1,135 @@
+<main class="buyers-page">
+  <div class="buyers-container">
+    <div class="page-head">
+      <h1 class="page-title">Buyers' List</h1>
+      <div class="breadcrumb">Dashboard / <span>Buyer</span></div>
+    </div>
+
+    <!-- toolbar -->
+    <div class="toolbar">
+      <button class="btn-primary" (click)="addNewBuyer()">+ NEW BUYER</button>
+
+      <div class="toolbar-right">
+        <div class="search">
+          <input type="text" placeholder="Search" [value]="search()"
+            (input)="onSearchInput($any($event.target).value)" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div *ngIf="loading()" class="loading">Loading buyers...</div>
+
+    <!-- Error state -->
+    <div *ngIf="error()" class="error-message">{{ error() }}</div>
+
+    <!-- table -->
+    <div class="table-wrap" *ngIf="!loading() && !error()">
+      <table class="grid">
+        <thead>
+          <tr>
+            <th class="narrow">#</th>
+            <th (click)="onSort('buyerId')" class="sortable">
+              Buyer ID <span class="sort">{{ sortIcon('buyerId') }}</span>
+            </th>
+            <th (click)="onSort('fullName')" class="sortable">
+              Full Name <span class="sort">{{ sortIcon('fullName') }}</span>
+            </th>
+            <th (click)="onSort('username')" class="sortable">
+              Username <span class="sort">{{ sortIcon('username') }}</span>
+            </th>
+            <th (click)="onSort('email')" class="sortable">
+              Email <span class="sort">{{ sortIcon('email') }}</span>
+            </th>
+            <th (click)="onSort('phone')" class="sortable">
+              Phone <span class="sort">{{ sortIcon('phone') }}</span>
+            </th>
+            <th class="non-sortable">Password</th>
+            <th (click)="onSort('status')" class="sortable">
+              Status <span class="sort">{{ sortIcon('status') }}</span>
+            </th>
+            <th class="actions">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let r of pageSlice(); let i = index">
+            <td class="narrow">{{ (currentPage() - 1) * itemsPerPage() + i + 1 }}</td>
+            <td>{{ r.buyerId }}</td>
+            <td>{{ r.fullName }}</td>
+            <td>{{ r.username }}</td>
+            <td>{{ r.email }}</td>
+            <td>{{ r.phone }}</td>
+            <td>{{ r.maskedPassword }}</td>
+            <td>
+              <span class="badge" [ngClass]="statusClass(r.status)">
+                <span class="dot"></span> {{ r.status }}
+              </span>
+            </td>
+            <td class="actions">
+              <button class="icon" title="Edit" (click)="editBuyer(r)">
+                <img src="assets/icons/edit.png" alt="Edit" class="action-icon">
+              </button>
+
+              <!-- Show activate/deactivate for buyers -->
+              <button class="icon"
+                [class.danger]="r.status === 'ACTIVE'" [class.success]="r.status === 'INACTIVE'"
+                [title]="getToggleTitle(r.status)" (click)="toggleStatus(r)">
+                <img [src]="getToggleIconSrc(r.status)" [alt]="getToggleTitle(r.status)" class="action-icon">
+              </button>
+
+              <!-- Show delete button for buyers -->
+              <button class="icon danger" title="Delete" (click)="deleteBuyer(r)">
+                <img src="assets/icons/delete.png" alt="Delete" class="action-icon">
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- pager -->
+    <div class="pager" *ngIf="!loading() && !error()">
+      <button class="page-btn" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1">9</button>
+
+      <button class="page-btn" *ngFor="let p of pageNumbers()" [class.active]="p === currentPage()"
+        (click)="goToPage(p)">{{ p }}</button>
+
+      <button class="page-btn" (click)="goToPage(currentPage() + 1)"
+        [disabled]="currentPage() === totalPages()">:</button>
+
+      <div class="page-size">
+        <select [ngModel]="itemsPerPage()" (ngModelChange)="setPageSize($event)">
+          <option *ngFor="let n of itemsPerPageOptions" [value]="n">{{ n }}</option>
+        </select>
+        <span>/Page</span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Add Buyer Modal -->
+@if (showAddModal()) {
+<app-add-buyer (close)="onCloseAddModal()" (buyerAdded)="onBuyerAdded($event)">
+</app-add-buyer>
+}
+
+<!-- Edit Buyer Modal -->
+@if (showEditModal() && selectedBuyer()) {
+<app-edit-buyer [buyerData]="selectedBuyer()!" (close)="onCloseEditModal()" (buyerUpdated)="onBuyerUpdated($event)">
+</app-edit-buyer>
+}
+
+<!-- Confirmation Modal -->
+@if (showConfirmModal()) {
+<div class="modal-overlay">
+  <div class="confirm-modal">
+    <h2 class="confirm-title">Confirm Action</h2>
+    <p class="confirm-message">{{ getConfirmMessage() }}</p>
+    <div class="confirm-actions">
+      <button class="btn-cancel" (click)="onCancelConfirm()">Cancel</button>
+      <button class="btn-confirm" (click)="onConfirm()">Confirm</button>
+    </div>
+  </div>
+</div>
+}

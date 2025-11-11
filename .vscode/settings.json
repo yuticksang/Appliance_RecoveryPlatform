@@ -1,16 +1,34 @@
 {
     "sqltools.connections": [
         {
+            "pgOptions": {
+                "ssl": {
+                    "rejectUnauthorized": true
+                }
+            },
             "ssh": "Disabled",
             "previewLimit": 50,
             "server": "localhost",
-            "port": 4000,
             "driver": "PostgreSQL",
-            "name": "EasyRecovery DB",
-            "database": "easyrecovery",
+            "name": "Supabase - EzRecovery",
+            "database": "postgres",
             "username": "postgres",
-            "password": "0000",
-            "connectionTimeout": 30
+            "password": "easyrecovery",
+            "connectionTimeout": 30,
+            "connectString": "postgresql://postgres.eoswarqcyddigaxhlgyb:easyrecovery@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres"
+        },
+        {
+            "pgOptions": {
+                "ssl": {
+                    "rejectUnauthorized": true
+                }
+            },
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "localhost",
+            "driver": "PostgreSQL",
+            "name": "Supabase",
+            "connectString": "postgresql://postgres:easyrecovery@db.eoswarqcyddigaxhlgyb.supabase.co:5432/postgres"
         }
     ]
 }
