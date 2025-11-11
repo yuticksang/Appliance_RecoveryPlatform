@@ -1,0 +1,725 @@
+.page-title {
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  font-family: 'Space Grotesk', sans-serif;
+  color: #334155;
+}
+
+.page-p {
+  text-align: center;
+  font-family: 'Space Grotesk', sans-serif;
+  color: #334155;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+/* Circular Stepper Styles */
+.progress-stepper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 2em 0;
+  margin-top: 60px;
+  gap: 8rem;
+  position: relative;
+  flex-wrap: wrap;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+}
+
+.circle {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background-color: #eeeeee;
+  color: #a8a8a8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1.1rem;
+  border: 3px solid #ccc;
+  transition: all 0.3s ease;
+  z-index: 2;
+}
+
+.step.active .circle {
+  border-color: #334155;
+  color: #334155;
+  transform: scale(1.1);
+}
+
+.step.completed .circle {
+  border-color: #334155;
+  color: #334155;
+}
+
+/* Connector line */
+.step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 50%;                          /* Center vertically */
+  left: 50%;                         /* Start from center of this step */
+  transform: translateY(-50%) translateX(50%); /* Move right half of gap */
+  width: 88px;                       /* Length of the line between circles */
+  height: 3px;
+  background-color: #ccc;
+  z-index: 1;
+  border-radius: 3px;
+}
+
+
+.step.completed:not(:last-child)::after {
+  background-color: #334155; /* active line color */
+}
+
+/* Responsive adjustment */
+@media (max-width: 600px) {
+  .circle {
+    width: 38px;
+    height: 38px;
+  }
+
+  .step:not(:last-child)::after {
+    width: 40px;
+    left: calc(100% + 5px);
+  }
+}
+
+
+
+// .form-container {
+//   background: white;
+//   max-width: 900px;
+//   margin: 0 auto;
+//   padding: 40px;
+//   border-radius: 16px;
+//   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+//   font-family: 'Space Grotesk', sans-serif;
+//   color: #334155;
+//   font-size: 13px;
+//   color: #334155;
+// }
+
+.form-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 40px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  color: #334155;
+}
+
+.form-section { margin-bottom: 30px; }
+
+.question {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.form-select {
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  width: 100%;
+}
+
+.checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.physical-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 15px;
+}
+
+.physical-card {
+  border: 2px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: 0.3s;
+}
+.physical-card img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.physical-card.selected {
+  border-color: #3498db;
+}
+
+.upload-box {
+  border: 2px dashed #ccc;
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  color: #666;
+}
+.upload-btn {
+  margin-top: 10px;
+  background-color: #eee;
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+.uploaded-files p {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  border-radius: 6px;
+  padding: 5px 10px;
+  margin-top: 8px;
+}
+.remove-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #ef4444;
+  font-size: 16px;
+}
+
+.text-area {
+  width: 100%;
+  border-radius: 8px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  min-height: 100px;
+}
+
+.btn-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.btn-row button {
+  background-color: #3b82f6;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.step-title {
+  font-weight: 600;
+  font-size: 1.2rem;
+  margin-bottom: 20px;
+  color: #334155;
+  text-align: center;
+}
+
+.upload-info {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #64748b;
+  text-align: center;
+}
+
+// Step 4
+
+/* Step 4 Valuation Styles */
+.valuation-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.valuation-worth {
+  margin-bottom: 1.2rem;
+}
+
+.worth-title {
+  font-size: 1rem;
+  color: #555;
+  margin-bottom: 0.3rem;
+}
+
+.valuation-worth h3 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+/* Circular Progress */
+.circle-progress {
+  position: relative;
+  width: 160px;
+  height: 160px;
+  margin: 0 auto 1.5rem;
+}
+
+.progress-ring {
+  transform: rotate(-90deg);
+}
+
+.progress-ring__background {
+  fill: none;
+  stroke: #eee;
+  stroke-width: 10;
+}
+
+.progress-ring__circle {
+  fill: none;
+  stroke: #334155;
+  stroke-width: 10;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.5s ease;
+}
+
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.progress-text h2 {
+  font-size: 2rem;
+  margin: 0;
+  color: #334155;
+}
+
+.progress-text p {
+  margin: 0;
+  font-size: 1rem;
+  color: #666;
+}
+
+/* Appliance Details Box */
+.valuation-details-box {
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  padding: 1rem 1.5rem;
+  margin: 1rem auto;
+  max-width: 480px;
+  text-align: left;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.valuation-details-box h4 {
+  font-size: 1.1rem;
+  color: #334155;
+  margin-bottom: 0.6rem;
+  text-align: center;
+}
+
+.valuation-details-box ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.valuation-details-box li {
+  margin: 6px 0;
+  color: #555;
+}
+
+/* Red Note */
+.valuation-note {
+  margin-top: 1.5rem;
+  color: #d32f2f;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 10px 10px;
+}
+
+/* Buttons */
+.btn-row {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.start-over-btn {
+  background-color: #e0e0e0;
+  color: #333;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.accept-offer-btn {
+  background-color: #334155;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.start-over-btn:hover {
+  background-color: #ccc;
+}
+
+.accept-offer-btn:hover {
+  background-color: #1e293b;
+}
+
+
+// Step 5
+.step-5-grid {
+  display: flex;
+  flex-direction: column;
+}
+
+.step-5-content {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 2rem;
+}
+
+.address-card {
+  border: 2px dashed #ccc;
+  padding: 1rem;
+  border-radius: 10px;
+  cursor: pointer;
+  background-color: #f9f9f9;
+  position: relative;
+  margin-bottom: 20px;
+}
+.address-card:hover { border-color: #666; }
+
+.no-address {
+  color: #888;
+  font-style: italic;
+}
+
+.default-badge {
+  background: #4caf50;
+  color: #fff;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 0.8rem;
+}
+
+.summary-card {
+  margin-top: 40px;
+  border-left: 1px solid #ddd;
+  padding: 1.5rem;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 5vh;
+  z-index: 10;
+}
+
+.modal {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 10px;
+  width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.address-item {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 0.8rem;
+  margin-bottom: 0.5rem;
+  background: #f8f8f8;
+}
+
+.address-actions button {
+  margin-right: 0.5rem;
+}
+
+.address-form {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.add-btn {
+  margin-top: 0.8rem;
+  background: #2196f3;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: none;
+}
+
+.close-btn {
+  margin-top: 1rem;
+  background: #999;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: none;
+}
+
+/* Step 5 Photo Preview */
+.summary-card .photo-preview {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.summary-card .photo-preview img {
+  max-width: 200px;
+  max-height: 150px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+/* Center the Step 5 buttons */
+.center-btns {
+  justify-content: center !important;
+}
+
+.center-btns button {
+  min-width: 120px;
+}
+
+/* Personal Details Form */
+.personal-details-form {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  h4 {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    color: #374151;
+  }
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  &:focus {
+    border-color: #3b82f6;
+    outline: none;
+  }
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+/* Address Modal Updates */
+.address-modal {
+  width: 500px;
+  max-height: 80vh;
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      color: #6b7280;
+    }
+  }
+  .address-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+  }
+  .address-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    background: white;
+    .address-checkbox {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      flex: 1;
+      input[type="checkbox"] {
+        margin-top: 2px;
+        accent-color: #3b82f6;
+      }
+      .address-content p {
+        margin: 2px 0;
+        font-size: 13px;
+        color: #374151;
+      }
+    }
+    .address-actions {
+      button {
+        background: none;
+        border: none;
+        color: #3b82f6;
+        cursor: pointer;
+        font-size: 12px;
+        margin-left: 10px;
+        &:hover { text-decoration: underline; }
+      }
+    }
+  }
+  .modal-footer {
+    display: flex;
+    justify-content: space-between;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 15px;
+    .add-btn {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .confirm-btn {
+      background: #10b981;
+      color: white;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      &[disabled] {
+        background: #d1d5db;
+        cursor: not-allowed;
+      }
+    }
+  }
+  .address-edit-form {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 15px;
+    margin-top: 15px;
+    h5 { margin-bottom: 10px; color: #374151; }
+    input, textarea {
+      @extend .form-input;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    .form-row { gap: 10px; }
+  }
+}
+
+/* No Address */
+.no-address {
+  color: #9ca3af;
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+}
+
+/* Default Badge (unchanged but tweaked) */
+.default-badge {
+  background: #10b981;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+}
+
+.address-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.default-radio {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: #374151;
+  input[type="radio"] {
+    accent-color: #3b82f6;
+    margin: 0;
+  }
+}
+
+.checkbox-section {
+  display: flex;
+  align-items: center;
+  margin: 15px 0;
+  input[type="checkbox"] {
+    accent-color: #3b82f6;
+    margin-right: 8px;
+  }
+  label {
+    margin: 0;
+    font-size: 14px;
+    color: #374151;
+    cursor: pointer;
+  }
+}
+
+// Step 6
+.step-6-complete {
+  text-align: center;
+
+  .completion-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+
+    h3 {
+      font-size: 1.5rem;
+      color: #2e7d32; /* green */
+      margin: 0;
+    }
+
+    p {
+      font-size: 1rem;
+      color: #334155;
+    }
+
+    .success-icon {
+      width: 80px;
+      height: 80px;
+    }
+  }
+
+  .btn-row {
+    margin-top: 2rem;
+  }
+}

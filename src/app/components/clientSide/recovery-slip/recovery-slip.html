@@ -1,0 +1,75 @@
+<div class="recovery-slip-container">
+  <a class="back-link" routerLink="/previous">&lt; Back</a>
+
+  <!-- Download / Print Icons -->
+  <div class="action-icons">
+    <button (click)="downloadPDF()" title="Download PDF">
+      <i class="fas fa-download"></i>
+    </button>
+    <button (click)="printSlip()" title="Print Slip">
+      <i class="fas fa-print"></i>
+    </button>
+  </div>
+
+  <!-- Recovery Slip Content -->
+  <div class="slip-card" #recoverySlip>
+    <h1 class="title">Recovery Slip</h1>
+    <p class="date">
+      Date: {{ recoveryData.date }}<br>
+      Receipt No: {{ recoveryData.receiptNo }}
+    </p>
+
+    <!-- Seller Details -->
+    <div class="section">
+      <h2 class="section-title">Seller Details</h2>
+      <div class="section-content">
+        <p><strong>Name:</strong> {{ recoveryData.seller.name }}</p>
+        <p><strong>Phone No:</strong> {{ recoveryData.seller.phone }}</p>
+        <p><strong>Address:</strong> {{ recoveryData.seller.address }}</p>
+      </div>
+    </div>
+
+    <!-- Appliance Details -->
+    <div class="section">
+      <h2 class="section-title">Appliance Details</h2>
+      <div class="section-content">
+        <p><strong>Appliance ID:</strong> {{ recoveryData.appliance.id }}</p>
+        <p><strong>Category:</strong> {{ recoveryData.appliance.category }}</p>
+        <p><strong>Brand:</strong> {{ recoveryData.appliance.brand }}</p>
+        <p><strong>Model:</strong> {{ recoveryData.appliance.model }}</p>
+        <p><strong>Functional Status:</strong> {{ recoveryData.appliance.functionalStatus }}</p>
+        <p><strong>Issue:</strong> {{ recoveryData.appliance.issue }}</p>
+        <p><strong>Physical Condition:</strong> {{ recoveryData.appliance.physicalCondition }}</p>
+        <p><strong>Trade-in Value:</strong> {{ recoveryData.appliance.tradeValue }}</p>
+        <p><strong>Condition Score:</strong> {{ recoveryData.appliance.conditionScore }}</p>
+      </div>
+    </div>
+
+    <!-- Delivery Details -->
+    <div class="section">
+      <h2 class="section-title">Delivery Details</h2>
+      <div class="section-content">
+        <p><strong>Delivery Method:</strong> {{ recoveryData.delivery.method }}</p>
+        <p><strong>Pickup Date:</strong> {{ recoveryData.delivery.pickupDate }}</p>
+        <p><strong>Pickup Time Slot:</strong> {{ recoveryData.delivery.pickupTime }}</p>
+      </div>
+    </div>
+
+    <!-- Terms and Conditions -->
+    <div class="section">
+      <h2 class="section-title">Terms and Conditions</h2>
+      <div class="section-content">
+        <ul>
+          <li>Payment will be processed upon successful pickup and verification of the appliance.</li>
+          <li>Ez Recover reserves the right to adjust the trade-in value based on the actual condition upon inspection.</li>
+          <li>Contact customer support at <a href="mailto:support@ezrecover.com">support@ezrecover.com</a> for any inquiries.</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="footer-text">
+      Thank you for choosing Ez Recover!<br>
+      <em>Sustainable Appliance Recovery</em>
+    </p>
+  </div>
+</div>

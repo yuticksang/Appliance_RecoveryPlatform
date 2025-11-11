@@ -17,7 +17,9 @@ export const routes: Routes = [
       { path: 'forgot-password', canActivate: [guestGuard], loadComponent: () => import('./components/clientSide/forgot/forgot').then(m => m.ForgotPasswordComponent) },
       { path: 'reset-password/:token', canActivate: [guestGuard], loadComponent: () => import('./components/clientSide/reset/reset').then(m => m.ResetPasswordComponent) },
       { path: '', redirectTo: 'home', pathMatch: 'full' },
-      { path: 'questionnaire', loadComponent: () => import('./components/clientSide/questionnaire/questionnaire').then(m => m.QuestionnaireComponent) }
+      { path: 'questionnaire', loadComponent: () => import('./components/clientSide/questionnaires/questionnaires').then(m => m.QuestionnairesComponent) },
+      { path: 'recovery-slip', loadComponent: () => import('./components/clientSide/recovery-slip/recovery-slip').then(m => m.RecoverySlipComponent) },
+      { path: 'packaging-instruction', loadComponent: () => import('./components/clientSide/packaging-instruction/packaging-instruction').then(m => m.PackagingInstruction) }
 
     ]
   },
