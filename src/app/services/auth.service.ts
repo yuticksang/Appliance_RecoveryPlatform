@@ -95,7 +95,7 @@ export class AuthService {
 
   private clearAuthState() {
     console.log('🧹 Clearing auth state...');
-    // Clear localStorage (customer-specific keys only)
+    // Clear localStorage (seller-specific keys only)
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('userProfile');
@@ -120,7 +120,7 @@ export class AuthService {
   }
 
   setAuthData(response: any) {
-    // Store in localStorage (customer-specific keys)
+    // Store in localStorage (seller-specific keys)
     localStorage.setItem('token', response.token);
     localStorage.setItem('user', JSON.stringify(response.user));
 

@@ -37,11 +37,11 @@ export const register = async (req: Request, res: Response) => {
     // Generate email verification token
     const emailVerificationToken = crypto.randomBytes(32).toString('hex');
 
-    // Create user (customers only via registration)
+    // Create user (sellers only via registration)
     // Set status to ACTIVE for now (email verification will be implemented later)
     const result = await pool.query(
       `INSERT INTO users (email, password, name, username, phone, user_type, user_status, email_verified, can_change_password)
-       VALUES ($1, $2, $3, $4, $5, 'customer', 'ACTIVE', false, true)
+       VALUES ($1, $2, $3, $4, $5, 'seller', 'ACTIVE', false, true)
        RETURNING id, email, name, username, user_type, user_status`,
       [email, hashedPassword, name, username, phone]
     );
@@ -87,12 +87,12 @@ export const login = async (req: Request, res: Response) => {
     let result;
 
     if (isPrefixedId) {
-      // Find by admin_id, buyer_id, or customer_id (all are prefixed now)
+      // Find by admin_id, buyer_id, or seller_id (all are prefixed now)
       result = await pool.query(
         `SELECT * FROM users
          WHERE UPPER(admin_id) = UPPER($1)
          OR UPPER(buyer_id) = UPPER($1)
-         OR UPPER(customer_id) = UPPER($1)`,
+         OR UPPER(seller_id) = UPPER($1)`,
         [emailOrUsername.toUpperCase()]
       );
     } else {
@@ -274,6 +274,18 @@ export const updateProfile = async (req: Request, res: Response) => {
   try {
     const userId = parseInt(req.params.id);
     const { name, username, phone } = req.body;
+
+    // Check if username is being updated and if it's unique
+    if (username !== undefined) {
+      const existingUser = await pool.query(
+        'SELECT id FROM users WHERE username = $1 AND id != $2',
+        [username, userId]
+      );
+
+      if (existingUser.rows.length > 0) {
+        return res.status(400).json({ message: 'Username already exists. Please choose a different username.' });
+      }
+    }
 
     // Build dynamic update query
     const updates: string[] = [];

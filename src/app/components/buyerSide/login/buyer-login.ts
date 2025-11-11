@@ -12,7 +12,7 @@ interface LoginResponse {
     id: number;
     email: string;
     username: string;
-    userType: 'admin' | 'customer' | 'buyer' | string;
+    userType: 'admin' | 'seller' | 'buyer' | string;
     adminRole?: string | null;
   };
 }
@@ -82,8 +82,8 @@ export class BuyerLoginComponent {
           // Show success message
           this.alertService.success('Login successful! Welcome back.');
 
-          // Navigate to customer home page
-          console.log('Navigating to customer home...');
+          // Navigate to buyer home page
+          console.log('Navigating to buyer home...');
           this.router.navigate(['/home']).then(
             success => console.log('Navigation success:', success),
             error => console.error('Navigation error:', error)

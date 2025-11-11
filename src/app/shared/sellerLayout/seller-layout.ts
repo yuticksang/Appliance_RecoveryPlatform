@@ -7,6 +7,6 @@ import { ClientFooterComponent } from './footer';
   selector: 'app-client-layout',
   standalone: true,
   imports: [RouterOutlet, ClientHeaderComponent, ClientFooterComponent],
-  templateUrl: './customer-layout.html'
+  templateUrl: './seller-layout.html'
 })
 export class ClientLayoutComponent {}

@@ -3,10 +3,10 @@ import { Router, CanActivateFn } from '@angular/router';
 import { AuthService } from '../app/services/auth.service';
 
 /**
- * Customer guard - protects routes that require a logged-in customer
+ * Seller guard - protects routes that require a logged-in seller
  * Redirects to login if not authenticated
  */
-export const customerGuard: CanActivateFn = (route, state) => {
+export const sellerGuard: CanActivateFn = (route, state) => {
   const router = inject(Router);
 
   // Check token and user directly from localStorage for immediate synchronous response
@@ -15,7 +15,7 @@ export const customerGuard: CanActivateFn = (route, state) => {
 
   if (!token || !userStr) {
     // Not logged in - redirect to login
-    console.log('❌ Customer guard: Not logged in, redirecting to login');
+    console.log('❌ Seller guard: Not logged in, redirecting to login');
     router.navigate(['/login']);
     return false;
   }
@@ -23,17 +23,17 @@ export const customerGuard: CanActivateFn = (route, state) => {
   try {
     const user = JSON.parse(userStr);
 
-    // Check if user is a customer
-    if (user.userType !== 'customer') {
-      console.log('❌ Customer guard: Not a customer, redirecting to login');
+    // Check if user is a seller
+    if (user.userType !== 'seller') {
+      console.log('❌ Seller guard: Not a seller, redirecting to login');
       router.navigate(['/login']);
       return false;
     }
 
-    console.log('✅ Customer guard: Access granted');
+    console.log('✅ Seller guard: Access granted');
     return true;
   } catch (e) {
-    console.error('❌ Customer guard: Failed to parse user data', e);
+    console.error('❌ Seller guard: Failed to parse user data', e);
     router.navigate(['/login']);
     return false;
   }
@@ -48,7 +48,7 @@ export const guestGuard: CanActivateFn = (route, state) => {
 
   // Check which page they're trying to access
   const targetPath = state.url;
-  const isCustomerLogin = targetPath.startsWith('/login') || targetPath.startsWith('/register');
+  const isSellerLogin = targetPath.startsWith('/login') || targetPath.startsWith('/register');
   const isAdminLogin = targetPath.startsWith('/admin-login');
   const isBuyerLogin = targetPath.startsWith('/buyer-login');
 
@@ -71,21 +71,21 @@ export const guestGuard: CanActivateFn = (route, state) => {
     }
   }
 
-  // Check customer session (customer-specific storage)
-  if (isCustomerLogin) {
-    const customerToken = localStorage.getItem('token');
-    const customerUserStr = localStorage.getItem('user');
+  // Check seller session (seller-specific storage)
+  if (isSellerLogin) {
+    const sellerToken = localStorage.getItem('token');
+    const sellerUserStr = localStorage.getItem('user');
 
-    if (customerToken && customerUserStr) {
+    if (sellerToken && sellerUserStr) {
       try {
-        const customerUser = JSON.parse(customerUserStr);
-        if (customerUser.userType === 'customer') {
-          console.log('✅ Guest guard: Customer already logged in, redirecting to home');
+        const sellerUser = JSON.parse(sellerUserStr);
+        if (sellerUser.userType === 'seller') {
+          console.log('✅ Guest guard: Seller already logged in, redirecting to home');
           router.navigate(['/home']);
           return false;
         }
       } catch (e) {
-        console.error('❌ Guest guard: Failed to parse customer user data', e);
+        console.error('❌ Guest guard: Failed to parse seller user data', e);
       }
     }
   }

@@ -15,11 +15,15 @@
           <button class="btn sm" (click)="saveProfile()">Update</button>
         </div>
         <form [formGroup]="profileForm" class="grid g2">
-          <label><input formControlName="firstName" placeholder="SHI YING" /></label>
-          <label><input formControlName="lastName" placeholder="CHUA" /></label>
-          <label class="full"><input formControlName="email" placeholder="chuasy-wm21@student.tarc.edu.my" /></label>
-          <label class="full"><input formControlName="phone" placeholder="+60123456789" /></label>
+          <label><input formControlName="firstName" placeholder="First Name" /></label>
+          <label><input formControlName="lastName" placeholder="Last Name" /></label>
+          <label class="full"><input formControlName="username" placeholder="Username" /></label>
+          <label class="full"><input formControlName="email" placeholder="Email" /></label>
+          <label class="full"><input formControlName="phone" placeholder="Phone Number" /></label>
         </form>
+        <div *ngIf="profileForm.get('username')?.invalid && profileForm.get('username')?.touched" class="error-text">
+          Username must be at least 3 characters and unique
+        </div>
       </div>
 
       <!-- Home Address -->
