@@ -18,14 +18,19 @@ export const getAllUsers = async (req: Request, res: Response) => {
   }
 };
 
-// Check if username is available
+// Check if username is available for a specific user type
 export const checkUsername = async (req: Request, res: Response) => {
   try {
     const { username } = req.params;
+    const { user_type } = req.query; // Get user_type from query params
+
+    if (!user_type) {
+      return res.status(400).json({ message: 'user_type is required' });
+    }
 
     const result = await pool.query(
-      'SELECT "userID" FROM users WHERE username = $1',
-      [username]
+      'SELECT "userID" FROM users WHERE username = $1 AND user_type = $2',
+      [username, user_type]
     );
 
     res.json({ available: result.rows.length === 0 });
@@ -47,15 +52,28 @@ export const createUser = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Password, name, and username are required' });
     }
 
-    // Check if username already exists
+    // Check if username already exists for this user_type
     const existingUser = await pool.query(
-      'SELECT "userID" FROM users WHERE username = $1',
-      [username]
+      'SELECT "userID" FROM users WHERE username = $1 AND user_type = $2',
+      [username, user_type || 'admin']
     );
 
     if (existingUser.rows.length > 0) {
-      console.log('❌ Username already exists:', username);
-      return res.status(400).json({ message: 'Username already exists' });
+      console.log('❌ Username already exists for', user_type || 'admin', ':', username);
+      return res.status(400).json({ message: 'Username already exists for this user type' });
+    }
+
+    // Check if email already exists for this user_type (if email is provided)
+    if (req.body.email) {
+      const existingEmail = await pool.query(
+        'SELECT "userID" FROM users WHERE email = $1 AND user_type = $2',
+        [req.body.email, user_type || 'admin']
+      );
+
+      if (existingEmail.rows.length > 0) {
+        console.log('❌ Email already exists for', user_type || 'admin', ':', req.body.email);
+        return res.status(400).json({ message: 'Email already exists for this user type' });
+      }
     }
 
     // Hash password
@@ -114,14 +132,38 @@ export const updateUser = async (req: Request, res: Response) => {
     const { id } = req.params; // This is now userID (string)
     const { name, username, password, email, phone } = req.body;
 
-    // Check if username is taken by another user
+    // Get current user's type
+    const currentUser = await pool.query(
+      'SELECT user_type FROM users WHERE "userID" = $1',
+      [id]
+    );
+
+    if (currentUser.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const userType = currentUser.rows[0].user_type;
+
+    // Check if username is taken by another user of the same type
     const existingUser = await pool.query(
-      'SELECT "userID" FROM users WHERE username = $1 AND "userID" != $2',
-      [username, id]
+      'SELECT "userID" FROM users WHERE username = $1 AND user_type = $2 AND "userID" != $3',
+      [username, userType, id]
     );
 
     if (existingUser.rows.length > 0) {
-      return res.status(400).json({ message: 'Username already exists' });
+      return res.status(400).json({ message: 'Username already exists for this user type' });
+    }
+
+    // Check if email is taken by another user of the same type (if email is provided)
+    if (email !== undefined && email !== null && email !== '') {
+      const existingEmail = await pool.query(
+        'SELECT "userID" FROM users WHERE email = $1 AND user_type = $2 AND "userID" != $3',
+        [email, userType, id]
+      );
+
+      if (existingEmail.rows.length > 0) {
+        return res.status(400).json({ message: 'Email already exists for this user type' });
+      }
     }
 
     // Build dynamic update fields

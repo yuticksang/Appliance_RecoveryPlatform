@@ -5,8 +5,8 @@ import { Observable, BehaviorSubject } from 'rxjs';
 import { AuthService as AdminAuthService } from '../../auth/auth-service';
 import { environment } from '../../environments/environment';
 
-export interface User {
-  id: number;
+interface User {
+  id: string; // Changed to string for new ID format (U001, S001, etc.)
   email: string;
   name: string;
   username: string;
@@ -124,10 +124,17 @@ export class AuthService {
     localStorage.setItem('token', response.token);
     localStorage.setItem('user', JSON.stringify(response.user));
 
+    // Also store user as profile initially (can be updated later)
+    localStorage.setItem('userProfile', JSON.stringify(response.user));
+
     // Update observables and signals
     this.currentUserSubject.next(response.user);
     this.currentUser.set(response.user);
+    this.userProfileSubject.next(response.user);
+    this.userProfile.set(response.user);
     this.isLoggedIn.set(true);
+
+    console.log('✅ Auth data set, user and profile stored');
 
     // Don't sync with admin auth service - they use separate storage now
     // this.adminAuthService.setUser(response.user);
@@ -226,50 +233,50 @@ export class AuthService {
   }
 
   // Address methods
-  getAddresses(userId: number): Observable<any[]> {
+  getAddresses(userId: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/addresses/${userId}`, {
       headers: this.getAuthHeaders()
     });
   }
 
-  createAddress(userId: number, address: any): Observable<any> {
+  createAddress(userId: string, address: any): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/addresses/${userId}`, address, {
       headers: this.getAuthHeaders()
     });
   }
 
-  updateAddress(userId: number, addressId: number, address: any): Observable<any> {
+  updateAddress(userId: string, addressId: string, address: any): Observable<any> {
     return this.http.put<any>(`${this.apiUrl}/addresses/${userId}/${addressId}`, address, {
       headers: this.getAuthHeaders()
     });
   }
 
-  deleteAddress(userId: number, addressId: number): Observable<any> {
+  deleteAddress(userId: string, addressId: string): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/addresses/${userId}/${addressId}`, {
       headers: this.getAuthHeaders()
     });
   }
 
   // Bank methods
-  getBankDetails(userId: number): Observable<any> {
+  getBankDetails(userId: string): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/bank/${userId}`, {
       headers: this.getAuthHeaders()
     });
   }
 
-  createBankDetails(userId: number, bank: any): Observable<any> {
+  createBankDetails(userId: string, bank: any): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/bank/${userId}`, bank, {
       headers: this.getAuthHeaders()
     });
   }
 
-  updateBankDetails(userId: number, bank: any): Observable<any> {
+  updateBankDetails(userId: string, bank: any): Observable<any> {
     return this.http.put<any>(`${this.apiUrl}/bank/${userId}`, bank, {
       headers: this.getAuthHeaders()
     });
   }
 
-  deleteBankDetails(userId: number): Observable<any> {
+  deleteBankDetails(userId: string): Observable<any> {
     return this.http.delete<any>(`${this.apiUrl}/bank/${userId}`, {
       headers: this.getAuthHeaders()
     });
