@@ -88,12 +88,9 @@ export class AdminLoginComponent {
           // Show success message
           this.alertService.success('Login successful! Welcome back.');
 
-          // Route based on user role
-          const isSuperAdmin = user.userType === 'superadmin' || user.adminRole === 'SUPER_ADMIN';
-          const targetRoute = isSuperAdmin ? '/admin/admins' : '/admin/sellers';
-
-          console.log(`Navigating to ${targetRoute}...`);
-          this.router.navigate([targetRoute]).then(
+          // Redirect all admins to dashboard
+          console.log('Navigating to /admin/dashboard...');
+          this.router.navigate(['/admin/dashboard']).then(
             success => console.log('Navigation success:', success),
             error => console.error('Navigation error:', error)
           );

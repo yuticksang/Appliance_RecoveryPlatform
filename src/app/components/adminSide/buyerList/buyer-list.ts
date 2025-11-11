@@ -9,7 +9,7 @@ import { AlertService } from '../../../services/alert.service';
 type BuyerStatus = 'ACTIVE' | 'INACTIVE';
 
 interface BuyerRow {
-  id: number;
+  id: string; // Changed to string for new ID format (U001, U002, etc.)
   buyerId: string;
   fullName: string;
   username: string;
@@ -100,9 +100,10 @@ export class BuyerListComponent implements OnInit {
       });
   }
 
-  checkUsernameUnique(username: string, excludeId?: number): Promise<boolean> {
+  checkUsernameUnique(username: string, excludeId?: string): Promise<boolean> {
     return new Promise((resolve) => {
-      this.http.get<{available: boolean}>(`${this.apiUrl}/admin/check-username/${username}`)
+      // Pass user_type as query parameter to check username uniqueness per type
+      this.http.get<{available: boolean}>(`${this.apiUrl}/admin/check-username/${username}?user_type=buyer`)
         .subscribe({
           next: (response) => {
             // If we're editing, exclude the current user from the check
@@ -345,8 +346,8 @@ export class BuyerListComponent implements OnInit {
   }
 
   sortIcon(col: SortKey) {
-    if (this.sortKey() !== col) return '�';
-    return this.sortDir() === 'asc' ? '�' : '�';
+    if (this.sortKey() !== col) return '↕';
+    return this.sortDir() === 'asc' ? '↑' : '↓';
   }
 
   getToggleIconSrc(status: string): string {
