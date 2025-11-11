@@ -21,14 +21,24 @@ export const register = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Email, password, name, and username are required' });
     }
 
-    // Check if user exists
-    const userExists = await pool.query(
-      'SELECT "userID" FROM users WHERE email = $1 OR username = $2',
-      [email, username]
+    // Check if email exists for sellers only
+    const emailExists = await pool.query(
+      'SELECT "userID" FROM users WHERE email = $1 AND user_type = $2',
+      [email, 'seller']
     );
 
-    if (userExists.rows.length > 0) {
-      return res.status(400).json({ message: 'User with this email or username already exists' });
+    if (emailExists.rows.length > 0) {
+      return res.status(400).json({ message: 'Email already exists for sellers' });
+    }
+
+    // Check if username exists for sellers only
+    const usernameExists = await pool.query(
+      'SELECT "userID" FROM users WHERE username = $1 AND user_type = $2',
+      [username, 'seller']
+    );
+
+    if (usernameExists.rows.length > 0) {
+      return res.status(400).json({ message: 'Username already exists for sellers' });
     }
 
     // Hash password
@@ -279,11 +289,24 @@ export const updateProfile = async (req: Request, res: Response) => {
     const userId = req.params.id; // Now a string ID
     const { name, username, phone } = req.body;
 
-    // Check if username is being updated and if it's unique
+    // Check if username is being updated and if it's unique within the same user_type
     if (username !== undefined) {
+      // First get the current user's type
+      const currentUser = await pool.query(
+        'SELECT user_type FROM users WHERE "userID" = $1',
+        [userId]
+      );
+
+      if (currentUser.rows.length === 0) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const userType = currentUser.rows[0].user_type;
+
+      // Check if username exists for the same user_type (excluding current user)
       const existingUser = await pool.query(
-        'SELECT "userID" FROM users WHERE username = $1 AND "userID" != $2',
-        [username, userId]
+        'SELECT "userID" FROM users WHERE username = $1 AND user_type = $2 AND "userID" != $3',
+        [username, userType, userId]
       );
 
       if (existingUser.rows.length > 0) {
