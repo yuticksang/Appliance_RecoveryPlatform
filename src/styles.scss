@@ -39,10 +39,24 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
+  font-family: 'Space Grotesk', sans-serif;
 }
 
 /* Optional: global box sizing */
-*, *::before, *::after { box-sizing: border-box; }
+*, *::before, *::after {
+  box-sizing: border-box;
+}
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+/* Global font family */
+body, button, input, textarea, select {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+/* Override Bootstrap link styles */
+a {
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: none;
+  }
+}
