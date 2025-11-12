@@ -47,14 +47,14 @@
        <i class="fa-solid fa-chevron-down ms-auto" 
        [class.rotate-180]="isDropdownOpen"></i>
     </a>
-    <ul class="drop-menu" *ngIf="isDropdownOpen" [@slideDown] >
+    <ul class="drop-menu" [class.open]="isDropdownOpen" >
       <li><a class="menu-item" routerLink="/admin/appliances" routerLinkActive="active-dropdown">All Appliances</a></li>
       <li><a class="menu-item" routerLink="/admin/appliances/price-list" routerLinkActive="active-dropdown">Price List</a></li>
       <li><a class="menu-item" routerLink="/admin/appliances/category" routerLinkActive="active-dropdown">Category</a></li>
       <li><a class="menu-item" routerLink="/admin/appliances/brand" routerLinkActive="active-dropdown">Brand</a></li>
       <li><a class="menu-item" routerLink="/admin/appliances/condition" routerLinkActive="active-dropdown">Condition</a></li>
       <li><a class="menu-item" routerLink="/admin/appliances/markdown-list" routerLinkActive="active-dropdown">Markdown List</a></li>
-      <li><a class="menu-item" routerLink="/admin/appliances/scoring" routerLinkActive="active-dropdown">Scoring Configuration</a></li>
+      <li><a class="menu-item" routerLink="/admin/appliances/scoringConfiguration" routerLinkActive="active-dropdown">Scoring Configuration</a></li>
     </ul>
   </div>
   
