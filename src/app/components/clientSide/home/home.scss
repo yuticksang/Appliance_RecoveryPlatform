@@ -9,6 +9,38 @@ $line: #e5e7eb;
     font-family: $Space;
     color: $ink-2;
     background: #fafafa;
+
+    // Reset Bootstrap styles
+    a {
+        text-decoration: none;
+        color: inherit;
+
+        &:hover {
+            color: inherit;
+            text-decoration: none;
+        }
+    }
+
+    // Reset Bootstrap button styles
+    .btn {
+        border: none;
+        font-family: inherit;
+    }
+
+    // Reset Bootstrap card styles
+    .card {
+        border: 1px solid $line;
+    }
+
+    // Reset Bootstrap heading margins
+    h1, h2, h3, h4, h5, h6 {
+        margin-top: 0;
+    }
+
+    // Reset Bootstrap paragraph margins
+    p {
+        margin-bottom: 0;
+    }
 }
 
 .container {
