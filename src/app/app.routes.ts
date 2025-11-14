@@ -57,49 +57,35 @@ export const routes: Routes = [
        {
          path: 'appliances',
           children: [
-          //  {
-          //    path: '',
-          //    loadComponent: () => import('./components/adminSide/applianceList/appliance-list').then(m => m.ApplianceListComponent).catch(() => {
-          //      return import('./components/adminSide/adminList/admin-list').then(m => m.AdminListComponent);
-          //    })
-          //  },
+           {
+             path: '',
+             loadComponent: () => import('./components/adminSide/appliance/appliance-list').then(m => m.ApplianceListComponent)
+           },
           //   {
           //     path: 'price-list',
-          //     loadComponent: () => import('./components/adminSide/appliances/priceList/price-list').then(m => m.PriceListComponent).catch(() => {
-          //       return import('./components/adminSide/adminList/admin-list').then(m => m.AdminListComponent);
-          //     })
+          //     loadComponent: () => import('./components/adminSide/priceList/price-list').then(m => m.PriceListComponent)
           //   },
           //   {
           //     path: 'category',
-          //     loadComponent: () => import('./components/adminSide/appliances/category/category').then(m => m.CategoryComponent).catch(() => {
-          //       return import('./components/adminSide/adminList/admin-list').then(m => m.AdminListComponent);
-          //     })
+          //     loadComponent: () => import('./components/adminSide/category/category').then(m => m.CategoryComponent)
           //   },
           //   {
           //     path: 'brand',
-          //     loadComponent: () => import('./components/adminSide/appliances/brand/brand').then(m => m.BrandComponent).catch(() => {
-          //       return import('./components/adminSide/adminList/admin-list').then(m => m.AdminListComponent);
-          //     })
+          //     loadComponent: () => import('./components/adminSide/brand/brand').then(m => m.BrandComponent)
           //   },
           //   {
           //     path: 'condition',
-          //     loadComponent: () => import('./components/adminSide/appliances/condition/condition').then(m => m.ConditionComponent).catch(() => {
-          //       return import('./components/adminSide/adminList/admin-list').then(m => m.AdminListComponent);
-          //     })
+          //     loadComponent: () => import('./components/adminSide/appliances/condition/condition').then(m => m.ConditionComponent)
           //   },
           //   {
           //     path: 'markdown-list',
-          //     loadComponent: () => import('./components/adminSide/appliances/markdownList/markdown-list').then(m => m.MarkdownListComponent).catch(() => {
-          //       return import('./components/adminSide/adminList/admin-list').then(m => m.AdminListComponent);
-          //     })
+          //     loadComponent: () => import('./components/adminSide/appliances/markdownList/markdown-list').then(m => m.MarkdownListComponent)
           //   },
             {
-              path: 'scoringConfiguration',
-              loadComponent: () => import('./components/adminSide/scoring-configuration/scoring-configuration').then(m => m.ScoringConfiguration).catch(() => {
-                return import('./components/adminSide/adminList/admin-list').then(m => m.AdminListComponent);
-              })
+              path: 'scoring',
+              loadComponent: () => import('./components/adminSide/scoring-configuration/scoring-configuration').then(m => m.ScoringConfiguration)
             }
-          ] 
+          ]
         },
       // {
       //   path: 'reporting',

@@ -51,6 +51,29 @@ $Space: 'Space Grotesk', sans-serif;
         gap: 10px;
     }
 
+    .filter-dropdown {
+        select {
+            height: 36px;
+            border: 1px solid $line;
+            border-radius: 8px;
+            padding: 0 12px;
+            padding-right: 40px;
+            min-width: 180px;
+            background: white;
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            appearance: none;
+
+            &:focus {
+                outline: none;
+                border-color: #99c8ff;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+            }
+        }
+    }
+
     .search {
         position: relative;
 
@@ -67,15 +90,23 @@ $Space: 'Space Grotesk', sans-serif;
                 box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
             }
         }
-
-        .ico {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: $muted;
-        }
     }
+}
+
+.loading {
+    padding: 40px;
+    text-align: center;
+    color: $muted;
+    font-size: 16px;
+}
+
+.error-message {
+    padding: 20px;
+    background: #fef2f2;
+    border: 1px solid #f3d1d1;
+    border-radius: 8px;
+    color: #7f1d1d;
+    text-align: center;
 }
 
 .table-wrap {
@@ -137,6 +168,27 @@ $Space: 'Space Grotesk', sans-serif;
         width: 56px;
     }
 
+    .image-cell {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        .appliance-image {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid $line;
+        }
+    }
+
+    .description-cell {
+        max-width: 200px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
     .actions {
         text-align: left;
         white-space: nowrap;
@@ -163,55 +215,12 @@ $Space: 'Space Grotesk', sans-serif;
                 background-color: #f5f5f5;
                 border-color: #999;
             }
+
+            &.danger:hover {
+                background-color: #fee;
+                border-color: #f88;
+            }
         }
-    }
-
-    .icon {
-        height: 30px;
-        width: 30px;
-        border-radius: 6px;
-        border: 1px solid $line;
-        background: #fff;
-        margin-left: 6px;
-        cursor: pointer;
-
-    }
-}
-
-.badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    height: 28px;
-    padding: 0 10px;
-    border-radius: 999px;
-    border: 1px solid $line;
-    font-size: 12px;
-
-    .dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 999px;
-    }
-}
-
-.badge-active {
-    border-color: #c9efd5;
-    color: #065f46;
-    background: #ecfdf5;
-
-    .dot {
-        background: #10b981;
-    }
-}
-
-.badge-inactive {
-    border-color: #f3d1d1;
-    color: #7f1d1d;
-    background: #fef2f2;
-
-    .dot {
-        background: #ef4444;
     }
 }
 
@@ -238,6 +247,11 @@ $Space: 'Space Grotesk', sans-serif;
             background: #fff;
             border: 2px solid $blue-2;
             font-weight: 700;
+        }
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
     }
 
@@ -325,4 +339,8 @@ $Space: 'Space Grotesk', sans-serif;
     font-weight: 600;
     cursor: pointer;
     font-size: 14px;
+
+    // &:hover {
+    //     background: darken($blue-2, 8%);
+    // }
 }

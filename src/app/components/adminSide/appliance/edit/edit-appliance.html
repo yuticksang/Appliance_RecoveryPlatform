@@ -1,0 +1,75 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Edit Appliance</h3>
+      <button class="close-btn" (click)="onClose()">×</button>
+    </div>
+
+    <form [formGroup]="editApplianceForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="modelCode">Model Code</label>
+        <input id="modelCode" type="text" formControlName="modelCode" placeholder="Enter model code"
+          [class.error]="modelCode?.invalid && modelCode?.touched">
+
+        <div *ngIf="modelCode?.invalid && modelCode?.touched" class="error-message">
+          <small *ngIf="modelCode?.errors?.['required']">Model code is required</small>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="modelName">Model Name</label>
+        <input id="modelName" type="text" formControlName="modelName" placeholder="Enter model name"
+          [class.error]="modelName?.invalid && modelName?.touched">
+
+        <div *ngIf="modelName?.invalid && modelName?.touched" class="error-message">
+          <small *ngIf="modelName?.errors?.['required']">Model name is required</small>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group half-width">
+          <label for="categoryID">Category</label>
+          <select id="categoryID" formControlName="categoryID"
+            [class.error]="categoryID?.invalid && categoryID?.touched">
+            <option value="">Select Category</option>
+            <option *ngFor="let cat of categories" [value]="cat.categoryID">
+              {{ cat.categoryName }}
+            </option>
+          </select>
+
+          <div *ngIf="categoryID?.invalid && categoryID?.touched" class="error-message">
+            <small *ngIf="categoryID?.errors?.['required']">Category is required</small>
+          </div>
+        </div>
+
+        <div class="form-group half-width">
+          <label for="brandID">Brand</label>
+          <select id="brandID" formControlName="brandID"
+            [class.error]="brandID?.invalid && brandID?.touched">
+            <option value="">Select Brand</option>
+            <option *ngFor="let brand of brands" [value]="brand.brandID">
+              {{ brand.brandName }}
+            </option>
+          </select>
+
+          <div *ngIf="brandID?.invalid && brandID?.touched" class="error-message">
+            <small *ngIf="brandID?.errors?.['required']">Brand is required</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description" formControlName="description" placeholder="Enter description (optional)"
+          rows="3"></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="onClose()">Cancel</button>
+        <button type="submit" class="btn-success" [disabled]="editApplianceForm.invalid">
+          Update Appliance
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

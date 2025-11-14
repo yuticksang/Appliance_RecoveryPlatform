@@ -298,3 +298,164 @@ export const deleteUser = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Failed to delete user' });
   }
 };
+
+// =====================================================
+// APPLIANCE MANAGEMENT
+// =====================================================
+
+// Get all categories
+export const getAllCategories = async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      'SELECT "categoryID", "categoryName", description, count, created_at FROM "Category" ORDER BY "categoryName" ASC'
+    );
+
+    console.log('📂 Fetched categories:', result.rows.length);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get all categories error:', error);
+    res.status(500).json({ message: 'Failed to fetch categories' });
+  }
+};
+
+// Get all brands
+export const getAllBrands = async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      'SELECT "brandID", "brandName", description, count, created_at FROM "Brand" ORDER BY "brandName" ASC'
+    );
+
+    console.log('🏷️ Fetched brands:', result.rows.length);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get all brands error:', error);
+    res.status(500).json({ message: 'Failed to fetch brands' });
+  }
+};
+
+// Get all appliances with category and brand names
+export const getAllAppliances = async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      `SELECT
+        a."applianceID",
+        a."categoryID",
+        a."brandID",
+        a."modelCode",
+        a."modelName",
+        a.description,
+        a.created_at,
+        c."categoryName",
+        b."brandName"
+      FROM "Appliance" a
+      LEFT JOIN "Category" c ON a."categoryID" = c."categoryID"
+      LEFT JOIN "Brand" b ON a."brandID" = b."brandID"
+      ORDER BY a."applianceID" ASC`
+    );
+
+    console.log('📱 Fetched appliances:', result.rows.length);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get all appliances error:', error);
+    res.status(500).json({ message: 'Failed to fetch appliances' });
+  }
+};
+
+// Create new appliance
+export const createAppliance = async (req: Request, res: Response) => {
+  try {
+    const { categoryID, brandID, modelCode, modelName, description } = req.body;
+
+    // Validate required fields
+    if (!categoryID || !brandID || !modelCode || !modelName) {
+      return res.status(400).json({ message: 'Category, Brand, Model Code, and Model Name are required' });
+    }
+
+    // Check if model code already exists
+    const existing = await pool.query(
+      'SELECT "applianceID" FROM "Appliance" WHERE "modelCode" = $1',
+      [modelCode]
+    );
+
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ message: 'Model code already exists' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO "Appliance" ("categoryID", "brandID", "modelCode", "modelName", description)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [categoryID, brandID, modelCode, modelName, description || null]
+    );
+
+    console.log('✅ Appliance created:', result.rows[0]);
+    res.status(201).json({
+      message: 'Appliance created successfully',
+      appliance: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Create appliance error:', error);
+    res.status(500).json({ message: 'Failed to create appliance' });
+  }
+};
+
+// Update appliance
+export const updateAppliance = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { categoryID, brandID, modelCode, modelName, description } = req.body;
+
+    // Check if model code is taken by another appliance
+    const existing = await pool.query(
+      'SELECT "applianceID" FROM "Appliance" WHERE "modelCode" = $1 AND "applianceID" != $2',
+      [modelCode, id]
+    );
+
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ message: 'Model code already exists' });
+    }
+
+    const result = await pool.query(
+      `UPDATE "Appliance"
+       SET "categoryID" = $1, "brandID" = $2, "modelCode" = $3, "modelName" = $4, description = $5
+       WHERE "applianceID" = $6
+       RETURNING *`,
+      [categoryID, brandID, modelCode, modelName, description || null, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Appliance not found' });
+    }
+
+    console.log('✅ Appliance updated:', result.rows[0]);
+    res.json({
+      message: 'Appliance updated successfully',
+      appliance: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Update appliance error:', error);
+    res.status(500).json({ message: 'Failed to update appliance' });
+  }
+};
+
+// Delete appliance
+export const deleteAppliance = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const result = await pool.query(
+      'DELETE FROM "Appliance" WHERE "applianceID" = $1 RETURNING "applianceID"',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Appliance not found' });
+    }
+
+    console.log('✅ Appliance deleted:', id);
+    res.json({ message: 'Appliance deleted successfully' });
+  } catch (error) {
+    console.error('Delete appliance error:', error);
+    res.status(500).json({ message: 'Failed to delete appliance' });
+  }
+};
