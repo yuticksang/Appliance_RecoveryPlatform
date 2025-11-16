@@ -72,15 +72,8 @@
               </button>
 
               <!-- Show activate/deactivate for buyers -->
-              <button class="icon"
-                [class.danger]="r.status === 'ACTIVE'" [class.success]="r.status === 'INACTIVE'"
-                [title]="getToggleTitle(r.status)" (click)="toggleStatus(r)">
+              <button class="icon" [title]="getToggleTitle(r.status)" (click)="toggleStatus(r)">
                 <img [src]="getToggleIconSrc(r.status)" [alt]="getToggleTitle(r.status)" class="action-icon">
-              </button>
-
-              <!-- Show delete button for buyers -->
-              <button class="icon danger" title="Delete" (click)="deleteBuyer(r)">
-                <img src="assets/icons/delete.png" alt="Delete" class="action-icon">
               </button>
             </td>
           </tr>

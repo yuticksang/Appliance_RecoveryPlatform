@@ -31,7 +31,7 @@ interface Appliance {
 export class EditApplianceComponent implements OnInit {
   @Output() close = new EventEmitter<void>();
   @Output() applianceUpdated = new EventEmitter<any>();
-  @Input() appliance!: Appliance;
+  @Input() applianceData!: Appliance;
   @Input() categories: Category[] = [];
   @Input() brands: Brand[] = [];
 
@@ -48,13 +48,13 @@ export class EditApplianceComponent implements OnInit {
   }
 
   ngOnInit() {
-    if (this.appliance) {
+    if (this.applianceData) {
       this.editApplianceForm.patchValue({
-        modelCode: this.appliance.modelCode,
-        modelName: this.appliance.modelName,
-        categoryID: this.appliance.categoryID,
-        brandID: this.appliance.brandID,
-        description: this.appliance.description
+        modelCode: this.applianceData.modelCode,
+        modelName: this.applianceData.modelName,
+        categoryID: this.applianceData.categoryID,
+        brandID: this.applianceData.brandID,
+        description: this.applianceData.description
       });
     }
   }
@@ -72,7 +72,7 @@ export class EditApplianceComponent implements OnInit {
   onSubmit() {
     if (this.editApplianceForm.valid) {
       const updatedAppliance = {
-        applianceID: this.appliance.applianceID,
+        applianceID: this.applianceData.applianceID,
         modelCode: this.modelCode?.value,
         modelName: this.modelName?.value,
         categoryID: this.categoryID?.value,

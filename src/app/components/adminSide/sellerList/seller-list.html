@@ -35,13 +35,13 @@
             <th (click)="onSort('fullName')" class="sortable">
               Full Name <span class="sort">{{ sortIcon('fullName') }}</span>
             </th>
-            <th (click)="onSort('status')" class="sortable">
-              Status <span class="sort">{{ sortIcon('status') }}</span>
-            </th>
             <th (click)="onSort('email')" class="sortable">
               Email Address <span class="sort">{{ sortIcon('email') }}</span>
             </th>
             <th class="non-sortable">Phone Number</th>
+            <th (click)="onSort('status')" class="sortable">
+              Status <span class="sort">{{ sortIcon('status') }}</span>
+            </th>
             <th class="actions">Actions</th>
           </tr>
         </thead>
@@ -51,13 +51,13 @@
             <td class="narrow">{{ (currentPage() - 1) * itemsPerPage() + i + 1 }}</td>
             <td>{{ r.sellerId || '---' }}</td>
             <td>{{ r.fullName }}</td>
+            <td>{{ r.email }}</td>
+            <td>{{ r.phone }}</td>
             <td>
               <span class="badge" [ngClass]="statusClass(r.status)">
                 <span class="dot"></span> {{ r.status }}
               </span>
             </td>
-            <td>{{ r.email }}</td>
-            <td>{{ r.phone }}</td>
             <td class="actions">
               <!-- Activate/Deactivate button -->
               <button class="icon"

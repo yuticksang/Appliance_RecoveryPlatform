@@ -10,10 +10,10 @@ type AdminRole = 'SUPER ADMIN' | 'ADMIN';
 type AdminStatus = 'ACTIVE' | 'INACTIVE';
 
 interface AdminRow {
-  id: number;
+  id: string;
   adminId: string;
   fullName: string;
-  username: string; 
+  username: string;
   role: AdminRole;
   maskedPassword: string;
   status: AdminStatus;
@@ -75,9 +75,14 @@ export class AdminListComponent implements OnInit {
           const adminUsers = users
             .filter(user => user.user_type === 'admin' || user.user_type === 'superadmin')
             .map((user) => {
-              console.log(`🔍 User ${user.username}: admin_id = ${user.admin_id} (type: ${typeof user.admin_id})`);
-              return {
-                id: user.id,
+              console.log(`🔍 Admin User ${user.username} - Full Object:`, user);
+              console.log(`🔍 user.id:`, user.id);
+              console.log(`🔍 user.admin_id:`, user.admin_id);
+              console.log(`🔍 user.userID:`, user.userID);
+              console.log(`🔍 user.user_id:`, user.user_id);
+
+              const adminRow = {
+                id: user.id || user.userID || user.user_id || user.admin_id,
                 adminId: user.admin_id ? String(user.admin_id) : '---',
                 fullName: user.name,
                 username: user.username,
@@ -87,6 +92,9 @@ export class AdminListComponent implements OnInit {
                 userType: user.user_type,
                 adminRole: user.admin_role
               };
+
+              console.log(`🔍 Mapped AdminRow:`, adminRow);
+              return adminRow;
             });
 
           this.rows.set(adminUsers);
@@ -100,7 +108,7 @@ export class AdminListComponent implements OnInit {
       });
   }
 
-  checkUsernameUnique(username: string, excludeId?: number): Promise<boolean> {
+  checkUsernameUnique(username: string, excludeId?: string): Promise<boolean> {
     return new Promise((resolve) => {
       this.http.get<{available: boolean}>(`${this.apiUrl}/admin/check-username/${username}`)
         .subscribe({
@@ -233,6 +241,13 @@ export class AdminListComponent implements OnInit {
   }
 
   async onAdminUpdated(updatedAdmin: any) {
+    // Get the original admin data to find the current username
+    const originalAdmin = this.selectedAdmin();
+    if (!originalAdmin) {
+      this.alertService.error('Original admin data not found');
+      return;
+    }
+
     // Check if username is unique (excluding current user)
     const isUnique = await this.checkUsernameUnique(updatedAdmin.username, updatedAdmin.id);
     if (!isUnique) {
@@ -240,7 +255,7 @@ export class AdminListComponent implements OnInit {
       return;
     }
 
-    // Update admin via API
+    // Update admin via API - use ORIGINAL username to identify the user
     const updateData: any = {
       name: updatedAdmin.fullName,
       username: updatedAdmin.username
@@ -251,10 +266,11 @@ export class AdminListComponent implements OnInit {
       updateData.password = updatedAdmin.password;
     }
 
-    this.http.put(`${this.apiUrl}/admin/users/${updatedAdmin.id}`, updateData)
+    this.http.put(`${this.apiUrl}/admin/users/${originalAdmin.id}`, updateData)
       .subscribe({
         next: () => {
           this.loadAdmins(); // Reload the list
+          this.onCloseEditModal();
           const message = updatedAdmin.password ? 'Admin and password updated successfully' : 'Admin updated successfully';
           this.alertService.success(message);
         },
@@ -285,6 +301,10 @@ export class AdminListComponent implements OnInit {
 
     if (action === 'toggle') {
       const newStatus = admin.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+      console.log('🔄 Toggling admin:', admin);
+      console.log('🔄 admin.id:', admin.id);
+      console.log('🔄 admin.username:', admin.username);
+      console.log('🔄 API URL:', `${this.apiUrl}/admin/users/${admin.id}/status`);
 
       this.http.put(`${this.apiUrl}/admin/users/${admin.id}/status`, { status: newStatus })
         .subscribe({
