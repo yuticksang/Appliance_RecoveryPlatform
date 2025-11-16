@@ -19,6 +19,7 @@ interface Appliance {
   categoryID: string;
   brandID: string;
   description: string;
+  image_url?: string;
 }
 
 @Component({
@@ -36,6 +37,8 @@ export class EditApplianceComponent implements OnInit {
   @Input() brands: Brand[] = [];
 
   editApplianceForm: FormGroup;
+  selectedImageFile: File | null = null;
+  imagePreview: string = 'assets/image/appliance_sample.png';
 
   constructor(private fb: FormBuilder) {
     this.editApplianceForm = this.fb.group({
@@ -56,6 +59,11 @@ export class EditApplianceComponent implements OnInit {
         brandID: this.applianceData.brandID,
         description: this.applianceData.description
       });
+
+      // Set image preview if appliance has an image
+      if (this.applianceData.image_url) {
+        this.imagePreview = this.applianceData.image_url;
+      }
     }
   }
 
@@ -64,6 +72,20 @@ export class EditApplianceComponent implements OnInit {
   get categoryID() { return this.editApplianceForm.get('categoryID'); }
   get brandID() { return this.editApplianceForm.get('brandID'); }
   get description() { return this.editApplianceForm.get('description'); }
+
+  onImageSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      this.selectedImageFile = file;
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.imagePreview = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
 
   onClose() {
     this.close.emit();
@@ -77,7 +99,8 @@ export class EditApplianceComponent implements OnInit {
         modelName: this.modelName?.value,
         categoryID: this.categoryID?.value,
         brandID: this.brandID?.value,
-        description: this.description?.value || null
+        description: this.description?.value || null,
+        image_url: this.selectedImageFile ? this.imagePreview : this.applianceData.image_url || ''
       };
 
       this.applianceUpdated.emit(updatedAppliance);

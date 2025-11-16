@@ -26,6 +26,8 @@ export class AddApplianceComponent implements OnInit {
   @Input() brands: Brand[] = [];
 
   addApplianceForm: FormGroup;
+  selectedImageFile: File | null = null;
+  imagePreview: string | null = null;
 
   constructor(private fb: FormBuilder) {
     this.addApplianceForm = this.fb.group({
@@ -48,6 +50,20 @@ export class AddApplianceComponent implements OnInit {
   get brandID() { return this.addApplianceForm.get('brandID'); }
   get description() { return this.addApplianceForm.get('description'); }
 
+  onImageSelected(event: any) {
+    const file = event.target.files[0];
+    if (file) {
+      this.selectedImageFile = file;
+
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        this.imagePreview = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
   onClose() {
     this.close.emit();
   }
@@ -59,7 +75,8 @@ export class AddApplianceComponent implements OnInit {
         modelName: this.modelName?.value,
         categoryID: this.categoryID?.value,
         brandID: this.brandID?.value,
-        description: this.description?.value || null
+        description: this.description?.value || null,
+        image_url: this.selectedImageFile ? this.imagePreview : ''
       };
 
       this.applianceAdded.emit(newAppliance);

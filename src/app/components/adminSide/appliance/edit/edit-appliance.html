@@ -64,6 +64,17 @@
           rows="3"></textarea>
       </div>
 
+      <div class="form-group">
+        <label for="image">Appliance Image</label>
+        <div class="image-upload-container">
+          <div class="image-preview">
+            <img [src]="imagePreview" alt="Appliance preview" class="preview-img">
+          </div>
+          <input type="file" id="image" accept="image/*" (change)="onImageSelected($event)" class="file-input">
+          <label for="image" class="file-label">Change Image</label>
+        </div>
+      </div>
+
       <div class="form-actions">
         <button type="button" class="btn-secondary" (click)="onClose()">Cancel</button>
         <button type="submit" class="btn-success" [disabled]="editApplianceForm.invalid">

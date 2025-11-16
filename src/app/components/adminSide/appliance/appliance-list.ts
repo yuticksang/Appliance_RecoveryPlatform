@@ -29,7 +29,7 @@ interface ApplianceRow {
   status: ApplianceStatus;
   categoryName?: string;
   brandName?: string;
-  image?: string;
+  image_url?: string;
 }
 
 type SortKey = 'applianceID' | 'modelCode' | 'modelName' | 'categoryName' | 'brandName' | 'status';
@@ -131,7 +131,7 @@ export class ApplianceListComponent implements OnInit {
             status: app.status as ApplianceStatus || 'ACTIVE',
             categoryName: app.categoryName || '',
             brandName: app.brandName || '',
-            image: app.image || ''
+            image_url: app.image_url || ''
           }));
 
           this.rows.set(applianceData);
@@ -299,7 +299,7 @@ export class ApplianceListComponent implements OnInit {
       modelCode: newAppliance.modelCode,
       modelName: newAppliance.modelName,
       description: newAppliance.description || '',
-      image: newAppliance.image || ''
+      image_url: newAppliance.image_url || ''
     };
 
     this.http.post(`${this.apiUrl}/admin/appliances`, applianceData)
@@ -322,7 +322,7 @@ export class ApplianceListComponent implements OnInit {
       modelCode: updatedAppliance.modelCode,
       modelName: updatedAppliance.modelName,
       description: updatedAppliance.description || '',
-      image: updatedAppliance.image || ''
+      image_url: updatedAppliance.image_url || ''
     };
 
     this.http.put(`${this.apiUrl}/admin/appliances/${updatedAppliance.applianceID}`, updateData)
@@ -345,7 +345,7 @@ export class ApplianceListComponent implements OnInit {
   }
 
   getImageSrc(image: string | undefined): string {
-    return image || 'assets/image/placeholder-appliance.png';
+    return image || 'assets/image/appliance_sample.png';
   }
 
   statusClass(s: ApplianceStatus) {
