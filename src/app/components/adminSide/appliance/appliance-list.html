@@ -67,6 +67,9 @@
               Parent Brand <span class="sort">{{ sortIcon('brandName') }}</span>
             </th>
             <th class="non-sortable">Description</th>
+            <th (click)="onSort('status')" class="sortable">
+              Status <span class="sort">{{ sortIcon('status') }}</span>
+            </th>
             <th class="actions"></th>
           </tr>
         </thead>
@@ -85,14 +88,17 @@
             <td>{{ r.categoryName || '---' }}</td>
             <td>{{ r.brandName || '---' }}</td>
             <td class="description-cell">{{ r.description || '---' }}</td>
+            <td>
+              <span [class]="statusClass(r.status)">{{ r.status }}</span>
+            </td>
             <td class="actions">
               <!-- Edit button -->
               <button class="icon" title="Edit Appliance" (click)="editAppliance(r)">
                 <img src="assets/icons/edit.png" alt="Edit" class="action-icon">
               </button>
-              <!-- Delete button -->
-              <button class="icon danger" title="Delete Appliance" (click)="deleteAppliance(r)">
-                <img src="assets/icons/delete.png" alt="Delete" class="action-icon">
+              <!-- Toggle Status button -->
+              <button class="icon" [title]="getToggleTitle(r.status)" (click)="toggleStatus(r)">
+                <img [src]="getToggleIconSrc(r.status)" alt="Toggle Status" class="action-icon">
               </button>
             </td>
           </tr>
@@ -119,6 +125,27 @@
     </div>
   </div>
 </main>
+
+<!-- Add Appliance Modal -->
+@if (showAddModal()) {
+<app-add-appliance
+  [categories]="categories()"
+  [brands]="brands()"
+  (close)="onCloseAddModal()"
+  (applianceAdded)="onApplianceAdded($event)">
+</app-add-appliance>
+}
+
+<!-- Edit Appliance Modal -->
+@if (showEditModal() && editingAppliance()) {
+<app-edit-appliance
+  [applianceData]="editingAppliance()!"
+  [categories]="categories()"
+  [brands]="brands()"
+  (close)="onCloseEditModal()"
+  (applianceUpdated)="onApplianceUpdated($event)">
+</app-edit-appliance>
+}
 
 <!-- Confirmation Modal -->
 @if (showConfirmModal()) {

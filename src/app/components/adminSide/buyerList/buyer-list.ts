@@ -9,7 +9,7 @@ import { AlertService } from '../../../services/alert.service';
 type BuyerStatus = 'ACTIVE' | 'INACTIVE';
 
 interface BuyerRow {
-  id: string; // Changed to string for new ID format (U001, U002, etc.)
+  id: number;
   buyerId: string;
   fullName: string;
   username: string;
@@ -100,10 +100,10 @@ export class BuyerListComponent implements OnInit {
       });
   }
 
-  checkUsernameUnique(username: string, excludeId?: string): Promise<boolean> {
+  checkUsernameUnique(username: string, excludeId?: number): Promise<boolean> {
     return new Promise((resolve) => {
       // Pass user_type as query parameter to check username uniqueness per type
-      this.http.get<{available: boolean}>(`${this.apiUrl}/admin/check-username/${username}?user_type=buyer`)
+      this.http.get<{ available: boolean }>(`${this.apiUrl}/admin/check-username/${username}?user_type=buyer`)
         .subscribe({
           next: (response) => {
             // If we're editing, exclude the current user from the check

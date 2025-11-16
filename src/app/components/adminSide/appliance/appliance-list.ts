@@ -224,18 +224,17 @@ export class ApplianceListComponent implements OnInit {
   }
 
   addNewAppliance() {
-    // Navigate to add appliance page (you'll need to create this)
-    this.router.navigate(['/admin/appliances/add']);
+    this.showAddModal.set(true);
   }
 
   editAppliance(appliance: ApplianceRow) {
-    // Navigate to edit appliance page (you'll need to create this)
-    this.router.navigate(['/admin/appliances/edit', appliance.applianceID]);
+    this.editingAppliance.set(appliance);
+    this.showEditModal.set(true);
   }
 
-  deleteAppliance(appliance: ApplianceRow) {
+  toggleStatus(appliance: ApplianceRow) {
     this.confirmTarget.set(appliance);
-    this.confirmAction.set('delete');
+    this.confirmAction.set('toggle');
     this.showConfirmModal.set(true);
   }
 
@@ -245,20 +244,23 @@ export class ApplianceListComponent implements OnInit {
 
     if (!appliance) return;
 
-    if (action === 'delete') {
-      this.http.delete(`${this.apiUrl}/admin/appliances/${appliance.applianceID}`)
+    if (action === 'toggle') {
+      const newStatus = appliance.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+
+      this.http.put(`${this.apiUrl}/admin/appliances/${appliance.applianceID}/status`, { status: newStatus })
         .subscribe({
           next: () => {
             this.loadAppliances();
-            this.alertService.success(`Appliance ${appliance.modelCode} deleted successfully`);
-            this.showConfirmModal.set(false);
+            this.alertService.success(`Appliance ${appliance.modelCode} ${newStatus === 'ACTIVE' ? 'activated' : 'deactivated'} successfully`);
           },
           error: (err) => {
-            console.error('Delete appliance error:', err);
-            this.alertService.error('Failed to delete appliance');
+            console.error('Toggle status error:', err);
+            this.alertService.error('Failed to update status');
           }
         });
     }
+
+    this.onCancelConfirm();
   }
 
   onCancelConfirm() {
@@ -273,11 +275,67 @@ export class ApplianceListComponent implements OnInit {
 
     if (!appliance) return '';
 
-    if (action === 'delete') {
-      return `Are you sure you want to delete appliance "${appliance.modelCode}"? This action cannot be undone.`;
+    if (action === 'toggle') {
+      const newStatus = appliance.status === 'ACTIVE' ? 'deactivate' : 'activate';
+      return `Are you sure you want to ${newStatus} appliance "${appliance.modelCode}"?`;
     }
 
     return '';
+  }
+
+  onCloseAddModal() {
+    this.showAddModal.set(false);
+  }
+
+  onCloseEditModal() {
+    this.showEditModal.set(false);
+    this.editingAppliance.set(null);
+  }
+
+  onApplianceAdded(newAppliance: any) {
+    const applianceData = {
+      categoryID: newAppliance.categoryID,
+      brandID: newAppliance.brandID,
+      modelCode: newAppliance.modelCode,
+      modelName: newAppliance.modelName,
+      description: newAppliance.description || '',
+      image: newAppliance.image || ''
+    };
+
+    this.http.post(`${this.apiUrl}/admin/appliances`, applianceData)
+      .subscribe({
+        next: () => {
+          this.loadAppliances();
+          this.alertService.success('New appliance created successfully');
+        },
+        error: (err) => {
+          console.error('Create appliance error:', err);
+          this.alertService.error('Failed to create appliance: ' + (err.error?.message || 'Unknown error'));
+        }
+      });
+  }
+
+  onApplianceUpdated(updatedAppliance: any) {
+    const updateData = {
+      categoryID: updatedAppliance.categoryID,
+      brandID: updatedAppliance.brandID,
+      modelCode: updatedAppliance.modelCode,
+      modelName: updatedAppliance.modelName,
+      description: updatedAppliance.description || '',
+      image: updatedAppliance.image || ''
+    };
+
+    this.http.put(`${this.apiUrl}/admin/appliances/${updatedAppliance.applianceID}`, updateData)
+      .subscribe({
+        next: () => {
+          this.loadAppliances();
+          this.alertService.success('Appliance updated successfully');
+        },
+        error: (err) => {
+          console.error('Update appliance error:', err);
+          this.alertService.error('Failed to update appliance: ' + (err.error?.message || 'Unknown error'));
+        }
+      });
   }
 
   // -------- helper methods ----------
@@ -288,5 +346,17 @@ export class ApplianceListComponent implements OnInit {
 
   getImageSrc(image: string | undefined): string {
     return image || 'assets/image/placeholder-appliance.png';
+  }
+
+  statusClass(s: ApplianceStatus) {
+    return s === 'ACTIVE' ? 'badge-active' : 'badge-inactive';
+  }
+
+  getToggleIconSrc(status: string): string {
+    return status === 'ACTIVE' ? 'assets/icons/deactivate.png' : 'assets/icons/activate.png';
+  }
+
+  getToggleTitle(status: string): string {
+    return status === 'ACTIVE' ? 'Deactivate Appliance' : 'Activate Appliance';
   }
 }
