@@ -13,6 +13,7 @@ import {
 import { verifyToken } from '../middleware/authMiddleware';
 
 const router = express.Router();
+router.use(express.json());
 
 // Address routes
 router.get('/addresses/:userId', verifyToken, getAddresses);

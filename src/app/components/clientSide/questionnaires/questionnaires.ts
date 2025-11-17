@@ -102,7 +102,8 @@ export class QuestionnairesComponent implements OnInit{
   success = '';
   error = '';
 
-  pickupDate = '';
+  pickupDate: string = '';
+  minDate: string;
   pickupTime = '';
   timeSlots = [
     '10:00 AM - 12:00 PM',
@@ -111,6 +112,17 @@ export class QuestionnairesComponent implements OnInit{
     '4:00 PM - 6:00 PM',
     '6:00 PM - 8:00 PM'
   ];
+
+  constructor() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 2);
+    this.minDate = tomorrow.toISOString().split('T')[0]; // YYYY-MM-DD
+  }
+
+  isDateInvalid(): boolean {
+    if (!this.pickupDate) return false;
+    return new Date(this.pickupDate) < new Date(this.minDate);
+  }
 
   // Methods
   toggleIssue(issue: string) {
@@ -537,27 +549,6 @@ export class QuestionnairesComponent implements OnInit{
     this.pickupDate = '';
     this.pickupTime = '';
   }
-
-  // submitForm() {
-  //   console.log('SUBMITTED', {
-  //     applianceTypeId: this.applianceTypeId,
-  //     applianceTypeName: this.getSelectedCategoryName(),
-  //     brandId: this.selectedBrandId,
-  //     brandName: this.getSelectedBrandName(),
-  //     modelId: this.selectedModelId,
-  //     modelName: this.getSelectedModelName(),
-  //      workingStatus: this.workingStatus,
-  //      issues: this.selectedIssues,
-  //      physical: this.physicalCondition,
-  //      notes: this.notes,
-  //      photos: this.uploadedFiles.map(f => f.name),
-  //      pickup: { date: this.pickupDate, time: this.pickupTime, address: this.defaultAddress },
-  //      worth: this.valuationWorth,
-  //   });
-
-  //   this.currentStep = 6;
-  // }
-
 
   submitForm() {
     const user = this.currentUser();

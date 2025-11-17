@@ -3,6 +3,7 @@ import { login, register, forgotPassword, resetPassword, verifyEmail, validateTo
 import { verifyToken as verifyTokenMiddleware } from '../middleware/authMiddleware';
 
 const router = express.Router();
+router.use(express.json());
 
 router.post('/register', register);
 router.post('/login', login);

@@ -216,7 +216,15 @@
         <!-- Date & Time -->
         <div class="form-section">
           <label class="question">Pickup Date</label>
-          <input type="date" class="form-select" [(ngModel)]="pickupDate" />
+          <input 
+            type="date" 
+            class="form-control" 
+            [(ngModel)]="pickupDate"
+            [min]="minDate"
+            required />
+          <small style="color: red;" *ngIf="pickupDate && isDateInvalid()">
+            Please select a date from tomorrow onwards
+          </small>
         </div>
         <div class="form-section">
           <label class="question">Pickup Time Slot</label>
