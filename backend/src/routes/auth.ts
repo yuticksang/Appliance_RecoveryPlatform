@@ -1,8 +1,8 @@
-import { Router } from 'express';
+import express from 'express';
 import { login, register, forgotPassword, resetPassword, verifyEmail, validateToken, getProfile, updateProfile } from '../controllers/authController';
 import { verifyToken as verifyTokenMiddleware } from '../middleware/authMiddleware';
 
-const router = Router();
+const router = express.Router();
 
 router.post('/register', register);
 router.post('/login', login);

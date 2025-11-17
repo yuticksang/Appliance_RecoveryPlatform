@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 
 interface BuyerData {
-  id: number;
+  id: string;
   buyerId: string;
   fullName: string;
   username: string;

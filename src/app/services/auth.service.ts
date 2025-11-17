@@ -224,14 +224,22 @@ export class AuthService {
   }
 
   // HTTP interceptor helper
+  // getAuthHeaders(): HttpHeaders {
+  //   const token = this.getToken();
+  //   return new HttpHeaders({
+  //     'Authorization': token ? `Bearer ${token}` : '',
+  //     'Content-Type': 'application/json'
+  //   });
+  // }
+
+  // GOOD — Only add Authorization, NEVER Content-Type
   getAuthHeaders(): HttpHeaders {
     const token = this.getToken();
     return new HttpHeaders({
-      'Authorization': token ? `Bearer ${token}` : '',
-      'Content-Type': 'application/json'
+      Authorization: token ? `Bearer ${token}` : ''
+      // DO NOT set Content-Type here!
     });
   }
-
   // Address methods
   getAddresses(userId: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/addresses/${userId}`, {
@@ -255,6 +263,14 @@ export class AuthService {
     return this.http.delete<any>(`${this.apiUrl}/addresses/${userId}/${addressId}`, {
       headers: this.getAuthHeaders()
     });
+  }
+
+  setDefaultAddress(userId: string, addressId: string): Observable<any> {
+    return this.http.patch<any>(
+      `${this.apiUrl}/addresses/${userId}/${addressId}/default`,
+      {},
+      { headers: this.getAuthHeaders() }
+    );
   }
 
   // Bank methods
@@ -287,7 +303,7 @@ export class AuthService {
     return this.currentUserSubject.value;
   }
 
-  getCurrentUserId(): number | null {
+  getCurrentUserId(): string | null {
     return this.currentUserSubject.value?.id || null;
   }
 

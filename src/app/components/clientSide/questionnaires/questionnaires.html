@@ -20,9 +20,9 @@
 
     <div class="form-section">
       <label class="question">Appliance Category</label>
-      <select class="form-select" [(ngModel)]="applianceType">
+      <select class="form-select" [(ngModel)]="applianceTypeId" (ngModelChange)="onCategoryChange()">
         <option value="">Select appliance category</option>
-        <option *ngFor="let category of applianceTypes" [value]="category">{{ category }}</option>
+        <option *ngFor="let category of applianceTypes" [value]="category.id">{{ category.name }}</option>
       </select>
     </div>
 
@@ -38,9 +38,9 @@
     <!-- Brand -->
     <div class="form-section">
       <label class="question">Brand <span class="required"></span></label>
-      <select class="form-select" [(ngModel)]="selectedBrand" (ngModelChange)="onBrandChange()">
+      <select class="form-select" [(ngModel)]="selectedBrandId" (ngModelChange)="onBrandChange()">
         <option value="">Select brand</option>
-        <option *ngFor="let brand of brands" [value]="brand">{{ brand }}</option>
+        <option *ngFor="let brand of brands" [value]="brand.id">{{ brand.name }}</option>
       </select>
     </div>
     
@@ -48,9 +48,9 @@
     <!-- Model -->
     <div class="form-section">
       <label class="question">Model <span class="required"></span></label>
-      <select class="form-select" [(ngModel)]="selectedModel">
+      <select class="form-select" [(ngModel)]="selectedModelId">
         <option value="">Select model</option>
-        <option *ngFor="let model of models" [value]="model">{{ model }}</option>
+        <option *ngFor="let model of models" [value]="model.id">{{ model.name }}</option>
       </select>
     </div>
 
@@ -167,9 +167,9 @@
     <div class="valuation-details-box">
       <h4>Quote Summary</h4>
       <ul>
-        <li><strong>Category:</strong> {{ applianceType || '—' }}</li>
-        <li><strong>Brand:</strong> {{ selectedBrand || '—' }}</li>
-        <li><strong>Model:</strong> {{ selectedModel || '—' }}</li>
+        <li><strong>Category:</strong> {{ getSelectedCategoryName() || '—' }}</li>
+        <li><strong>Brand:</strong> {{  getSelectedBrandName() || '—' }}</li>
+        <li><strong>Model:</strong> {{ getSelectedModelName() || '—' }}</li>
         <li><strong>Physical Condition:</strong> {{ physicalCondition || '—' }}</li>
         <li><strong>Functional Status:</strong> {{ workingStatus || '—' }}</li>
         <li><strong>Component Status:</strong> 
@@ -197,60 +197,54 @@
   <!-- Step 5 -->
   <div *ngIf="currentStep === 5" class="form-container step-5-grid">
     <h3 class="step-title">Step 5: Pickup Information</h3>
+
     <div class="step-5-content">
-      <!-- LEFT SIDE -->
+      <!-- LEFT -->
       <div class="left-section">
-        <!-- Pickup Address Card (Click to Manage) -->
         <label class="question">Pickup Address</label>
-        <div class="address-card" (click)="openAddressManager()">
-          <ng-container *ngIf="defaultAddress; else noAddress">
-            <p><strong>{{ defaultAddress.recipient }}</strong></p>
-            <p>{{ defaultAddress.phone }}</p>
-            <p>{{ defaultAddress.address }}</p>
+        <div class="pickup-card" (click)="openAddressModal(); $event.stopPropagation()">
+          <ng-container *ngIf="defaultAddress(); else noAddr">
+            <p><strong>Receiver Name: </strong>{{ defaultAddress()?.name }}</p>
+            <p><strong>Phone No: </strong>{{ defaultAddress()?.phone }}</p>
+            <p><strong>Address: </strong>{{ defaultAddress()?.pickup }}, {{ defaultAddress()?.zip}} {{ defaultAddress()?.city}}, {{ defaultAddress()?.state}}</p>
           </ng-container>
-          <ng-template #noAddress>
-            <p class="no-address">No address set. Click to add one.</p>
+          <ng-template #noAddr>
+            <p class="no-address">Click to select / add address</p>
           </ng-template>
         </div>
 
-        <!-- Pickup Date -->
+        <!-- Date & Time -->
         <div class="form-section">
           <label class="question">Pickup Date</label>
           <input type="date" class="form-select" [(ngModel)]="pickupDate" />
         </div>
-
-        <!-- Pickup Time Slot -->
         <div class="form-section">
           <label class="question">Pickup Time Slot</label>
           <select class="form-select" [(ngModel)]="pickupTime">
             <option value="">Select Time Slot</option>
-            <option *ngFor="let slot of timeSlots" [value]="slot">{{ slot }}</option>
+            <option *ngFor="let s of timeSlots" [value]="s">{{ s }}</option>
           </select>
         </div>
 
-        <!-- Navigation Buttons -->
         <div class="btn-row center-btns">
           <button (click)="prevStep()">Back</button>
-          <button 
-            class="submit-btn" 
-            [disabled]="!defaultAddress || !pickupDate || !pickupTime"
-            (click)="submitForm()">
-            Submit
-          </button>
+          <button class="submit-btn"
+                  [disabled]="!defaultAddress() || !pickupDate || !pickupTime"
+                  (click)="submitForm()">Submit</button>
         </div>
       </div>
 
-      <!-- RIGHT SIDE: Summary (unchanged) -->
+      <!-- RIGHT – summary (unchanged) -->
       <div class="right-section">
         <div class="summary-card">
-          <h4>Appliance Summary</h4>
+          <h3 class="step-title">Appliance Summary</h3>
           <div class="photo-preview" *ngIf="uploadedFiles.length > 0">
             <img [src]="getFileUrl(uploadedFiles[0])" alt="Uploaded photo" />
           </div>
           <ul>
-            <li><strong>Category:</strong> {{ applianceType || '—' }}</li>
-            <li><strong>Brand:</strong> {{ selectedBrand || '—' }}</li>
-            <li><strong>Model:</strong> {{ selectedModel || '—' }}</li>
+            <li><strong>Category:</strong> {{ getSelectedCategoryName() || '—' }}</li>
+            <li><strong>Brand:</strong> {{ getSelectedBrandName() || '—' }}</li>
+            <li><strong>Model:</strong> {{ getSelectedModelName() || '—' }}</li>
             <li><strong>Physical Condition:</strong> {{ physicalCondition || '—' }}</li>
             <li><strong>Functional Status:</strong> {{ workingStatus || '—' }}</li>
             <li><strong>Component Status:</strong>
@@ -264,99 +258,99 @@
         </div>
       </div>
     </div>
+  </div>
 
-    <!-- Address Manager Modal (with Personal Details Form INSIDE) -->
-    <div class="modal-backdrop" *ngIf="showAddressModal">
-      <div class="modal address-modal">
-        <div class="modal-header">
-          <h4>Pickup Address</h4>
-          <button class="add-btn" (click)="startAddAddress()">+ Add</button>
-          <button class="close-btn" (click)="closeAddressManager()">×</button>
+  <!-- MODAL – ROOT LEVEL (outside any container) -->
+  <div class="modal-backdrop" *ngIf="showAddressModal()" (click)="closeAddressModal()">
+    <div class="modal address-modal" (click)="$event.stopPropagation()">
+
+      <!-- Header -->
+      <div class="modal-header">
+        <h3 class="step-title">Pickup Address</h3>
+        <button class="add-btn" (click)="addressForm.reset(); editingAddressId.set(null); $event.stopPropagation()">+</button>
+      </div>
+
+      
+      <!-- ADDRESS LIST ITEM -->
+      <div *ngFor="let a of addresses()"
+          class="address-item"
+          [class.default]="a.isDefault"
+          (click)="selectDefault(a); $event.stopPropagation()">
+
+        <div class="address-info">
+          <p><strong>Name: </strong>{{ a.name }}</p>
+          <p><strong>Phone No: </strong>{{ a.phone }}</p>
+          <p><strong>Address: </strong>{{ a.pickup }}, {{ a.zip }} {{ a.city }}, {{ a.state }}</p>
         </div>
 
-        <!-- Address List -->
-        <div class="address-list">
-          <div *ngFor="let addr of addresses; let i = index" class="address-item">
-            <div class="address-content">
-              <p><strong>Name:</strong> {{ addr.recipient }}</p>
-              <p><strong>Phone No:</strong> {{ addr.phone }}</p>
-              <p><strong>Address:</strong> {{ addr.address }}</p>
-            </div>
-            <div class="address-actions">
-              <label class="default-radio">
-                <input 
-                  type="radio" 
-                  name="defaultAddress" 
-                  [checked]="defaultAddressIndex === i"
-                  (change)="setDefaultAddress(i)"
-                />
-                Default
-              </label>
-              <button (click)="startEditAddress(i)">Edit</button>
-              <button (click)="deleteAddress(i)">Delete</button>
-            </div>
-          </div>
-          <p *ngIf="addresses.length === 0" class="no-address">No saved addresses. Click "+ Add" to create one.</p>
-        </div>
-        <!-- Confirm Button -->
-        <div class="modal-footer">
-          <button 
-            class="confirm-btn" 
-            (click)="confirmAddressSelection()" 
-            [disabled]="selectedAddressIndex === null">
-            Confirm
-          </button>
-        </div>
-
-        <!-- Add/Edit Form (Inside Modal) -->
-        <div class="address-edit-form" *ngIf="showAddressForm">
-          <h5>{{ editingAddressIndex === null ? 'Add New Address' : 'Edit Address' }}</h5>
-
-          <div class="form-section">
-            <label>Name</label>
-            <input type="text" [(ngModel)]="tempAddress.recipient" placeholder="Enter your name" />
-          </div>
-
-          <div class="form-section">
-            <label>Phone Number</label>
-            <input type="text" [(ngModel)]="tempAddress.phone" placeholder="e.g. +60123456789" />
-          </div>
-
-          <div class="form-row">
-            <div class="form-section">
-              <label>State</label>
-              <input type="text" [(ngModel)]="tempAddress.state" placeholder="e.g. Kuala Lumpur" />
-            </div>
-            <div class="form-section">
-              <label>City</label>
-              <input type="text" [(ngModel)]="tempAddress.city" placeholder="e.g. Kuala Lumpur" />
-            </div>
-          </div>
-
-          <div class="form-section">
-            <label>Zip Code</label>
-            <input type="text" [(ngModel)]="tempAddress.zipCode" placeholder="e.g. 55100" />
-          </div>
-
-          <div class="form-section">
-            <label>Pickup Address</label>
-            <textarea [(ngModel)]="tempAddress.pickupAddress" placeholder="123 Jalan Pudu"></textarea>
-          </div>
-
-          <!-- DEFAULT CHECKBOX -->
-          <div class="form-section checkbox-section">
-            <label>
-              <input type="checkbox" [(ngModel)]="tempAddress.isDefault" />
-              Set as default address
-            </label>
-          </div>
-
-          <div class="btn-row">
-            <button (click)="saveTempAddress()">Save</button>
-            <button (click)="cancelAddressForm()">Cancel</button>
-          </div>
+        <div class="address-icons">
+          <button (click)="startEdit(a); $event.stopPropagation()">✎</button>
+          <button (click)="deleteAddress(a.id!); $event.stopPropagation()">🗑</button>
         </div>
       </div>
+
+
+      <!-- FORM (Add / Edit) -->
+      <form [formGroup]="addressForm" (ngSubmit)="saveAddress()" class="address-form">
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" formControlName="name" />
+          <div class="error" *ngIf="addressForm.get('name')?.invalid && addressForm.get('name')?.touched">
+            Required
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Phone No</label>
+            <input type="text" formControlName="phone" />
+            <div class="error" *ngIf="addressForm.get('phone')?.invalid && addressForm.get('phone')?.touched">
+              Invalid phone
+            </div>
+          </div>
+          <div class="form-group half">
+            <label>Zip Code</label>
+            <input type="text" formControlName="zip" placeholder="55100" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group half">
+            <label>State</label>
+            <input type="text" formControlName="state" placeholder="Kuala Lumpur" />
+          </div>
+          <div class="form-group half">
+            <label>City</label>
+            <input type="text" formControlName="city" placeholder="Kuala Lumpur" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Pickup Address</label>
+          <input type="text" formControlName="pickup" />
+          <div class="error" *ngIf="addressForm.get('pickup')?.invalid && addressForm.get('pickup')?.touched">
+            Required
+          </div>
+        </div>
+
+        <div class="form-group checkbox">
+          <label>
+            <input type="checkbox" formControlName="setAsDefault" />Set as default address
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" [disabled]="addressForm.invalid">
+            {{ editingAddressId() ? 'Update' : 'Save' }}
+          </button>
+        </div>
+      </form>
+
+
+      <!-- Confirm (optional) -->
+      <!-- <div class="modal-footer">
+        <button class="confirm-btn" (click)="closeAddressModal()">Confirm</button>
+      </div> -->
     </div>
   </div>
 
@@ -368,6 +362,5 @@
       <p>Your submission has been successfully processed.</p>
     </div>
   </div>
-
 
 </main>

@@ -1,13 +1,21 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ChangeDetectorRef, OnInit, inject, signal, computed } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { QuestionnaireService, Category,  SimpleItem } from '../../../services/questionnaire.service';
 import { CommonModule } from '@angular/common';
+import { AuthService } from '../../../services/auth.service';
+import { AlertService } from '../../../services/alert.service';
 
 interface Address {
-  recipient: string;
+  id?: string;
+  name: string;  
   phone: string;
-  address: string;
+  state?: string;
+  city?: string;
+  zip?: string;
+  pickup: string;
   isDefault?: boolean;
 }
+
 
 @Component({
   selector: 'app-questionnaires',
@@ -15,34 +23,35 @@ interface Address {
   styleUrls: ['./questionnaires.scss'],
   standalone: true, 
   imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  changeDetection: ChangeDetectionStrategy.OnPush   // ← ADD THIS
 })
-export class QuestionnairesComponent {
+export class QuestionnairesComponent implements OnInit{
+  private questionnaireService = inject(QuestionnaireService);
+  private auth = inject(AuthService);
+  private fb = inject(FormBuilder);
+  private alertService = inject(AlertService);
+  private cdr = inject(ChangeDetectorRef);
+  
+  currentUser = this.auth.currentUser;
+
   // Step tracking
-  currentStep: number = 1;
+  private _currentStep = 1;
   totalSteps: number = 5;
 
   steps: number[] = [1, 2, 3, 4, 5];
 
-
   // Step 1 - Appliance Type
-  applianceType: string = '';
-  applianceTypes: string[] = ['Washing Machine', 'Refrigerator', 'Microwave', 'Air Conditioner', 'Television'];
+  applianceTypeId: string = '';
+  applianceTypes: Category[] = [];
 
   // Step 2 - Appliance Details
+  selectedBrandId: string | number = '';
   selectedBrand: string = '';
+  selectedModelId: string | number = '';
   selectedModel: string = '';
-  brands: string[] = ['Samsung', 'Panasonic', 'LG', 'Toshiba', 'Sharp'];
-  models: string[] = ['Model A', 'Model B', 'Model C', 'Model D'];
-  years: string[] = ['2019', '2020', '2021', '2022', '2023', '2024'];
+  brands: SimpleItem[] = [];
+  models: SimpleItem[] = [];
   
-  brandModelMap: Record<string, string[]> = {
-  Samsung: ['EcoBubble X10', 'QuickDrive Q8', 'TwinWash S5'],
-  Panasonic: ['PrimeFresh A500', 'Econavi X12', 'Nanoe Y8'],
-  LG: ['InverterCool Z9', 'TurboWash V7', 'SmartDry P3'],
-  Toshiba: ['UltraWash D6', 'MagicCool T5', 'PureSteam N7'],
-  Sharp: ['AquaMagic X1', 'Plasmacluster S9', 'J-Tech U6']
-};
-
 
   // Step 3 - Condition Questionnaires
   workingStatus: string = 'Partially working';
@@ -59,11 +68,11 @@ export class QuestionnairesComponent {
   ];
 
   physicalOptions = [
-    { id: 'a', label: 'Like New', img: 'assets/images/like-new.jpg' },
-    { id: 'b', label: 'Minor Scratches', img: 'assets/images/minor-scratches.jpg' },
-    { id: 'c', label: 'Missing Parts', img: 'assets/images/missing-parts.jpg' },
-    { id: 'd', label: 'Heavily Damaged', img: 'assets/images/heavily-damaged.jpg' },
-    { id: 'e', label: 'Rust or Corrosion', img: 'assets/images/rust.jpg' }
+    { id: 'a', label: 'Like New', img: '../../../assets/image/like-new.png' },
+    { id: 'b', label: 'Minor Scratches', img: '../../../assets/image/minor-scratches.png' },
+    { id: 'c', label: 'Missing Parts', img: '../../../assets/image/missing-parts.png' },
+    { id: 'd', label: 'Heavily Damaged', img: '../../../assets/image/heavily-damaged.png' },
+    { id: 'e', label: 'Rust or Corrosion', img: '../../../assets/image/rust.png' }
   ];
 
   // Step 4 - Valuation
@@ -72,26 +81,26 @@ export class QuestionnairesComponent {
   valuationWorth: number = 0;
 
   // Step 5 - Pickup
-  addresses: Address[] = [];
-  defaultAddress: Address | null = null;
+/* ────── ADDRESS SIGNALS ────── */
+  addresses = signal<Address[]>([]);
+  defaultAddress = computed(() => this.addresses().find(a => a.isDefault) ?? null);
 
-  // Modal state
-  showAddressModal = false;
-  showAddressForm = false;
-  editingAddressIndex: number | null = null;
-  selectedAddressIndex: number | null = null;
-  defaultAddressIndex: number | null = null; // Tracks default in modal
+  showAddressModal = signal(false);
+  editingAddressId = signal<string | null>(null);
 
-  // Temp form (NO COUNTRY)
-  tempAddress = {
-    recipient: '',
-    phone: '',        
-    state: '',
-    city: '',
-    zipCode: '',
-    pickupAddress: '',
-    isDefault: false 
-  };
+  addressForm: FormGroup = this.fb.group({
+    name: ['', [Validators.required]],  
+    phone: ['', [Validators.required, Validators.pattern(/^(\+?60|0)?[1-9]\d{8,9}$/)]],
+    state: ['', [Validators.required]],
+    city: ['', [Validators.required]],
+    zip: ['', [Validators.required]],
+    pickup: ['', [Validators.required]],
+    setAsDefault: [false],
+  });
+
+  loading = false;
+  success = '';
+  error = '';
 
   pickupDate = '';
   pickupTime = '';
@@ -102,11 +111,6 @@ export class QuestionnairesComponent {
     '4:00 PM - 6:00 PM',
     '6:00 PM - 8:00 PM'
   ];
-
-  onBrandChange() {
-  this.selectedModel = '';
-  this.models = this.brandModelMap[this.selectedBrand] || [];
-}
 
   // Methods
   toggleIssue(issue: string) {
@@ -138,39 +142,26 @@ export class QuestionnairesComponent {
   }
 
   handleFileUpload(newFiles: File[]) {
+    const valid: File[] = [];
     for (const file of newFiles) {
-      // Check maximum number of uploads
-      if (this.uploadedFiles.length >= this.maxFiles) {
-        alert(`You can only upload up to ${this.maxFiles} photos.`);
-        return;
-      }
-
-      // Check file type
-      if (!this.allowedTypes.includes(file.type)) {
-        alert(`"${file.name}" is not a valid image. Only JPG, PNG, or WEBP are allowed.`);
-        continue;
-      }
-
-      // Check file size
-      const sizeMB = file.size / (1024 * 1024);
-      if (sizeMB > this.maxSizeMB) {
-        alert(`"${file.name}" is too large (${sizeMB.toFixed(1)} MB). Max allowed size is ${this.maxSizeMB} MB.`);
-        continue;
-      }
-
-      // Add valid file
-      this.uploadedFiles.push(file);
+      if (this.uploadedFiles.length >= this.maxFiles) break;
+      if (!this.allowedTypes.includes(file.type)) continue;
+      if (file.size / (1024 * 1024) > this.maxSizeMB) continue;
+      valid.push(file);
     }
+
+    this.uploadedFiles = [...this.uploadedFiles, ...valid];
+    this.cdr.markForCheck();   // ← BEST with OnPush
   }
 
   removeFile(index: number) {
-    this.uploadedFiles.splice(index, 1);
+    this.uploadedFiles = this.uploadedFiles.filter((_, i) => i !== index);
+    this.cdr.markForCheck();
   }
 
   getFileUrl(file: File): string {
     return URL.createObjectURL(file);
   }
-
 
   calculateValuation() {
     let score = 0;
@@ -220,165 +211,271 @@ export class QuestionnairesComponent {
 
 
   ngOnInit() {
-    this.loadFromStorage();
+    console.log('User:', this.currentUser());
+    this.loadCategories(); // load actual types from backend
   }
 
-  openAddressManager() {
-    this.showAddressModal = true;
-    this.showAddressForm = false;
-  }
-
-  closeAddressManager() {
-    this.showAddressModal = false;
-    this.showAddressForm = false;
-    this.editingAddressIndex = null;
-    this.resetTempAddress();
-  }
-
-  startAddAddress() {
-    this.editingAddressIndex = null;
-    this.resetTempAddress();
-    this.showAddressForm = true;
-  }
-
-  startEditAddress(index: number) {
-    this.editingAddressIndex = index;
-    const addr = this.addresses[index];
-    const parts = addr.address.split(', ');
-    this.tempAddress = {
-      recipient: addr.recipient,
-      phone: addr.phone,
-      state: parts[parts.length - 1] || '',
-      city: parts[parts.length - 2]?.split(' ')[1] || '',
-      zipCode: parts[parts.length - 2]?.split(' ')[0] || '',
-      pickupAddress: parts.slice(0, -2).join(', ') || '',
-      isDefault: addr.isDefault || false
-    };
-    this.showAddressForm = true;
-  }
-
-  saveTempAddress() {
-    const { recipient, phone, state, city, zipCode, pickupAddress, isDefault } = this.tempAddress;
-
-    if (!recipient || !phone || !state || !city || !zipCode || !pickupAddress) {
-      alert('Please fill all fields.');
-      return;
+  set currentStep(value: number) {
+    this._currentStep = value;
+    if (value === 5 && this.addresses().length === 0) {
+      console.log('STEP 5: Loading addresses...');
+      this.loadAddresses();
     }
+  }
+  get currentStep() { return this._currentStep; }
 
-    const cleanPhone = phone.replace(/\D/g, '');
-    if (!cleanPhone.match(/^(\+?60|0)[1-9]\d{8,9}$/)) {
-      alert('Please enter a valid Malaysian phone number (e.g. +60123456789 or 0123456789).');
-      return;
-    }
-
-    const fullAddress = `${pickupAddress}, ${zipCode} ${city}, ${state}`;
-    const formattedPhone = phone.startsWith('+') ? phone : `+60${cleanPhone.replace(/^0/, '')}`;
-
-    const addressData: Address = {
-      recipient,
-      phone: formattedPhone,
-      address: fullAddress,
-      isDefault
-    };
-
-    if (this.editingAddressIndex === null) {
-      // ADD NEW
-      this.addresses.push(addressData);
-    } else {
-      // EDIT EXISTING
-      this.addresses[this.editingAddressIndex] = addressData;
-    }
-
-    // ENFORCE ONLY ONE DEFAULT
-    if (isDefault) {
-      this.addresses.forEach((a, i) => {
-        if (i !== (this.editingAddressIndex ?? this.addresses.length - 1)) {
-          a.isDefault = false;
+  // Step 1
+  private loadCategories(): void {
+    this.questionnaireService.getCategories().subscribe({
+      next: (cats) => {
+        if (Array.isArray(cats) && cats.length) {
+          this.applianceTypes = cats;
         }
-      });
-    }
-
-    this.saveToStorage();
-    this.updateDefaultAddress();
-    this.showAddressForm = false;
-    this.resetTempAddress();
+      },
+      error: (err) => {
+        console.error('Failed to load categories', err);
+      }
+    });
   }
 
-  cancelAddressForm() {
-    this.showAddressForm = false;
-    this.editingAddressIndex = null;
-    this.resetTempAddress();
+  // call when category select changes -- Step 2
+  onCategoryChange(): void {
+    this.selectedBrandId = '';
+    this.selectedModelId = '';
+    this.brands = [];
+    this.models = [];
+    if (!this.applianceTypeId) return;
+
+    this.questionnaireService.getBrandsByCategory(this.applianceTypeId).subscribe({
+      next: (bs) => {
+        this.brands = bs;
+      },
+      error: (err) => {
+        console.error('Failed to load brands', err);
+      }
+    });
   }
 
-  deleteAddress(index: number) {
-    if (confirm('Delete this address?')) {
-      this.addresses.splice(index, 1);
-      this.saveToStorage();
-      this.updateDefaultAddress();
-    }
+  onBrandChange(): void {
+    // reset selected model when brand changes
+    this.selectedModelId = '';
+    this.models = [];
+    // set selectedBrand name from loaded brands (optional, used for display/submission)
+    this.selectedBrand = this.brands.find(b => String(b.id) === String(this.selectedBrandId))?.name ?? '';
+    if (!this.selectedBrandId) return;
+
+    this.questionnaireService.getModelsByBrand(this.selectedBrandId).subscribe({
+      next: (ms) => {
+        this.models = ms;
+      },
+      error: (err) => {
+        console.error('Failed to load models', err);
+      }
+    });
   }
 
-  updateDefaultAddress() {
-    this.defaultAddress = this.addresses.find(a => a.isDefault) ?? null;
+  // helper to display selected category/brand/model names where needed
+  getSelectedCategoryName(): string {
+    const c = this.applianceTypes.find(x => String(x.id) === String(this.applianceTypeId));
+    return c ? String(c.name) : '';
+  }
+  getSelectedBrandName(): string {
+    const b = this.brands.find(x => String(x.id) === String(this.selectedBrandId));
+    return b ? String(b.name) : '';
+  }
+  getSelectedModelName(): string {
+    const m = this.models.find(x => String(x.id) === String(this.selectedModelId));
+    return m ? String(m.name) : '';
   }
 
-  confirmAddressSelection() {
-    if (this.selectedAddressIndex === null) {
-      alert('Please select an address.');
+  // ──────────────────────────────────────────────────────────────────────
+  //  ADDRESS CRUD -- step 5
+  // ──────────────────────────────────────────────────────────────────────
+  loadAddresses() {
+    const user = this.currentUser();
+    if (!user) {
+      console.log('No user logged in');
       return;
     }
-    this.closeAddressManager();
-  }
 
-  setDefaultAddress(index: number) {
-    if (index < 0 || index >= this.addresses.length) return;
-    // mark only the chosen address as default
-    this.addresses.forEach((a, i) => a.isDefault = i === index);
-    // update modal tracking and visible default
-    this.defaultAddressIndex = index;
-    this.defaultAddress = this.addresses[index];
-    // persist changes
-    this.saveToStorage();
-  }
+    console.log('Fetching addresses for user:', user.id);
+    this.auth.getAddresses(user.id).subscribe({
+      next: (rawList: any[]) => {
+        console.log('API Raw Response:', rawList);
 
-  private saveToStorage() {
-    localStorage.setItem('pickupAddresses', JSON.stringify(this.addresses));
-  }
+        const list: Address[] = rawList.map(a => ({
+          id: String(a.id || a.addressID),
+          name: a.name || a.receiverName || '',
+          phone: a.phone || a.phoneNum || '',
+          state: a.state || '',
+          city: a.city || '',
+          zip: a.zip || a.zipCode || '',
+          pickup: a.pickup || a.pickupAddress || '',
+          isDefault: !!a.isDefault
+        }));
 
-  private loadFromStorage() {
-    const raw = localStorage.getItem('pickupAddresses');
-    if (raw) {
-      this.addresses = JSON.parse(raw);
-      // Ensure at least one default if exists
-      if (this.addresses.length > 0 && !this.addresses.some(a => a.isDefault)) {
-        this.addresses[0].isDefault = true;
+        console.log('Mapped Addresses:', list);
+        this.addresses.set(list);
+
+        // Auto-set first as default
+        if (list.length && !list.some(a => a.isDefault)) {
+          this.setDefaultAndSave(list[0].id!);
+        }
+      },
+      error: (err) => {
+        console.error('Failed to load addresses:', err);
+        this.alertService.error('Failed to load addresses');
       }
-      this.updateDefaultAddress();
-    }
+    });
   }
 
-  private resetTempAddress() {
-    this.tempAddress = {
-      recipient: '',
-      phone: '',
-      state: '',
-      city: '',
-      zipCode: '',
-      pickupAddress: '',
-      isDefault: false
+  /* ────── MODAL CONTROLS ────── */
+  openAddressModal() {
+    console.log('OPEN MODAL - addresses:', this.addresses());
+    this.addressForm.reset({ setAsDefault: false });
+    this.editingAddressId.set(null);
+    this.showAddressModal.set(true);
+  }
+
+  closeAddressModal() {
+    this.showAddressModal.set(false);
+    this.editingAddressId.set(null);
+    this.addressForm.reset();
+  }
+
+  /* ────── EDIT ────── */
+  startEdit(addr: Address) {
+    this.addressForm.patchValue({
+      name: addr.name ?? '',
+      phone: addr.phone ?? '',
+      state: addr.state ?? '',
+      city: addr.city ?? '',
+      zip: addr.zip ?? '',
+      pickup: addr.pickup ?? '',
+      setAsDefault: !!addr.isDefault
+    });
+    this.editingAddressId.set(addr.id ?? null);
+  }
+
+  /* ────── SAVE (Add / Edit) ────── */
+  saveAddress() {
+    if (this.addressForm.invalid) {
+      this.alertService.error('Please fill all required fields');
+      return;
+    }
+
+    const raw = this.addressForm.getRawValue();
+
+    // MAP FRONTEND → BACKEND FIELD NAMES
+    const payload = {
+      name: (raw.name || '').trim(),
+      phone: (raw.phone || '').trim(),
+      state: (raw.state || '').trim(),
+      city: (raw.city || '').trim(),
+      zip: (raw.zip || '').trim(),
+      pickup: (raw.pickup || '').trim()
     };
+
+    // DO NOT send `setAsDefault` here — handle separately
+    const user = this.currentUser();
+    if (!user) return;
+
+    const id = this.editingAddressId();
+    const obs$ = id
+      ? this.auth.updateAddress(user.id, id, payload)
+      : this.auth.createAddress(user.id, payload);
+
+    obs$.subscribe({
+      next: (saved: any) => {
+        const addr: Address = {
+          id: String(saved.id || saved.addressID),
+          name: saved.name || saved.receiverName,
+          phone: saved.phone || saved.phoneNum,
+          state: saved.state,
+          city: saved.city,
+          zip: saved.zip || saved.zipCode,
+          pickup: saved.pickup || saved.pickupAddress,
+          isDefault: !!saved.isDefault
+        };
+
+        // Handle default separately
+        if (raw.setAsDefault) {
+          this.setDefaultAndSave(addr.id!);
+        }
+
+        if (id) {
+          this.addresses.update(list => list.map(a => a.id === id ? addr : a));
+        } else {
+          this.addresses.update(list => [...list, addr]);
+        }
+        this.closeAddressModal();
+      },
+      error: (err) => {
+        console.error('Save failed:', err);
+        this.alertService.error('Failed to save address');
+      }
+    });
+  }
+
+  /* ────── DELETE ────── */
+  deleteAddress(id: string) {
+    if (!confirm('Delete this address?')) return;
+    const user = this.currentUser();
+    if (!user) return;
+
+    this.auth.deleteAddress(user.id, id).subscribe({
+      next: () => {
+        this.addresses.update(list => list.filter(a => a.id !== id));
+        this.alertService.success('Address deleted');
+      },
+      error: () => this.alertService.error('Delete failed')
+    });
+  }
+
+  /* ────── SELECT FROM LIST (tap address) ────── */
+  selectDefault(addr: Address) {
+    if (!addr.id) return;
+    this.setDefaultAndSave(addr.id);
+  }
+
+  /* ────── SET DEFAULT (API + UI) ────── */
+  private setDefaultAndSave(addressId: string) {
+    if (!addressId || addressId.includes('undefined') || addressId.startsWith('temp-')) {
+      console.error('Invalid addressId:', addressId);
+      return;
+    }
+
+    const user = this.currentUser();
+    if (!user) return;
+
+    this.auth.setDefaultAddress(user.id, addressId).subscribe({
+      next: () => {
+        this.addresses.update(list =>
+          list.map(a => ({ ...a, isDefault: a.id === addressId }))
+        );
+      },
+      error: (err) => {
+        console.error('Set default failed:', err);
+        this.alertService.error('Failed to set default');
+      }
+    });
+  }
+
+  /* ────── CONFIRM (close modal & keep selected default) ────── */
+  confirmSelection() {
+    this.closeAddressModal();
   }
 
   nextStep() {
     // Step 1 validation
-    if (this.currentStep === 1 && !this.applianceType) {
+    if (this.currentStep === 1 && !this.applianceTypeId) {
       alert('Please select an appliance type.');
       return;
     }
 
     // Step 2 validation
     if (this.currentStep === 2) {
-      if (!this.selectedBrand || !this.selectedModel) {
+      if (!this.selectedBrandId || !this.selectedModelId) {
         alert('Please fill in all appliance details before continuing.');
         return;
       }
@@ -426,7 +523,7 @@ export class QuestionnairesComponent {
   startOver() {
     // Reset form and return to Step 1
     this.currentStep = 1;
-    this.applianceType = '';
+    this.applianceTypeId = '';
     this.selectedBrand = '';
     this.selectedModel = '';
     this.workingStatus = 'Partially working';
@@ -441,20 +538,60 @@ export class QuestionnairesComponent {
     this.pickupTime = '';
   }
 
-  submitForm() {
-    console.log('SUBMITTED', {
-      applianceType: this.applianceType,
-      brand: this.selectedBrand,
-      model: this.selectedModel,
-      workingStatus: this.workingStatus,
-      issues: this.selectedIssues,
-      physical: this.physicalCondition,
-      notes: this.notes,
-      photos: this.uploadedFiles.map(f => f.name),
-      pickup: { date: this.pickupDate, time: this.pickupTime, address: this.defaultAddress },
-      worth: this.valuationWorth,
-    });
+  // submitForm() {
+  //   console.log('SUBMITTED', {
+  //     applianceTypeId: this.applianceTypeId,
+  //     applianceTypeName: this.getSelectedCategoryName(),
+  //     brandId: this.selectedBrandId,
+  //     brandName: this.getSelectedBrandName(),
+  //     modelId: this.selectedModelId,
+  //     modelName: this.getSelectedModelName(),
+  //      workingStatus: this.workingStatus,
+  //      issues: this.selectedIssues,
+  //      physical: this.physicalCondition,
+  //      notes: this.notes,
+  //      photos: this.uploadedFiles.map(f => f.name),
+  //      pickup: { date: this.pickupDate, time: this.pickupTime, address: this.defaultAddress },
+  //      worth: this.valuationWorth,
+  //   });
 
-    this.currentStep = 6;
+  //   this.currentStep = 6;
+  // }
+
+
+  submitForm() {
+    const user = this.currentUser();
+    const defaultAddr = this.defaultAddress();
+
+    if (!user || !defaultAddr?.id) {
+      this.alertService.error('Please log in and select address');
+      return;
+    }
+
+    const payload = {
+      modelId: this.selectedModelId,           // ← applianceID
+      workingStatus: this.workingStatus,
+      physicalCondition: this.physicalCondition,
+      notes: this.notes || null,
+      addressId: defaultAddr.id,
+      valuationWorth: this.valuationWorth,
+      issues: JSON.stringify(this.selectedIssues),
+      pickupDate: this.pickupDate,
+      pickupTime: this.pickupTime
+    };
+
+    console.log('PAYLOAD →', payload);
+
+    this.questionnaireService.submitQuestionnaire(payload, this.uploadedFiles).subscribe({
+      next: (res) => {
+        this.alertService.success('Submitted!');
+        this.currentStep = 6;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Submit failed:', err);
+        this.alertService.error(err.error?.message || 'Failed');
+      }
+    });
   }
 }
