@@ -18,7 +18,7 @@ interface SellerRow {
   createdAt: string;
 }
 
-type SortKey = 'sellerId' | 'fullName' | 'email' | 'status';
+type SortKey = 'sellerId' | 'fullName' | 'username' | 'email' | 'status';
 type SortDir = 'asc' | 'desc';
 
 @Component({

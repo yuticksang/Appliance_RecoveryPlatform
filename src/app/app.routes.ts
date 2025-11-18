@@ -65,14 +65,14 @@ export const routes: Routes = [
           //     path: 'price-list',
           //     loadComponent: () => import('./components/adminSide/priceList/price-list').then(m => m.PriceListComponent)
           //   },
-          //   {
-          //     path: 'category',
-          //     loadComponent: () => import('./components/adminSide/category/category').then(m => m.CategoryComponent)
-          //   },
-          //   {
-          //     path: 'brand',
-          //     loadComponent: () => import('./components/adminSide/brand/brand').then(m => m.BrandComponent)
-          //   },
+            {
+              path: 'category',
+              loadComponent: () => import('./components/adminSide/categoryList/category-list').then(m => m.CategoryListComponent)
+            },
+            {
+              path: 'brand',
+              loadComponent: () => import('./components/adminSide/brandList/brand-list').then(m => m.BrandListComponent)
+            },
           //   {
           //     path: 'condition',
           //     loadComponent: () => import('./components/adminSide/appliances/condition/condition').then(m => m.ConditionComponent)

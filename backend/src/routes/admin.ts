@@ -11,7 +11,13 @@ import {
   getAllAppliances,
   createAppliance,
   updateAppliance,
-  deleteAppliance
+  updateApplianceStatus,
+  createCategory,
+  updateCategory,
+  updateCategoryStatus,
+  createBrand,
+  updateBrand,
+  updateBrandStatus
 } from '../controllers/adminController';
 
 console.log('📍📍📍 admin routes loaded! 📍📍📍');
@@ -59,7 +65,33 @@ router.post('/appliances', createAppliance);
 // Update appliance
 router.put('/appliances/:id', updateAppliance);
 
-// Delete appliance
-router.delete('/appliances/:id', deleteAppliance);
+// Update appliance status
+router.put('/appliances/:id/status', updateApplianceStatus);
+
+// =====================================================
+// CATEGORY MANAGEMENT ROUTES
+// =====================================================
+
+// Create new category
+router.post('/categories', createCategory);
+
+// Update category
+router.put('/categories/:id', updateCategory);
+
+// Update category status
+router.put('/categories/:id/status', updateCategoryStatus);
+
+// =====================================================
+// BRAND MANAGEMENT ROUTES
+// =====================================================
+
+// Create new brand
+router.post('/brands', createBrand);
+
+// Update brand
+router.put('/brands/:id', updateBrand);
+
+// Update brand status
+router.put('/brands/:id/status', updateBrandStatus);
 
 export default router;

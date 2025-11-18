@@ -80,7 +80,7 @@ export class ApplianceListComponent implements OnInit {
     this.loadAppliances();
   }
 
-  // -------- API calls ----------
+  // -------- API calls ----------ac
   loadCategories() {
     this.http.get<any[]>(`${this.apiUrl}/admin/categories`)
       .subscribe({
