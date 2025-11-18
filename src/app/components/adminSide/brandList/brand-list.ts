@@ -53,34 +53,34 @@ export class BrandListComponent implements OnInit {
   editingBrand = signal<BrandRow | null>(null);
 
   ngOnInit() {
-    this.loadCategories();
+    this.loadBrands();
   }
 
   // -------- API calls ----------
-  loadCategories() {
+  loadBrands() {
     this.loading.set(true);
     this.error.set('');
 
-    this.http.get<any[]>(`${this.apiUrl}/admin/categories`)
+    this.http.get<any[]>(`${this.apiUrl}/admin/brands`)
       .subscribe({
-        next: (categories) => {
-          console.log('📂 Raw categories from API:', categories);
-          const brandData = categories.map((cat) => ({
-            brandID: cat.brandID || '',
-            brandName: cat.brandName || '',
-            description: cat.description || '',
-            count: cat.count || 0,
-            status: cat.status as BrandStatus || 'ACTIVE',
-            created_at: cat.created_at || ''
+        next: (brands) => {
+          console.log('📂 Raw brands from API:', brands);
+          const brandData = brands.map((brand) => ({
+            brandID: brand.brandID || '',
+            brandName: brand.brandName || '',
+            description: brand.description || '',
+            count: brand.count || 0,
+            status: brand.status as BrandStatus || 'ACTIVE',
+            created_at: brand.created_at || ''
           }));
 
           this.rows.set(brandData);
           this.loading.set(false);
         },
         error: (err) => {
-          this.error.set('Failed to load categories');
+          this.error.set('Failed to load brands');
           this.loading.set(false);
-          console.error('Load categories error:', err);
+          console.error('Load brands error:', err);
         }
       });
   }
@@ -170,10 +170,10 @@ export class BrandListComponent implements OnInit {
     if (action === 'toggle') {
       const newStatus = brand.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
 
-      this.http.put(`${this.apiUrl}/admin/categories/${brand.brandID}/status`, { status: newStatus })
+      this.http.put(`${this.apiUrl}/admin/brands/${brand.brandID}/status`, { status: newStatus })
         .subscribe({
           next: () => {
-            this.loadCategories();
+            this.loadBrands();
             this.alertService.success(`Brand ${brand.brandName} ${newStatus === 'ACTIVE' ? 'activated' : 'deactivated'} successfully`);
           },
           error: (err) => {
@@ -221,10 +221,10 @@ export class BrandListComponent implements OnInit {
       description: newBrand.description || ''
     };
 
-    this.http.post(`${this.apiUrl}/admin/categories`, brandData)
+    this.http.post(`${this.apiUrl}/admin/brands`, brandData)
       .subscribe({
         next: () => {
-          this.loadCategories();
+          this.loadBrands();
           this.alertService.success('New brand created successfully');
         },
         error: (err) => {
@@ -240,10 +240,10 @@ export class BrandListComponent implements OnInit {
       description: updatedBrand.description || ''
     };
 
-    this.http.put(`${this.apiUrl}/admin/categories/${updatedBrand.brandID}`, updateData)
+    this.http.put(`${this.apiUrl}/admin/brands/${updatedBrand.brandID}`, updateData)
       .subscribe({
         next: () => {
-          this.loadCategories();
+          this.loadBrands();
           this.alertService.success('Brand updated successfully');
         },
         error: (err) => {

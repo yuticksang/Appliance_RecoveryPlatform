@@ -85,10 +85,14 @@ export class ApplianceListComponent implements OnInit {
     this.http.get<any[]>(`${this.apiUrl}/admin/categories`)
       .subscribe({
         next: (data) => {
-          this.categories.set(data.map(c => ({
-            categoryID: c.categoryID,
-            categoryName: c.categoryName
-          })));
+          // Only include ACTIVE categories
+          const activeCategories = data
+            .filter(c => c.status === 'ACTIVE')
+            .map(c => ({
+              categoryID: c.categoryID,
+              categoryName: c.categoryName
+            }));
+          this.categories.set(activeCategories);
         },
         error: (err) => {
           console.error('Load categories error:', err);
@@ -101,10 +105,14 @@ export class ApplianceListComponent implements OnInit {
     this.http.get<any[]>(`${this.apiUrl}/admin/brands`)
       .subscribe({
         next: (data) => {
-          this.brands.set(data.map(b => ({
-            brandID: b.brandID,
-            brandName: b.brandName
-          })));
+          // Only include ACTIVE brands
+          const activeBrands = data
+            .filter(b => b.status === 'ACTIVE')
+            .map(b => ({
+              brandID: b.brandID,
+              brandName: b.brandName
+            }));
+          this.brands.set(activeBrands);
         },
         error: (err) => {
           console.error('Load brands error:', err);
