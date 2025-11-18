@@ -12,16 +12,7 @@ import { AuthService } from '../../../auth/auth-service';
   templateUrl: './layout.html',
   styleUrls: ['./layout.scss'],
   animations: [
-    trigger('slideDown', [
-      transition(':enter', [
-        style({ height: '0', opacity: '0', overflow: 'hidden' }),
-        animate('300ms ease-out', style({ height: '*', opacity: '1' }))
-      ]),
-      transition(':leave', [
-        style({ height: '*', opacity: '1', overflow: 'hidden' }),
-        animate('200ms ease-in', style({ height: '0', opacity: '0' }))
-      ])
-    ])
+   
   ]
 })
 export class Layout {
@@ -30,11 +21,20 @@ export class Layout {
   isSidebarHovered = false;
   isSidebarLocked = false; 
   private toggleLock = false;
+  isDropdownAnimated = true;
 
   constructor(
     public auth: AuthService,
     private router: Router,
-  ) {}
+  ) {
+    this.router.events.subscribe(() => {
+      if(this.isAppliancesActive()) {
+        this.isDropdownOpen = true;
+      }else{
+        this.isDropdownOpen = false;
+      }
+    })
+  }
 
   toggleSidebar() {
      
@@ -43,16 +43,23 @@ export class Layout {
       this.isSidebarCollapsed = false;
       this.isSidebarLocked = true;
       this.isSidebarHovered = false;
-    } else if (this.isSidebarLocked) {
+    }else if (this.isSidebarLocked) {
       // Second click, if locked, unlock and collapse
       this.isSidebarLocked = false;
       this.isSidebarCollapsed = true;
       this.isDropdownOpen = false;
+       if (!this.isAppliancesActive()) {
+        this.isDropdownOpen = false;
+      }
     } else {
       // If expanded but not locked (from hover), collapse it
       this.isSidebarCollapsed = true;
       this.isSidebarHovered = false;
       this.isDropdownOpen = false;
+
+       if (!this.isAppliancesActive()) {
+        this.isDropdownOpen = false;
+      }
     }
 
    this.toggleLock = true;
@@ -63,6 +70,7 @@ export class Layout {
 
   toggleDropdown() {
     this.isDropdownOpen = !this.isDropdownOpen;
+    this.isDropdownAnimated = true;
   }
 
   onAppliancesMouseEnter() {
@@ -70,17 +78,31 @@ export class Layout {
   }
 
    onAppliancesMouseLeave() {
-    this.isDropdownOpen = false;
+     if (!this.isAppliancesActive()) {
+      this.isDropdownOpen = false;
+    }
   }
 
   onSideBarMouseEnter() {
     if (this.isSidebarCollapsed && !this.toggleLock && !this.isSidebarLocked) {
       this.isSidebarHovered = true;
+
+      if (this.isAppliancesActive()) {
+        this.isDropdownOpen = true;
+        this.isDropdownAnimated = false;
+      }
     }  
   }
 
   onSideBarMouseLeave() {
    if (this.isSidebarCollapsed && !this.toggleLock && !this.isSidebarLocked) {
+      
+      if (!this.isAppliancesActive() || this.isDropdownOpen) {
+        this.isSidebarHovered = false;
+        this.isDropdownAnimated = false;
+        this.isDropdownOpen = false;
+      }
+
       this.isSidebarHovered = false;
       this.isDropdownOpen = false;
     }
