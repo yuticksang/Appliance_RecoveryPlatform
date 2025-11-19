@@ -9,6 +9,7 @@ import authRoutes from './routes/auth';
 import adminRoutes from './routes/admin';
 import profileRoutes from './routes/profile';
 import questionnaireRouter from './routes/questionnaire';
+import transactionRoutes from './routes/transaction';
 
 dotenv.config();
 const app = express();
@@ -52,6 +53,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api', profileRoutes);
 app.use('/api', questionnaireRouter); 
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/api/transactions', transactionRoutes);
 
 // Health route
 app.get('/health', (req, res) => res.json({ ok: true, message: 'Server is running' }));

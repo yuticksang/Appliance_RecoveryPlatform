@@ -191,6 +191,9 @@ export const login = async (req: Request, res: Response) => {
         username: user.username,
         userType: user.user_type,
         adminRole: user.admin_role || null,
+        sellerId: user.seller_id || null,
+        buyerId: user.buyer_id || null,
+        adminId: user.admin_id || null,
         phone: user.phone
       }
     });

@@ -12,6 +12,9 @@ interface User {
   username: string;
   userType: string;
   phone?: string;
+  sellerId?: string;  // For sellers: 'S001', 'S002', etc.
+  buyerId?: string;   // For buyers: 'B001', 'B002', etc.
+  adminId?: string;   // For admins: 'A001', 'A002', etc.
 }
 
 export interface UserProfile extends User {
@@ -305,6 +308,42 @@ export class AuthService {
 
   getCurrentUserId(): string | null {
     return this.currentUserSubject.value?.id || null;
+  }
+
+  /**
+   * Get the seller ID for the current user (e.g., 'S001')
+   * Returns null if user is not a seller or not logged in
+   */
+  getSellerId(): string | null {
+    const user = this.currentUserSubject.value;
+    if (!user || user.userType !== 'seller') {
+      return null;
+    }
+    return user.sellerId || null;
+  }
+
+  /**
+   * Get the buyer ID for the current user (e.g., 'B001')
+   * Returns null if user is not a buyer or not logged in
+   */
+  getBuyerId(): string | null {
+    const user = this.currentUserSubject.value;
+    if (!user || user.userType !== 'buyer') {
+      return null;
+    }
+    return user.buyerId || null;
+  }
+
+  /**
+   * Get the admin ID for the current user (e.g., 'A001')
+   * Returns null if user is not an admin or not logged in
+   */
+  getAdminId(): string | null {
+    const user = this.currentUserSubject.value;
+    if (!user || (user.userType !== 'admin' && user.userType !== 'superadmin')) {
+      return null;
+    }
+    return user.adminId || null;
   }
 
   setCurrentUser(user: User | null): void {
