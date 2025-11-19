@@ -450,12 +450,8 @@ CREATE INDEX idx_item_status_transactionID ON "ItemStatus"("transactionID");
 CREATE TABLE "RecoverySlip" (
     "slipNo" VARCHAR(20) PRIMARY KEY DEFAULT ('RSL' || LPAD(nextval('recovery_slip_id_seq')::text, 3, '0')),
     "submittedApplianceID" VARCHAR(20) NOT NULL,
-    "sellerID" VARCHAR(20) NOT NULL,
-    "addressID" VARCHAR(20),
     "generatedDate" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY ("submittedApplianceID") REFERENCES "SubmittedAppliance"("submittedApplianceID") ON DELETE CASCADE,
-    FOREIGN KEY ("sellerID") REFERENCES users("userID") ON DELETE CASCADE,
-    FOREIGN KEY ("addressID") REFERENCES "PickupAddress"("addressID") ON DELETE SET NULL
+    FOREIGN KEY ("submittedApplianceID") REFERENCES "SubmittedAppliance"("submittedApplianceID") ON DELETE CASCADE
 );
 
 CREATE INDEX idx_recovery_slip_submittedApplianceID ON "RecoverySlip"("submittedApplianceID");

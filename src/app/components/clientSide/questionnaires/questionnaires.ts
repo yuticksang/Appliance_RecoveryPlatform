@@ -481,14 +481,14 @@ export class QuestionnairesComponent implements OnInit{
   nextStep() {
     // Step 1 validation
     if (this.currentStep === 1 && !this.applianceTypeId) {
-      alert('Please select an appliance type.');
+      this.alertService.error('Please select an appliance type.');
       return;
     }
 
     // Step 2 validation
     if (this.currentStep === 2) {
       if (!this.selectedBrandId || !this.selectedModelId) {
-        alert('Please fill in all appliance details before continuing.');
+        this.alertService.error('Please fill in all appliance details before continuing.');
         return;
       }
     }
@@ -496,7 +496,7 @@ export class QuestionnairesComponent implements OnInit{
     // Step 3 validation (ensure physical condition and working status selected)
     if (this.currentStep === 3) {
       if (!this.workingStatus || !this.physicalCondition) {
-        alert('Please answer all required questions.');
+        this.alertService.error('Please answer all required questions.');
         return;
       }
       this.calculateValuation();
