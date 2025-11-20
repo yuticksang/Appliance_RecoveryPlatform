@@ -144,6 +144,12 @@ $blue-2: #1a73e8;
     
   }
 
+  &.dropdown {
+    gap: 0; 
+    display: block; 
+    padding: 0; 
+  }
+
   &:hover { 
      color: $blue-2;
      transform: translateX(5px);
@@ -273,7 +279,8 @@ $blue-2: #1a73e8;
   width: 100%;
   border: none;
   background: transparent;
-  padding: 0;
+  padding: 0 0;
+  
   margin: 0;
   list-style: none;
   overflow: hidden;
