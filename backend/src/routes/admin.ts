@@ -17,7 +17,8 @@ import {
   updateCategoryStatus,
   createBrand,
   updateBrand,
-  updateBrandStatus
+  updateBrandStatus,
+  getAllBuyerPrices
 } from '../controllers/adminController';
 
 console.log('📍📍📍 admin routes loaded! 📍📍📍');
@@ -93,5 +94,12 @@ router.put('/brands/:id', updateBrand);
 
 // Update brand status
 router.put('/brands/:id/status', updateBrandStatus);
+
+// =====================================================
+// PRICE LIST ROUTES
+// =====================================================
+
+// Get all buyer prices
+router.get('/buyer-prices', getAllBuyerPrices);
 
 export default router;

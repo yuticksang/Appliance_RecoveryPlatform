@@ -1,0 +1,115 @@
+<main class="appliance-page">
+  <div class="appliance-container">
+    <div class="page-head">
+      <h1 class="page-title">Appliance's Price List</h1>
+      <div class="breadcrumb">Dashboard / Appliances / <span>Price List</span></div>
+    </div>
+
+    <!-- toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-right">
+        <!-- Category Filter -->
+        <div class="filter-dropdown">
+          <select [ngModel]="selectedCategory()" (ngModelChange)="selectedCategory.set($event); onFilterChange()">
+            <option value="">Select a Category</option>
+            <option *ngFor="let cat of uniqueCategories()" [value]="cat">{{ cat }}</option>
+          </select>
+        </div>
+
+        <!-- Brand Filter -->
+        <div class="filter-dropdown">
+          <select [ngModel]="selectedBrand()" (ngModelChange)="selectedBrand.set($event); onFilterChange()">
+            <option value="">Select a Brand</option>
+            <option *ngFor="let brand of uniqueBrands()" [value]="brand">{{ brand }}</option>
+          </select>
+        </div>
+
+        <!-- Buyer Filter -->
+        <div class="filter-dropdown">
+          <select [ngModel]="selectedBuyer()" (ngModelChange)="selectedBuyer.set($event); onFilterChange()">
+            <option value="">Select a Buyer</option>
+            <option *ngFor="let buyer of uniqueBuyers()" [value]="buyer.id">{{ buyer.id }} - {{ buyer.name }}</option>
+          </select>
+        </div>
+
+        <!-- Search -->
+        <div class="search">
+          <input type="text" placeholder="Search..." [value]="search()"
+            (input)="search.set($any($event.target).value); onSearchChange()" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div *ngIf="loading()" class="loading">Loading prices...</div>
+
+    <!-- Error state -->
+    <div *ngIf="error()" class="error-message">{{ error() }}</div>
+
+    <!-- table -->
+    <div class="table-wrap" *ngIf="!loading() && !error()">
+      <table class="grid">
+        <thead>
+          <tr>
+            <th class="narrow">#</th>
+            <th (click)="setSort('buyer_id')" class="sortable">
+              Buyer ID <span class="sort">{{ getSortIcon('buyer_id') }}</span>
+            </th>
+            <th class="non-sortable">Appliance ID</th>
+            <th class="non-sortable">Model Code</th>
+            <th class="non-sortable">Model Name</th>
+            <th (click)="setSort('categoryName')" class="sortable">
+              Parent Category <span class="sort">{{ getSortIcon('categoryName') }}</span>
+            </th>
+            <th (click)="setSort('brandName')" class="sortable">
+              Parent Brand <span class="sort">{{ getSortIcon('brandName') }}</span>
+            </th>
+            <th (click)="setSort('basePrice')" class="sortable">
+              Price <span class="sort">{{ getSortIcon('basePrice') }}</span>
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let r of paged(); let i = index">
+            <td class="narrow">{{ (currentPage() - 1) * itemsPerPage() + i + 1 }}</td>
+            <td>{{ r.buyer_id }}</td>
+            <td>{{ r.applianceID }}</td>
+            <td>{{ r.modelCode }}</td>
+            <td>{{ r.modelName }}</td>
+            <td>{{ r.categoryName || '---' }}</td>
+            <td>{{ r.brandName || '---' }}</td>
+            <td class="price-cell">{{ formatPrice(r.basePrice) }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Empty State -->
+      <div *ngIf="paged().length === 0" class="empty-state">
+        <p>No prices found.</p>
+      </div>
+    </div>
+
+    <!-- pager -->
+    <div class="pager" *ngIf="!loading() && !error() && paged().length > 0">
+      <button class="page-btn" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1">‹</button>
+
+      <button class="page-btn" *ngFor="let p of pageNumbers()"
+        [class.active]="p === currentPage()"
+        [disabled]="p === -1"
+        (click)="p !== -1 && goToPage(p)">
+        {{ p === -1 ? '...' : p }}
+      </button>
+
+      <button class="page-btn" (click)="goToPage(currentPage() + 1)"
+        [disabled]="currentPage() === totalPages()">›</button>
+
+      <div class="page-size">
+        <select [ngModel]="itemsPerPage()" (ngModelChange)="itemsPerPage.set(+$event); onItemsPerPageChange()">
+          <option *ngFor="let n of itemsPerPageOptions" [value]="n">{{ n }}</option>
+        </select>
+        <span>/Page</span>
+      </div>
+    </div>
+  </div>
+</main>

@@ -178,7 +178,7 @@ export class BrandListComponent implements OnInit {
           },
           error: (err) => {
             console.error('Toggle status error:', err);
-            this.alertService.error('Failed to update status');
+            this.alertService.error(err.error?.message || 'Failed to update status');
           }
         });
     }

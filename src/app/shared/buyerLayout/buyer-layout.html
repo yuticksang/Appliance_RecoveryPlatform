@@ -1,0 +1,54 @@
+<!-- Sidebar -->
+<div class="sidebar" [class.collapsed]="isSidebarCollapsed && !isSidebarHovered && !isSidebarLocked"
+     (mouseenter)="onSideBarMouseEnter()"
+     (mouseleave)="onSideBarMouseLeave()">
+  <div class="logo">
+    <div class="logo-icon">
+      <img src="assets/image/EzRecover_Icon.png" alt="Ez Recover" />
+    </div>
+    <button class="sidebar-btn" (click)="toggleSidebar()">
+      <i class="ri-arrow-right-circle-line" [class.rotate-180]="isSidebarCollapsed && !isSidebarHovered && !isSidebarLocked"></i>
+    </button>
+  </div>
+
+  <a class="nav-item" routerLink="/buyer/dashboard" routerLinkActive="active">
+    <i class="ri-dashboard-line"></i>
+    <span class="nav-text">Dashboard</span>
+  </a>
+
+  <a class="nav-item" routerLink="/buyer/transactions" routerLinkActive="active">
+    <i class="ri-receipt-line"></i>
+    <span class="nav-text">Transaction</span>
+  </a>
+
+  <div class="nav-item dropdown"
+       (mouseenter)="onAppliancesMouseEnter()"
+       (mouseleave)="onAppliancesMouseLeave()">
+    <a class="appliances-toggle"
+       (click)="toggleDropdown()"
+       [class.active]="isAppliancesActive()">
+      <i class="ri-box-3-line"></i>
+      <span class="nav-text">Appliances</span>
+      <i class="fa-solid fa-chevron-down ms-auto"
+         [class.rotate-180]="isDropdownOpen"></i>
+    </a>
+    <ul class="drop-menu" [class.open]="isDropdownOpen">
+      <li><a class="menu-item" routerLink="/buyer/appliances" routerLinkActive="active-dropdown">All Appliances</a></li>
+      <li><a class="menu-item" routerLink="/buyer/appliances/condition-markdown" routerLinkActive="active-dropdown">Condition & Markdown</a></li>
+    </ul>
+  </div>
+
+  <button class="logout-btn" (click)="logout()">
+    <i class="ri-logout-circle-r-line"></i>
+    <span class="nav-text">Log out</span>
+  </button>
+</div>
+
+<!-- Main Content -->
+<div class="main-content" [class.expanded]="isSidebarCollapsed && !isSidebarHovered && !isSidebarLocked">
+  <div class="header">
+    <span class="user-name">{{ auth.user()?.username || 'Buyer' }}</span>
+  </div>
+
+  <router-outlet></router-outlet>
+</div>

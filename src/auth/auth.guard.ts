@@ -73,3 +73,27 @@ export const adminGuard: CanActivateFn = (route, state) => {
 
   return true;
 };
+
+/**
+ * Buyer guard - only allows buyer users
+ */
+export const buyerGuard: CanActivateFn = (route, state) => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+
+  const user = authService.user();
+
+  if (!user) {
+    router.navigate(['/buyer-login']);
+    return false;
+  }
+
+  // Check if user is buyer
+  if (user.userType !== 'buyer') {
+    // Not a buyer - redirect appropriately
+    router.navigate(['/home']);
+    return false;
+  }
+
+  return true;
+};

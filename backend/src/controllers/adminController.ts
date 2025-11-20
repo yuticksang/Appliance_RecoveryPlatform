@@ -560,6 +560,18 @@ export const updateCategoryStatus = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
+    // If trying to set status to INACTIVE, check if this is the last active category
+    if (status === 'INACTIVE') {
+      const activeCount = await pool.query(
+        'SELECT COUNT(*) as count FROM "Category" WHERE status = $1',
+        ['ACTIVE']
+      );
+
+      if (parseInt(activeCount.rows[0].count) <= 1) {
+        return res.status(400).json({ message: 'Cannot deactivate the last active category. At least one category must remain active.' });
+      }
+    }
+
     const result = await pool.query(
       'UPDATE "Category" SET status = $1 WHERE "categoryID" = $2 RETURNING "categoryID", status',
       [status, id]
@@ -670,6 +682,18 @@ export const updateBrandStatus = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Invalid status' });
     }
 
+    // If trying to set status to INACTIVE, check if this is the last active brand
+    if (status === 'INACTIVE') {
+      const activeCount = await pool.query(
+        'SELECT COUNT(*) as count FROM "Brand" WHERE status = $1',
+        ['ACTIVE']
+      );
+
+      if (parseInt(activeCount.rows[0].count) <= 1) {
+        return res.status(400).json({ message: 'Cannot deactivate the last active brand. At least one brand must remain active.' });
+      }
+    }
+
     const result = await pool.query(
       'UPDATE "Brand" SET status = $1 WHERE "brandID" = $2 RETURNING "brandID", status',
       [status, id]
@@ -687,5 +711,42 @@ export const updateBrandStatus = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Update brand status error:', error);
     res.status(500).json({ message: 'Failed to update brand status' });
+  }
+};
+
+// =====================================================
+// PRICE LIST MANAGEMENT
+// =====================================================
+
+// Get all buyer prices for appliances
+export const getAllBuyerPrices = async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      `SELECT
+        ba."buyerID",
+        ba."applianceID",
+        ba."basePrice",
+        u.buyer_id,
+        u.name as "buyerName",
+        u.username as "buyerUsername",
+        a."modelCode",
+        a."modelName",
+        c."categoryName",
+        b."brandName",
+        a.status as "applianceStatus"
+      FROM "BuyerAppliance" ba
+      LEFT JOIN users u ON ba."buyerID" = u."userID"
+      LEFT JOIN "Appliance" a ON ba."applianceID" = a."applianceID"
+      LEFT JOIN "Category" c ON a."categoryID" = c."categoryID"
+      LEFT JOIN "Brand" b ON a."brandID" = b."brandID"
+      WHERE u.user_type = 'buyer'
+      ORDER BY u.buyer_id ASC, c."categoryName" ASC, b."brandName" ASC, a."modelName" ASC`
+    );
+
+    console.log('💰 Fetched buyer prices:', result.rows.length);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get buyer prices error:', error);
+    res.status(500).json({ message: 'Failed to fetch buyer prices' });
   }
 };
