@@ -85,6 +85,10 @@ export const routes: Routes = [
             {
               path: 'scoring',
               loadComponent: () => import('./components/adminSide/scoring-configuration/scoring-configuration').then(m => m.ScoringConfiguration)
+            },
+            {
+              path: 'condition',
+              loadComponent: () => import('./components/adminSide/conditionList/condition-list').then(m => m.ConditionListComponent)
             }
           ]
         },

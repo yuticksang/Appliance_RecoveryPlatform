@@ -20,6 +20,20 @@ import {
   updateBrandStatus,
   getAllBuyerPrices
 } from '../controllers/adminController';
+import {
+  getAllConditionGroups,
+  createConditionGroup,
+  updateConditionGroup,
+  updateConditionGroupStatus,
+  getAllConditionOptions,
+  getConditionOptionsByGroup,
+  createConditionOption,
+  updateConditionOption,
+  deleteConditionOption,
+  getConditionCategories,
+  updateConditionCategories
+} from '../controllers/conditionController';
+import { optionalUpload } from '../middleware/upload';
 
 console.log('📍📍📍 admin routes loaded! 📍📍📍');
 
@@ -101,5 +115,50 @@ router.put('/brands/:id/status', updateBrandStatus);
 
 // Get all buyer prices
 router.get('/buyer-prices', getAllBuyerPrices);
+
+// =====================================================
+// CONDITION GROUP MANAGEMENT ROUTES
+// =====================================================
+
+// Get all condition groups
+router.get('/condition-groups', getAllConditionGroups);
+
+// Create new condition group
+router.post('/condition-groups', createConditionGroup);
+
+// Update condition group
+router.put('/condition-groups/:id', updateConditionGroup);
+
+// Update condition group status
+router.put('/condition-groups/:id/status', updateConditionGroupStatus);
+
+// =====================================================
+// CONDITION OPTION MANAGEMENT ROUTES
+// =====================================================
+
+// Get all condition options
+router.get('/condition-options', getAllConditionOptions);
+
+// Get condition options by group
+router.get('/condition-options/group/:groupId', getConditionOptionsByGroup);
+
+// Create new condition option
+router.post('/condition-options', optionalUpload, createConditionOption);
+
+// Update condition option
+router.put('/condition-options/:id', optionalUpload, updateConditionOption);
+
+// Delete condition option
+router.delete('/condition-options/:id', deleteConditionOption);
+
+// =====================================================
+// CONDITION CATEGORY ASSOCIATION ROUTES
+// =====================================================
+
+// Get categories for a condition
+router.get('/condition-options/:conditionId/categories', getConditionCategories);
+
+// Update categories for a condition
+router.put('/condition-options/:conditionId/categories', updateConditionCategories);
 
 export default router;
