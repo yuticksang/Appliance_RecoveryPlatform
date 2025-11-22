@@ -31,21 +31,35 @@ export const createConditionGroup = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Criteria name is required' });
     }
 
+    if (!criteriaCodePrefix) {
+      return res.status(400).json({ message: 'Code prefix is required' });
+    }
+
     // Check if criteria name already exists
-    const existing = await pool.query(
+    const existingName = await pool.query(
       'SELECT "groupID" FROM "ConditionGroup" WHERE "criteriaName" = $1',
       [criteriaName]
     );
 
-    if (existing.rows.length > 0) {
+    if (existingName.rows.length > 0) {
       return res.status(400).json({ message: 'Criteria name already exists' });
+    }
+
+    // Check if code prefix already exists
+    const existingPrefix = await pool.query(
+      'SELECT "groupID" FROM "ConditionGroup" WHERE "criteriaCodePrefix" = $1',
+      [criteriaCodePrefix]
+    );
+
+    if (existingPrefix.rows.length > 0) {
+      return res.status(400).json({ message: 'Code prefix already exists. Please use a unique prefix.' });
     }
 
     const result = await pool.query(
       `INSERT INTO "ConditionGroup" ("criteriaName", "criteriaCodePrefix", status)
        VALUES ($1, $2, 'ACTIVE')
        RETURNING "groupID", "criteriaName", "criteriaCodePrefix", created_at, status`,
-      [criteriaName, criteriaCodePrefix || null]
+      [criteriaName, criteriaCodePrefix]
     );
 
     console.log('✅ Created condition group:', result.rows[0]);
@@ -214,19 +228,22 @@ export const createConditionOption = async (req: Request, res: Response) => {
 
     // Auto-generate code based on prefix
     if (prefix) {
+      // Get the highest numeric code for this group
       const lastCodeQuery = await pool.query(
         `SELECT code FROM "ConditionOption"
-         WHERE "groupID" = $1 AND code LIKE $2
-         ORDER BY code DESC LIMIT 1`,
-        [groupID, `${prefix}%`]
+         WHERE "groupID" = $1 AND code ~ $2
+         ORDER BY CAST(SUBSTRING(code FROM '[0-9]+') AS INTEGER) DESC LIMIT 1`,
+        [groupID, `^${prefix}[0-9]+$`]
       );
 
       if (lastCodeQuery.rows.length > 0) {
         const lastCode = lastCodeQuery.rows[0].code;
         const lastNumber = parseInt(lastCode.replace(prefix, '')) || 0;
         finalCode = prefix + String(lastNumber + 1).padStart(3, '0');
+        console.log(`🔢 Last code: ${lastCode}, Next code: ${finalCode}`);
       } else {
         finalCode = prefix + '001';
+        console.log(`🔢 No existing codes, starting with: ${finalCode}`);
       }
     }
 

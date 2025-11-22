@@ -1,0 +1,42 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Edit Condition Type</h3>
+      <button class="close-btn" (click)="onClose()">×</button>
+    </div>
+
+    <form [formGroup]="editGroupForm" (ngSubmit)="onSubmit()">
+      <div class="info-box">
+        <i class="ri-information-line"></i>
+        <span>You can only edit the name. The code prefix ({{ groupData.criteriaCodePrefix }}) cannot be changed to maintain data consistency.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="criteriaName">Condition Type Name <span class="required">*</span></label>
+        <input
+          id="criteriaName"
+          type="text"
+          formControlName="criteriaName"
+          placeholder="e.g., Functional Status, Appearance Status"
+          [class.error]="criteriaName?.invalid && criteriaName?.touched">
+
+        <div *ngIf="criteriaName?.invalid && criteriaName?.touched" class="error-message">
+          <small *ngIf="criteriaName?.errors?.['required']">Name is required</small>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Code Prefix (Read-only)</label>
+        <input type="text" [value]="groupData.criteriaCodePrefix" disabled>
+        <small class="hint">Code prefix cannot be changed after creation</small>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="onClose()">Cancel</button>
+        <button type="submit" class="btn-primary" [disabled]="editGroupForm.invalid">
+          Update Type
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

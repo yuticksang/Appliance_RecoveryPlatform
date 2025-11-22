@@ -10,12 +10,12 @@
       <button class="btn-primary" (click)="addNewConditionType()">+ NEW CONDITION TYPE</button>
 
       <div class="toolbar-right">
-        <!-- Category Filter -->
+        <!-- Condition Group Filter -->
         <div class="select-wrapper">
-          <select class="category-select" [value]="selectedCategory()" (change)="onCategoryChange($any($event.target).value)">
-            <option value="all">All Categories</option>
-            <option *ngFor="let category of categories()" [value]="category.categoryName">
-              {{ category.categoryName }}
+          <select class="category-select" [value]="selectedGroupFilter()" (change)="onGroupFilterChange($any($event.target).value)">
+            <option value="all">All Condition Types</option>
+            <option *ngFor="let group of conditionGroups()" [value]="group.groupID">
+              {{ group.criteriaName }}
             </option>
           </select>
         </div>
@@ -48,7 +48,7 @@
             <button class="icon-btn add-btn" (click)="addNewCondition(item.group.groupID)" title="Add New Condition">
               <i class="ri-add-circle-line"></i>
             </button>
-            <button class="icon-btn edit-btn" title="Edit Group">
+            <button class="icon-btn edit-btn" (click)="editConditionGroup(item.group)" title="Edit Group Name">
               <i class="ri-pencil-line"></i>
             </button>
             <button class="icon-btn" [title]="getGroupToggleTitle(item.group.status)" (click)="toggleGroupStatus(item.group)">
@@ -146,10 +146,19 @@
 </app-add-condition-group>
 }
 
+<!-- Edit Condition Group Modal -->
+@if (showEditGroupModal() && editingGroup()) {
+<app-edit-condition-group
+  [groupData]="editingGroup()!"
+  (close)="onCloseEditGroupModal()"
+  (groupUpdated)="onGroupUpdated($event)">
+</app-edit-condition-group>
+}
+
 <!-- Add Condition Option Modal -->
-@if (showAddOptionModal() && selectedGroup()) {
+@if (showAddOptionModal() && selectedGroupForAdd()) {
 <app-add-condition-option
-  [groupID]="selectedGroup()!"
+  [groupID]="selectedGroupForAdd()!"
   [criteriaCodePrefix]="getSelectedGroupPrefix()"
   (close)="onCloseAddOptionModal()"
   (optionAdded)="onOptionAdded($event)">
