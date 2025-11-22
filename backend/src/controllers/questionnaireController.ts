@@ -188,6 +188,7 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       throw new Error('Please select pickup date and time');
     }
 
+    // Insert Pickup Table
     await client.query(
       `INSERT INTO "Pickup" (
         "submittedApplianceID", 
@@ -210,6 +211,41 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       ) VALUES ($1)`,
       [finalId]
     );
+
+    // // Insert Trasaction Table
+    await client.query(
+      `INSERT INTO "Transaction" (
+        "submittedApplianceID", 
+        "sellerID", 
+        "transactionStatus"
+      ) VALUES ($1, $2, 'Awaiting Pick Up')`,
+      [
+        finalId,
+        sellerId,
+      ]
+    );
+
+    // // Get transaction ID
+    // const transactionId = await pool.query(
+    //   `SELECT "transactionID" FROM "Transaction" WHERE "submittedApplianceID" = $1`,
+    //   [finalId],
+    // );
+
+
+    // if (!transactionId.rows.length) {
+    //   throw new Error(`No transaction found for submittedApplianceID = ${finalId}`);
+    // }
+    
+    // const transactionID = transactionId.rows[0].transactionID;
+    
+    // console.log('Generated transactionID:', transactionID);
+
+    // // Insert ItemStatus Table
+    // await pool.query(
+    //   `INSERT INTO "ItemStatus" ("transactionID", "itemStatus", "updatedAt")
+    //    VALUES ($1, 'Awaiting Pick Up', NOW())`,
+    //   [transactionID]
+    // );
 
     // Upload photos to Supabase Storage
     const files = req.files as Express.Multer.File[];
