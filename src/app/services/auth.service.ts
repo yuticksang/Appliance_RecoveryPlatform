@@ -290,7 +290,7 @@ export class AuthService {
     return this.currentUserSubject.value;
   }
 
-  getCurrentUserId(): number | null {
+  getCurrentUserId(): string | null {
     return this.currentUserSubject.value?.id || null;
   }
 

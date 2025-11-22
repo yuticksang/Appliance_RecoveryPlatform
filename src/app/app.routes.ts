@@ -49,13 +49,14 @@ export const routes: Routes = [
           return import('./components/adminSide/adminList/admin-list').then(m => m.AdminListComponent);
         })
       },
-      // {
-      //   path: 'transactions',
-      //   loadComponent: () => import('./components/adminSide/transactionList/transaction-list').then(m => m.TransactionListComponent).catch(() => {
-      //     // Placeholder if not exists
-      //     return import('./components/adminSide/adminList/admin-list').then(m => m.AdminListComponent);
-      //   })
-      // },
+      {
+        path: 'transactions',
+        loadComponent: () => import('./components/adminSide/SellersTransactionList/seller-transaction-list').then(m => m.SellerTransactionListComponent)
+      },
+      {
+        path: 'transactions/:id',
+        loadComponent: () => import('./components/adminSide/TransactionDetail/admin-transaction-detail').then(m => m.AdminTransactionDetailComponent)
+      },
       // {
       //   path: 'appliances',
       //   loadComponent: () => import('./components/adminSide/applianceList/appliance-list').then(m => m.ApplianceListComponent).catch(() => {

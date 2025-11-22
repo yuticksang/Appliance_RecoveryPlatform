@@ -1,7 +1,9 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
+import { filter, take } from 'rxjs/operators';
 import { TransactionService, Transaction } from '../../../services/transaction.service';
 import { AuthService } from '../../../services/auth.service';
 
@@ -12,7 +14,7 @@ import { AuthService } from '../../../services/auth.service';
   templateUrl: './transactions.html',
   styleUrls: ['./transactions.scss']
 })
-export class TransactionsComponent implements OnInit {
+export class TransactionsComponent implements OnInit, OnDestroy {
   private transactionService = inject(TransactionService);
   private authService = inject(AuthService);
   private router = inject(Router);
@@ -33,9 +35,24 @@ export class TransactionsComponent implements OnInit {
 
   loading: boolean = false;
   currentSellerId: string | null = null;
+  private authSubscription?: Subscription;
 
   ngOnInit(): void {
-    this.loadSellerTransactions();
+    // Wait for auth to be ready before loading transactions
+    // Use filter + take(1) to only trigger once when user is available
+    this.authSubscription = this.authService.currentUser$
+      .pipe(
+        filter(user => user !== null && user.userType === 'seller'),
+        take(1) // Only take the first emission, then auto-unsubscribe
+      )
+      .subscribe(() => {
+        this.loadSellerTransactions();
+      });
+  }
+
+  ngOnDestroy(): void {
+    // Cleanup subscription (though take(1) auto-unsubscribes)
+    this.authSubscription?.unsubscribe();
   }
 
   loadSellerTransactions(): void {
@@ -45,7 +62,7 @@ export class TransactionsComponent implements OnInit {
     this.currentSellerId = this.authService.getSellerId();
 
     if (!this.currentSellerId) {
-      console.error('No seller logged in or user is not a seller');
+      console.error('❌ Cannot load transactions: No seller ID found');
       this.loading = false;
       return;
     }
@@ -55,6 +72,8 @@ export class TransactionsComponent implements OnInit {
     // Fetch transactions for this seller only
     this.transactionService.getTransactionsBySeller(this.currentSellerId).subscribe({
       next: (transactions) => {
+        console.log('✅ Loaded transactions:', transactions);
+        console.log('Transaction IDs:', transactions.map(t => ({ id: t.id, type: typeof t.id })));
         this.transactions = transactions;
         this.applyFilters();
         this.loading = false;
@@ -107,6 +126,7 @@ export class TransactionsComponent implements OnInit {
       'Rejected': 'status-rejected',
       'Cancelled': 'status-cancelled',
       'Awaiting Confirmation': 'status-awaiting',
+      'Confirmed': 'status-confirmed',
       'Under Review': 'status-review',
       'Picked Up': 'status-picked-up'
     };
@@ -117,8 +137,11 @@ export class TransactionsComponent implements OnInit {
     const statusMap: { [key: string]: string } = {
       'Picked Up': 'item-picked-up',
       'Returned': 'item-returned',
+      'Awaiting Pick Up': 'item-awaiting',
       'Awaiting Picked Up': 'item-awaiting',
-      'Pending Further Action': 'item-pending'
+      'Pending Further Action': 'item-pending',
+      'Unresponded': 'item-unresponded',
+      'Awaiting Return': 'item-awaiting-return'
     };
     return statusMap[status] || '';
   }
@@ -148,10 +171,10 @@ export class TransactionsComponent implements OnInit {
     this.applyFilters();
   }
 
-  viewTransactionDetail(transactionId: number): void {
+  viewTransactionDetail(transactionId: string | number): void {
+    console.log('🔍 Navigating to transaction detail. ID:', transactionId, 'Type:', typeof transactionId);
     this.router.navigate(['/transactions', transactionId]);
   }
-
   addNewAppliance(): void {
     // TODO: Navigate to trade-in questionnaire page
     // Example: this.router.navigate(['/trade-in']);

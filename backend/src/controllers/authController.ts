@@ -122,7 +122,21 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Invalid username or email.' });
     }
 
-    const user = result.rows[0];
+    // Handle multiple users with same email/username
+    // Check password against all matching accounts
+    let user = null;
+    for (const potentialUser of result.rows) {
+      const isPasswordValid = await bcrypt.compare(password, potentialUser.password);
+      if (isPasswordValid) {
+        user = potentialUser;
+        break;
+      }
+    }
+
+    if (!user) {
+      console.log('❌ Invalid password');
+      return res.status(401).json({ message: 'Invalid password. Please try again.' });
+    }
     console.log('👤 User found:', {
       username: user.username,
       admin_id: user.admin_id,
@@ -142,13 +156,6 @@ export const login = async (req: Request, res: Response) => {
         : (user.user_status === 'INACTIVE' ? 'Please verify your email first' : 'Account is blocked');
 
       return res.status(401).json({ message });
-    }
-
-    // Check password
-    const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) {
-      console.log('❌ Invalid password for user:', user.username);
-      return res.status(401).json({ message: 'Invalid password. Please try again.' });
     }
 
     console.log('✅ Login successful for:', user.username || user.email);

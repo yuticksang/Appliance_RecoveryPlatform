@@ -1,18 +1,17 @@
 <main class="transactions-page">
   <div class="transactions-container">
-    <h1 class="page-title">Transaction's List</h1>
+    <div class="page-head">
+      <h1 class="page-title">Transaction's List</h1>
+      <div class="breadcrumb">Dashboard / <span>Transaction</span></div>
+    </div>
 
     <!-- Filters & Actions Bar -->
     <div class="filters-bar">
-      <button class="btn-new-appliance" (click)="addNewAppliance()">
-        + NEW APPLIANCE
-      </button>
-
       <div class="filters-right">
         <!-- Category Dropdown -->
         <div class="filter-dropdown">
-          <select 
-            [(ngModel)]="selectedCategory" 
+          <select
+            [(ngModel)]="selectedCategory"
             (change)="onCategoryChange()"
             class="filter-select">
             <option value="">Select a Category</option>
@@ -22,8 +21,8 @@
 
         <!-- Brand Dropdown -->
         <div class="filter-dropdown">
-          <select 
-            [(ngModel)]="selectedBrand" 
+          <select
+            [(ngModel)]="selectedBrand"
             (change)="onBrandChange()"
             class="filter-select">
             <option value="">Select a Brand</option>
@@ -33,9 +32,9 @@
 
         <!-- Search Box -->
         <div class="search-box">
-          <input 
-            type="text" 
-            placeholder="Search..." 
+          <input
+            type="text"
+            placeholder="Search..."
             [(ngModel)]="searchQuery"
             (input)="onSearch()"
             class="search-input">
@@ -49,13 +48,13 @@
       <!-- Loading State -->
       <div *ngIf="loading" class="loading-state">
         <div class="spinner"></div>
-        <p>Loading your transactions...</p>
+        <p>Loading transactions...</p>
       </div>
 
       <!-- Empty State -->
       <div *ngIf="!loading && filteredTransactions.length === 0" class="empty-state">
         <p>No transactions found.</p>
-        <p class="empty-hint">Submit a trade-in questionnaire to see your transactions here.</p>
+        <p class="empty-hint">Try adjusting your filters or search query.</p>
       </div>
 
       <!-- Table -->
@@ -63,33 +62,28 @@
         <thead>
           <tr>
             <th>#</th>
-            <th>Image</th>
-            <th>Brand</th>
-            <th></th>
+            <th>Transaction ID</th>
+            <th>Seller ID</th>
+            <th>Buyer ID</th>
             <th>Category</th>
-            <th></th>
+            <th>Brand</th>
             <th>Model</th>
-            <th>Model Name</th>
             <th>Transaction Status</th>
             <th>Item Status</th>
+            <th class="actions">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let transaction of paginatedTransactions; let i = index" 
+          <tr *ngFor="let transaction of paginatedTransactions; let i = index"
               class="transaction-row"
               (click)="viewTransactionDetail(transaction.id)">
             <td>{{ (currentPage - 1) * itemsPerPage + i + 1 }}</td>
-            <td>
-              <div class="appliance-image">
-                <img [src]="transaction.image" [alt]="transaction.modelName" />
-              </div>
-            </td>
-            <td>{{ transaction.brand }}</td>
-            <td></td>
+            <td class="transaction-id">{{ transaction.id }}</td>
+            <td>{{ transaction.sellerId }}</td>
+            <td>{{ transaction.id }}</td>
             <td>{{ transaction.category }}</td>
-            <td></td>
+            <td>{{ transaction.brand }}</td>
             <td>{{ transaction.model }}</td>
-            <td>{{ transaction.modelName }}</td>
             <td>
               <span
                 class="status-badge"
@@ -104,21 +98,30 @@
                 {{ transaction.itemStatus }}
               </span>
             </td>
+            <td class="actions">
+              <button class="icon" title="Edit" (click)="editTransaction(transaction, $event)">
+                <img src="assets/icons/edit.png" alt="Edit" class="action-icon">
+              </button>
+              <span class="icon-placeholder"></span>
+              <button class="icon danger" title="Delete" (click)="deleteTransaction(transaction, $event)">
+                <img src="assets/icons/delete.png" alt="Delete" class="action-icon">
+              </button>
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <!-- Pagination -->
-    <div class="pagination">
-      <button 
-        class="page-btn" 
+    <div class="pagination" *ngIf="!loading && filteredTransactions.length > 0">
+      <button
+        class="page-btn"
         (click)="goToPage(currentPage - 1)"
         [disabled]="currentPage === 1">
         ‹
       </button>
 
-      <button 
+      <button
         *ngFor="let page of pageNumbers"
         class="page-btn"
         [class.active]="page === currentPage"
@@ -126,14 +129,16 @@
         {{ page }}
       </button>
 
-      <button 
-        class="page-btn" 
+      <button
+        class="page-btn"
         (click)="goToPage(currentPage + 1)"
         [disabled]="currentPage === totalPages">
         ›
       </button>
 
-      <span class="page-info">{{ itemsPerPage }} /Page</span>
+      <div class="page-size">
+        <span>{{ itemsPerPage }} /Page</span>
+      </div>
     </div>
   </div>
 </main>

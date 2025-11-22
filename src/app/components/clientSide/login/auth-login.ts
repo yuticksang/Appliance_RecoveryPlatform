@@ -33,6 +33,7 @@ export class AuthLoginComponent {
     if (this.form.invalid) return;
 
     this.loading = true;
+    this.form.disable(); // Disable form during loading
 
     // Don't clear admin session - only clear seller session
     // This allows keeping both admin and seller logged in simultaneously
@@ -71,6 +72,7 @@ export class AuthLoginComponent {
             // Show alert for wrong user type
             this.alertService.error('Access denied. Please use seller account to login.');
             this.loading = false;
+            this.form.enable(); // Re-enable form
           }
         },
         error: (err) => {
@@ -78,6 +80,7 @@ export class AuthLoginComponent {
           const errorMessage = err.error?.message || 'Login failed. Please check your credentials.';
           this.alertService.error(errorMessage);
           this.loading = false;
+          this.form.enable(); // Re-enable form
           console.error('Login error:', err);
         }
       });
