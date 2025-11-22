@@ -4,7 +4,7 @@ import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { AuthService } from '../../../../../auth/auth-service';
 
 interface AdminData {
-  id: number;
+  id: string;
   adminId: string;
   fullName: string;
   username: string;

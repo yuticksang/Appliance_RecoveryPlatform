@@ -1,5 +1,5 @@
-import express from 'express';
-import { login, register, forgotPassword, resetPassword, verifyEmail, validateToken, getProfile, updateProfile } from '../controllers/authController';
+import express, { Router } from 'express';
+import { login, register, forgotPassword, resetPassword, verifyEmail, validateToken, getProfile, updateProfile, googleLogin } from '../controllers/authController';
 import { verifyToken as verifyTokenMiddleware } from '../middleware/authMiddleware';
 
 const router = express.Router();
@@ -7,6 +7,7 @@ router.use(express.json());
 
 router.post('/register', register);
 router.post('/login', login);
+router.post('/google', googleLogin);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
 router.get('/verify-email/:token', verifyEmail);

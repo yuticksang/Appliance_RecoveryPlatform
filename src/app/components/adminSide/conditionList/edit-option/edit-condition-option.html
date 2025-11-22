@@ -1,0 +1,74 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Edit Condition</h3>
+      <button class="close-btn" (click)="onClose()">×</button>
+    </div>
+
+    <form [formGroup]="editOptionForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="description">Description <span class="required">*</span></label>
+        <input id="description" type="text" formControlName="description" placeholder="e.g., Fully Functioning"
+          [class.error]="description?.invalid && description?.touched">
+
+        <div *ngIf="description?.invalid && description?.touched" class="error-message">
+          <small *ngIf="description?.errors?.['required']">Description is required</small>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="status">Status <span class="required">*</span></label>
+        <select id="status" formControlName="status">
+          <option value="ACTIVE">Active</option>
+          <option value="INACTIVE">Inactive</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="image">Upload Image</label>
+
+        <!-- Image Preview -->
+        <div *ngIf="imagePreviewUrl || currentImageUrl" class="image-preview">
+          <img [src]="imagePreviewUrl || getImageUrl(currentImageUrl)" alt="Preview" />
+          <button type="button" class="remove-image-btn" (click)="removeImage()" title="Remove image">
+            <i class="ri-close-circle-fill"></i>
+          </button>
+        </div>
+
+        <input id="image" type="file" accept="image/*" (change)="onFileSelect($event)">
+        <small class="hint">Optional: Upload an image representing this condition</small>
+        <div *ngIf="selectedFileName" class="file-name">
+          <i class="ri-file-image-line"></i> {{ selectedFileName }}
+        </div>
+      </div>
+
+      <div class="form-group" *ngIf="isChecklistType">
+        <label for="question">Question</label>
+        <textarea id="question" formControlName="question" placeholder="Enter question text"
+          rows="3"></textarea>
+        <small class="hint">Question text for checklist item</small>
+      </div>
+
+      <div class="form-group">
+        <label>Applicable Categories</label>
+        <div class="categories-grid">
+          <label class="category-checkbox" *ngFor="let category of categories">
+            <input
+              type="checkbox"
+              [checked]="isCategorySelected(category.categoryID)"
+              (change)="toggleCategory(category.categoryID)">
+            <span>{{ category.categoryName }}</span>
+          </label>
+        </div>
+        <small class="hint">Select which appliance categories this condition applies to</small>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="onClose()">Cancel</button>
+        <button type="submit" class="btn-primary" [disabled]="editOptionForm.invalid">
+          Update Condition
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

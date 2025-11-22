@@ -1,9 +1,10 @@
 import { Routes } from '@angular/router';
 import { ClientLayoutComponent } from './shared/sellerLayout/seller-layout';
 import { Layout } from './shared/adminLayout/layout';
+import { BuyerLayout } from './shared/buyerLayout/buyer-layout';
 import { AdminListComponent } from './components/adminSide/adminList/admin-list';
 import { BuyerListComponent } from './components/adminSide/buyerList/buyer-list';
-import { authGuard, superAdminGuard, adminGuard } from '../auth/auth.guard';
+import { authGuard, superAdminGuard, adminGuard, buyerGuard } from '../auth/auth.guard';
 import { sellerGuard, guestGuard } from '../auth/seller.guard';
 
 export const routes: Routes = [
@@ -60,26 +61,72 @@ export const routes: Routes = [
         path: 'transactions/:id',
         loadComponent: () => import('./components/adminSide/TransactionDetail/admin-transaction-detail').then(m => m.AdminTransactionDetailComponent)
       },
-      // {
-      //   path: 'appliances',
-      //   loadComponent: () => import('./components/adminSide/applianceList/appliance-list').then(m => m.ApplianceListComponent).catch(() => {
-      //     // Placeholder if not exists
-      //     return import('./components/adminSide/adminList/admin-list').then(m => m.AdminListComponent);
-      //   })
-      // },
-      // {
-      //   path: 'reporting',
-      //   loadComponent: () => import('./components/adminSide/reporting/reporting').then(m => m.ReportingComponent).catch(() => {
-      //     // Placeholder if not exists
-      //     return import('./components/adminSide/adminList/admin-list').then(m => m.AdminListComponent);
-      //   })
-      // },
+      {
+        path: 'appliances',
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./components/adminSide/appliance/appliance-list').then(m => m.ApplianceListComponent)
+          },
+          {
+            path: 'price-list',
+            loadComponent: () => import('./components/adminSide/priceList/price-list').then(m => m.PriceListComponent)
+          },
+          {
+            path: 'category',
+            loadComponent: () => import('./components/adminSide/categoryList/category-list').then(m => m.CategoryListComponent)
+          },
+          {
+            path: 'brand',
+            loadComponent: () => import('./components/adminSide/brandList/brand-list').then(m => m.BrandListComponent)
+          },
+          {
+            path: 'scoring',
+            loadComponent: () => import('./components/adminSide/scoring-configuration/scoring-configuration').then(m => m.ScoringConfiguration)
+          },
+          {
+            path: 'condition',
+            loadComponent: () => import('./components/adminSide/conditionList/condition-list').then(m => m.ConditionListComponent)
+          }
+        ]
+      },
       {
          path: 'dashboard',
          loadComponent: () => import('./components/adminSide/dashboard/dashboard').then(m => m.Dashboard)
-         
+
        },
       { path: '', redirectTo: 'sellers', pathMatch: 'full' } // Default redirect to sellers
+    ]
+  },
+
+  // Buyer pages WITH buyer layout (sidebar, etc.)
+  {
+    path: 'buyer',
+    component: BuyerLayout,
+    canActivate: [buyerGuard], // Protect entire buyer section
+    children: [
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./components/buyerSide/dashboard/buyer-dashboard').then(m => m.BuyerDashboardComponent)
+      },
+      {
+        path: 'transactions',
+        loadComponent: () => import('./components/buyerSide/dashboard/buyer-dashboard').then(m => m.BuyerDashboardComponent) // Placeholder
+      },
+      {
+        path: 'appliances',
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./components/buyerSide/dashboard/buyer-dashboard').then(m => m.BuyerDashboardComponent) // Placeholder for All Appliances
+          },
+          {
+            path: 'condition-markdown',
+            loadComponent: () => import('./components/buyerSide/dashboard/buyer-dashboard').then(m => m.BuyerDashboardComponent) // Placeholder for Condition & Markdown
+          }
+        ]
+      },
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' } // Default redirect to dashboard
     ]
   },
 

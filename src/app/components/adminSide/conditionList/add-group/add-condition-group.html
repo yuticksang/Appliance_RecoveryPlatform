@@ -1,0 +1,34 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Add New Condition Type</h3>
+      <button class="close-btn" (click)="onClose()">×</button>
+    </div>
+
+    <form [formGroup]="addGroupForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="criteriaName">Criteria Name <span class="required">*</span></label>
+        <input id="criteriaName" type="text" formControlName="criteriaName" placeholder="e.g., Functional Status"
+          [class.error]="criteriaName?.invalid && criteriaName?.touched">
+
+        <div *ngIf="criteriaName?.invalid && criteriaName?.touched" class="error-message">
+          <small *ngIf="criteriaName?.errors?.['required']">Criteria name is required</small>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="criteriaCodePrefix">Code Prefix</label>
+        <input id="criteriaCodePrefix" type="text" formControlName="criteriaCodePrefix" placeholder="e.g., F, A, OT (max 10 characters)"
+          maxlength="10">
+        <small class="hint">Optional: A short code prefix for conditions in this group</small>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="onClose()">Cancel</button>
+        <button type="submit" class="btn-success" [disabled]="addGroupForm.invalid">
+          Create Condition Type
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

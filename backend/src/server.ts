@@ -94,18 +94,16 @@ cron.schedule('0 0 * * *', async () => {
 console.log('⏰ Cron job scheduled: Auto-cancellation runs daily at midnight');
 
 // Middlewares
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 app.use(cors());
 app.use(morgan('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// REMOVE THESE TWO LINES COMPLETELY
-// app.use(express.json());
-// app.use(express.json({ limit: '10mb' }));   ← DELETE THIS LINE
-
-// Only apply JSON parser where needed (NOT for multipart routes)
-// app.use('/api/auth', express.json());
-// app.use('/api/admin', express.json());
-// app.use('/api/profile', express.json());
+// Serve uploaded files statically (must be before API routes)
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -113,8 +111,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api', profileRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/cron', cronRoutes);
-app.use('/api', questionnaireRouter); 
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/api', questionnaireRouter);
 
 // Health route
 app.get('/health', (req, res) => res.json({ ok: true, message: 'Server is running' }));
@@ -122,8 +119,8 @@ app.get('/health', (req, res) => res.json({ ok: true, message: 'Server is runnin
 // Serve Angular frontend (when built) - using CommonJS __dirname
 const clientPath = path.join(__dirname, '../../dist/easyrecovery');
 app.use(express.static(clientPath));
-// Use regex pattern instead of * for Express 5.x compatibility
-app.get(/^\/(?!api).*/, (req, res) => res.sendFile(path.join(clientPath, 'index.html')));
+// Use regex pattern instead of * for Express 5.x compatibility - exclude /api and /uploads
+app.get(/^\/(?!api|uploads).*/, (req, res) => res.sendFile(path.join(clientPath, 'index.html')));
 
 // Start server
 app.listen(PORT, () => console.log(`🚀 Running at http://localhost:${PORT}`));

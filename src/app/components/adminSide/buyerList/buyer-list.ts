@@ -9,7 +9,7 @@ import { AlertService } from '../../../services/alert.service';
 type BuyerStatus = 'ACTIVE' | 'INACTIVE';
 
 interface BuyerRow {
-  id: string; // Changed to string for new ID format (U001, U002, etc.)
+  id: string;
   buyerId: string;
   fullName: string;
   username: string;
@@ -54,7 +54,7 @@ export class BuyerListComponent implements OnInit {
 
   // Confirmation modal
   showConfirmModal = signal(false);
-  confirmAction = signal<'delete' | 'toggle' | null>(null);
+  confirmAction = signal<'toggle' | null>(null);
   confirmTarget = signal<BuyerRow | null>(null);
 
   ngOnInit() {
@@ -74,10 +74,14 @@ export class BuyerListComponent implements OnInit {
           const buyerUsers = users
             .filter(user => user.user_type === 'buyer')
             .map((user) => {
-              console.log(`=
- User ${user.username}: buyer_id = ${user.buyer_id} (type: ${typeof user.buyer_id})`);
-              return {
-                id: user.id,
+              console.log(`🔍 Buyer User ${user.username} - Full Object:`, user);
+              console.log(`🔍 user.id:`, user.id);
+              console.log(`🔍 user.buyer_id:`, user.buyer_id);
+              console.log(`🔍 user.userID:`, user.userID);
+              console.log(`🔍 user.user_id:`, user.user_id);
+
+              const buyerRow = {
+                id: user.id || user.userID || user.user_id || user.buyer_id,
                 buyerId: user.buyer_id ? String(user.buyer_id) : '---',
                 fullName: user.name,
                 username: user.username,
@@ -87,6 +91,9 @@ export class BuyerListComponent implements OnInit {
                 status: user.user_status as BuyerStatus,
                 userType: user.user_type
               };
+
+              console.log(`🔍 Mapped BuyerRow:`, buyerRow);
+              return buyerRow;
             });
 
           this.rows.set(buyerUsers);
@@ -103,7 +110,7 @@ export class BuyerListComponent implements OnInit {
   checkUsernameUnique(username: string, excludeId?: string): Promise<boolean> {
     return new Promise((resolve) => {
       // Pass user_type as query parameter to check username uniqueness per type
-      this.http.get<{available: boolean}>(`${this.apiUrl}/admin/check-username/${username}?user_type=buyer`)
+      this.http.get<{ available: boolean }>(`${this.apiUrl}/admin/check-username/${username}?user_type=buyer`)
         .subscribe({
           next: (response) => {
             // If we're editing, exclude the current user from the check
@@ -235,6 +242,16 @@ export class BuyerListComponent implements OnInit {
   }
 
   async onBuyerUpdated(updatedBuyer: any) {
+    // Get the original buyer data to find the current username
+    const originalBuyer = this.selectedBuyer();
+    console.log('📝 Updating buyer. Original:', originalBuyer);
+    console.log('📝 Updated data:', updatedBuyer);
+
+    if (!originalBuyer) {
+      this.alertService.error('Original buyer data not found');
+      return;
+    }
+
     // Check if username is unique (excluding current user)
     const isUnique = await this.checkUsernameUnique(updatedBuyer.username, updatedBuyer.id);
     if (!isUnique) {
@@ -242,7 +259,7 @@ export class BuyerListComponent implements OnInit {
       return;
     }
 
-    // Update buyer via API
+    // Update buyer via API - use ORIGINAL username to identify the user
     const updateData: any = {
       name: updatedBuyer.fullName,
       username: updatedBuyer.username,
@@ -255,10 +272,15 @@ export class BuyerListComponent implements OnInit {
       updateData.password = updatedBuyer.password;
     }
 
-    this.http.put(`${this.apiUrl}/admin/users/${updatedBuyer.id}`, updateData)
+    console.log('📝 Using originalBuyer.id:', originalBuyer.id);
+    console.log('📝 API URL:', `${this.apiUrl}/admin/users/${originalBuyer.id}`);
+    console.log('📝 Update data:', updateData);
+
+    this.http.put(`${this.apiUrl}/admin/users/${originalBuyer.id}`, updateData)
       .subscribe({
         next: () => {
           this.loadBuyers(); // Reload the list
+          this.onCloseEditModal();
           const message = updatedBuyer.password ? 'Buyer and password updated successfully' : 'Buyer updated successfully';
           this.alertService.success(message);
         },
@@ -275,12 +297,6 @@ export class BuyerListComponent implements OnInit {
     this.showConfirmModal.set(true);
   }
 
-  deleteBuyer(buyer: BuyerRow) {
-    this.confirmTarget.set(buyer);
-    this.confirmAction.set('delete');
-    this.showConfirmModal.set(true);
-  }
-
   onConfirm() {
     const action = this.confirmAction();
     const buyer = this.confirmTarget();
@@ -289,6 +305,9 @@ export class BuyerListComponent implements OnInit {
 
     if (action === 'toggle') {
       const newStatus = buyer.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+      console.log('🔄 Toggling status for buyer:', buyer);
+      console.log('🔄 Using buyer.id:', buyer.id);
+      console.log('🔄 API URL:', `${this.apiUrl}/admin/users/${buyer.id}/status`);
 
       this.http.put(`${this.apiUrl}/admin/users/${buyer.id}/status`, { status: newStatus })
         .subscribe({
@@ -298,19 +317,7 @@ export class BuyerListComponent implements OnInit {
           },
           error: (err) => {
             console.error('Toggle status error:', err);
-            this.alertService.error('Failed to update status');
-          }
-        });
-    } else if (action === 'delete') {
-      this.http.delete(`${this.apiUrl}/admin/users/${buyer.id}`)
-        .subscribe({
-          next: () => {
-            this.loadBuyers();
-            this.alertService.success(`Buyer ${buyer.username} deleted successfully`);
-          },
-          error: (err) => {
-            console.error('Delete buyer error:', err);
-            this.alertService.error('Failed to delete buyer');
+            this.alertService.error('Failed to update status: ' + (err.error?.message || 'Unknown error'));
           }
         });
     }
@@ -330,9 +337,7 @@ export class BuyerListComponent implements OnInit {
 
     if (!buyer) return '';
 
-    if (action === 'delete') {
-      return `Are you sure you want to delete buyer "${buyer.username}"?`;
-    } else if (action === 'toggle') {
+    if (action === 'toggle') {
       const newStatus = buyer.status === 'ACTIVE' ? 'deactivate' : 'activate';
       return `Are you sure you want to ${newStatus} buyer "${buyer.username}"?`;
     }
