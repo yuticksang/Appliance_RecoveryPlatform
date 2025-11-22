@@ -235,6 +235,9 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   }
 
   loadRealDetails(data: any): void {
+    // Get selected issues from API response
+    const selectedIssues = data.selectedIssues || [];
+
     // If awaiting confirmation, show before/after review comparison
     if (this.isAwaitingConfirmation) {
       // Before review - original seller submission
@@ -247,7 +250,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         condition: data.initialPhysicalCondition || 'N/A',
         score: this.calculateScore(data.initialFunctionalStatus, data.initialPhysicalCondition),
         note: data.note || 'No notes',
-        selectedIssue: [] // TODO: Add questionnaire answers if needed
+        selectedIssue: selectedIssues
       };
 
       // After review - admin's assessment (revised price & condition)
@@ -260,7 +263,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         condition: data.finalPhysicalCondition || data.initialPhysicalCondition || 'N/A',
         score: this.calculateScore(data.finalFunctionalStatus, data.finalPhysicalCondition),
         note: data.note || 'No notes',
-        selectedIssue: [] // TODO: Add admin review notes if needed
+        selectedIssue: selectedIssues
       };
     } else {
       // For other statuses, use current appliance info
@@ -276,7 +279,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
           data.finalPhysicalCondition || data.initialPhysicalCondition
         ),
         note: data.note || 'No notes',
-        selectedIssue: [] // TODO: Add questionnaire answers if needed
+        selectedIssue: selectedIssues
       };
     }
   }

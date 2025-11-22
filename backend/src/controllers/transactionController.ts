@@ -170,9 +170,25 @@ export const getTransactionById = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Transaction not found' });
     }
 
-    console.log(`✅ Found transaction ${id}:`, result.rows[0]);
+    const transaction = result.rows[0];
 
-    res.json(result.rows[0]);
+    // Fetch selected conditions/issues for this submission
+    const conditionsResult = await pool.query(
+      `SELECT co.description, co.code, cg."criteriaName"
+       FROM "ConditionSelected" cs
+       JOIN "ConditionOption" co ON cs."conditionID" = co."conditionID"
+       LEFT JOIN "ConditionGroup" cg ON co."groupID" = cg."groupID"
+       WHERE cs."submittedApplianceID" = $1 AND cs."isChecked" = true`,
+      [transaction.submittedApplianceID]
+    );
+
+    // Add selected issues to the response
+    transaction.selectedIssues = conditionsResult.rows.map(row => row.description || row.code);
+
+    console.log(`✅ Found transaction ${id}:`, transaction);
+    console.log(`📋 Selected issues:`, transaction.selectedIssues);
+
+    res.json(transaction);
   } catch (error) {
     console.error('❌ Error fetching transaction by ID:', error);
     console.error('Full error:', error);

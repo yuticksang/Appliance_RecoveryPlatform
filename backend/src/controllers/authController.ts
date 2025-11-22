@@ -480,7 +480,11 @@ export const googleLogin = async (req: Request, res: Response) => {
         email: user.email,
         name: user.name,
         username: user.username,
-        userType: user.user_type
+        userType: user.user_type,
+        sellerId: user.seller_id || null,
+        buyerId: user.buyer_id || null,
+        adminId: user.admin_id || null,
+        phone: user.phone
       }
     });
   } catch (error) {

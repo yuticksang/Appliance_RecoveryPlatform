@@ -211,6 +211,49 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       [finalId]
     );
 
+    // Create Transaction record
+    const transactionId = `TXN-${Date.now()}`;
+    await client.query(
+      `INSERT INTO "Transaction" (
+        "transactionID", "submittedApplianceID", "sellerID",
+        "transactionStatus", "createdAt", "updatedAt"
+      ) VALUES ($1, $2, $3, 'Under Review', NOW(), NOW())`,
+      [transactionId, finalId, sellerId]
+    );
+
+    // Create ItemStatus record
+    await client.query(
+      `INSERT INTO "ItemStatus" ("transactionID", "itemStatus", "updatedAt")
+       VALUES ($1, 'Awaiting Pick Up', NOW())`,
+      [transactionId]
+    );
+
+    // Save selected conditions/issues to ConditionSelected table
+    if (issues && issues.length > 0) {
+      for (const issueText of issues) {
+        // Try to find matching conditionID by description
+        const conditionResult = await client.query(
+          `SELECT "conditionID" FROM "ConditionOption" WHERE description = $1 LIMIT 1`,
+          [issueText]
+        );
+
+        if (conditionResult.rows.length > 0) {
+          const conditionId = conditionResult.rows[0].conditionID;
+          // Generate a unique conditionSelectionID
+          const selectionId = `CS-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+          await client.query(
+            `INSERT INTO "ConditionSelected" ("conditionSelectionID", "conditionID", "submittedApplianceID", "isChecked", created_at)
+             VALUES ($1, $2, $3, true, NOW())`,
+            [selectionId, conditionId, finalId]
+          );
+        } else {
+          console.warn(`Condition not found for issue: ${issueText}`);
+        }
+      }
+      console.log(`✅ Saved ${issues.length} selected conditions for ${finalId}`);
+    }
+
     // Upload photos to Supabase Storage
     const files = req.files as Express.Multer.File[];
     if (files?.length > 0) {
