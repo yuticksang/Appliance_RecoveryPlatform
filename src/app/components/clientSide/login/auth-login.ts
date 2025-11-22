@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -13,7 +13,7 @@ import { AlertComponent } from '../../../shared/alert/alert.component';
   templateUrl: './auth-login.html',
   styleUrls: ['./auth-login.scss']
 })
-export class AuthLoginComponent {
+export class AuthLoginComponent implements OnInit {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private alertService = inject(AlertService);
@@ -29,11 +29,16 @@ export class AuthLoginComponent {
 
   get f() { return this.form.controls; }
 
+  ngOnInit() {
+    // Handle dynamic form state here if needed in the future
+  }
+
   submit() {
     if (this.form.invalid) return;
 
     this.loading = true;
-    this.form.disable(); // Disable form during loading
+    // Disable form while loading
+    this.form.disable();
 
     // Don't clear admin session - only clear seller session
     // This allows keeping both admin and seller logged in simultaneously
@@ -57,6 +62,7 @@ export class AuthLoginComponent {
                 this.authService.setProfile(profile);
                 console.log('Profile loaded:', profile);
               },
+              
               error: (err) => {
                 console.error('Failed to load profile:', err);
                 // Continue anyway

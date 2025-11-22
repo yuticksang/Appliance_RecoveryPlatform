@@ -12,6 +12,7 @@ import profileRoutes from './routes/profile';
 import transactionRoutes from './routes/transaction';
 import cronRoutes from './routes/cron';
 import dbPool from './config/database';
+import questionnaireRouter from './routes/questionnaire';
 
 dotenv.config();
 const app = express();
@@ -96,7 +97,15 @@ console.log('⏰ Cron job scheduled: Auto-cancellation runs daily at midnight');
 app.use(helmet());
 app.use(cors());
 app.use(morgan('dev'));
-app.use(express.json());
+
+// REMOVE THESE TWO LINES COMPLETELY
+// app.use(express.json());
+// app.use(express.json({ limit: '10mb' }));   ← DELETE THIS LINE
+
+// Only apply JSON parser where needed (NOT for multipart routes)
+// app.use('/api/auth', express.json());
+// app.use('/api/admin', express.json());
+// app.use('/api/profile', express.json());
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -104,6 +113,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api', profileRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/cron', cronRoutes);
+app.use('/api', questionnaireRouter); 
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health route
 app.get('/health', (req, res) => res.json({ ok: true, message: 'Server is running' }));

@@ -11,6 +11,7 @@ import {
 console.log('📍📍📍 admin routes loaded! 📍📍📍');
 
 const router = express.Router();
+router.use(express.json());
 
 // Get all users
 router.get('/users', getAllUsers);

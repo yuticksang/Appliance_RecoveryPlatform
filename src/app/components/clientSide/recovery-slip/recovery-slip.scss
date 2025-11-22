@@ -1,0 +1,105 @@
+.recovery-slip-container {
+  position: relative;
+  padding: 2rem;
+  background-color: #f8fafc;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  .back-link {
+    align-self: flex-start;
+    color: #475569;
+    text-decoration: none;
+    font-weight: 500;
+    margin-bottom: 1rem;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  .action-icons {
+    position: absolute;
+    top: 1.5rem;
+    right: 2rem;
+
+    button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      margin-left: 0.8rem;
+      color: #0f172a;
+
+      &:hover {
+        color: #0284c7;
+      }
+    }
+  }
+
+  .slip-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    max-width: 700px;
+    width: 100%;
+    padding: 2rem;
+  }
+
+  .title {
+    color: #0284c7;
+    text-align: center;
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .date {
+    text-align: center;
+    color: #475569;
+    margin-bottom: 1.5rem;
+  }
+
+  .section {
+    margin-bottom: 1.5rem;
+
+    .section-title {
+      background: #cde4f3;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .section-content {
+      background: #f9fafb;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 1rem;
+      margin-top: 0.5rem;
+
+      p {
+        margin: 0.25rem 0;
+        color: #334155;
+      }
+
+      ul {
+        margin: 0;
+        padding-left: 1.5rem;
+        color: #334155;
+        li {
+          margin-bottom: 0.5rem;
+        }
+      }
+    }
+  }
+
+  .footer-text {
+    text-align: center;
+    color: #475569;
+    font-size: 0.95rem;
+    margin-top: 1rem;
+  }
+}
+
+
