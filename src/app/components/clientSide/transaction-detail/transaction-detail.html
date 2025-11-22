@@ -7,19 +7,10 @@
 
   <!-- Transaction Detail Content -->
   <div *ngIf="!loading && transaction" class="detail-container">
-    <!-- Header with Action Buttons -->
-    <div class="detail-header">
-      <div class="top-actions">
-        <span class="back-link" (click)="goBack()">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M10 18L2 10L10 2L11.4 3.4L5.8 9H18V11H5.8L11.4 16.6L10 18Z"/>
-          </svg>
-          Back to Transactions
-        </span>
-      </div>
-
-      <!-- Action Buttons for Awaiting Confirmation (Top Priority) -->
-      <div *ngIf="isAwaitingConfirmation" class="decision-section">
+    <!-- Action Buttons for Awaiting Confirmation (Sticky - Outside Header) -->
+    <div *ngIf="isAwaitingConfirmation"
+         class="decision-section"
+         [class.hidden]="!isHeaderVisible">
         <div class="decision-content">
           <div class="decision-header">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -46,6 +37,44 @@
             </button>
           </div>
         </div>
+    </div>
+
+    <!-- Cancellation Button for Pending Payment (Case 5) -->
+    <div *ngIf="isPendingPayment"
+         class="decision-section cancellation-section"
+         [class.hidden]="!isHeaderVisible">
+        <div class="decision-content">
+          <div class="decision-header">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="15" y1="9" x2="9" y2="15"/>
+              <line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+            <div>
+              <h3>Want to Cancel?</h3>
+              <p>You can cancel this transaction and return the appliance</p>
+            </div>
+          </div>
+          <div class="decision-actions">
+            <button class="btn-cancel-transaction" (click)="cancelTransaction()">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M10 0C4.5 0 0 4.5 0 10s4.5 10 10 10 10-4.5 10-10S15.5 0 10 0zm5 13.6L13.6 15 10 11.4 6.4 15 5 13.6 8.6 10 5 6.4 6.4 5 10 8.6 13.6 5 15 6.4 11.4 10 15 13.6z"/>
+              </svg>
+              Cancel Transaction
+            </button>
+          </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="detail-header">
+      <div class="top-actions">
+        <span class="back-link" (click)="goBack()">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M10 18L2 10L10 2L11.4 3.4L5.8 9H18V11H5.8L11.4 16.6L10 18Z"/>
+          </svg>
+          Back to Transactions
+        </span>
       </div>
 
       <div class="title-status-row">
@@ -314,5 +343,99 @@
   <div *ngIf="!loading && !transaction" class="error-container">
     <p>Transaction not found</p>
     <button class="btn-back" (click)="goBack()">Go Back to Transactions</button>
+  </div>
+
+  <!-- Accept Confirmation Modal -->
+  <div *ngIf="showAcceptConfirmModal" class="modal-overlay" (click)="cancelAcceptConfirm()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-icon accept-icon">
+        <span class="emoji">😊💰</span>
+      </div>
+      <h3 class="modal-title">Confirm The Offer?</h3>
+      <div class="modal-actions">
+        <button class="btn-modal-secondary" (click)="cancelAcceptConfirm()">BACK</button>
+        <button class="btn-modal-primary accept" (click)="confirmAcceptOffer()">CONFIRM</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Accept Success Modal -->
+  <div *ngIf="showAcceptSuccessModal" class="modal-overlay" (click)="closeAcceptSuccess()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-icon success-icon">
+        <span class="emoji">🎉🎁</span>
+      </div>
+      <h3 class="modal-title success">OFFER CONFIRM!</h3>
+      <p class="modal-message">
+        Thank you for confirming the offer price. We will make payment to you
+        <strong>WITHIN 7 DAYS</strong>. Kindly check your profile about your bank details.
+      </p>
+      <div class="modal-actions">
+        <button class="btn-modal-primary accept" (click)="closeAcceptSuccess()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reject Confirmation Modal -->
+  <div *ngIf="showRejectConfirmModal" class="modal-overlay" (click)="cancelRejectConfirm()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-icon reject-icon">
+        <span class="emoji">😟💸</span>
+      </div>
+      <h3 class="modal-title">Are You Sure to Reject Offer?</h3>
+      <div class="modal-actions">
+        <button class="btn-modal-secondary" (click)="cancelRejectConfirm()">BACK</button>
+        <button class="btn-modal-primary reject" (click)="confirmRejectOffer()">CONFIRM</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reject Success Modal -->
+  <div *ngIf="showRejectSuccessModal" class="modal-overlay" (click)="closeRejectSuccess()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-icon warning-icon">
+        <span class="emoji">😔📦</span>
+      </div>
+      <h3 class="modal-title warning">You have rejected the offer.</h3>
+      <p class="modal-message">
+        We will return your appliance <strong>WITHIN 7 DAYS</strong>.
+      </p>
+      <div class="modal-actions">
+        <button class="btn-modal-primary reject" (click)="closeRejectSuccess()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cancel Transaction Confirmation Modal -->
+  <div *ngIf="showCancelConfirmModal" class="modal-overlay" (click)="cancelCancellation()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-icon warning-icon">
+        <span class="emoji">⚠️</span>
+      </div>
+      <h3 class="modal-title">Cancel This Transaction?</h3>
+      <p class="modal-message">
+        Are you sure you want to cancel? The appliance will be returned to you.
+      </p>
+      <div class="modal-actions">
+        <button class="btn-modal-secondary" (click)="cancelCancellation()">BACK</button>
+        <button class="btn-modal-primary reject" (click)="confirmCancellation()">YES, CANCEL</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cancel Success Modal -->
+  <div *ngIf="showCancelSuccessModal" class="modal-overlay" (click)="closeCancelSuccess()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-icon warning-icon">
+        <span class="emoji">📦</span>
+      </div>
+      <h3 class="modal-title warning">Transaction Cancelled</h3>
+      <p class="modal-message">
+        Your transaction has been cancelled. We will arrange to return your appliance <strong>WITHIN 7 DAYS</strong>.
+      </p>
+      <div class="modal-actions">
+        <button class="btn-modal-primary reject" (click)="closeCancelSuccess()">OK</button>
+      </div>
+    </div>
   </div>
 </main>

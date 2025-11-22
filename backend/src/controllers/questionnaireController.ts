@@ -212,40 +212,48 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       [finalId]
     );
 
-    // // Insert Trasaction Table
+    // Create Transaction record
+    const transactionId = `TXN-${Date.now()}`;
     await client.query(
       `INSERT INTO "Transaction" (
-        "submittedApplianceID", 
-        "sellerID", 
-        "transactionStatus"
-      ) VALUES ($1, $2, 'Awaiting Pick Up')`,
-      [
-        finalId,
-        sellerId,
-      ]
+        "transactionID", "submittedApplianceID", "sellerID",
+        "transactionStatus", "createdAt", "updatedAt"
+      ) VALUES ($1, $2, $3, 'Under Review', NOW(), NOW())`,
+      [transactionId, finalId, sellerId]
     );
 
-    // // Get transaction ID
-    // const transactionId = await pool.query(
-    //   `SELECT "transactionID" FROM "Transaction" WHERE "submittedApplianceID" = $1`,
-    //   [finalId],
-    // );
+    // Create ItemStatus record
+    await client.query(
+      `INSERT INTO "ItemStatus" ("transactionID", "itemStatus", "updatedAt")
+       VALUES ($1, 'Awaiting Pick Up', NOW())`,
+      [transactionId]
+    );
 
+    // Save selected conditions/issues to ConditionSelected table
+    if (issues && issues.length > 0) {
+      for (const issueText of issues) {
+        // Try to find matching conditionID by description
+        const conditionResult = await client.query(
+          `SELECT "conditionID" FROM "ConditionOption" WHERE description = $1 LIMIT 1`,
+          [issueText]
+        );
 
-    // if (!transactionId.rows.length) {
-    //   throw new Error(`No transaction found for submittedApplianceID = ${finalId}`);
-    // }
-    
-    // const transactionID = transactionId.rows[0].transactionID;
-    
-    // console.log('Generated transactionID:', transactionID);
+        if (conditionResult.rows.length > 0) {
+          const conditionId = conditionResult.rows[0].conditionID;
+          // Generate a unique conditionSelectionID
+          const selectionId = `CS-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // // Insert ItemStatus Table
-    // await pool.query(
-    //   `INSERT INTO "ItemStatus" ("transactionID", "itemStatus", "updatedAt")
-    //    VALUES ($1, 'Awaiting Pick Up', NOW())`,
-    //   [transactionID]
-    // );
+          await client.query(
+            `INSERT INTO "ConditionSelected" ("conditionSelectionID", "conditionID", "submittedApplianceID", "isChecked", created_at)
+             VALUES ($1, $2, $3, true, NOW())`,
+            [selectionId, conditionId, finalId]
+          );
+        } else {
+          console.warn(`Condition not found for issue: ${issueText}`);
+        }
+      }
+      console.log(`✅ Saved ${issues.length} selected conditions for ${finalId}`);
+    }
 
     // Upload photos to Supabase Storage
     const files = req.files as Express.Multer.File[];

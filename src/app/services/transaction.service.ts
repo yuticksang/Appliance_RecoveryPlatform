@@ -5,8 +5,8 @@ import { delay, map, catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 export interface Transaction {
-  id: number;
-  sellerId: number; // Foreign key to user/seller
+  id: string; // Transaction ID is always varchar in database (e.g., "TXN001")
+  sellerId: string; // Seller ID is always varchar in database (e.g., "S001")
   sellerName: string;
   image: string;
   brand: string;
@@ -31,11 +31,19 @@ export class TransactionService {
   constructor() {}
 
   /**
+   * Get the authentication token (supports both seller and admin tokens)
+   */
+  private getAuthToken(): string | null {
+    // Check for admin token first, then seller/buyer token
+    return localStorage.getItem('admin_token') || localStorage.getItem('token');
+  }
+
+  /**
    * Get transactions for a specific seller from the backend API
    * @param sellerId - The seller ID (e.g., 'S001', 'S002')
    */
   getTransactionsBySeller(sellerId: string): Observable<Transaction[]> {
-    const token = localStorage.getItem('token');
+    const token = this.getAuthToken();
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
     return this.http.get<Transaction[]>(`${this.apiUrl}/transactions/seller/${sellerId}`, { headers })
@@ -70,7 +78,7 @@ export class TransactionService {
    * Get all transactions (admin view)
    */
   getAllTransactions(): Observable<Transaction[]> {
-    const token = localStorage.getItem('token');
+    const token = this.getAuthToken();
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
     return this.http.get<Transaction[]>(`${this.apiUrl}/transactions`, { headers })
@@ -104,7 +112,7 @@ export class TransactionService {
    * Create a new transaction (when seller submits trade-in questionnaire)
    */
   createTransaction(transaction: Partial<Transaction>): Observable<Transaction> {
-    const token = localStorage.getItem('token');
+    const token = this.getAuthToken();
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
     return this.http.post<any>(`${this.apiUrl}/transactions`, transaction, { headers })
@@ -133,14 +141,30 @@ export class TransactionService {
   }
 
   /**
+   * Get a single transaction by ID with full details
+   */
+  getTransactionById(transactionId: string | number): Observable<any> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.get<any>(`${this.apiUrl}/transactions/${transactionId}`, { headers })
+      .pipe(
+        catchError(error => {
+          console.error('Error fetching transaction by ID:', error);
+          throw error;
+        })
+      );
+  }
+
+  /**
    * Update transaction status (admin action or status change)
    */
   updateTransactionStatus(
-    transactionId: number,
+    transactionId: string | number,
     transactionStatus: Transaction['transactionStatus'],
     itemStatus?: Transaction['itemStatus']
   ): Observable<Transaction> {
-    const token = localStorage.getItem('token');
+    const token = this.getAuthToken();
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
     const updateData: any = { transactionStatus };
@@ -168,6 +192,22 @@ export class TransactionService {
         })),
         catchError(error => {
           console.error('Error updating transaction status:', error);
+          throw error;
+        })
+      );
+  }
+
+  /**
+   * Update transaction with full data (admin edit)
+   */
+  updateTransaction(transactionId: string | number, updateData: any): Observable<any> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.put<any>(`${this.apiUrl}/transactions/${transactionId}`, updateData, { headers })
+      .pipe(
+        catchError(error => {
+          console.error('Error updating transaction:', error);
           throw error;
         })
       );

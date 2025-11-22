@@ -41,6 +41,8 @@ $Space: 'Space Grotesk', sans-serif;
   max-width: 1400px;
   margin: 0 auto;
   padding: 0 2rem;
+  position: relative;
+  min-height: 100vh; // Ensure container is tall enough for sticky to work
 }
 
 /* Header */
@@ -81,12 +83,49 @@ $Space: 'Space Grotesk', sans-serif;
 
 /* Decision Section (Action Buttons at Top) */
 .decision-section {
+  position: -webkit-sticky; // Safari support
+  position: sticky;
+  top: 0;
+  z-index: 100;
   background: linear-gradient(135deg, #fef5e7 0%, #fef9c3 100%);
   border: 2px solid #f59e0b;
   border-radius: 12px;
   padding: 1.25rem 1.5rem;
-  margin: 1.5rem 0;
-  box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1);
+  margin: 1.5rem 0 2rem 0;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+
+  // Smooth hide/show animation
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.4s ease, transform 0.4s ease, box-shadow 0.3s ease;
+  will-change: opacity, transform;
+
+  &:hover {
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3);
+  }
+
+  // Hidden state when scrolling down
+  &.hidden {
+    opacity: 0;
+    transform: translateY(-100%);
+    pointer-events: none; // Prevent interaction when hidden
+  }
+}
+
+// Add a smooth fade-in animation on initial load
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.decision-section {
+  animation: fadeInDown 0.5s ease;
 }
 
 .decision-content {
@@ -166,6 +205,39 @@ $Space: 'Space Grotesk', sans-serif;
   &:hover {
     background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
     border-color: #ef4444;
+  }
+}
+
+.btn-cancel-transaction {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.875rem 1.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: $Space;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  border: 2px solid #fbbf24;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+    border-color: #f59e0b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 }
 
@@ -272,6 +344,9 @@ $Space: 'Space Grotesk', sans-serif;
 }
 
 .status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   padding: 0.625rem 1.25rem;
   border-radius: 20px;
   font-size: 0.875rem;
@@ -279,11 +354,20 @@ $Space: 'Space Grotesk', sans-serif;
   white-space: nowrap;
   letter-spacing: 0.025em;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.05);
   transition: transform 0.2s;
 
   &:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+  }
+
+  .status-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    line-height: 1;
   }
 }
 
@@ -301,6 +385,7 @@ $Space: 'Space Grotesk', sans-serif;
 .status-returned {
   background: linear-gradient(135deg, #c6f6d5 0%, #9ae6b4 100%);
   color: #22543d;
+  border-color: rgba(34, 84, 61, 0.15);
 }
 
 .status-rejected {
@@ -318,14 +403,19 @@ $Space: 'Space Grotesk', sans-serif;
   color: #744210;
 }
 
+.status-confirmed {
+  background: linear-gradient(135deg, #d3f9d8 0%, #9ae6b4 100%);
+  color: #2f855a;
+}
+
 .status-review {
-  background: linear-gradient(135deg, #fefcbf 0%, #faf089 100%);
-  color: #744210;
+  background: linear-gradient(135deg, #fef5e7 0%, #fde68a 100%);
+  color: #9c4221;
 }
 
 .status-picked-up {
-  background: linear-gradient(135deg, #fefcbf 0%, #faf089 100%);
-  color: #744210;
+  background: linear-gradient(135deg, #e9d8fd 0%, #d6bcfa 100%);
+  color: #553c9a;
 }
 
 /* Content Grid */
@@ -643,6 +733,28 @@ $Space: 'Space Grotesk', sans-serif;
     padding: 0 1rem;
   }
 
+  // Make decision section more compact on mobile
+  .decision-section {
+    padding: 1rem;
+    margin: 1rem 0;
+    border-radius: 10px;
+  }
+
+  .decision-content {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .decision-header {
+    h3 {
+      font-size: 1rem;
+    }
+
+    p {
+      font-size: 0.8rem;
+    }
+  }
+
   .decision-section {
     padding: 1rem;
   }
@@ -671,5 +783,178 @@ $Space: 'Space Grotesk', sans-serif;
 
   .document-actions {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   MODAL STYLES
+   ============================================ */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1rem;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  background: white;
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s ease;
+  position: relative;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-icon {
+  margin-bottom: 1.5rem;
+
+  .emoji {
+    font-size: 3.5rem;
+    display: block;
+  }
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #2d3748;
+  margin-bottom: 1rem;
+
+  &.success {
+    color: #38a169;
+  }
+
+  &.warning {
+    color: #e53e3e;
+  }
+}
+
+.modal-message {
+  font-size: 1rem;
+  color: #4a5568;
+  line-height: 1.6;
+  margin-bottom: 2rem;
+
+  strong {
+    color: #2d3748;
+    font-weight: 700;
+  }
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+
+  button {
+    flex: 1;
+    padding: 0.875rem 1.5rem;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+}
+
+.btn-modal-secondary {
+  background: #e2e8f0;
+  color: #4a5568;
+
+  &:hover {
+    background: #cbd5e0;
+  }
+}
+
+.btn-modal-primary {
+  color: white;
+
+  &.accept {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+
+    &:hover {
+      background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+    }
+  }
+
+  &.reject {
+    background: linear-gradient(135deg, #fc8181 0%, #e53e3e 100%);
+
+    &:hover {
+      background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+    }
+  }
+}
+
+/* Mobile responsiveness for modals */
+@media (max-width: 480px) {
+  .modal-content {
+    padding: 2rem 1.5rem;
+    max-width: 90vw;
+  }
+
+  .modal-icon .emoji {
+    font-size: 3rem;
+  }
+
+  .modal-title {
+    font-size: 1.1rem;
+  }
+
+  .modal-message {
+    font-size: 0.9rem;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+
+    button {
+      width: 100%;
+    }
   }
 }

@@ -4,7 +4,8 @@ import {
   getAllTransactions,
   getTransactionById,
   createTransaction,
-  updateTransactionStatus
+  updateTransactionStatus,
+  updateTransaction
 } from '../controllers/transactionController';
 import { verifyToken } from '../middleware/authMiddleware';
 
@@ -27,5 +28,8 @@ router.post('/', createTransaction);
 
 // Update transaction status
 router.put('/:id/status', updateTransactionStatus);
+
+// Update transaction (full edit)
+router.put('/:id', updateTransaction);
 
 export default router;

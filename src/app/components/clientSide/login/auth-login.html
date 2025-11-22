@@ -4,13 +4,12 @@
     <h1>Log in Using Social Account</h1>
 
     <div class="er-auth__social">
-      <button type="button" class="er-social er-social--fb" (click)="loginWithFacebook()">
-        <i class="fa-brands fa-facebook-f"></i> Continue with Facebook
-      </button>
       <button type="button" class="er-social er-social--gg" (click)="loginWithGoogle()">
         <i class="fa-brands fa-google"></i> Continue with Google
       </button>
     </div>
+    <!-- Hidden Google button for functionality -->
+    <div id="google-signin-button" style="display: none;"></div>
 
     <div class="er-auth__or"><span>OR</span></div>
 

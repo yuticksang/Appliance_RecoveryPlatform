@@ -122,6 +122,12 @@ export class AuthService {
     });
   }
 
+  loginWithGoogle(idToken: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/auth/google`, {
+      idToken
+    });
+  }
+
   setAuthData(response: any) {
     // Store in localStorage (seller-specific keys)
     localStorage.setItem('token', response.token);

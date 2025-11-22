@@ -10,7 +10,7 @@ INSERT INTO "SubmittedAppliance" (
     "initialOfferPrice", "finalOfferPrice", note
 )
 VALUES (
-    'SA001', 'S001', NULL, 'PA002', NULL,
+    'SA001', 'S001', 'APL001', 'PA002', NULL,
     '2025-11-09 10:30:00', 'Working', 'Good',
     NULL, NULL, 'LG 9kg Washer - Admin reviewing status'
 );
@@ -28,7 +28,7 @@ INSERT INTO "SubmittedAppliance" (
     "initialOfferPrice", "finalOfferPrice", note
 )
 VALUES (
-    'SA002', 'S001', NULL, 'PA002', NULL,
+    'SA002', 'S001', 'APL002', 'PA002', NULL,
     '2025-11-08 14:20:00', 'Working', 'Excellent',
     600.00, NULL, 'Samsung Washer Dryer - Waiting for confirmation'
 );
@@ -46,7 +46,7 @@ INSERT INTO "SubmittedAppliance" (
     "initialOfferPrice", "finalOfferPrice", note
 )
 VALUES (
-    'SA003', 'S001', NULL, 'PA002', NULL,
+    'SA003', 'S001', 'APL003', 'PA002', NULL,
     '2025-11-07 09:15:00', 'Working', 'Fair',
     150.00, 150.00, 'Panasonic Microwave - Seller accepted offer'
 );
@@ -64,7 +64,7 @@ INSERT INTO "SubmittedAppliance" (
     "initialOfferPrice", "finalOfferPrice", note
 )
 VALUES (
-    'SA004', 'S001', NULL, 'PA002', NULL,
+    'SA004', 'S001', 'APL004', 'PA002', NULL,
     '2025-11-05 11:45:00', 'Working', 'Good',
     550.00, 550.00, 'Mitsubishi Aircon - Item picked up, payment processing'
 );
@@ -82,7 +82,7 @@ INSERT INTO "SubmittedAppliance" (
     "initialOfferPrice", "finalOfferPrice", note
 )
 VALUES (
-    'SA005', 'S001', NULL, 'PA002', NULL,
+    'SA005', 'S001', 'APL006', 'PA002', NULL,
     '2025-10-28 10:00:00', 'Working', 'Good',
     420.00, 420.00, 'Daikin Aircon - Payment successfully made'
 );
@@ -100,7 +100,7 @@ INSERT INTO "SubmittedAppliance" (
     "initialOfferPrice", "finalOfferPrice", note
 )
 VALUES (
-    'SA006', 'S001', NULL, 'PA002', NULL,
+    'SA006', 'S001', 'APL007', 'PA002', NULL,
     '2025-10-25 13:30:00', 'Not Working', 'Poor',
     0.00, NULL, 'Dyson Vacuum - Seller rejected offer'
 );
@@ -118,7 +118,7 @@ INSERT INTO "SubmittedAppliance" (
     "initialOfferPrice", "finalOfferPrice", note
 )
 VALUES (
-    'SA007', 'S001', NULL, 'PA002', NULL,
+    'SA007', 'S001', 'APL008', 'PA002', NULL,
     '2025-10-20 08:45:00', 'Working', 'Good',
     380.00, NULL, 'Bosch Oven - No seller response after 14 days'
 );
@@ -136,7 +136,7 @@ INSERT INTO "SubmittedAppliance" (
     "initialOfferPrice", "finalOfferPrice", note
 )
 VALUES (
-    'SA008', 'S001', NULL, 'PA002', NULL,
+    'SA008', 'S001', 'APL009', 'PA002', NULL,
     '2025-10-18 15:20:00', 'Working', 'Good',
     280.00, NULL, 'Xiaomi Robot Vacuum - No response on pickup'
 );
@@ -154,7 +154,7 @@ INSERT INTO "SubmittedAppliance" (
     "initialOfferPrice", "finalOfferPrice", note
 )
 VALUES (
-    'SA009', 'S001', NULL, 'PA002', NULL,
+    'SA009', 'S001', 'APL010', 'PA002', NULL,
     '2025-10-15 11:00:00', 'Working', 'Good',
     320.00, NULL, 'Electrolux Gas Hob - Item picked up but seller rejected'
 );
@@ -172,7 +172,7 @@ INSERT INTO "SubmittedAppliance" (
     "initialOfferPrice", "finalOfferPrice", note
 )
 VALUES (
-    'SA010', 'S001', NULL, 'PA002', NULL,
+    'SA010', 'S001', 'APL011', 'PA002', NULL,
     '2025-10-10 09:30:00', 'Working', 'Excellent',
     650.00, 650.00, 'Samsung Refrigerator - Transaction completed'
 );
@@ -190,7 +190,7 @@ INSERT INTO "SubmittedAppliance" (
     "initialOfferPrice", "finalOfferPrice", note
 )
 VALUES (
-    'SA011', 'S001', NULL, 'PA002', NULL,
+    'SA011', 'S001', 'APL012', 'PA002', NULL,
     '2025-11-06 16:45:00', 'Working', 'Good',
     NULL, NULL, 'Sharp Refrigerator - Submitted for review'
 );
@@ -208,7 +208,7 @@ INSERT INTO "SubmittedAppliance" (
     "initialOfferPrice", "finalOfferPrice", note
 )
 VALUES (
-    'SA012', 'S001', NULL, 'PA002', NULL,
+    'SA012', 'S001', 'APL013', 'PA002', NULL,
     '2025-11-03 10:15:00', 'Working', 'Good',
     180.00, NULL, 'Philips Airfryer - Waiting for confirmation'
 );
@@ -226,7 +226,7 @@ INSERT INTO "SubmittedAppliance" (
     "initialOfferPrice", "finalOfferPrice", note
 )
 VALUES (
-    'SA013', 'S001', NULL, 'PA002', NULL,
+    'SA013', 'S001', 'APL014', 'PA002', NULL,
     '2025-10-01 11:20:00', 'Working', 'Fair',
     380.00, 380.00, 'Whirlpool Washer - Confirmed and picked up'
 );
@@ -244,7 +244,7 @@ INSERT INTO "SubmittedAppliance" (
     "initialOfferPrice", "finalOfferPrice", note
 )
 VALUES (
-    'SA014', 'S001', NULL, 'PA002', NULL,
+    'SA014', 'S001', 'APL015', 'PA002', NULL,
     '2025-09-28 14:30:00', 'Working', 'Good',
     95.00, 95.00, 'Tefal Blender - Payment processing'
 );
@@ -262,7 +262,7 @@ INSERT INTO "SubmittedAppliance" (
     "initialOfferPrice", "finalOfferPrice", note
 )
 VALUES (
-    'SA015', 'S001', NULL, 'PA002', NULL,
+    'SA015', 'S001', 'APL012', 'PA002', NULL,
     '2025-09-20 13:15:00', 'Working', 'Excellent',
     490.00, 490.00, 'Electrolux Washer - Payment transferred'
 );

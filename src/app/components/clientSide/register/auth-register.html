@@ -75,14 +75,12 @@
 
     <p class="er-or">OR Continue with</p>
 
-
     <div class="er-register__social">
-      <button type="button" class="er-social er-social--fb">
-        <i class="fa-brands fa-facebook-f"></i> Continue with Facebook
-      </button>
-      <button type="button" class="er-social er-social--gg">
+      <button type="button" class="er-social er-social--gg" (click)="signupWithGoogle()">
         <i class="fa-brands fa-google"></i> Continue with Google
       </button>
     </div>
+    <!-- Hidden Google button for functionality -->
+    <div id="google-signup-button" style="display: none;"></div>
   </div>
 </section>
