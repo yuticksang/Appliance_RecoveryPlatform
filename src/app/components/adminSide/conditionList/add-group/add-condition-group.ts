@@ -18,12 +18,14 @@ export class AddConditionGroupComponent {
   constructor(private fb: FormBuilder) {
     this.addGroupForm = this.fb.group({
       criteriaName: ['', [Validators.required]],
-      criteriaCodePrefix: ['', [Validators.maxLength(10)]]
+      criteriaCodePrefix: ['', [Validators.maxLength(10)]],
+      question_title: ['', [Validators.required]]
     });
   }
 
   get criteriaName() { return this.addGroupForm.get('criteriaName'); }
   get criteriaCodePrefix() { return this.addGroupForm.get('criteriaCodePrefix'); }
+  get question_title() { return this.addGroupForm.get('question_title'); }
 
   onClose() {
     this.close.emit();
@@ -33,7 +35,8 @@ export class AddConditionGroupComponent {
     if (this.addGroupForm.valid) {
       const newGroup = {
         criteriaName: this.criteriaName?.value,
-        criteriaCodePrefix: this.criteriaCodePrefix?.value || ''
+        criteriaCodePrefix: this.criteriaCodePrefix?.value || '',
+        question_title: this.question_title?.value
       };
 
       this.groupAdded.emit(newGroup);

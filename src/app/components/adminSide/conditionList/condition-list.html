@@ -39,10 +39,75 @@
       <div class="condition-group" *ngFor="let item of groupedOptions()">
         <div class="group-header">
           <div class="group-title-section">
-            <h2 class="group-title">{{ item.group.criteriaName }}</h2>
-            <span class="badge" [ngClass]="statusClass(item.group.status)">
-              <span class="dot"></span> {{ item.group.status }}
-            </span>
+            <div class="group-title-row">
+              <h2 class="group-title">{{ item.group.criteriaName }}</h2>
+              <span class="badge" [ngClass]="statusClass(item.group.status)">
+                <span class="dot"></span> {{ item.group.status }}
+              </span>
+            </div>
+
+            <!-- Question Title and Display Order - Only for non-Photo/Notes groups -->
+            @if(shouldShowQuestionFields(item.group)) {
+              <div class="group-metadata">
+                <!-- Display Order -->
+                <div class="metadata-field">
+                  <label class="metadata-label">Order:</label>
+                  @if(isEditingDisplayOrder(item.group.groupID)) {
+                    <div class="inline-edit-wrapper">
+                      <input
+                        type="number"
+                        class="inline-edit-input"
+                        min="1"
+                        [(ngModel)]="tempDisplayOrder"
+                        (keydown.enter)="saveDisplayOrder(item.group)"
+                        (keydown.escape)="cancelInlineEdit()"
+                        autofocus
+                      />
+                      <button class="inline-btn save-btn" (click)="saveDisplayOrder(item.group)" title="Save">
+                        <i class="ri-check-line"></i>
+                      </button>
+                      <button class="inline-btn cancel-btn" (click)="cancelInlineEdit()" title="Cancel">
+                        <i class="ri-close-line"></i>
+                      </button>
+                    </div>
+                  } @else {
+                    <span class="metadata-value" (click)="startEditingDisplayOrder(item.group)">
+                      {{ item.group.display_order || '—' }}
+                      <i class="ri-pencil-line edit-icon"></i>
+                    </span>
+                  }
+                </div>
+
+                <!-- Question Title -->
+                <div class="metadata-field question-field">
+                  <label class="metadata-label">Question:</label>
+                  @if(isEditingQuestionTitle(item.group.groupID)) {
+                    <div class="inline-edit-wrapper">
+                      <input
+                        type="text"
+                        class="inline-edit-input"
+                        [(ngModel)]="tempQuestionTitle"
+                        (keydown.enter)="saveQuestionTitle(item.group)"
+                        (keydown.escape)="cancelInlineEdit()"
+                        placeholder="Enter question title"
+                        autofocus
+                      />
+                      <button class="inline-btn save-btn" (click)="saveQuestionTitle(item.group)" title="Save">
+                        <i class="ri-check-line"></i>
+                      </button>
+                      <button class="inline-btn cancel-btn" (click)="cancelInlineEdit()" title="Cancel">
+                        <i class="ri-close-line"></i>
+                      </button>
+                    </div>
+                  } @else {
+                    <span class="metadata-value" (click)="startEditingQuestionTitle(item.group)">
+                      {{ item.group.question_title || 'Click to add question' }}
+                      <i class="ri-pencil-line edit-icon"></i>
+                    </span>
+                  }
+                </div>
+              </div>
+            }
           </div>
           <div class="group-actions">
             <button class="icon-btn add-btn" (click)="addNewCondition(item.group.groupID)" title="Add New Condition">
