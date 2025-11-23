@@ -34,8 +34,9 @@ export class TransactionService {
    * Get the authentication token (supports both seller and admin tokens)
    */
   private getAuthToken(): string | null {
-    // Check for admin token first, then seller/buyer token
-    return localStorage.getItem('admin_token') || localStorage.getItem('token');
+    // Check for seller/buyer token first, then admin token
+    // This ensures seller-specific requests use the seller's token when available
+    return localStorage.getItem('token') || localStorage.getItem('admin_token');
   }
 
   /**

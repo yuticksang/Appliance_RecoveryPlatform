@@ -24,6 +24,10 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   transactionId: string | number = 0; // Support both string and number IDs
   private authSubscription?: Subscription;
 
+  // Photos gallery
+  photos: string[] = [];
+  selectedPhotoIndex: number = 0;
+
   // Sticky header scroll behavior
   isHeaderVisible: boolean = true;
   private lastScrollTop: number = 0;
@@ -98,9 +102,29 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     return this.transaction?.transactionStatus === 'Pending Payment';
   }
 
-  // Check if transaction is in Under Review status (allows editing)
-  get isUnderReview(): boolean {
-    return this.transaction?.transactionStatus === 'Under Review';
+  // Get the currently selected photo
+  get selectedPhoto(): string {
+    if (this.photos.length > 0) {
+      return this.photos[this.selectedPhotoIndex];
+    }
+    return this.transaction?.image || 'assets/image/placeholder-appliance.png';
+  }
+
+  // Check if there are multiple photos
+  get hasMultiplePhotos(): boolean {
+    return this.photos.length > 1;
+  }
+
+  // Check if there are any photos
+  get hasPhotos(): boolean {
+    return this.photos.length > 0;
+  }
+
+  // Select a photo by index
+  selectPhoto(index: number): void {
+    if (index >= 0 && index < this.photos.length) {
+      this.selectedPhotoIndex = index;
+    }
   }
 
   ngOnInit(): void {
@@ -221,6 +245,15 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
           state: data.state || 'N/A'
         };
 
+        // Load seller-submitted photos from backend (not the catalog image)
+        if (data.photos && data.photos.length > 0) {
+          this.photos = data.photos;
+          this.selectedPhotoIndex = 0;
+        } else {
+          // No photos submitted by seller
+          this.photos = [];
+        }
+
         // Load REAL appliance details
         this.loadRealDetails(data);
         this.loading = false;
@@ -323,16 +356,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
 
   viewPackagingInstruction(): void {
     // TODO: Navigate to packaging instruction page or open PDF
-    this.router.navigate(['/packaging-instruction'], {
-        state: { fromTransactionId: this.transactionId }
-      });
     console.log('View packaging instruction');
-  }
-
-  // Navigate to edit appliance page
-  editAppliance(): void {
-    if (!this.transaction) return;
-    this.router.navigate(['/edit-appliance', this.transactionId]);
   }
 
   // Step 1: Show accept confirmation modal

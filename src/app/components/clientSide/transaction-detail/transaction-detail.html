@@ -152,16 +152,45 @@
 
     <!-- Main Content Grid -->
     <div class="content-grid">
-      <!-- Left Column - Customer Info -->
+      <!-- Left Column - Photos + Seller Info -->
       <div class="left-column">
-        <!-- Customer Information -->
-        <div class="info-section">
-          <h3 class="section-title">CUSTOMER ID</h3>
-          <p class="info-value">{{ transaction.sellerId }}</p>
+        <!-- Photos Gallery Section -->
+        <div class="photos-gallery-section">
+          <!-- Show photos if available -->
+          <ng-container *ngIf="hasPhotos; else noPhotos">
+            <!-- Main Photo -->
+            <div class="main-photo-container">
+              <img [src]="selectedPhoto" [alt]="transaction.modelName" class="main-photo">
+            </div>
+
+            <!-- Thumbnails (only show if multiple photos) -->
+            <div *ngIf="hasMultiplePhotos" class="thumbnails-container">
+              <div
+                *ngFor="let photo of photos; let i = index"
+                class="thumbnail"
+                [class.active]="i === selectedPhotoIndex"
+                (click)="selectPhoto(i)">
+                <img [src]="photo" [alt]="'Photo ' + (i + 1)">
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- No photos placeholder -->
+          <ng-template #noPhotos>
+            <div class="no-photo-placeholder">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+              <p>No photo submitted</p>
+            </div>
+          </ng-template>
         </div>
 
+        <!-- Seller Information -->
         <div class="info-section">
-          <h3 class="section-title">CUSTOMER NAME</h3>
+          <h3 class="section-title">SELLER NAME</h3>
           <p class="info-value">{{ customerInfo.name }}</p>
         </div>
 
@@ -199,9 +228,6 @@
           <!-- Before Review -->
           <div class="review-card">
             <h3 class="review-title">BEFORE REVIEW</h3>
-            <div class="appliance-image-section">
-              <img [src]="transaction.image" [alt]="transaction.modelName" class="appliance-image">
-            </div>
             <div class="price-section">
               <span class="price-label">RM</span>
               <span class="price-value">{{ beforeReview.estimatedPrice }}</span>
@@ -238,20 +264,20 @@
             </div>
             <div class="idea-section">
               <h4 class="idea-label">SELECTED ISSUE</h4>
-              <ul class="idea-list">
+              <ul class="idea-list" *ngIf="beforeReview.selectedIssue.length > 0; else noBeforeIssues">
                 <li *ngFor="let issue of beforeReview.selectedIssue" class="idea-item">
                   <span class="check-icon">✓</span> {{ issue }}
                 </li>
               </ul>
+              <ng-template #noBeforeIssues>
+                <p class="no-issues">No issues reported</p>
+              </ng-template>
             </div>
           </div>
 
           <!-- After Review -->
           <div class="review-card after-review">
             <h3 class="review-title after">AFTER REVIEW</h3>
-            <div class="appliance-image-section">
-              <img [src]="transaction.image" [alt]="transaction.modelName" class="appliance-image">
-            </div>
             <div class="price-section after">
               <span class="price-label">RM</span>
               <span class="price-value">{{ afterReview.estimatedPrice }}</span>
@@ -288,29 +314,20 @@
             </div>
             <div class="idea-section">
               <h4 class="idea-label">SELECTED ISSUE</h4>
-              <ul class="idea-list">
+              <ul class="idea-list" *ngIf="afterReview.selectedIssue.length > 0; else noAfterIssues">
                 <li *ngFor="let issue of afterReview.selectedIssue" class="idea-item">
                   <span class="check-icon">✓</span> {{ issue }}
                 </li>
               </ul>
+              <ng-template #noAfterIssues>
+                <p class="no-issues">No issues reported</p>
+              </ng-template>
             </div>
           </div>
         </div>
 
         <!-- Show Regular View for Other Statuses -->
         <div *ngIf="!isAwaitingConfirmation" class="appliance-info-card">
-          <!-- Appliance Image -->
-          <div class="appliance-image-section">
-            <img [src]="transaction.image" [alt]="transaction.modelName" class="appliance-image">
-            <div class="image-dots">
-              <span class="dot active"></span>
-              <span class="dot"></span>
-              <span class="dot"></span>
-              <span class="dot"></span>
-              <span class="dot"></span>
-            </div>
-          </div>
-          
           <!-- Estimated Price -->
           <div class="price-section">
             <span class="price-label">RM</span>
@@ -354,11 +371,14 @@
           <!-- Selected Issue -->
           <div class="idea-section">
             <h4 class="idea-label">SELECTED ISSUE</h4>
-            <ul class="idea-list">
+            <ul class="idea-list" *ngIf="applianceInfo.selectedIssue.length > 0; else noIssues">
               <li *ngFor="let issue of applianceInfo.selectedIssue" class="idea-item">
                 <span class="check-icon">✓</span> {{ issue }}
               </li>
             </ul>
+            <ng-template #noIssues>
+              <p class="no-issues">No issues reported</p>
+            </ng-template>
           </div>
         </div>
       </div>
