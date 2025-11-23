@@ -31,7 +31,8 @@ import {
   updateConditionOption,
   deleteConditionOption,
   getConditionCategories,
-  updateConditionCategories
+  updateConditionCategories,
+  updateDisplayOrders
 } from '../controllers/conditionController';
 import { optionalUpload } from '../middleware/upload';
 
@@ -161,5 +162,8 @@ router.get('/condition-options/:conditionId/categories', getConditionCategories)
 
 // Update categories for a condition
 router.put('/condition-options/:conditionId/categories', updateConditionCategories);
+
+// Add this route
+router.put('/categories/:categoryId/display-orders', updateDisplayOrders);
 
 export default router;

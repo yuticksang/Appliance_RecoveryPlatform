@@ -7,7 +7,7 @@ import { AlertService } from '../../../services/alert.service';
 interface PriceRow {
   buyerID: string;
   applianceID: string;
-  basePrice: number;
+  basePrice: number | string;
   buyer_id: string;
   buyerName: string;
   buyerUsername: string;
@@ -190,8 +190,9 @@ export class PriceListComponent implements OnInit {
     return this.sortDir() === 'asc' ? '↑' : '↓';
   }
 
-  formatPrice(price: number): string {
-    return `RM ${price.toFixed(2)}`;
+  formatPrice(price: number | string): string {
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+    return `RM ${numPrice.toFixed(2)}`;
   }
 
   pageNumbers(): number[] {

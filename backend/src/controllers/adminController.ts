@@ -735,7 +735,7 @@ export const getAllBuyerPrices = async (req: Request, res: Response) => {
         b."brandName",
         a.status as "applianceStatus"
       FROM "BuyerAppliance" ba
-      LEFT JOIN users u ON ba."buyerID" = u."userID"
+      LEFT JOIN users u ON ba."buyerID" = u.buyer_id
       LEFT JOIN "Appliance" a ON ba."applianceID" = a."applianceID"
       LEFT JOIN "Category" c ON a."categoryID" = c."categoryID"
       LEFT JOIN "Brand" b ON a."brandID" = b."brandID"

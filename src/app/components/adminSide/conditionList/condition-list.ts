@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AlertService } from '../../../services/alert.service';
 import { AddConditionGroupComponent } from './add-group/add-condition-group';
+import { EditConditionGroupComponent } from './edit-group/edit-condition-group';
 import { AddConditionOptionComponent } from './add-option/add-condition-option';
 import { EditConditionOptionComponent } from './edit-option/edit-condition-option';
 
@@ -11,6 +12,9 @@ interface ConditionGroup {
   groupID: string;
   criteriaName: string;
   criteriaCodePrefix: string;
+  question_title?: string | null;
+  question_type?: string | null;
+  display_order?: number | null;
   status: 'ACTIVE' | 'INACTIVE';
   created_at: string;
 }
@@ -39,6 +43,7 @@ type SortDir = 'asc' | 'desc';
     CommonModule,
     FormsModule,
     AddConditionGroupComponent,
+    EditConditionGroupComponent,
     AddConditionOptionComponent,
     EditConditionOptionComponent
   ],
@@ -57,7 +62,7 @@ export class ConditionListComponent implements OnInit {
   loading = signal<boolean>(false);
   error = signal<string>('');
 
-  selectedCategory = signal<string>('all');
+  selectedGroupFilter = signal<string>('all');
   search = signal<string>('');
 
   // Pagination per group
@@ -67,11 +72,13 @@ export class ConditionListComponent implements OnInit {
 
   // Modals
   showAddGroupModal = signal(false);
+  showEditGroupModal = signal(false);
   showAddOptionModal = signal(false);
   showEditOptionModal = signal(false);
   showConfirmModal = signal(false);
 
-  selectedGroup = signal<string | null>(null);
+  selectedGroupForAdd = signal<string | null>(null);
+  editingGroup = signal<ConditionGroup | null>(null);
   editingOption = signal<ConditionOption | null>(null);
   confirmAction = signal<'delete' | null>(null);
   confirmTarget = signal<ConditionOption | null>(null);
@@ -136,18 +143,16 @@ export class ConditionListComponent implements OnInit {
     const groups = this.activeGroups();
     const options = this.conditionOptions();
     const search = this.search().toLowerCase();
-    const selectedCat = this.selectedCategory();
+    const selectedGroupId = this.selectedGroupFilter();
 
-    return groups.map(group => {
+    // Filter groups first if a specific group is selected
+    let filteredGroups = groups;
+    if (selectedGroupId && selectedGroupId !== 'all') {
+      filteredGroups = groups.filter(g => g.groupID === selectedGroupId);
+    }
+
+    const result = filteredGroups.map(group => {
       let groupOptions = options.filter(opt => opt.groupID === group.groupID);
-
-      // Apply category filter
-      if (selectedCat && selectedCat !== 'all') {
-        groupOptions = groupOptions.filter(opt => {
-          const categories = (opt.categories || '').split(', ');
-          return categories.some(cat => cat.trim() === selectedCat);
-        });
-      }
 
       // Apply search filter
       if (search) {
@@ -163,7 +168,14 @@ export class ConditionListComponent implements OnInit {
         group,
         options: groupOptions
       };
-    }).filter(item => item.options.length > 0); // Only show groups with matching options
+    });
+
+    // Only filter out empty groups when searching
+    if (search) {
+      return result.filter(item => item.options.length > 0);
+    }
+
+    return result;
   });
 
   // Get paginated options for a specific group
@@ -209,8 +221,8 @@ export class ConditionListComponent implements OnInit {
     this.currentPages.set(pages);
   }
 
-  onCategoryChange(categoryName: string) {
-    this.selectedCategory.set(categoryName);
+  onGroupFilterChange(groupId: string) {
+    this.selectedGroupFilter.set(groupId);
     // Reset all pages to 1 when filtering
     const pages: { [key: string]: number } = {};
     this.activeGroups().forEach(g => pages[g.groupID] = 1);
@@ -221,8 +233,13 @@ export class ConditionListComponent implements OnInit {
     this.showAddGroupModal.set(true);
   }
 
+  editConditionGroup(group: ConditionGroup) {
+    this.editingGroup.set(group);
+    this.showEditGroupModal.set(true);
+  }
+
   addNewCondition(groupId: string) {
-    this.selectedGroup.set(groupId);
+    this.selectedGroupForAdd.set(groupId);
     this.showAddOptionModal.set(true);
   }
 
@@ -300,9 +317,14 @@ export class ConditionListComponent implements OnInit {
     this.showAddGroupModal.set(false);
   }
 
+  onCloseEditGroupModal() {
+    this.showEditGroupModal.set(false);
+    this.editingGroup.set(null);
+  }
+
   onCloseAddOptionModal() {
     this.showAddOptionModal.set(false);
-    this.selectedGroup.set(null);
+    this.selectedGroupForAdd.set(null);
   }
 
   onCloseEditOptionModal() {
@@ -313,7 +335,9 @@ export class ConditionListComponent implements OnInit {
   onGroupAdded(newGroup: any) {
     const groupData = {
       criteriaName: newGroup.criteriaName,
-      criteriaCodePrefix: newGroup.criteriaCodePrefix || ''
+      criteriaCodePrefix: newGroup.criteriaCodePrefix,
+      question_title: newGroup.question_title,
+      question_type: newGroup.question_type
     };
 
     this.http.post(`${this.apiUrl}/admin/condition-groups`, groupData)
@@ -329,9 +353,30 @@ export class ConditionListComponent implements OnInit {
       });
   }
 
+  onGroupUpdated(updatedGroup: any) {
+    this.http.put(`${this.apiUrl}/admin/condition-groups/${updatedGroup.groupID}`, {
+      criteriaName: updatedGroup.criteriaName,
+      criteriaCodePrefix: updatedGroup.criteriaCodePrefix,
+      question_title: updatedGroup.question_title,
+      question_type: updatedGroup.question_type,
+      display_order: updatedGroup.display_order,
+      status: updatedGroup.status
+    })
+      .subscribe({
+        next: () => {
+          this.loadConditionGroups();
+          this.alertService.success('Condition type updated successfully');
+        },
+        error: (err) => {
+          console.error('Update condition group error:', err);
+          this.alertService.error('Failed to update condition type: ' + (err.error?.message || 'Unknown error'));
+        }
+      });
+  }
+
   onOptionAdded(newOption: any) {
     const formData = new FormData();
-    formData.append('groupID', this.selectedGroup() || '');
+    formData.append('groupID', this.selectedGroupForAdd() || '');
     formData.append('description', newOption.description);
     formData.append('status', newOption.status || 'ACTIVE');
 
@@ -348,7 +393,7 @@ export class ConditionListComponent implements OnInit {
     }
 
     console.log('📤 Sending new option:', {
-      groupID: this.selectedGroup(),
+      groupID: this.selectedGroupForAdd(),
       description: newOption.description,
       hasImage: newOption.image instanceof File,
       categoryCount: newOption.categoryIDs?.length || 0
@@ -385,7 +430,7 @@ export class ConditionListComponent implements OnInit {
   }
 
   getSelectedGroupPrefix(): string {
-    const group = this.conditionGroups().find(g => g.groupID === this.selectedGroup());
+    const group = this.conditionGroups().find(g => g.groupID === this.selectedGroupForAdd());
     return group?.criteriaCodePrefix || '';
   }
 
@@ -490,5 +535,15 @@ export class ConditionListComponent implements OnInit {
     }
     // Otherwise, prepend the API URL
     return `${this.apiUrl.replace('/api', '')}${imagePath}`;
+  }
+
+  shouldShowQuestionFields(group: ConditionGroup): boolean {
+    // All groups should show question and order metadata
+    return true;
+  }
+
+  shouldShowTableColumns(group: ConditionGroup): boolean {
+    // Only show table columns if NOT file_upload or textarea
+    return group.question_type !== 'file_upload' && group.question_type !== 'textarea';
   }
 }

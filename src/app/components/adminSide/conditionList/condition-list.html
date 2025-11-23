@@ -10,12 +10,12 @@
       <button class="btn-primary" (click)="addNewConditionType()">+ NEW CONDITION TYPE</button>
 
       <div class="toolbar-right">
-        <!-- Category Filter -->
+        <!-- Condition Group Filter -->
         <div class="select-wrapper">
-          <select class="category-select" [value]="selectedCategory()" (change)="onCategoryChange($any($event.target).value)">
-            <option value="all">All Categories</option>
-            <option *ngFor="let category of categories()" [value]="category.categoryName">
-              {{ category.categoryName }}
+          <select class="category-select" [value]="selectedGroupFilter()" (change)="onGroupFilterChange($any($event.target).value)">
+            <option value="all">All Condition Types</option>
+            <option *ngFor="let group of conditionGroups()" [value]="group.groupID">
+              {{ group.criteriaName }}
             </option>
           </select>
         </div>
@@ -39,16 +39,36 @@
       <div class="condition-group" *ngFor="let item of groupedOptions()">
         <div class="group-header">
           <div class="group-title-section">
-            <h2 class="group-title">{{ item.group.criteriaName }}</h2>
-            <span class="badge" [ngClass]="statusClass(item.group.status)">
-              <span class="dot"></span> {{ item.group.status }}
-            </span>
+            <div class="group-title-row">
+              <h2 class="group-title">{{ item.group.criteriaName }}</h2>
+              <span class="badge" [ngClass]="statusClass(item.group.status)">
+                <span class="dot"></span> {{ item.group.status }}
+              </span>
+            </div>
+
+            <!-- Display Order and Question Title - Only for non-Photo/Notes groups -->
+            @if(shouldShowQuestionFields(item.group)) {
+              <div class="group-metadata">
+                <div class="metadata-field">
+                  <label class="metadata-label">Order:</label>
+                  <span class="metadata-value-readonly">{{ item.group.display_order || '—' }}</span>
+                </div>
+
+                <div class="metadata-field question-field">
+                  <label class="metadata-label">Question:</label>
+                  <span class="metadata-value-readonly">{{ item.group.question_title || 'Not set' }}</span>
+                </div>
+              </div>
+            }
           </div>
           <div class="group-actions">
-            <button class="icon-btn add-btn" (click)="addNewCondition(item.group.groupID)" title="Add New Condition">
-              <i class="ri-add-circle-line"></i>
-            </button>
-            <button class="icon-btn edit-btn" title="Edit Group">
+            <!-- Only show Add button for groups that have table columns -->
+            @if(shouldShowTableColumns(item.group)) {
+              <button class="icon-btn add-btn" (click)="addNewCondition(item.group.groupID)" title="Add New Condition">
+                <i class="ri-add-circle-line"></i>
+              </button>
+            }
+            <button class="icon-btn edit-btn" (click)="editConditionGroup(item.group)" title="Edit Group">
               <i class="ri-pencil-line"></i>
             </button>
             <button class="icon-btn" [title]="getGroupToggleTitle(item.group.status)" (click)="toggleGroupStatus(item.group)">
@@ -57,82 +77,86 @@
           </div>
         </div>
 
-        <!-- table -->
-        <div class="table-wrap">
-          <table class="grid">
-            <thead>
-              <tr>
-                <th class="narrow">#</th>
-                <th>
-                  ID <i class="ri-arrow-up-down-line"></i>
-                </th>
-                <th class="image-col">Image</th>
-                <th>Description <i class="ri-arrow-up-down-line"></i></th>
-                @if(item.group.criteriaCodePrefix === 'C' || item.group.criteriaCodePrefix === 'OT') {
-                  <th>Question <i class="ri-arrow-up-down-line"></i></th>
-                }
-                <th>Category <i class="ri-arrow-up-down-line"></i></th>
-                <th>Status <i class="ri-arrow-up-down-line"></i></th>
-                <th class="actions">Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              <tr *ngFor="let option of getPagedOptions(item.group.groupID); let i = index">
-                <td class="narrow">{{ (getCurrentPage(item.group.groupID) - 1) * itemsPerPage() + i + 1 }}</td>
-                <td>{{ option.code || (item.group.criteriaCodePrefix ? item.group.criteriaCodePrefix + (i + 1).toString().padStart(3, '0') : option.conditionID) }}</td>
-                <td class="image-col">
-                  @if(option.image) {
-                    <img [src]="getImageUrl(option.image)" alt="Condition" class="condition-image" />
+        <!-- Table view for groups with columns (not file_upload or textarea) -->
+        @if(shouldShowTableColumns(item.group)) {
+          <div class="table-wrap">
+            <table class="grid">
+              <thead>
+                <tr>
+                  <th class="narrow">#</th>
+                  <th>
+                    ID <i class="ri-arrow-up-down-line"></i>
+                  </th>
+                  <th class="image-col">Image</th>
+                  <th>Description <i class="ri-arrow-up-down-line"></i></th>
+                  @if(item.group.criteriaCodePrefix === 'C' || item.group.criteriaCodePrefix === 'OT') {
+                    <th>Question <i class="ri-arrow-up-down-line"></i></th>
                   }
-                  @else {
-                    <div class="no-image"><i class="ri-image-line"></i></div>
+                  <th>Category <i class="ri-arrow-up-down-line"></i></th>
+                  <th>Status <i class="ri-arrow-up-down-line"></i></th>
+                  <th class="actions">Actions</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr *ngFor="let option of getPagedOptions(item.group.groupID); let i = index">
+                  <td class="narrow">{{ (getCurrentPage(item.group.groupID) - 1) * itemsPerPage() + i + 1 }}</td>
+                  <td>{{ option.code || (item.group.criteriaCodePrefix ? item.group.criteriaCodePrefix + (i + 1).toString().padStart(3, '0') : option.conditionID) }}</td>
+                  <td class="image-col">
+                    @if(option.image) {
+                      <img [src]="getImageUrl(option.image)" alt="Condition" class="condition-image" />
+                    }
+                    @else {
+                      <div class="no-image"><i class="ri-image-line"></i></div>
+                    }
+                  </td>
+                  <td>{{ option.description || '---' }}</td>
+                  @if(item.group.criteriaCodePrefix === 'C' || item.group.criteriaCodePrefix === 'OT') {
+                    <td class="question-cell">{{ option.question || '---' }}</td>
                   }
-                </td>
-                <td>{{ option.description || '---' }}</td>
-                @if(item.group.criteriaCodePrefix === 'C' || item.group.criteriaCodePrefix === 'OT') {
-                  <td class="question-cell">{{ option.question || '---' }}</td>
-                }
-                <td class="category-cell">{{ option.categories || '---' }}</td>
-                <td>
-                  <span class="badge" [ngClass]="statusClass(option.status)">
-                    <span class="dot"></span> {{ option.status }}
-                  </span>
-                </td>
-                <td class="actions">
-                  <!-- Edit button -->
-                  <button class="icon" title="Edit Condition" (click)="editCondition(option)">
-                    <img src="assets/icons/edit.png" alt="Edit" class="action-icon">
-                  </button>
-                  <!-- Toggle Status button -->
-                  <button class="icon" [title]="getToggleTitle(option.status)" (click)="toggleStatus(option)">
-                    <img [src]="getToggleIconSrc(option.status)" alt="Toggle Status" class="action-icon">
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- pager -->
-        <div class="pager">
-          <button class="page-btn" (click)="goToPage(item.group.groupID, getCurrentPage(item.group.groupID) - 1)"
-            [disabled]="getCurrentPage(item.group.groupID) === 1">‹</button>
-
-          <button class="page-btn" *ngFor="let p of getPageNumbers(item.group.groupID)"
-            [class.active]="p === getCurrentPage(item.group.groupID)"
-            (click)="goToPage(item.group.groupID, p)">{{ p }}</button>
-
-          <button class="page-btn" (click)="goToPage(item.group.groupID, getCurrentPage(item.group.groupID) + 1)"
-            [disabled]="getCurrentPage(item.group.groupID) === getTotalPages(item.group.groupID)">›</button>
-
-          <div class="page-size">
-            <select [ngModel]="itemsPerPage()" (ngModelChange)="setPageSize($event)">
-              <option *ngFor="let n of itemsPerPageOptions" [value]="n">{{ n }}</option>
-            </select>
-            <span>/Page</span>
+                  <td class="category-cell">{{ option.categories || '---' }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="statusClass(option.status)">
+                      <span class="dot"></span> {{ option.status }}
+                    </span>
+                  </td>
+                  <td class="actions">
+                    <!-- Edit button -->
+                    <button class="icon" title="Edit Condition" (click)="editCondition(option)">
+                      <img src="assets/icons/edit.png" alt="Edit" class="action-icon">
+                    </button>
+                    <!-- Toggle Status button -->
+                    <button class="icon" [title]="getToggleTitle(option.status)" (click)="toggleStatus(option)">
+                      <img [src]="getToggleIconSrc(option.status)" alt="Toggle Status" class="action-icon">
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-        </div>
+
+          <!-- pager -->
+          <div class="pager">
+            <button class="page-btn" (click)="goToPage(item.group.groupID, getCurrentPage(item.group.groupID) - 1)"
+              [disabled]="getCurrentPage(item.group.groupID) === 1">‹</button>
+
+            <button class="page-btn" *ngFor="let p of getPageNumbers(item.group.groupID)"
+              [class.active]="p === getCurrentPage(item.group.groupID)"
+              (click)="goToPage(item.group.groupID, p)">{{ p }}</button>
+
+            <button class="page-btn" (click)="goToPage(item.group.groupID, getCurrentPage(item.group.groupID) + 1)"
+              [disabled]="getCurrentPage(item.group.groupID) === getTotalPages(item.group.groupID)">›</button>
+
+            <div class="page-size">
+              <select [ngModel]="itemsPerPage()" (ngModelChange)="setPageSize($event)">
+                <option *ngFor="let n of itemsPerPageOptions" [value]="n">{{ n }}</option>
+              </select>
+              <span>/Page</span>
+            </div>
+          </div>
+        }
+
+        <!-- No content area for file_upload and textarea groups - just show the header -->
       </div>
     </div>
   </div>
@@ -146,10 +170,20 @@
 </app-add-condition-group>
 }
 
+<!-- Edit Condition Group Modal -->
+@if (showEditGroupModal() && editingGroup()) {
+<app-edit-condition-group
+  [groupData]="editingGroup()!"
+  [groups]="conditionGroups()"
+  (close)="onCloseEditGroupModal()"
+  (groupUpdated)="onGroupUpdated($event)">
+</app-edit-condition-group>
+}
+
 <!-- Add Condition Option Modal -->
-@if (showAddOptionModal() && selectedGroup()) {
+@if (showAddOptionModal() && selectedGroupForAdd()) {
 <app-add-condition-option
-  [groupID]="selectedGroup()!"
+  [groupID]="selectedGroupForAdd()!"
   [criteriaCodePrefix]="getSelectedGroupPrefix()"
   (close)="onCloseAddOptionModal()"
   (optionAdded)="onOptionAdded($event)">
