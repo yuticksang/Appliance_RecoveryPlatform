@@ -3,7 +3,8 @@ import {
   getBrandsByCategory,
   getCategories,
   getModelsByBrand,
-  submitQuestionnaire
+  submitQuestionnaire,
+  getConditionGroups
 } from '../controllers/questionnaireController';
 // import { getAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress } from '../controllers/profileController';
 import { verifyToken } from '../middleware/authMiddleware';
@@ -32,7 +33,8 @@ const router = Router();
 // === OTHER ROUTES ===
 router.get('/categories', verifyToken, getCategories);
 router.get('/brands/:categoryId', verifyToken, getBrandsByCategory);
-router.get('/models/:brandId', verifyToken, getModelsByBrand);
+router.get('/models/:categoryId/:brandId', verifyToken, getModelsByBrand);
+router.get('/condition-groups', verifyToken, getConditionGroups);
 
 // // Address routes
 // router.get('/addresses/:userId', verifyToken, getAddresses);

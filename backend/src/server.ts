@@ -109,9 +109,10 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api', profileRoutes);
+app.use('/api', questionnaireRouter); 
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/cron', cronRoutes);
-app.use('/api', questionnaireRouter);
 
 // Health route
 app.get('/health', (req, res) => res.json({ ok: true, message: 'Server is running' }));

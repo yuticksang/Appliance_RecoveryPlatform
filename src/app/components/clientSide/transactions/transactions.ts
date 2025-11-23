@@ -179,6 +179,7 @@ export class TransactionsComponent implements OnInit, OnDestroy {
     // TODO: Navigate to trade-in questionnaire page
     // Example: this.router.navigate(['/trade-in']);
     console.log('Add new appliance clicked');
+    this.router.navigate(['/questionnaire']);
     
     // NOTE FOR TEAMMATES: When user completes the trade-in questionnaire,
     // call the transaction service to create a new transaction:

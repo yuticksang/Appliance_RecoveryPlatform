@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, ChangeDetectorRef, OnInit, inject, signal, computed } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
-import { QuestionnaireService, Category, SimpleItem, ConditionGroup, ConditionOption } from '../../../services/questionnaire.service';
+import { QuestionnaireService, Category,  SimpleItem } from '../../../services/questionnaire.service';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../services/auth.service';
 import { AlertService } from '../../../services/alert.service';
@@ -14,6 +14,20 @@ interface Address {
   zip?: string;
   pickup: string;
   isDefault?: boolean;
+}
+
+interface ConditionGroup {
+  groupID: string;
+  sectionName: string;
+  question: string;
+  type: 'radio' | 'image' | 'checkbox' | 'file_upload' | 'textarea';
+  displayOrder: number;
+  options: {
+    id: string;
+    code: string;
+    description: string;
+    image: string | null;
+  }[];
 }
 
 
@@ -37,8 +51,11 @@ export class QuestionnairesComponent implements OnInit{
   // Step tracking
   private _currentStep = 1;
   totalSteps: number = 5;
+  maxStepReached: number = 1; // Track the furthest step user has reached
 
   steps: number[] = [1, 2, 3, 4, 5];
+  isSubmitting = false;
+  
 
   // Step 1 - Appliance Type
   applianceTypeId: string = '';
@@ -53,23 +70,20 @@ export class QuestionnairesComponent implements OnInit{
   models: SimpleItem[] = [];
   
 
+  // Step 3 - With Condition Questions
+  conditionGroups = signal<ConditionGroup[]>([]);
+  selectedAnswers = signal<Record<string, any>>({}); // groupID → answer
+  group!: ConditionGroup;  // ← even better, with type
+
+
+
   // Step 3 - Condition Questionnaires
   notes: string = '';
   uploadedFiles: File[] = [];
+  thumbnailUrls: string[] = [];        // For 120x120 previews
+  selectedImageUrl: string = '';       // For modal
+  showImageModal = false;
 
-  // Dynamic condition groups from database (e.g., Functional Status, Appearance Status, Checklist)
-  conditionGroups: ConditionGroup[] = [];
-
-  // Track selected options for each group: { groupID: selectedConditionID }
-  selectedConditionByGroup: { [groupID: string]: string } = {};
-
-  // Track selected checklist items (multiple selection): { conditionID: boolean }
-  selectedChecklistItems: { [conditionID: string]: boolean } = {};
-
-  // Legacy support - will be derived from selectedConditionByGroup
-  workingStatus: string = '';
-  physicalCondition: string = '';
-  selectedIssues: string[] = [];
 
   // Step 4 - Valuation
   valuationScore: number = 0;
@@ -120,14 +134,6 @@ export class QuestionnairesComponent implements OnInit{
     return new Date(this.pickupDate) < new Date(this.minDate);
   }
 
-  // Methods
-  toggleIssue(issue: string) {
-    if (this.selectedIssues.includes(issue)) {
-      this.selectedIssues = this.selectedIssues.filter(i => i !== issue);
-    } else {
-      this.selectedIssues.push(issue);
-    }
-  }
 
   allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
   maxFiles = 10;
@@ -151,20 +157,64 @@ export class QuestionnairesComponent implements OnInit{
 
   handleFileUpload(newFiles: File[]) {
     const valid: File[] = [];
+    const newThumbnails: string[] = [];
+
     for (const file of newFiles) {
       if (this.uploadedFiles.length >= this.maxFiles) break;
       if (!this.allowedTypes.includes(file.type)) continue;
       if (file.size / (1024 * 1024) > this.maxSizeMB) continue;
+
       valid.push(file);
+
+      // Create 120x120 thumbnail
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 120;
+          canvas.height = 120;
+          const ctx = canvas.getContext('2d')!;
+          
+          // Crop to square from center
+          const size = Math.min(img.width, img.height);
+          const x = (img.width - size) / 2;
+          const y = (img.height - size) / 2;
+          
+          ctx.drawImage(img, x, y, size, size, 0, 0, 120, 120);
+          const thumbnail = canvas.toDataURL('image/jpeg', 0.8);
+          this.thumbnailUrls.push(thumbnail);
+          this.cdr.markForCheck();
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
     }
 
     this.uploadedFiles = [...this.uploadedFiles, ...valid];
-    this.cdr.markForCheck();   // ← BEST with OnPush
+    this.cdr.markForCheck();
   }
 
+
   removeFile(index: number) {
-    this.uploadedFiles = this.uploadedFiles.filter((_, i) => i !== index);
+    // Remove both the file and its thumbnail
+    this.uploadedFiles.splice(index, 1);
+    this.thumbnailUrls.splice(index, 1);
+
+    // Force change detection
+    this.uploadedFiles = [...this.uploadedFiles];
+    this.thumbnailUrls = [...this.thumbnailUrls];
     this.cdr.markForCheck();
+  }
+
+  openImageModal(url: string) {
+    this.selectedImageUrl = url;
+    this.showImageModal = true;
+  }
+
+  closeImageModal() {
+    this.showImageModal = false;
+    this.selectedImageUrl = '';
   }
 
   getFileUrl(file: File): string {
@@ -174,84 +224,42 @@ export class QuestionnairesComponent implements OnInit{
   calculateValuation() {
     let score = 0;
 
-    // Working status
-    if (this.workingStatus === 'Fully working') score += 40;
-    else if (this.workingStatus === 'Partially working') score += 25;
-    else score += 10;
+    // Functional Status (CG001)
+    const funcDesc = this.getFunctionalStatus();
+    if (funcDesc?.includes('Fully')) score += 40;
+    else if (funcDesc?.includes('Partially')) score += 25;
+    else if (funcDesc) score += 10;
 
-    // Component issues
-    if (this.selectedIssues.includes('None of the above')) score += 30;
-    else score += Math.max(0, 30 - this.selectedIssues.length * 5);
+    // Physical Condition (CG002)
+    const physDesc = this.getPhysicalCondition();
+    if (physDesc?.includes('Like New')) score += 30;
+    else if (physDesc?.includes('Minor')) score += 25;
+    else if (physDesc?.includes('Missing')) score += 15;
+    else if (physDesc?.includes('Heavily')) score += 10;
+    else if (physDesc?.includes('Rust')) score += 5;
 
-    // Physical condition
-    switch (this.physicalCondition) {
-      case 'Like New':
-        score += 30;
-        break;
-      case 'Minor Scratches':
-        score += 25;
-        break;
-      case 'Missing Parts':
-        score += 15;
-        break;
-      case 'Heavily Damaged':
-        score += 10;
-        break;
-      case 'Rust or Corrosion':
-        score += 5;
-        break;
-      default:
-        score += 0;
+    // Issues
+    const issueCount = this.getSelectedIssueDescriptions().length;
+    if (issueCount === 0 || this.getSelectedIssueDescriptions().includes('None of the above')) {
+      score += 30;
+    } else {
+      score += Math.max(0, 30 - issueCount * 5);
     }
 
-    // Clamp score to 100
     this.valuationScore = Math.min(score, 100);
-
-    // Label
-    if (this.valuationScore >= 85) this.valuationLabel = 'Excellent';
-    else if (this.valuationScore >= 70) this.valuationLabel = 'Good';
-    else if (this.valuationScore >= 50) this.valuationLabel = 'Fair';
-    else this.valuationLabel = 'Poor';
-
-    // Worth in RM (mock logic)
-    this.valuationWorth = Math.round((this.valuationScore / 100) * 1500); // Example base value = RM1500
+    this.valuationLabel = this.valuationScore >= 85 ? 'Excellent' 
+      : this.valuationScore >= 70 ? 'Good'
+      : this.valuationScore >= 50 ? 'Fair' : 'Poor';
+    this.valuationWorth = Math.round((this.valuationScore / 100) * 1500);
   }
 
 
   ngOnInit() {
     console.log('User:', this.currentUser());
     this.loadCategories(); // load actual types from backend
-    this.loadConditionGroups(); // load condition groups from backend
-  }
 
-  private loadConditionGroups(): void {
-    this.questionnaireService.getAllConditionOptions().subscribe({
-      next: (data) => {
-        if (data.groups && data.groups.length > 0) {
-          // Load ALL active condition groups
-          this.conditionGroups = data.groups;
-          console.log('✅ Loaded condition groups:', this.conditionGroups);
-
-          // Initialize selections for each group
-          this.conditionGroups.forEach(group => {
-            if (this.isChecklistGroup(group)) {
-              // Initialize checklist items as unselected
-              group.options.forEach(opt => {
-                this.selectedChecklistItems[opt.conditionID] = false;
-              });
-            } else {
-              // Initialize single-select groups as empty
-              this.selectedConditionByGroup[group.groupID] = '';
-            }
-          });
-
-          this.cdr.markForCheck();
-        }
-      },
-      error: (err) => {
-        console.error('Failed to load condition groups:', err);
-      }
-    });
+    // ALWAYS load condition groups on init
+    this.loadConditionGroups();
   }
 
   // Helper to check if a group is a checklist (multiple selection)
@@ -335,8 +343,10 @@ export class QuestionnairesComponent implements OnInit{
 
   set currentStep(value: number) {
     this._currentStep = value;
+    if (value === 3) {
+      this.loadConditionGroups();
+    }
     if (value === 5 && this.addresses().length === 0) {
-      console.log('STEP 5: Loading addresses...');
       this.loadAddresses();
     }
   }
@@ -382,7 +392,7 @@ export class QuestionnairesComponent implements OnInit{
     this.selectedBrand = this.brands.find(b => String(b.id) === String(this.selectedBrandId))?.name ?? '';
     if (!this.selectedBrandId) return;
 
-    this.questionnaireService.getModelsByBrand(this.selectedBrandId).subscribe({
+    this.questionnaireService.getModelsByCategoryBrand(this.applianceTypeId, this.selectedBrandId).subscribe({
       next: (ms) => {
         this.models = ms;
       },
@@ -405,6 +415,156 @@ export class QuestionnairesComponent implements OnInit{
     const m = this.models.find(x => String(x.id) === String(this.selectedModelId));
     return m ? String(m.name) : '';
   }
+
+
+  // Step 3 - Load Condition Groups and Options
+  loadConditionGroups() {
+    this.questionnaireService.getConditionGroups().subscribe({
+      next: (groups) => {
+        this.conditionGroups.set(groups);
+
+        // Initialize answers ONLY if they don't exist yet (preserve existing answers)
+        const currentAnswers = this.selectedAnswers();
+        const hasExistingAnswers = Object.keys(currentAnswers).length > 0;
+
+        if (!hasExistingAnswers) {
+          const initial: Record<string, any> = {};
+          groups.forEach(g => {
+            if (g.type === 'checkbox') initial[g.groupID] = [];
+            else if (g.type === 'radio' || g.type === 'image') initial[g.groupID] = '';
+            else if (g.type === 'textarea') initial[g.groupID] = '';
+          });
+          this.selectedAnswers.set(initial);
+        }
+
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Failed to load condition groups:', err);
+        this.alertService.error('Failed to load questions');
+      }
+    });
+  }
+
+  toggleChecklist(groupId: string, optionId: string) {
+    this.selectedAnswers.update(ans => {
+      const current = ans[groupId] || [];
+      if (current.includes(optionId)) {
+        return { ...ans, [groupId]: current.filter((id: string) => id !== optionId) };
+      } else {
+        return { ...ans, [groupId]: [...current, optionId] };
+      }
+    });
+    this.onAnswerChange();
+  }
+
+  onAnswerChange() {
+    this.cdr.markForCheck();
+    this.calculateValuation(); // if needed
+  }
+
+  selectImageOption(groupId: string, optionId: string) {
+    this.selectedAnswers.update(current => ({
+      ...current,
+      [groupId]: optionId
+    }));
+    this.onAnswerChange();
+  }
+
+  toggleChecklistOption(groupId: string, optionId: string) {
+    this.selectedAnswers.update(current => {
+      const currentList = (current[groupId] || []) as string[];
+      if (currentList.includes(optionId)) {
+        return {
+          ...current,
+          [groupId]: currentList.filter(id => id !== optionId)
+        };
+      } else {
+        return {
+          ...current,
+          [groupId]: [...currentList, optionId]
+        };
+      }
+    });
+    this.onAnswerChange();
+  }
+
+  // Get answer for a specific group (by groupID)
+  getAnswer(groupId: string): any {
+    return this.selectedAnswers()[groupId];
+  }
+
+  // Update answer for radio/textarea
+  updateAnswer(groupId: string, value: any) {
+    this.selectedAnswers.update(ans => ({...ans, [groupId]: value}));
+    this.onAnswerChange();
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // DYNAMIC ANSWER DISPLAY HELPERS (for Step 4 & 5)
+  // ─────────────────────────────────────────────────────────
+
+  // Get formatted answer for any question group
+  getFormattedAnswer(groupId: string): string {
+    const group = this.conditionGroups().find(g => g.groupID === groupId);
+    if (!group) return '—';
+
+    const answer = this.selectedAnswers()[groupId];
+
+    // For radio/image: single selection
+    if (group.type === 'radio' || group.type === 'image') {
+      if (!answer) return '—';
+      return group.options.find(opt => opt.id === answer)?.description || '—';
+    }
+
+    // For checkbox: multiple selections
+    if (group.type === 'checkbox') {
+      if (!Array.isArray(answer) || answer.length === 0) return 'None selected';
+      return answer
+        .map(id => group.options.find(opt => opt.id === id)?.description)
+        .filter(Boolean)
+        .join(', ');
+    }
+
+    // For textarea: free text
+    if (group.type === 'textarea') {
+      return answer || '—';
+    }
+
+    return '—';
+  }
+
+  // Get all answered questions (exclude file_upload)
+  getAnsweredQuestions() {
+    return this.conditionGroups()
+      .filter(g => g.type !== 'file_upload')
+      .map(g => ({
+        question: g.question,
+        sectionName: g.sectionName,
+        answer: this.getFormattedAnswer(g.groupID)
+      }));
+  }
+
+  // Backwards compatibility helpers (for existing hardcoded logic)
+  getFunctionalStatus(): string {
+    return this.getFormattedAnswer('CG001');
+  }
+
+  getPhysicalCondition(): string {
+    return this.getFormattedAnswer('CG002');
+  }
+
+  getSelectedIssueDescriptions(): string[] {
+    const group = this.conditionGroups().find(g => g.type === 'checkbox');
+    if (!group) return [];
+
+    const selectedIds = this.selectedAnswers()[group.groupID] || [];
+    return group.options
+      .filter(opt => selectedIds.includes(opt.id))
+      .map(opt => opt.description);
+  }
+
+
 
   // ──────────────────────────────────────────────────────────────────────
   //  ADDRESS CRUD -- step 5
@@ -587,24 +747,37 @@ export class QuestionnairesComponent implements OnInit{
   nextStep() {
     // Step 1 validation
     if (this.currentStep === 1 && !this.applianceTypeId) {
-      alert('Please select an appliance type.');
+      this.alertService.error('Please select an appliance type.');
       return;
     }
 
     // Step 2 validation
     if (this.currentStep === 2) {
       if (!this.selectedBrandId || !this.selectedModelId) {
-        alert('Please fill in all appliance details before continuing.');
+        this.alertService.error('Please fill in all appliance details before continuing.');
         return;
       }
     }
 
     // Step 3 validation (ensure physical condition and working status selected)
     if (this.currentStep === 3) {
-      if (!this.workingStatus || !this.physicalCondition) {
-        alert('Please answer all required questions.');
+      const unanswered = this.conditionGroups().filter(group => {
+        // Skip file_upload and textarea (optional)
+        if (group.type === 'file_upload' || group.type === 'textarea') return false;
+
+        const answer = this.selectedAnswers()[group.groupID];
+        return answer === undefined || answer === '' || answer === null || 
+              (Array.isArray(answer) && answer.length === 0);
+      });
+
+      if (unanswered.length > 0) {
+        this.alertService.error('Please complete all required questions.');
         return;
       }
+
+      // FILE UPLOAD IS 100% OPTIONAL — NO CHECK HERE
+      // User can skip even if file_upload group exists
+
       this.calculateValuation();
     }
 
@@ -618,7 +791,13 @@ export class QuestionnairesComponent implements OnInit{
         return;
       }
     }
-    if (this.currentStep < this.totalSteps) this.currentStep++;
+    if (this.currentStep < this.totalSteps) {
+      this.currentStep++;
+      // Update max step reached when moving forward
+      if (this.currentStep > this.maxStepReached) {
+        this.maxStepReached = this.currentStep;
+      }
+    }
   }
 
 
@@ -631,22 +810,28 @@ export class QuestionnairesComponent implements OnInit{
   }
 
   goToStep(step: number) {
-    // Optional: prevent jumping forward to unfinished steps
-    if (step <= this.currentStep) {
+    // Allow jumping to any step that user has already reached
+    if (step <= this.maxStepReached) {
       this.currentStep = step;
+    } else {
+      // Show warning if trying to skip ahead
+      this.alertService.error('Please complete the current step before proceeding.');
     }
+  }
+
+  // Helper to check if a step is accessible (for UI styling)
+  isStepAccessible(step: number): boolean {
+    return step <= this.maxStepReached;
   }
 
 
   startOver() {
     // Reset form and return to Step 1
     this.currentStep = 1;
+    this.maxStepReached = 1; // Reset max step reached
     this.applianceTypeId = '';
     this.selectedBrand = '';
-    this.selectedModel = '';
-    this.workingStatus = 'Partially working';
-    this.selectedIssues = [];
-    this.physicalCondition = '';
+    this.selectedModelId = '';
     this.notes = '';
     this.uploadedFiles = [];
     this.valuationScore = 0;
@@ -657,39 +842,91 @@ export class QuestionnairesComponent implements OnInit{
   }
 
   submitForm() {
-    const user = this.currentUser();
-    const defaultAddr = this.defaultAddress();
+    // Prevent double submission
+    if (this.isSubmitting) return;
+    this.isSubmitting = true;
 
-    if (!user || !defaultAddr?.id) {
-      this.alertService.error('Please log in and select address');
+    const defaultAddr = this.defaultAddress();
+    if (!defaultAddr?.id) {
+      this.alertService.error('Please select a pickup address');
+      this.isSubmitting = false;
       return;
     }
 
+    // ──────────────────────────────────────────────────────────────
+    // DYNAMIC SUBMISSION: Build answers array for ALL question groups
+    // ──────────────────────────────────────────────────────────────
+    const questionAnswers = this.conditionGroups().map(group => {
+      const answer = this.selectedAnswers()[group.groupID];
+
+      // For radio/image: single conditionID
+      if (group.type === 'radio' || group.type === 'image') {
+        return {
+          groupID: group.groupID,
+          type: group.type,
+          answer: answer || null, // conditionID
+          answerText: answer ? group.options.find(opt => opt.id === answer)?.description : null
+        };
+      }
+
+      // For checkbox: array of conditionIDs
+      if (group.type === 'checkbox') {
+        return {
+          groupID: group.groupID,
+          type: group.type,
+          answer: Array.isArray(answer) ? answer : [], // array of conditionIDs
+          answerText: Array.isArray(answer)
+            ? answer.map(id => group.options.find(opt => opt.id === id)?.description).filter(Boolean)
+            : []
+        };
+      }
+
+      // For textarea: free text
+      if (group.type === 'textarea') {
+        return {
+          groupID: group.groupID,
+          type: group.type,
+          answer: answer || null,
+          answerText: answer || null
+        };
+      }
+
+      // For file_upload: skip (handled separately)
+      return null;
+    }).filter(Boolean); // Remove nulls
+
+    // ──────────────────────────────────────────────────────────────
+    // PAYLOAD — FULLY DYNAMIC
+    // ──────────────────────────────────────────────────────────────
     const payload = {
-      modelId: this.selectedModelId,           // ← applianceID
-      workingStatus: this.workingStatus,
-      physicalCondition: this.physicalCondition,
-      notes: this.notes || null,
+      modelId: this.selectedModelId,
       addressId: defaultAddr.id,
-      valuationWorth: this.valuationWorth,
-      issues: JSON.stringify(this.selectedIssues),
-      conditionIds: JSON.stringify(this.getAllSelectedConditionIds()), // All selected condition IDs
       pickupDate: this.pickupDate,
-      pickupTime: this.pickupTime
+      pickupTime: this.pickupTime,
+      valuationWorth: this.valuationWorth,
+
+      // Send all answers as structured JSON
+      questionAnswers: JSON.stringify(questionAnswers)
     };
 
-    console.log('PAYLOAD →', payload);
-    console.log('Selected Condition IDs →', this.getAllSelectedConditionIds());
+    console.log('🚀 DYNAMIC PAYLOAD →', payload);
+    console.log('📋 Question Answers:', questionAnswers);
 
+    // ──────────────────────────────────────────────────────────────
+    // SUBMIT
+    // ──────────────────────────────────────────────────────────────
     this.questionnaireService.submitQuestionnaire(payload, this.uploadedFiles).subscribe({
-      next: (res) => {
-        this.alertService.success('Submitted!');
+      next: () => {
+        this.alertService.success('Submitted successfully!');
         this.currentStep = 6;
         this.cdr.markForCheck();
+        this.isSubmitting = false;
       },
       error: (err) => {
         console.error('Submit failed:', err);
-        this.alertService.error(err.error?.message || 'Failed');
+        this.alertService.error(err.error?.message || 'Submission failed. Please try again.');
+        this.cdr.markForCheck();
+        this.isSubmitting = false;
       }
     });
   }

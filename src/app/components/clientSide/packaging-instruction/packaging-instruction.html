@@ -1,5 +1,12 @@
 <div class="packaging-instruction-container">
-  <a class="back-link" routerLink="/previous">&lt; Back</a>
+  <div class="top-actions">
+    <span class="back-link" (click)="goBackToTransaction()">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M10 18L2 10L10 2L11.4 3.4L5.8 9H18V11H5.8L11.4 16.6L10 18Z"/>
+      </svg>
+      Back to Transaction Details
+    </span>
+  </div>
   <h1 class="title">Packaging Instructions</h1>
     <p class="details">Prepare your appliance for pickup</p>
   <section class="instruction-card">

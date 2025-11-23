@@ -29,7 +29,8 @@ router.post('/', createTransaction);
 // Update transaction status
 router.put('/:id/status', updateTransactionStatus);
 
-// Update transaction (full edit)
+
+// Update transaction (full edit - admin)
 router.put('/:id', updateTransaction);
 
 export default router;

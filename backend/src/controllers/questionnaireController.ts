@@ -23,6 +23,7 @@ export const getCategories = async (req: AuthRequest, res: Response) => {
     const result = await pool.query(
       `SELECT "categoryID" as id, "categoryName" as name 
        FROM "Category" 
+       WHERE "status" = 'ACTIVE'
        ORDER BY "categoryID" ASC`
     );
     
@@ -48,6 +49,7 @@ export const getBrandsByCategory = async (req: AuthRequest, res: Response) => {
        FROM "Appliance" a
        JOIN "Brand" b ON a."brandID" = b."brandID"
        WHERE a."categoryID" = $1
+       AND b."status" = 'ACTIVE'
        ORDER BY b."brandName" ASC`,
       [rawId]
     );
@@ -58,12 +60,15 @@ export const getBrandsByCategory = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: 'Failed to fetch brands' });
   }
 };
+
 // Get Models by Brand
 export const getModelsByBrand = async (req: AuthRequest, res: Response) => {
   try {
     console.log('getModelsByBrand req.params:', req.params);
-    const rawId = (req.params.brandId ?? req.params.brandID ?? req.params.id ?? '').toString().trim();
-    if (!rawId) {
+    //get categoryID and brandID from req.params
+    const rawCategoryId = (req.params.categoryId ?? req.params.categoryID ?? '').toString().trim();
+    const rawBrandId = (req.params.brandId ?? req.params.brandID ?? req.params.id ?? '').toString().trim();
+    if (!rawBrandId) {
       return res.status(400).json({ message: 'brandId is required' });
     }
 
@@ -71,8 +76,10 @@ export const getModelsByBrand = async (req: AuthRequest, res: Response) => {
       `SELECT "applianceID" AS id, "modelName" AS name, "modelCode" AS code
        FROM "Appliance"
        WHERE "brandID" = $1
+       AND "categoryID" = $2
+       AND "status" = 'ACTIVE'
        ORDER BY "modelName" ASC`,
-      [rawId]
+      [rawBrandId, rawCategoryId]
     );
 
     return res.json(result.rows);
@@ -81,6 +88,59 @@ export const getModelsByBrand = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: 'Failed to fetch models' });
   }
 };
+
+// Get Condition Group and Condition Options
+export const getConditionGroups = async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await pool.query(`
+          SELECT
+            cg."groupID",
+            cg."criteriaName" AS "sectionName",
+            cg."question_title" AS question,
+            cg."question_type" AS type,
+            cg."display_order" AS "displayOrder",
+            COALESCE(
+              json_agg(
+                json_build_object(
+                  'id', co."conditionID",
+                  'code', co.code,
+                  'description', co.description,
+                  'image',
+                    CASE
+                      WHEN co.image IS NOT NULL AND co.image != ''
+                      THEN 'http://localhost:3000' || co.image
+                      ELSE NULL
+                    END
+                )
+                ORDER BY co."conditionID"
+              ) FILTER (WHERE co."conditionID" IS NOT NULL),
+              '[]'
+            ) AS options
+
+          FROM "ConditionGroup" cg
+          LEFT JOIN "ConditionOption" co
+            ON co."groupID" = cg."groupID"
+          AND co.status = 'ACTIVE'          -- ONLY ACTIVE OPTIONS
+          WHERE cg.status = 'ACTIVE'          -- ONLY ACTIVE GROUPS
+          GROUP BY
+            cg."groupID",
+            cg."criteriaName",
+            cg."question_title",
+            cg."question_type",
+            cg."display_order"
+          ORDER BY cg."display_order" ASC;
+        `);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get condition groups error:', error);
+    res.status(500).json({ message: 'Failed to fetch condition groups' });
+  }
+};
+
+
+
+
 
 // ---------- Multer: Save to local uploads (fallback) ----------
 const uploadDir = path.join(__dirname, '../../uploads/questionnaire');
@@ -123,39 +183,32 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    console.log('BODY →', req.body);
-    console.log('FILES →', req.files);
+    console.log('📦 BODY →', req.body);
+    console.log('📁 FILES →', req.files);
 
     const {
       modelId,
-      workingStatus,
-      physicalCondition,
-      notes,
       addressId,
       valuationWorth,
-      issues: issuesJson = '[]',
-      conditionIds: conditionIdsJson = '[]',
       pickupDate,
-      pickupTime
+      pickupTime,
+      questionAnswers: questionAnswersJson
     } = req.body;
 
-    let issues: string[] = [];
-    try {
-      issues = JSON.parse(issuesJson);
-    } catch (e) {
-      console.warn('Failed to parse issues, using empty array');
-    }
-
-    let conditionIds: string[] = [];
-    try {
-      conditionIds = JSON.parse(conditionIdsJson);
-    } catch (e) {
-      console.warn('Failed to parse conditionIds, using empty array');
-    }
-
-    if (!modelId || !addressId || !workingStatus || !physicalCondition) {
+    if (!modelId || !addressId) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
+
+    // Parse dynamic question answers
+    let questionAnswers: any[] = [];
+    try {
+      questionAnswers = JSON.parse(questionAnswersJson || '[]');
+    } catch (e) {
+      console.error('Failed to parse questionAnswers:', e);
+      return res.status(400).json({ message: 'Invalid question answers format' });
+    }
+
+    console.log('📋 Parsed Question Answers:', questionAnswers);
 
     // Get seller_id from users table
     const userRes = await client.query(
@@ -164,6 +217,21 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
     );
     if (!userRes.rows[0]?.seller_id) throw new Error('User not found');
     const sellerId = userRes.rows[0].seller_id;
+
+    // ─────────────────────────────────────────────────────────
+    // EXTRACT SPECIFIC FIELDS FROM DYNAMIC ANSWERS
+    // ─────────────────────────────────────────────────────────
+
+    // Strategy: Match by groupID directly (most reliable)
+    // CG001 = Functional Status
+    // CG002 = Physical Condition
+    const functionalAnswer = questionAnswers.find(qa => qa.groupID === 'CG001');
+    const physicalAnswer = questionAnswers.find(qa => qa.groupID === 'CG002');
+    const notesAnswer = questionAnswers.find(qa => qa.type === 'textarea');
+
+    console.log('🔍 Functional Answer:', functionalAnswer);
+    console.log('🔍 Physical Answer:', physicalAnswer);
+    console.log('🔍 Notes Answer:', notesAnswer);
 
     // Generate SAxxx ID
     const submittedApplianceID = await generateSubmittedApplianceID(client);
@@ -181,21 +249,50 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
         sellerId,
         modelId,
         addressId,
-        workingStatus,
-        physicalCondition,
+        functionalAnswer?.answerText || 'Not Specified',
+        physicalAnswer?.answerText || 'Not Specified',
         parseFloat(valuationWorth) || 0,
-        notes === 'null' ? null : notes || null
+        notesAnswer?.answer || null
       ]
     );
 
-
     const finalId = subRes.rows[0].submittedApplianceID;
+
+    // ─────────────────────────────────────────────────────────
+    // SAVE ALL ANSWERS TO ConditionSelected (for ALL types)
+    // ─────────────────────────────────────────────────────────
+    for (const qa of questionAnswers) {
+      // For radio/image: single conditionID
+      if ((qa.type === 'radio' || qa.type === 'image') && qa.answer) {
+        await client.query(
+          `INSERT INTO "ConditionSelected"
+          ("conditionID", "submittedApplianceID", "isChecked", "created_at")
+          VALUES ($1, $2, true, NOW())`,
+          [qa.answer, finalId]
+        );
+      }
+
+      // For checkbox: array of conditionIDs
+      if (qa.type === 'checkbox' && Array.isArray(qa.answer)) {
+        for (const conditionID of qa.answer) {
+          await client.query(
+            `INSERT INTO "ConditionSelected"
+            ("conditionID", "submittedApplianceID", "isChecked", "created_at")
+            VALUES ($1, $2, true, NOW())`,
+            [conditionID, finalId]
+          );
+        }
+      }
+    }
+
+    console.log(`✅ Saved ${questionAnswers.length} question answers for ${finalId}`);
 
     // Insert Pickup Table
     if (!pickupDate || !pickupTime) {
       throw new Error('Please select pickup date and time');
     }
 
+    // Insert Pickup Table
     await client.query(
       `INSERT INTO "Pickup" (
         "submittedApplianceID", 
@@ -236,40 +333,6 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       [transactionId]
     );
 
-    // Save selected conditions/issues to ConditionSelected table
-    if (issues && issues.length > 0) {
-      console.log(`📋 Processing ${issues.length} selected issues:`, issues);
-      let savedCount = 0;
-
-      for (const issueText of issues) {
-        // Try to find matching conditionID by description (case-insensitive)
-        const conditionResult = await client.query(
-          `SELECT "conditionID", description FROM "ConditionOption"
-           WHERE LOWER(description) = LOWER($1)
-           OR LOWER(description) LIKE LOWER($2)
-           LIMIT 1`,
-          [issueText, `%${issueText}%`]
-        );
-
-        if (conditionResult.rows.length > 0) {
-          const conditionId = conditionResult.rows[0].conditionID;
-
-          // Let database generate conditionSelectionID using sequence (CS001, CS002, etc.)
-          await client.query(
-            `INSERT INTO "ConditionSelected" ("conditionID", "submittedApplianceID", "isChecked", created_at)
-             VALUES ($1, $2, true, NOW())`,
-            [conditionId, finalId]
-          );
-          savedCount++;
-          console.log(`✅ Saved condition: "${issueText}" -> ${conditionId}`);
-        } else {
-          console.warn(`⚠️ Condition not found for issue: "${issueText}"`);
-        }
-      }
-      console.log(`✅ Saved ${savedCount}/${issues.length} selected conditions for ${finalId}`);
-    } else {
-      console.log(`ℹ️ No issues to save for ${finalId}`);
-    }
 
     // Upload photos to Supabase Storage
     const files = req.files as Express.Multer.File[];

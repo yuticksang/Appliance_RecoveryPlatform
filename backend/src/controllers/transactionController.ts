@@ -149,8 +149,11 @@ export const getTransactionById = async (req: Request, res: Response) => {
         COALESCE(i."itemStatus", 'Awaiting Pick Up') as "itemStatus",
         i."updatedAt" as "itemStatusUpdatedAt",
         COALESCE(b."brandName", 'Unknown') as brand,
+        b."brandID" as "brandId",
         COALESCE(c."categoryName", 'Unknown') as category,
+        c."categoryID" as "categoryId",
         COALESCE(a."modelCode", 'N/A') as model,
+        a."applianceID" as "modelId",
         COALESCE(a."modelName", 'N/A') as "modelName",
         COALESCE(a.image_url, '') as "imageUrl",
         pa."receiverName" as "addressName",
@@ -474,3 +477,5 @@ export const updateTransaction = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Failed to update transaction', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 };
+
+

@@ -16,20 +16,21 @@ export interface SimpleItem {
 }
 
 export interface ConditionOption {
-  conditionID: string;
-  groupID: string;
+  id: string;
   code: string;
   description: string;
   image: string | null;
-  question: string | null;
-  status?: string;
 }
 
 export interface ConditionGroup {
   groupID: string;
-  criteriaName: string;
+  sectionName: string;
+  question: string;
+  type: 'radio' | 'image' | 'checkbox' | 'file_upload' | 'textarea';
+  displayOrder: number;
   options: ConditionOption[];
 }
+
 @Injectable({ providedIn: 'root' })
 export class QuestionnaireService {
   private http = inject(HttpClient);
@@ -62,9 +63,9 @@ export class QuestionnaireService {
     );
   }
 
-  getModelsByBrand(brandId: string | number): Observable<SimpleItem[]> {
+  getModelsByCategoryBrand(categoryId: string | number, brandId: string | number): Observable<SimpleItem[]> {
     if (!brandId) return of([]);
-    return this.http.get<SimpleItem[]>(`${this.api}/models/${brandId}`, this.buildHeaders()).pipe(
+    return this.http.get<SimpleItem[]>(`${this.api}/models/${categoryId}/${brandId}`, this.buildHeaders()).pipe(
       catchError(err => {
         console.warn('Failed to load models', err);
         return of([]);
@@ -89,33 +90,11 @@ export class QuestionnaireService {
     });
   }
 
-  // Get all condition groups with their options for questionnaire
-  getConditionGroups(): Observable<ConditionGroup[]> {
-    return this.http.get<any[]>(`${this.api}/admin/condition-groups`, this.buildHeaders()).pipe(
-      concatMap(groups => {
-        // For each group, fetch its options
-        if (groups.length === 0) return of([]);
 
-        return from(groups).pipe(
-          concatMap(group =>
-            this.http.get<ConditionOption[]>(`${this.api}/admin/condition-options/group/${group.groupID}`, this.buildHeaders()).pipe(
-              map(options => ({
-                groupID: group.groupID,
-                criteriaName: group.criteriaName,
-                options: options.filter(opt => opt.status === 'ACTIVE' || !opt.status)
-              } as ConditionGroup)),
-              catchError(() => of({
-                groupID: group.groupID,
-                criteriaName: group.criteriaName,
-                options: []
-              } as ConditionGroup))
-            )
-          ),
-          // Collect all groups into array
-          map(group => [group]),
-          concatMap((groups, index) => index === 0 ? of(groups) : of(groups))
-        );
-      }),
+
+  // NEW: Fetch dynamic condition groups (questions + options)
+  getConditionGroups(): Observable<ConditionGroup[]> {
+    return this.http.get<ConditionGroup[]>(`${this.api}/condition-groups`, this.buildHeaders()).pipe(
       catchError(err => {
         console.warn('Failed to load condition groups', err);
         return of([]);
@@ -123,37 +102,27 @@ export class QuestionnaireService {
     );
   }
 
-  // Simpler approach - get all options at once
-  getAllConditionOptions(): Observable<{groups: ConditionGroup[]}> {
-    return this.http.get<any[]>(`${this.api}/admin/condition-options`, this.buildHeaders()).pipe(
-      map(options => {
-        // Group options by groupID
-        const groupMap = new Map<string, ConditionGroup>();
+  // Submit with photos
+  // submitQuestionnaire(data: any, photos: File[]): Observable<any> {
+  //   const form = new FormData();
 
-        options.forEach(opt => {
-          if (!groupMap.has(opt.groupID)) {
-            groupMap.set(opt.groupID, {
-              groupID: opt.groupID,
-              criteriaName: opt.criteriaName || 'Unknown',
-              options: []
-            });
-          }
-          groupMap.get(opt.groupID)!.options.push({
-            conditionID: opt.conditionID,
-            groupID: opt.groupID,
-            code: opt.code,
-            description: opt.description,
-            image: opt.image,
-            question: opt.question
-          });
-        });
+  //   // Append all form fields
+  //   Object.entries(data).forEach(([key, value]) => {
+  //     if (value !== null && value !== undefined) {
+  //       if (Array.isArray(value)) {
+  //         form.append(key, JSON.stringify(value));
+  //       } else {
+  //         form.append(key, String(value));
+  //       }
+  //     }
+  //   });
 
-        return { groups: Array.from(groupMap.values()) };
-      }),
-      catchError(err => {
-        console.warn('Failed to load conditions', err);
-        return of({ groups: [] });
-      })
-    );
-  }
+  //   // Append photos
+  //   photos.forEach((file, index) => {
+  //     form.append('photos', file, file.name);
+  //   });
+
+  //   return this.http.post(`${this.api}/questionnaire/submit`, form);
+  // }
+
 }

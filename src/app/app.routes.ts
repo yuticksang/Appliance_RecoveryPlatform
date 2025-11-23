@@ -18,12 +18,12 @@ export const routes: Routes = [
       { path: 'register', canActivate: [guestGuard], loadComponent: () => import('./components/clientSide/register/auth-register').then(m => m.AuthRegisterComponent) },
       { path: 'forgot-password', canActivate: [guestGuard], loadComponent: () => import('./components/clientSide/forgot/forgot').then(m => m.ForgotPasswordComponent) },
       { path: 'reset-password/:token', canActivate: [guestGuard], loadComponent: () => import('./components/clientSide/reset/reset').then(m => m.ResetPasswordComponent) },
-      { path: 'transactions', canActivate: [sellerGuard], loadComponent: () => import('./components/clientSide/transactions/transactions').then(m => m.TransactionsComponent) },
-      { path: 'transactions/:id', canActivate: [sellerGuard], loadComponent: () => import('./components/clientSide/transaction-detail/transaction-detail').then(m => m.TransactionDetailComponent) },
       { path: '', redirectTo: 'home', pathMatch: 'full' },
       { path: 'questionnaire', canActivate: [sellerGuard], loadComponent: () => import('./components/clientSide/questionnaires/questionnaires').then(m => m.QuestionnairesComponent) },
       { path: 'recovery-slip', canActivate: [sellerGuard], loadComponent: () => import('./components/clientSide/recovery-slip/recovery-slip').then(m => m.RecoverySlipComponent) },
-      { path: 'packaging-instruction', canActivate: [sellerGuard], loadComponent: () => import('./components/clientSide/packaging-instruction/packaging-instruction').then(m => m.PackagingInstruction) }
+      { path: 'packaging-instruction', canActivate: [sellerGuard], loadComponent: () => import('./components/clientSide/packaging-instruction/packaging-instruction').then(m => m.PackagingInstruction) },
+      { path: 'transactions', canActivate: [sellerGuard], loadComponent: () => import('./components/clientSide/transactions/transactions').then(m => m.TransactionsComponent) },
+      { path: 'transaction-detail/:id', canActivate: [sellerGuard], loadComponent: () => import('./components/clientSide/transaction-detail/transaction-detail').then(m => m.TransactionDetailComponent) }
     ]
   },
 
