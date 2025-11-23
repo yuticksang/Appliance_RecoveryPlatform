@@ -220,32 +220,26 @@
                 <p class="detail-value">{{ beforeReview.category }}</p>
               </div>
               <div class="detail-item">
-                <h4 class="detail-label">FUNCTIONAL STATUS</h4>
-                <p class="detail-value">{{ beforeReview.functionalStatus }}</p>
-              </div>
-              <div class="detail-item">
-                <h4 class="detail-label">CONDITION</h4>
-                <p class="detail-value">{{ beforeReview.condition }}</p>
-              </div>
-              <div class="detail-item">
                 <h4 class="detail-label">SCORE</h4>
                 <p class="detail-value">{{ beforeReview.score }}</p>
               </div>
             </div>
+
+            <!-- Dynamic Condition Groups -->
+            <div class="condition-groups-section" *ngIf="hasConditionGroups()">
+              <div *ngFor="let groupName of getConditionGroupNames()" class="condition-group">
+                <h4 class="condition-group-label">{{ groupName | uppercase }}</h4>
+                <ul class="condition-list">
+                  <li *ngFor="let condition of conditionGroups[groupName]" class="condition-item">
+                    <span class="check-icon">✓</span> {{ condition }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+
             <div class="note-section">
               <h4 class="note-label">NOTE</h4>
               <p class="note-value">{{ beforeReview.note }}</p>
-            </div>
-            <div class="idea-section">
-              <h4 class="idea-label">SELECTED ISSUE</h4>
-              <ul class="idea-list" *ngIf="beforeReview.selectedIssue.length > 0; else noBeforeIssues">
-                <li *ngFor="let issue of beforeReview.selectedIssue" class="idea-item">
-                  <span class="check-icon">✓</span> {{ issue }}
-                </li>
-              </ul>
-              <ng-template #noBeforeIssues>
-                <p class="no-issues">No issues reported</p>
-              </ng-template>
             </div>
           </div>
 
@@ -270,32 +264,26 @@
                 <p class="detail-value">{{ afterReview.category }}</p>
               </div>
               <div class="detail-item">
-                <h4 class="detail-label">FUNCTIONAL STATUS</h4>
-                <p class="detail-value">{{ afterReview.functionalStatus }}</p>
-              </div>
-              <div class="detail-item">
-                <h4 class="detail-label">CONDITION</h4>
-                <p class="detail-value">{{ afterReview.condition }}</p>
-              </div>
-              <div class="detail-item">
                 <h4 class="detail-label">SCORE</h4>
                 <p class="detail-value">{{ afterReview.score }}</p>
               </div>
             </div>
+
+            <!-- Dynamic Condition Groups -->
+            <div class="condition-groups-section" *ngIf="hasConditionGroups()">
+              <div *ngFor="let groupName of getConditionGroupNames()" class="condition-group">
+                <h4 class="condition-group-label">{{ groupName | uppercase }}</h4>
+                <ul class="condition-list">
+                  <li *ngFor="let condition of conditionGroups[groupName]" class="condition-item">
+                    <span class="check-icon">✓</span> {{ condition }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+
             <div class="note-section">
               <h4 class="note-label">NOTE</h4>
               <p class="note-value">{{ afterReview.note }}</p>
-            </div>
-            <div class="idea-section">
-              <h4 class="idea-label">SELECTED ISSUE</h4>
-              <ul class="idea-list" *ngIf="afterReview.selectedIssue.length > 0; else noAfterIssues">
-                <li *ngFor="let issue of afterReview.selectedIssue" class="idea-item">
-                  <span class="check-icon">✓</span> {{ issue }}
-                </li>
-              </ul>
-              <ng-template #noAfterIssues>
-                <p class="no-issues">No issues reported</p>
-              </ng-template>
             </div>
           </div>
         </div>
@@ -312,27 +300,39 @@
           <div class="details-grid">
             <div class="detail-item">
               <h4 class="detail-label">BRAND</h4>
-              <p class="detail-value">{{ applianceInfo.brand }}</p>
+              <p class="detail-value">{{ applianceInfo.brand || 'N/A' }}</p>
             </div>
             <div class="detail-item">
               <h4 class="detail-label">MODEL</h4>
-              <p class="detail-value">{{ applianceInfo.model }}</p>
+              <p class="detail-value">{{ applianceInfo.model || 'N/A' }}</p>
             </div>
             <div class="detail-item">
               <h4 class="detail-label">CATEGORY</h4>
-              <p class="detail-value">{{ applianceInfo.category }}</p>
+              <p class="detail-value">{{ applianceInfo.category || 'N/A' }}</p>
             </div>
             <div class="detail-item">
+              <h4 class="detail-label">MODEL NAME</h4>
+              <p class="detail-value">{{ applianceInfo.modelName || 'N/A' }}</p>
+            </div>
+            <div class="detail-item" *ngIf="applianceInfo.functionalStatus">
               <h4 class="detail-label">FUNCTIONAL STATUS</h4>
               <p class="detail-value">{{ applianceInfo.functionalStatus }}</p>
             </div>
-            <div class="detail-item">
-              <h4 class="detail-label">CONDITION</h4>
-              <p class="detail-value">{{ applianceInfo.condition }}</p>
+            <div class="detail-item" *ngIf="applianceInfo.appearanceStatus">
+              <h4 class="detail-label">APPEARANCE STATUS</h4>
+              <p class="detail-value">{{ applianceInfo.appearanceStatus }}</p>
             </div>
-            <div class="detail-item">
-              <h4 class="detail-label">SCORE</h4>
-              <p class="detail-value">{{ applianceInfo.score }}</p>
+          </div>
+
+          <!-- Dynamic Condition Groups -->
+          <div class="condition-groups-section" *ngIf="hasConditionGroups()">
+            <div *ngFor="let groupName of getConditionGroupNames()" class="condition-group">
+              <h4 class="condition-group-label">{{ groupName | uppercase }}</h4>
+              <ul class="condition-list">
+                <li *ngFor="let condition of conditionGroups[groupName]" class="condition-item">
+                  <span class="check-icon">✓</span> {{ condition }}
+                </li>
+              </ul>
             </div>
           </div>
 
@@ -340,19 +340,6 @@
           <div class="note-section">
             <h4 class="note-label">NOTE</h4>
             <p class="note-value">{{ applianceInfo.note }}</p>
-          </div>
-
-          <!-- Selected Issue -->
-          <div class="idea-section">
-            <h4 class="idea-label">SELECTED ISSUE</h4>
-            <ul class="idea-list" *ngIf="applianceInfo.selectedIssue.length > 0; else noIssues">
-              <li *ngFor="let issue of applianceInfo.selectedIssue" class="idea-item">
-                <span class="check-icon">✓</span> {{ issue }}
-              </li>
-            </ul>
-            <ng-template #noIssues>
-              <p class="no-issues">No issues reported</p>
-            </ng-template>
           </div>
         </div>
       </div>

@@ -51,6 +51,52 @@ export const getAllConditionGroups = async (req: Request, res: Response) => {
   }
 };
 
+// Get active condition groups with their active options (for admin edit dropdowns)
+export const getActiveConditionGroupsWithOptions = async (req: Request, res: Response) => {
+  try {
+    // Get all active condition groups
+    const groupsResult = await pool.query(`
+      SELECT
+        cg."groupID",
+        cg."criteriaName",
+        cg."question_title",
+        cg."question_type",
+        cg."display_order"
+      FROM "ConditionGroup" cg
+      WHERE cg."status" = 'ACTIVE'
+      ORDER BY COALESCE(cg."display_order", 999999) ASC, cg."created_at" ASC
+    `);
+
+    // Get all active options for active groups
+    const optionsResult = await pool.query(`
+      SELECT
+        co."conditionID",
+        co."groupID",
+        co.code,
+        co.description
+      FROM "ConditionOption" co
+      INNER JOIN "ConditionGroup" cg ON co."groupID" = cg."groupID"
+      WHERE co."status" = 'ACTIVE' AND cg."status" = 'ACTIVE'
+      ORDER BY co.created_at ASC
+    `);
+
+    // Group options by groupID
+    const groupsWithOptions = groupsResult.rows.map(group => ({
+      ...group,
+      options: optionsResult.rows.filter(opt => opt.groupID === group.groupID)
+    }));
+
+    console.log('📂 Fetched active condition groups with options:', groupsWithOptions.length);
+    res.json(groupsWithOptions);
+  } catch (error: any) {
+    console.error('Get active condition groups with options error:', error);
+    res.status(500).json({
+      message: 'Failed to fetch condition groups with options',
+      error: error.message
+    });
+  }
+};
+
 export const createConditionGroup = async (req: Request, res: Response) => {
   try {
     const { criteriaName, criteriaCodePrefix, question_title, question_type } = req.body;

@@ -59,11 +59,8 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     brand: '',
     model: '',
     category: '',
-    functionalStatus: '',
-    condition: '',
     score: 0,
-    note: '',
-    selectedIssue: [] as string[]
+    note: ''
   };
 
   // After review - admin's assessment
@@ -72,25 +69,35 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     brand: '',
     model: '',
     category: '',
-    functionalStatus: '',
-    condition: '',
     score: 0,
-    note: '',
-    selectedIssue: [] as string[]
+    note: ''
   };
 
   // For non-awaiting status, use single appliance info
-  applianceInfo = {
+  applianceInfo: {
+    estimatedPrice: number;
+    brand: string;
+    model: string;
+    modelName: string;
+    category: string;
+    functionalStatus: string;
+    appearanceStatus: string;
+    score: number;
+    note: string;
+  } = {
     estimatedPrice: 0,
     brand: '',
     model: '',
+    modelName: '',
     category: '',
     functionalStatus: '',
-    condition: '',
+    appearanceStatus: '',
     score: 0,
-    note: '',
-    selectedIssue: [] as string[]
+    note: ''
   };
+
+  // Dynamic condition groups from backend (e.g., "Functional Status", "Appearance Status", "Checklist")
+  conditionGroups: { [key: string]: string[] } = {};
 
   // Check if transaction needs review comparison
   get isAwaitingConfirmation(): boolean {
@@ -273,8 +280,8 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   }
 
   loadRealDetails(data: any): void {
-    // Get selected issues from API response
-    const selectedIssues = data.selectedIssues || [];
+    // Load dynamic condition groups from backend
+    this.conditionGroups = data.conditionGroups || {};
 
     // If awaiting confirmation, show before/after review comparison
     if (this.isAwaitingConfirmation) {
@@ -284,11 +291,8 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         brand: data.brand,
         model: data.model,
         category: data.category,
-        functionalStatus: data.initialFunctionalStatus || 'N/A',
-        condition: data.initialPhysicalCondition || 'N/A',
-        score: this.calculateScore(data.initialFunctionalStatus, data.initialPhysicalCondition),
-        note: data.note || 'No notes',
-        selectedIssue: selectedIssues
+        score: this.calculateScoreFromGroups(this.conditionGroups),
+        note: data.note || 'No notes'
       };
 
       // After review - admin's assessment (revised price & condition)
@@ -297,11 +301,8 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         brand: data.brand,
         model: data.model,
         category: data.category,
-        functionalStatus: data.finalFunctionalStatus || data.initialFunctionalStatus || 'N/A',
-        condition: data.finalPhysicalCondition || data.initialPhysicalCondition || 'N/A',
-        score: this.calculateScore(data.finalFunctionalStatus, data.finalPhysicalCondition),
-        note: data.note || 'No notes',
-        selectedIssue: selectedIssues
+        score: this.calculateScoreFromGroups(this.conditionGroups),
+        note: data.note || 'No notes'
       };
     } else {
       // For other statuses, use current appliance info
@@ -309,40 +310,53 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         estimatedPrice: data.finalPrice || data.estimatedPrice || 0,
         brand: data.brand,
         model: data.model,
+        modelName: data.modelName,
         category: data.category,
-        functionalStatus: data.finalFunctionalStatus || data.initialFunctionalStatus || 'N/A',
-        condition: data.finalPhysicalCondition || data.initialPhysicalCondition || 'N/A',
-        score: this.calculateScore(
-          data.finalFunctionalStatus || data.initialFunctionalStatus,
-          data.finalPhysicalCondition || data.initialPhysicalCondition
-        ),
-        note: data.note || 'No notes',
-        selectedIssue: selectedIssues
+        functionalStatus: data.initialFunctionalStatus,
+        appearanceStatus: data.initialPhysicalCondition,
+        score: this.calculateScoreFromGroups(this.conditionGroups),
+        note: data.note || 'No notes'
       };
     }
   }
 
-  // Helper function to calculate score based on condition
-  private calculateScore(functionalStatus: string, physicalCondition: string): number {
+  // Helper to get condition group names for iteration in template
+  getConditionGroupNames(): string[] {
+    return Object.keys(this.conditionGroups);
+  }
+
+  // Helper to check if there are any condition groups
+  hasConditionGroups(): boolean {
+    return Object.keys(this.conditionGroups).length > 0;
+  }
+
+  // Helper function to calculate score based on dynamic condition groups
+  private calculateScoreFromGroups(groups: { [key: string]: string[] }): number {
     let score = 0;
+    const allConditions = Object.values(groups).flat();
 
-    // Functional status scoring
-    if (functionalStatus?.includes('Working') || functionalStatus?.includes('Functioning')) {
-      score += 50;
-    } else if (functionalStatus?.includes('Minor')) {
-      score += 30;
-    }
+    // Score based on common condition keywords
+    allConditions.forEach(condition => {
+      const lowerCondition = condition.toLowerCase();
 
-    // Physical condition scoring
-    if (physicalCondition?.includes('Excellent') || physicalCondition?.includes('New')) {
-      score += 50;
-    } else if (physicalCondition?.includes('Good')) {
-      score += 40;
-    } else if (physicalCondition?.includes('Fair')) {
-      score += 30;
-    }
+      // Functional status scoring
+      if (lowerCondition.includes('fully functioning') || lowerCondition.includes('working')) {
+        score += 30;
+      } else if (lowerCondition.includes('partially')) {
+        score += 15;
+      }
 
-    return score;
+      // Physical condition scoring
+      if (lowerCondition.includes('new') || lowerCondition.includes('excellent')) {
+        score += 30;
+      } else if (lowerCondition.includes('good') || lowerCondition.includes('minor')) {
+        score += 20;
+      } else if (lowerCondition.includes('fair')) {
+        score += 10;
+      }
+    });
+
+    return Math.min(score, 100); // Cap at 100
   }
 
   goBack(): void {

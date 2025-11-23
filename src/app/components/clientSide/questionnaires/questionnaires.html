@@ -66,45 +66,52 @@
   <div *ngIf="currentStep === 3" class="form-container">
     <h3 class="step-title">Step 3: Appliance Condition</h3>
 
-    <div class="form-section">
-      <label class="question">1. Is the appliance currently working?</label>
-      <select class="form-select" [(ngModel)]="workingStatus">
-        <option>Fully working</option>
-        <option>Partially working</option>
-        <option>Not working</option>
-      </select>
-    </div>
+    <!-- Dynamic Single-Select Condition Groups (Functional Status, Appearance Status, etc.) -->
+    <ng-container *ngFor="let group of getSingleSelectGroups(); let i = index">
+      <div class="form-section">
+        <label class="question">{{ i + 1 }}. {{ group.criteriaName }}</label>
 
-    <div class="form-section">
-      <label class="question">2. Does the appliance have any of the following issues?</label>
+        <!-- If group has images, show as cards -->
+        <div *ngIf="group.options[0]?.image" class="physical-grid">
+          <div *ngFor="let option of group.options"
+               (click)="selectConditionOption(group.groupID, option.conditionID, option.description)"
+               [ngClass]="{'selected': selectedConditionByGroup[group.groupID] === option.conditionID}"
+               class="physical-card">
+            <img [src]="option.image" [alt]="option.description" />
+            <p>{{ option.description }}</p>
+          </div>
+        </div>
 
-      <!-- Display checklist options from database -->
-      <div class="checkbox-list">
-        <label *ngFor="let issue of issues" class="checkbox-item">
-          <input type="checkbox"
-                 [checked]="selectedIssues.includes(issue)"
-                 (change)="toggleIssue(issue)" />
-          {{ issue }}
-        </label>
+        <!-- If no images, show as dropdown/select -->
+        <select *ngIf="!group.options[0]?.image" class="form-select"
+                [ngModel]="selectedConditionByGroup[group.groupID]"
+                (ngModelChange)="selectConditionOption(group.groupID, $event, getOptionDescription(group, $event))">
+          <option value="">Select {{ group.criteriaName }}</option>
+          <option *ngFor="let option of group.options" [value]="option.conditionID">
+            {{ option.description }}
+          </option>
+        </select>
       </div>
-    </div>
+    </ng-container>
 
-    <div class="form-section">
-      <label class="question">3. What is the physical condition of the appliance?</label>
-      <div class="physical-grid">
-        <div *ngFor="let option of physicalOptions"
-             (click)="physicalCondition = option.label"
-             [ngClass]="{'selected': physicalCondition === option.label}"
-             class="physical-card">
-          <img [src]="option.img" [alt]="option.label" />
-          <p>{{ option.label }}</p>
+    <!-- Dynamic Checklist Groups -->
+    <ng-container *ngFor="let group of getChecklistGroups(); let i = index">
+      <div class="form-section">
+        <label class="question">{{ getSingleSelectGroups().length + i + 1 }}. {{ group.criteriaName }}</label>
+        <div class="checkbox-list">
+          <label *ngFor="let option of group.options" class="checkbox-item">
+            <input type="checkbox"
+                   [checked]="selectedChecklistItems[option.conditionID]"
+                   (change)="toggleChecklistItem(option.conditionID, option.description)" />
+            {{ option.description }}
+          </label>
         </div>
       </div>
-    </div>
+    </ng-container>
 
     <!-- Upload Photos -->
     <div class="form-section">
-      <label class="question">4. Upload Photos (Optional)</label>
+      <label class="question">{{ conditionGroups.length + 1 }}. Upload Photos (Optional)</label>
       <div class="upload-box"
            (drop)="onFileDropped($event)"
            (dragover)="$event.preventDefault()">
@@ -127,7 +134,7 @@
 
     <!-- Notes -->
     <div class="form-section">
-      <label class="question">5. Additional Notes (Optional)</label>
+      <label class="question">{{ conditionGroups.length + 2 }}. Additional Notes (Optional)</label>
       <textarea class="text-area" [(ngModel)]="notes" placeholder="Say something..."></textarea>
     </div>
 

@@ -54,31 +54,22 @@ export class QuestionnairesComponent implements OnInit{
   
 
   // Step 3 - Condition Questionnaires
-  workingStatus: string = 'Partially working';
-  selectedConditionIds: string[] = [];  // Store conditionIDs instead of text
-  physicalCondition: string = '';
   notes: string = '';
   uploadedFiles: File[] = [];
 
-  // Condition groups from database
+  // Dynamic condition groups from database (e.g., Functional Status, Appearance Status, Checklist)
   conditionGroups: ConditionGroup[] = [];
 
-  // Fallback hardcoded issues (will be replaced by DB data)
-  issues: string[] = [
-    'Unusual sounds',
-    'Machine draining and spinning properly',
-    'Buttons, controls, and settings working correctly',
-    'Water leaking'
-  ];
-  selectedIssues: string[] = []; // Keep for backward compatibility
+  // Track selected options for each group: { groupID: selectedConditionID }
+  selectedConditionByGroup: { [groupID: string]: string } = {};
 
-  physicalOptions = [
-    { id: 'a', label: 'Like New', img: '../../../assets/image/like-new.png' },
-    { id: 'b', label: 'Minor Scratches', img: '../../../assets/image/minor-scratches.png' },
-    { id: 'c', label: 'Missing Parts', img: '../../../assets/image/missing-parts.png' },
-    { id: 'd', label: 'Heavily Damaged', img: '../../../assets/image/heavily-damaged.png' },
-    { id: 'e', label: 'Rust or Corrosion', img: '../../../assets/image/rust.png' }
-  ];
+  // Track selected checklist items (multiple selection): { conditionID: boolean }
+  selectedChecklistItems: { [conditionID: string]: boolean } = {};
+
+  // Legacy support - will be derived from selectedConditionByGroup
+  workingStatus: string = '';
+  physicalCondition: string = '';
+  selectedIssues: string[] = [];
 
   // Step 4 - Valuation
   valuationScore: number = 0;
@@ -237,31 +228,109 @@ export class QuestionnairesComponent implements OnInit{
     this.questionnaireService.getAllConditionOptions().subscribe({
       next: (data) => {
         if (data.groups && data.groups.length > 0) {
-          // Only get the "Checklist" group for the issues section
-          const checklistGroup = data.groups.find(g =>
-            g.criteriaName.toLowerCase().includes('checklist')
-          );
-
-          if (checklistGroup) {
-            this.conditionGroups = [checklistGroup];
-            // Build issues array from checklist options only
-            this.issues = checklistGroup.options.map(opt => opt.description);
-          } else {
-            // If no checklist group found, use all groups
-            this.conditionGroups = data.groups;
-            this.issues = data.groups.flatMap(g =>
-              g.options.map(opt => opt.description)
-            );
-          }
+          // Load ALL active condition groups
+          this.conditionGroups = data.groups;
           console.log('✅ Loaded condition groups:', this.conditionGroups);
-          console.log('✅ Built issues array:', this.issues);
+
+          // Initialize selections for each group
+          this.conditionGroups.forEach(group => {
+            if (this.isChecklistGroup(group)) {
+              // Initialize checklist items as unselected
+              group.options.forEach(opt => {
+                this.selectedChecklistItems[opt.conditionID] = false;
+              });
+            } else {
+              // Initialize single-select groups as empty
+              this.selectedConditionByGroup[group.groupID] = '';
+            }
+          });
+
+          this.cdr.markForCheck();
         }
       },
       error: (err) => {
         console.error('Failed to load condition groups:', err);
-        // Keep fallback hardcoded issues
       }
     });
+  }
+
+  // Helper to check if a group is a checklist (multiple selection)
+  isChecklistGroup(group: ConditionGroup): boolean {
+    return group.criteriaName.toLowerCase().includes('checklist');
+  }
+
+  // Helper to get single-select groups (Functional Status, Appearance Status, etc.)
+  getSingleSelectGroups(): ConditionGroup[] {
+    return this.conditionGroups.filter(g => !this.isChecklistGroup(g));
+  }
+
+  // Helper to get checklist groups
+  getChecklistGroups(): ConditionGroup[] {
+    return this.conditionGroups.filter(g => this.isChecklistGroup(g));
+  }
+
+  // Select an option for a single-select group
+  selectConditionOption(groupID: string, conditionID: string, description: string): void {
+    this.selectedConditionByGroup[groupID] = conditionID;
+
+    // Update legacy fields for backward compatibility
+    const group = this.conditionGroups.find(g => g.groupID === groupID);
+    if (group) {
+      const groupName = group.criteriaName.toLowerCase();
+      if (groupName.includes('functional')) {
+        this.workingStatus = description;
+      } else if (groupName.includes('appearance') || groupName.includes('physical')) {
+        this.physicalCondition = description;
+      }
+    }
+    this.cdr.markForCheck();
+  }
+
+  // Toggle a checklist item
+  toggleChecklistItem(conditionID: string, description: string): void {
+    this.selectedChecklistItems[conditionID] = !this.selectedChecklistItems[conditionID];
+
+    // Update selectedIssues array for backward compatibility
+    if (this.selectedChecklistItems[conditionID]) {
+      if (!this.selectedIssues.includes(description)) {
+        this.selectedIssues.push(description);
+      }
+    } else {
+      this.selectedIssues = this.selectedIssues.filter(i => i !== description);
+    }
+    this.cdr.markForCheck();
+  }
+
+  // Get selected option description for a group
+  getSelectedOptionDescription(groupID: string): string {
+    const conditionID = this.selectedConditionByGroup[groupID];
+    if (!conditionID) return '';
+    const group = this.conditionGroups.find(g => g.groupID === groupID);
+    const option = group?.options.find(o => o.conditionID === conditionID);
+    return option?.description || '';
+  }
+
+  // Get all selected condition IDs for submission
+  getAllSelectedConditionIds(): string[] {
+    const ids: string[] = [];
+
+    // Add single-select group selections
+    Object.values(this.selectedConditionByGroup).forEach(id => {
+      if (id) ids.push(id);
+    });
+
+    // Add checklist selections
+    Object.entries(this.selectedChecklistItems).forEach(([id, selected]) => {
+      if (selected) ids.push(id);
+    });
+
+    return ids;
+  }
+
+  // Helper to get option description by conditionID
+  getOptionDescription(group: ConditionGroup, conditionID: string): string {
+    const option = group.options.find(o => o.conditionID === conditionID);
+    return option?.description || '';
   }
 
   set currentStep(value: number) {
@@ -604,11 +673,13 @@ export class QuestionnairesComponent implements OnInit{
       addressId: defaultAddr.id,
       valuationWorth: this.valuationWorth,
       issues: JSON.stringify(this.selectedIssues),
+      conditionIds: JSON.stringify(this.getAllSelectedConditionIds()), // All selected condition IDs
       pickupDate: this.pickupDate,
       pickupTime: this.pickupTime
     };
 
     console.log('PAYLOAD →', payload);
+    console.log('Selected Condition IDs →', this.getAllSelectedConditionIds());
 
     this.questionnaireService.submitQuestionnaire(payload, this.uploadedFiles).subscribe({
       next: (res) => {

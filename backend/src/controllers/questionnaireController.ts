@@ -134,6 +134,7 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       addressId,
       valuationWorth,
       issues: issuesJson = '[]',
+      conditionIds: conditionIdsJson = '[]',
       pickupDate,
       pickupTime
     } = req.body;
@@ -143,6 +144,13 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       issues = JSON.parse(issuesJson);
     } catch (e) {
       console.warn('Failed to parse issues, using empty array');
+    }
+
+    let conditionIds: string[] = [];
+    try {
+      conditionIds = JSON.parse(conditionIdsJson);
+    } catch (e) {
+      console.warn('Failed to parse conditionIds, using empty array');
     }
 
     if (!modelId || !addressId || !workingStatus || !physicalCondition) {

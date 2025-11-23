@@ -678,7 +678,55 @@ $Space: 'Space Grotesk', sans-serif;
   margin: 0;
 }
 
-/* Idea Section */
+/* Dynamic Condition Groups Section */
+.condition-groups-section {
+  margin-bottom: 2rem;
+}
+
+.condition-group {
+  padding: 1rem;
+  background: #f7fafc;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.condition-group-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #718096;
+  margin: 0 0 0.75rem 0;
+  letter-spacing: 0.05em;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.condition-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.condition-item {
+  padding: 0.625rem 0.75rem;
+  margin-bottom: 0.375rem;
+  background: white;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  color: #2d3748;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+/* Idea Section (kept for backward compatibility) */
 .idea-section {
   padding: 1rem;
   background: #f7fafc;

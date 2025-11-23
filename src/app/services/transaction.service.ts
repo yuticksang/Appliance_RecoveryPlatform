@@ -213,4 +213,68 @@ export class TransactionService {
         })
       );
   }
+
+  /**
+   * Get all categories (for admin dropdown)
+   */
+  getAllCategories(): Observable<any[]> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.get<any[]>(`${this.apiUrl}/admin/categories`, { headers })
+      .pipe(
+        catchError(error => {
+          console.error('Error fetching categories:', error);
+          return of([]);
+        })
+      );
+  }
+
+  /**
+   * Get all brands (for admin dropdown)
+   */
+  getAllBrands(): Observable<any[]> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.get<any[]>(`${this.apiUrl}/admin/brands`, { headers })
+      .pipe(
+        catchError(error => {
+          console.error('Error fetching brands:', error);
+          return of([]);
+        })
+      );
+  }
+
+  /**
+   * Get all appliances (for admin dropdown)
+   */
+  getAllAppliances(): Observable<any[]> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.get<any[]>(`${this.apiUrl}/admin/appliances`, { headers })
+      .pipe(
+        catchError(error => {
+          console.error('Error fetching appliances:', error);
+          return of([]);
+        })
+      );
+  }
+
+  /**
+   * Get active condition groups with their active options (for admin edit dropdowns)
+   */
+  getActiveConditionGroupsWithOptions(): Observable<any[]> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.get<any[]>(`${this.apiUrl}/admin/condition-groups/active-with-options`, { headers })
+      .pipe(
+        catchError(error => {
+          console.error('Error fetching condition groups:', error);
+          return of([]);
+        })
+      );
+  }
 }

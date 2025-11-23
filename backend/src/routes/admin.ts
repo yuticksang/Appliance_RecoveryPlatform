@@ -22,6 +22,7 @@ import {
 } from '../controllers/adminController';
 import {
   getAllConditionGroups,
+  getActiveConditionGroupsWithOptions,
   createConditionGroup,
   updateConditionGroup,
   updateConditionGroupStatus,
@@ -124,6 +125,9 @@ router.get('/buyer-prices', getAllBuyerPrices);
 
 // Get all condition groups
 router.get('/condition-groups', getAllConditionGroups);
+
+// Get active condition groups with active options (for admin edit dropdowns)
+router.get('/condition-groups/active-with-options', getActiveConditionGroupsWithOptions);
 
 // Create new condition group
 router.post('/condition-groups', createConditionGroup);

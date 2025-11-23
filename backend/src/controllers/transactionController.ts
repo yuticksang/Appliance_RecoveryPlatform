@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
 
+console.log('🔥🔥🔥 transactionController.ts LOADED - VERSION 2 WITH CONDITION FIX 🔥🔥🔥');
+
 /**
  * Get all transactions for a specific seller
  * Joins SubmittedAppliance, Transaction, ItemStatus, and Appliance tables
@@ -114,6 +116,10 @@ export const getAllTransactions = async (req: Request, res: Response) => {
  * Get a single transaction by ID
  */
 export const getTransactionById = async (req: Request, res: Response) => {
+  console.log('\n' + '='.repeat(60));
+  console.log('🚀🚀🚀 getTransactionById CALLED AT:', new Date().toISOString());
+  console.log('='.repeat(60));
+
   try {
     const { id } = req.params;
 
@@ -172,18 +178,40 @@ export const getTransactionById = async (req: Request, res: Response) => {
 
     const transaction = result.rows[0];
 
-    // Fetch selected conditions/issues for this submission
+    // Fetch selected conditions/issues for this submission, grouped by criteriaName
     const conditionsResult = await pool.query(
-      `SELECT co.description, co.code, cg."criteriaName"
+      `SELECT co.description, co.code, cg."criteriaName", cg."groupID", cg.status as "groupStatus"
        FROM "ConditionSelected" cs
        JOIN "ConditionOption" co ON cs."conditionID" = co."conditionID"
        LEFT JOIN "ConditionGroup" cg ON co."groupID" = cg."groupID"
-       WHERE cs."submittedApplianceID" = $1 AND cs."isChecked" = true`,
+       WHERE cs."submittedApplianceID" = $1 AND cs."isChecked" = true
+       ORDER BY cg."groupID"`,
       [transaction.submittedApplianceID]
     );
 
-    // Add selected issues to the response
-    transaction.selectedIssues = conditionsResult.rows.map(row => row.description || row.code);
+    console.log('📋 Raw conditions from DB:', conditionsResult.rows);
+
+    // Group conditions by criteriaName for dynamic display
+    // Show ALL conditions that were selected at submission time, regardless of current group status
+    // (Inactive groups only affect NEW submissions, not historical data)
+    const conditionGroups: { [key: string]: string[] } = {};
+    conditionsResult.rows.forEach(row => {
+      console.log(`📋 Processing condition: ${row.description}, Group: ${row.criteriaName}, Status: ${row.groupStatus}`);
+      const groupName = row.criteriaName || 'Other';
+      if (!conditionGroups[groupName]) {
+        conditionGroups[groupName] = [];
+      }
+      conditionGroups[groupName].push(row.description || row.code);
+    });
+
+    console.log('📋 Final conditionGroups:', conditionGroups);
+
+    // Add grouped conditions to the response
+    transaction.conditionGroups = conditionGroups;
+
+    // Keep selectedIssues for backward compatibility (flatten all conditions)
+    transaction.selectedIssues = conditionsResult.rows
+      .map(row => row.description || row.code);
 
     // Fetch photos for this submission
     const photosResult = await pool.query(
@@ -197,6 +225,11 @@ export const getTransactionById = async (req: Request, res: Response) => {
     console.log(`✅ Found transaction ${id}:`, transaction);
     console.log(`📋 Selected issues:`, transaction.selectedIssues);
     console.log(`📷 Photos:`, transaction.photos);
+
+    // Disable caching to ensure fresh data is always returned
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
 
     res.json(transaction);
   } catch (error) {
