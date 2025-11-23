@@ -173,7 +173,7 @@ export class TransactionsComponent implements OnInit, OnDestroy {
 
   viewTransactionDetail(transactionId: string | number): void {
     console.log('🔍 Navigating to transaction detail. ID:', transactionId, 'Type:', typeof transactionId);
-    this.router.navigate(['/transactions', transactionId]);
+    this.router.navigate(['/transaction-detail', transactionId]);
   }
   addNewAppliance(): void {
     // TODO: Navigate to trade-in questionnaire page

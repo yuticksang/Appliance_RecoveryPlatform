@@ -29,7 +29,7 @@ export class PackagingInstruction {
 
   goBackToTransaction(): void {
     if (this.fromTransactionId) {
-      this.router.navigate(['/transactions', this.fromTransactionId]);
+      this.router.navigate(['/transaction-detail', this.fromTransactionId]);
     } else {
       // Fallback: go to transactions list if no ID
       this.router.navigate(['/transactions']);

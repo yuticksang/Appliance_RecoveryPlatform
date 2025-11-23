@@ -1,24 +1,183 @@
-import { Component, ElementRef, ViewChild } from '@angular/core';
+import { Component, ElementRef, ViewChild, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router, ActivatedRoute } from '@angular/router';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 @Component({
   selector: 'app-recovery-slip',
-  imports: [],
+  imports: [CommonModule],
   templateUrl: './recovery-slip.html',
   styleUrls: ['./recovery-slip.scss']
 })
-export class RecoverySlipComponent {
+export class RecoverySlipComponent implements OnInit {
   @ViewChild('recoverySlip', { static: false }) recoverySlip!: ElementRef;
 
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
+  private http = inject(HttpClient);
+
+  transactionId: string | number = '';
+  loading = true;
+  error = false;
+
+  // Read the transactionId from navigation state
+  private fromTransactionId: string | number | null = null;
+
   recoveryData = {
-    date: 'Friday, July 11, 2025, 06:11 PM +08',
-    receiptNo: 'REC-2025-0711-001',
-    seller: { name: 'Jisoo', phone: '+60123345566', address: '123 Jalan Pudu, 55100 Kuala Lumpur, Malaysia' },
-    appliance: { id: 'WM00001', category: 'Laundry Appliances', brand: 'LG', model: 'WM3400CW', functionalStatus: 'Partially Functional', issue: 'Strange noise during operation', physicalCondition: 'Minor scratches', tradeValue: 'RM 400.00', conditionScore: '82% (Good)' },
-    delivery: { method: 'On-Demand Pickup', pickupDate: '2025-07-15', pickupTime: '10:00 AM - 12:00 PM' }
+    date: '',
+    receiptNo: '',
+    seller: { name: '', phone: '', address: '' },
+    appliance: {
+      id: '',
+      category: '',
+      brand: '',
+      model: '',
+      tradeValue: '',
+      dynamicAnswers: [] as Array<{ sectionName: string; question: string; type: string; answer: string | string[] }>
+    },
+    delivery: { method: 'On-Demand Pickup', pickupDate: '', pickupTime: '' }
   };
+
+  ngOnInit(): void {
+    // Get transaction ID from route params
+    this.route.params.subscribe(params => {
+      this.transactionId = params['id'];
+      if (this.transactionId) {
+        this.loadRecoverySlipData();
+      } else {
+        this.error = true;
+        this.loading = false;
+      }
+    });
+
+    // Get the transaction ID from navigation state for back navigation
+    const navigation = this.router.getCurrentNavigation();
+    const state = navigation?.extras.state as { fromTransactionId?: string | number };
+
+    if (state?.fromTransactionId) {
+      this.fromTransactionId = state.fromTransactionId;
+    } else {
+      // Fallback: try to read from history.state
+      this.fromTransactionId = history.state?.fromTransactionId || this.transactionId;
+    }
+  }
+
+  loadRecoverySlipData(): void {
+    this.loading = true;
+    this.error = false;
+
+    // Get authentication token
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    this.http.get<any>(`http://localhost:3000/api/transactions/${this.transactionId}`, { headers }).subscribe({
+      next: (response) => {
+        console.log('✅ Recovery slip data loaded:', response);
+        this.mapTransactionToRecoveryData(response);
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('❌ Error loading recovery slip data:', err);
+        this.error = true;
+        this.loading = false;
+      }
+    });
+  }
+
+  /**
+   * Get the authentication token from localStorage
+   */
+  private getAuthToken(): string | null {
+    return localStorage.getItem('token') || localStorage.getItem('admin_token');
+  }
+
+  mapTransactionToRecoveryData(data: any): void {
+    // Format date
+    const dateObj = new Date(data.createdAt || Date.now());
+    const formattedDate = dateObj.toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short'
+    });
+
+    // Format address from separate fields
+    const addressParts = [
+      data.pickupAddress,
+      data.city,
+      data.state,
+      data.zipCode
+    ].filter(Boolean); // Remove empty/null values
+
+    const formattedAddress = addressParts.length > 0
+      ? addressParts.join(', ')
+      : 'N/A';
+
+
+    this.recoveryData = {
+      date: formattedDate,
+      receiptNo: data.id || 'N/A', // Use transaction ID as receipt number
+      seller: {
+        name: data.sellerName || 'N/A',
+        phone: data.sellerPhone || data.addressPhone || 'N/A',
+        address: formattedAddress
+      },
+      appliance: {
+        id: data.submittedApplianceID || 'N/A',
+        category: data.category || 'N/A',
+        brand: data.brand || 'N/A',
+        model: data.modelName || data.model || 'N/A',
+        tradeValue: `RM ${parseFloat(data.finalPrice || data.estimatedPrice || 0).toFixed(2)}`,
+        dynamicAnswers: data.dynamicAnswers || []
+      },
+      delivery: {
+        method: 'On-Demand Pickup',
+        pickupDate: data.pickupDate || 'Not scheduled',
+        pickupTime: data.pickupTimeSlot || 'Not scheduled'
+      }
+    };
+  }
+
+  calculateConditionScore(functionalStatus: string, physicalCondition: string): string {
+    let score = 0;
+
+    // Functional status scoring
+    if (functionalStatus?.includes('Working') || functionalStatus?.includes('Functioning')) {
+      score += 50;
+    } else if (functionalStatus?.includes('Minor')) {
+      score += 30;
+    }
+
+    // Physical condition scoring
+    if (physicalCondition?.includes('Excellent') || physicalCondition?.includes('New')) {
+      score += 40;
+    } else if (physicalCondition?.includes('Good') || physicalCondition?.includes('Minor')) {
+      score += 30;
+    } else if (physicalCondition?.includes('Fair')) {
+      score += 20;
+    }
+
+    let label = 'Poor';
+    if (score >= 80) label = 'Excellent';
+    else if (score >= 60) label = 'Good';
+    else if (score >= 40) label = 'Fair';
+
+    return `${score}% (${label})`;
+  }
+
+  goBackToTransaction(): void {
+    if (this.fromTransactionId) {
+      this.router.navigate(['/transaction-detail', this.fromTransactionId]);
+    } else {
+      // Fallback: go to transactions list if no ID
+      this.router.navigate(['/transactions']);
+    }
+  }
 
   /** Download only the slip portion as PDF */
   async downloadPDF() {

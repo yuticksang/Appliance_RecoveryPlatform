@@ -261,19 +261,25 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
     // ─────────────────────────────────────────────────────────
     // SAVE ALL ANSWERS TO ConditionSelected (for ALL types)
     // ─────────────────────────────────────────────────────────
+    let savedCount = 0;
     for (const qa of questionAnswers) {
+      console.log(`🔄 Processing question: groupID=${qa.groupID}, type=${qa.type}, answer=`, qa.answer);
+
       // For radio/image: single conditionID
       if ((qa.type === 'radio' || qa.type === 'image') && qa.answer) {
+        console.log(`  → Saving radio/image answer: ${qa.answer}`);
         await client.query(
           `INSERT INTO "ConditionSelected"
           ("conditionID", "submittedApplianceID", "isChecked", "created_at")
           VALUES ($1, $2, true, NOW())`,
           [qa.answer, finalId]
         );
+        savedCount++;
       }
 
       // For checkbox: array of conditionIDs
       if (qa.type === 'checkbox' && Array.isArray(qa.answer)) {
+        console.log(`  → Saving ${qa.answer.length} checkbox answers`);
         for (const conditionID of qa.answer) {
           await client.query(
             `INSERT INTO "ConditionSelected"
@@ -281,11 +287,24 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
             VALUES ($1, $2, true, NOW())`,
             [conditionID, finalId]
           );
+          savedCount++;
         }
+      }
+
+      // Textarea is saved to note field, not ConditionSelected
+      if (qa.type === 'textarea') {
+        console.log(`  → Textarea saved to note field (not ConditionSelected)`);
       }
     }
 
-    console.log(`✅ Saved ${questionAnswers.length} question answers for ${finalId}`);
+    console.log(`✅ Saved ${savedCount} condition selections for ${finalId} (out of ${questionAnswers.length} total answers)`);
+
+    // VERIFY: Check what was actually saved in the database
+    const verifyResult = await client.query(
+      `SELECT COUNT(*) as count FROM "ConditionSelected" WHERE "submittedApplianceID" = $1`,
+      [finalId]
+    );
+    console.log(`🔍 VERIFICATION: ConditionSelected table has ${verifyResult.rows[0].count} rows for ${finalId}`);
 
     // Insert Pickup Table
     if (!pickupDate || !pickupTime) {

@@ -193,6 +193,16 @@
             <p class="info-value">{{ customerInfo.state }}</p>
           </div>
         </div>
+
+        <div class="info-section">
+          <h3 class="section-title">PICKUP DATE</h3>
+          <p class="info-value">{{ customerInfo.pickupDate }}</p>
+        </div>
+
+        <div class="info-section">
+          <h3 class="section-title">PICKUP TIME SLOT</h3>
+          <p class="info-value">{{ customerInfo.pickupTimeSlot }}</p>
+        </div>
       </div>
 
       <!-- Right Column - Appliance Information -->
@@ -219,13 +229,12 @@
                 <h4 class="detail-label">CATEGORY</h4>
                 <p class="detail-value">{{ beforeReview.category }}</p>
               </div>
-              <div class="detail-item">
-                <h4 class="detail-label">FUNCTIONAL STATUS</h4>
-                <p class="detail-value">{{ beforeReview.functionalStatus }}</p>
-              </div>
-              <div class="detail-item">
-                <h4 class="detail-label">CONDITION</h4>
-                <p class="detail-value">{{ beforeReview.condition }}</p>
+              <!-- DYNAMIC QUESTION ANSWERS (non-checkbox types: radio, image, textarea) -->
+              <div class="detail-item" *ngFor="let qa of beforeReview.dynamicAnswers">
+                <ng-container *ngIf="qa.type !== 'checkbox'">
+                  <h4 class="detail-label">{{ qa.question | uppercase }}</h4>
+                  <p class="detail-value">{{ qa.answer }}</p>
+                </ng-container>
               </div>
               <div class="detail-item">
                 <h4 class="detail-label">SCORE</h4>
@@ -236,16 +245,16 @@
               <h4 class="note-label">NOTE</h4>
               <p class="note-value">{{ beforeReview.note }}</p>
             </div>
-            <div class="idea-section">
-              <h4 class="idea-label">SELECTED ISSUE</h4>
-              <ul class="idea-list" *ngIf="beforeReview.selectedIssue.length > 0; else noBeforeIssues">
-                <li *ngFor="let issue of beforeReview.selectedIssue" class="idea-item">
-                  <span class="check-icon">✓</span> {{ issue }}
-                </li>
-              </ul>
-              <ng-template #noBeforeIssues>
-                <p class="no-issues">No issues reported</p>
-              </ng-template>
+            <!-- DYNAMIC CHECKBOX QUESTIONS (displayed like Selected Issue) -->
+            <div class="idea-section" *ngFor="let qa of beforeReview.dynamicAnswers">
+              <ng-container *ngIf="qa.type === 'checkbox' && qa.answer && $any(qa.answer).length > 0">
+                <h4 class="idea-label">{{ qa.sectionName | uppercase }}</h4>
+                <ul class="idea-list">
+                  <li *ngFor="let option of $any(qa.answer)" class="idea-item">
+                    <span class="check-icon">✓</span> {{ option }}
+                  </li>
+                </ul>
+              </ng-container>
             </div>
           </div>
 
@@ -269,13 +278,12 @@
                 <h4 class="detail-label">CATEGORY</h4>
                 <p class="detail-value">{{ afterReview.category }}</p>
               </div>
-              <div class="detail-item">
-                <h4 class="detail-label">FUNCTIONAL STATUS</h4>
-                <p class="detail-value">{{ afterReview.functionalStatus }}</p>
-              </div>
-              <div class="detail-item">
-                <h4 class="detail-label">CONDITION</h4>
-                <p class="detail-value">{{ afterReview.condition }}</p>
+              <!-- DYNAMIC QUESTION ANSWERS (non-checkbox types: radio, image, textarea) -->
+              <div class="detail-item" *ngFor="let qa of afterReview.dynamicAnswers">
+                <ng-container *ngIf="qa.type !== 'checkbox'">
+                  <h4 class="detail-label">{{ qa.question | uppercase }}</h4>
+                  <p class="detail-value">{{ qa.answer }}</p>
+                </ng-container>
               </div>
               <div class="detail-item">
                 <h4 class="detail-label">SCORE</h4>
@@ -286,16 +294,16 @@
               <h4 class="note-label">NOTE</h4>
               <p class="note-value">{{ afterReview.note }}</p>
             </div>
-            <div class="idea-section">
-              <h4 class="idea-label">SELECTED ISSUE</h4>
-              <ul class="idea-list" *ngIf="afterReview.selectedIssue.length > 0; else noAfterIssues">
-                <li *ngFor="let issue of afterReview.selectedIssue" class="idea-item">
-                  <span class="check-icon">✓</span> {{ issue }}
-                </li>
-              </ul>
-              <ng-template #noAfterIssues>
-                <p class="no-issues">No issues reported</p>
-              </ng-template>
+            <!-- DYNAMIC CHECKBOX QUESTIONS (displayed like Selected Issue) -->
+            <div class="idea-section" *ngFor="let qa of afterReview.dynamicAnswers">
+              <ng-container *ngIf="qa.type === 'checkbox' && qa.answer && $any(qa.answer).length > 0">
+                <h4 class="idea-label">{{ qa.sectionName | uppercase }}</h4>
+                <ul class="idea-list">
+                  <li *ngFor="let option of $any(qa.answer)" class="idea-item">
+                    <span class="check-icon">✓</span> {{ option }}
+                  </li>
+                </ul>
+              </ng-container>
             </div>
           </div>
         </div>
@@ -322,13 +330,12 @@
               <h4 class="detail-label">CATEGORY</h4>
               <p class="detail-value">{{ applianceInfo.category }}</p>
             </div>
-            <div class="detail-item">
-              <h4 class="detail-label">FUNCTIONAL STATUS</h4>
-              <p class="detail-value">{{ applianceInfo.functionalStatus }}</p>
-            </div>
-            <div class="detail-item">
-              <h4 class="detail-label">CONDITION</h4>
-              <p class="detail-value">{{ applianceInfo.condition }}</p>
+            <!-- DYNAMIC QUESTION ANSWERS (non-checkbox types: radio, image, textarea) -->
+            <div class="detail-item" *ngFor="let qa of applianceInfo.dynamicAnswers">
+              <ng-container *ngIf="qa.type !== 'checkbox'">
+                <h4 class="detail-label">{{ qa.question | uppercase }}</h4>
+                <p class="detail-value">{{ qa.answer }}</p>
+              </ng-container>
             </div>
             <div class="detail-item">
               <h4 class="detail-label">SCORE</h4>
@@ -342,17 +349,16 @@
             <p class="note-value">{{ applianceInfo.note }}</p>
           </div>
 
-          <!-- Selected Issue -->
-          <div class="idea-section">
-            <h4 class="idea-label">SELECTED ISSUE</h4>
-            <ul class="idea-list" *ngIf="applianceInfo.selectedIssue.length > 0; else noIssues">
-              <li *ngFor="let issue of applianceInfo.selectedIssue" class="idea-item">
-                <span class="check-icon">✓</span> {{ issue }}
-              </li>
-            </ul>
-            <ng-template #noIssues>
-              <p class="no-issues">No issues reported</p>
-            </ng-template>
+          <!-- DYNAMIC CHECKBOX QUESTIONS (displayed like Selected Issue) -->
+          <div class="idea-section" *ngFor="let qa of applianceInfo.dynamicAnswers">
+            <ng-container *ngIf="qa.type === 'checkbox' && qa.answer && $any(qa.answer).length > 0">
+              <h4 class="idea-label">{{ qa.sectionName | uppercase }}</h4>
+              <ul class="idea-list">
+                <li *ngFor="let option of $any(qa.answer)" class="idea-item">
+                  <span class="check-icon">✓</span> {{ option }}
+                </li>
+              </ul>
+            </ng-container>
           </div>
         </div>
       </div>
