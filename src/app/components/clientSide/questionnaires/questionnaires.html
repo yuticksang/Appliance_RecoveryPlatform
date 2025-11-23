@@ -66,70 +66,101 @@
   <div *ngIf="currentStep === 3" class="form-container">
     <h3 class="step-title">Step 3: Appliance Condition</h3>
 
-    <div class="form-section">
-      <label class="question">1. Is the appliance currently working?</label>
-      <select class="form-select" [(ngModel)]="workingStatus">
-        <option>Fully working</option>
-        <option>Partially working</option>
-        <option>Not working</option>
-      </select>
-    </div>
+    <!-- DYNAMIC QUESTIONS -->
+    <div *ngFor="let group of conditionGroups()" class="question-section">
+      <p class="question">{{ group.question }}</p>
 
-    <div class="form-section">
-      <label class="question">2. Does the appliance show any of the following?</label>
-      <div class="checkbox-list">
-        <label *ngFor="let issue of issues" class="checkbox-item">
-          <input type="checkbox" [checked]="selectedIssues.includes(issue)" (change)="toggleIssue(issue)" />
-          {{ issue }}
+      <!-- SINGLE CHOICE -->
+      <div *ngIf="group.type === 'single_choice'" class="form-section">
+        <select class="form-select" [(ngModel)]="selectedAnswers()[group.groupID]" (ngModelChange)="onAnswerChange()">
+          <option [ngValue]="null">Select an option</option>
+          <option *ngFor="let opt of group.options" [ngValue]="opt.id">
+            {{ opt.description }}
+          </option>
+        </select>
+      </div>
+
+      <!-- IMAGE SELECTION -->
+      <div *ngIf="group.type === 'image_selection'" class="image-grid">
+        <div *ngFor="let opt of group.options" 
+            class="image-option"
+            [class.selected]="selectedAnswers()[group.groupID] === opt.id"
+            (click)="selectImageOption(group.groupID, opt.id)">
+          <img [src]="opt.image || 'assets/placeholder.png'" [alt]="opt.description">
+          <p>{{ opt.description }}</p>
+        </div>
+      </div>
+
+      <!-- MULTIPLE CHOICE -->
+      <div *ngIf="group.type === 'multiple_choice'" class="checklist">
+        <label *ngFor="let opt of group.options" class="checkbox-item">
+          <input type="checkbox"
+                [checked]="selectedAnswers()[group.groupID]?.includes(opt.id)"
+                (change)="toggleChecklistOption(group.groupID, opt.id)">
+          <span>{{ opt.description }}</span>
         </label>
       </div>
-    </div>
 
-    <div class="form-section">
-      <label class="question">3. What is the physical condition of the appliance?</label>
-      <div class="physical-grid">
-        <div *ngFor="let option of physicalOptions"
-             (click)="physicalCondition = option.label"
-             [ngClass]="{'selected': physicalCondition === option.label}"
-             class="physical-card">
-          <img [src]="option.img" [alt]="option.label" />
-          <p>{{ option.label }}</p>
+      <!-- TEXTAREA -->
+      <div *ngIf="group.type === 'textarea'" class="form-section">
+        <textarea class="text-area"
+          [(ngModel)]="selectedAnswers()[group.groupID]" 
+          placeholder="Enter your notes..."
+          (input)="onAnswerChange()">
+        </textarea>
+      </div>
+
+
+      <!-- FILE UPLOAD — MODERN & BEAUTIFUL -->
+      <div *ngIf="group.type === 'file_upload'" class="file-upload-section">
+        <div class="upload-box"
+            (drop)="onFileDropped($event)"
+            (dragover)="$event.preventDefault()"
+            (dragenter)="$event.preventDefault()"
+            [class.has-files]="uploadedFiles.length > 0">
+          
+          <!-- Show thumbnails if files exist -->
+          <div class="thumbnails-grid" *ngIf="uploadedFiles.length > 0">
+            <div *ngFor="let file of uploadedFiles; let i = index" class="thumbnail-item">
+              <img [src]="thumbnailUrls[i]" 
+                  alt="preview" 
+                  (click)="openImageModal(thumbnailUrls[i])" 
+                  class="thumbnail-img" />
+              <button class="remove-btn" (click)="removeFile(i); $event.stopPropagation()">×</button>
+            </div>
+          </div>
+
+          <!-- Upload prompt (only show if less than 10 files) -->
+          <div class="upload-prompt" *ngIf="uploadedFiles.length < 10">
+            <p>Drag & drop photos here, or click to select</p>
+            <input type="file" 
+                  multiple 
+                  accept="image/*" 
+                  (change)="onFileSelected($event)" 
+                  class="file-input" />
+            <button class="upload-btn">Choose Files</button>
+          </div>
+
+          <small class="upload-info">
+            Optional · Max 10 photos · Max 5MB each · JPG/PNG/WEBP
+          </small>
+        </div>
+      </div>
+
+      <!-- FULL IMAGE MODAL -->
+      <div class="image-modal-backdrop" *ngIf="showImageModal" (click)="closeImageModal()">
+        <div class="image-modal" (click)="$event.stopPropagation()">
+          <img [src]="selectedImageUrl" alt="Full size" />
+          <button class="close-modal-btn" (click)="closeImageModal()">×</button>
         </div>
       </div>
     </div>
 
-    <!-- Upload Photos -->
-    <div class="form-section">
-      <label class="question">4. Upload Photos (Optional)</label>
-      <div class="upload-box"
-           (drop)="onFileDropped($event)"
-           (dragover)="$event.preventDefault()">
-        <p>Drag or drop files here</p>
-        <input type="file" multiple hidden #fileInput (change)="onFileSelected($event)" />
-        <button class="upload-btn" (click)="fileInput.click()">Upload from computer</button>
-
-        <div class="uploaded-files" *ngIf="uploadedFiles.length > 0">
-          <p *ngFor="let file of uploadedFiles; let i = index">
-            {{ file.name }}
-            <button class="remove-btn" (click)="removeFile(i)">×</button>
-          </p>
-        </div>
-      </div>
-      <div class="upload-info">
-        <p>{{ uploadedFiles.length }} / {{ maxFiles }} files uploaded</p>
-        <small>Allowed formats: JPG, PNG, WEBP (max 5 MB each)</small>
-      </div>
-    </div>
-
-    <!-- Notes -->
-    <div class="form-section">
-      <label class="question">5. Additional Notes (Optional)</label>
-      <textarea class="text-area" [(ngModel)]="notes" placeholder="Say something..."></textarea>
-    </div>
-
+    <!-- NAVIGATION BUTTONS — MOVED OUTSIDE LOOP → NEVER COVERED BY FILE INPUT -->
+    <!-- Navigation -->
     <div class="btn-row">
-      <button (click)="prevStep()">Back</button>
-      <button (click)="nextStep()">Next</button>
+      <button (click)="prevStep(); $event.stopPropagation()">Back</button>
+      <button (click)="nextStep(); $event.stopPropagation()">Next</button>
     </div>
   </div>
 
@@ -170,11 +201,11 @@
         <li><strong>Category:</strong> {{ getSelectedCategoryName() || '—' }}</li>
         <li><strong>Brand:</strong> {{  getSelectedBrandName() || '—' }}</li>
         <li><strong>Model:</strong> {{ getSelectedModelName() || '—' }}</li>
-        <li><strong>Physical Condition:</strong> {{ physicalCondition || '—' }}</li>
-        <li><strong>Functional Status:</strong> {{ workingStatus || '—' }}</li>
+        <li><strong>Physical Condition:</strong> {{ getPhysicalCondition() }}</li>
+        <li><strong>Functional Status:</strong> {{ getFunctionalStatus() }}</li>
         <li><strong>Component Status:</strong> 
-          <span *ngIf="selectedIssues.length > 0; else noneIssues">
-            {{ selectedIssues.join(', ') }}
+          <span *ngIf="getSelectedIssueDescriptions().length > 0; else noneIssues">
+            {{ getSelectedIssueDescriptions().join(', ') }}
           </span>
           <ng-template #noneIssues>—</ng-template>
         </li>
@@ -238,8 +269,10 @@
         <div class="btn-row center-btns">
           <button (click)="prevStep()">Back</button>
           <button class="submit-btn"
-                  [disabled]="!defaultAddress() || !pickupDate || !pickupTime"
-                  (click)="submitForm()">Submit</button>
+                  [disabled]="!defaultAddress() || !pickupDate || !pickupTime || isSubmitting"
+                  (click)="submitForm()">
+            {{ isSubmitting ? 'Submitting...' : 'Submit' }}
+          </button>
         </div>
       </div>
 
@@ -254,11 +287,11 @@
             <li><strong>Category:</strong> {{ getSelectedCategoryName() || '—' }}</li>
             <li><strong>Brand:</strong> {{ getSelectedBrandName() || '—' }}</li>
             <li><strong>Model:</strong> {{ getSelectedModelName() || '—' }}</li>
-            <li><strong>Physical Condition:</strong> {{ physicalCondition || '—' }}</li>
-            <li><strong>Functional Status:</strong> {{ workingStatus || '—' }}</li>
+            <li><strong>Physical Condition:</strong> {{ getPhysicalCondition() }}</li>
+            <li><strong>Functional Status:</strong> {{ getFunctionalStatus() }}</li>
             <li><strong>Component Status:</strong>
-              <span *ngIf="selectedIssues.length > 0; else noneIssues">
-                {{ selectedIssues.join(', ') }}
+              <span *ngIf="getSelectedIssueDescriptions().length > 0; else noneIssues">
+                {{ getSelectedIssueDescriptions().join(', ') }}
               </span>
               <ng-template #noneIssues>—</ng-template>
             </li>

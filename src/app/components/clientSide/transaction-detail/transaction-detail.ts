@@ -98,6 +98,11 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     return this.transaction?.transactionStatus === 'Pending Payment';
   }
 
+  // Check if transaction is in Under Review status (allows editing)
+  get isUnderReview(): boolean {
+    return this.transaction?.transactionStatus === 'Under Review';
+  }
+
   ngOnInit(): void {
     // Get transaction ID from route
     this.route.params.subscribe(params => {
@@ -318,7 +323,16 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
 
   viewPackagingInstruction(): void {
     // TODO: Navigate to packaging instruction page or open PDF
+    this.router.navigate(['/packaging-instruction'], {
+        state: { fromTransactionId: this.transactionId }
+      });
     console.log('View packaging instruction');
+  }
+
+  // Navigate to edit appliance page
+  editAppliance(): void {
+    if (!this.transaction) return;
+    this.router.navigate(['/edit-appliance', this.transactionId]);
   }
 
   // Step 1: Show accept confirmation modal

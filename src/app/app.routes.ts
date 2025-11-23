@@ -23,7 +23,8 @@ export const routes: Routes = [
       { path: 'recovery-slip', canActivate: [sellerGuard], loadComponent: () => import('./components/clientSide/recovery-slip/recovery-slip').then(m => m.RecoverySlipComponent) },
       { path: 'packaging-instruction', canActivate: [sellerGuard], loadComponent: () => import('./components/clientSide/packaging-instruction/packaging-instruction').then(m => m.PackagingInstruction) },
       { path: 'transactions', canActivate: [sellerGuard], loadComponent: () => import('./components/clientSide/transactions/transactions').then(m => m.TransactionsComponent) },
-      { path: 'transactions/:id', canActivate: [sellerGuard], loadComponent: () => import('./components/clientSide/transaction-detail/transaction-detail').then(m => m.TransactionDetailComponent) },
+      { path: 'transaction-detail/:id', canActivate: [sellerGuard], loadComponent: () => import('./components/clientSide/transaction-detail/transaction-detail').then(m => m.TransactionDetailComponent) },
+      { path: 'edit-appliance/:id', canActivate: [sellerGuard], loadComponent: () => import('./components/clientSide/edit-appliance/edit-appliance').then(m => m.EditApplianceComponent) },
       { path: '', redirectTo: 'home', pathMatch: 'full' }
     ]
   },

@@ -14,6 +14,23 @@ export interface SimpleItem {
   id: number | string;
   name: string;
 }
+
+export interface ConditionOption {
+  id: string;
+  code: string;
+  description: string;
+  image: string | null;
+}
+
+export interface ConditionGroup {
+  groupID: string;
+  sectionName: string;
+  question: string;
+  type: 'single_choice' | 'image_selection' | 'multiple_choice' | 'file_upload' | 'textarea';
+  displayOrder: number;
+  options: ConditionOption[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class QuestionnaireService {
   private http = inject(HttpClient);
@@ -46,9 +63,9 @@ export class QuestionnaireService {
     );
   }
 
-  getModelsByBrand(brandId: string | number): Observable<SimpleItem[]> {
+  getModelsByCategoryBrand(categoryId: string | number, brandId: string | number): Observable<SimpleItem[]> {
     if (!brandId) return of([]);
-    return this.http.get<SimpleItem[]>(`${this.api}/models/${brandId}`, this.buildHeaders()).pipe(
+    return this.http.get<SimpleItem[]>(`${this.api}/models/${categoryId}/${brandId}`, this.buildHeaders()).pipe(
       catchError(err => {
         console.warn('Failed to load models', err);
         return of([]);
@@ -73,5 +90,39 @@ export class QuestionnaireService {
     });
   }
 
+
+
+  // NEW: Fetch dynamic condition groups (questions + options)
+  getConditionGroups(): Observable<ConditionGroup[]> {
+    return this.http.get<ConditionGroup[]>(`${this.api}/condition-groups`, this.buildHeaders()).pipe(
+      catchError(err => {
+        console.warn('Failed to load condition groups', err);
+        return of([]);
+      })
+    );
+  }
+
+  // Submit with photos
+  // submitQuestionnaire(data: any, photos: File[]): Observable<any> {
+  //   const form = new FormData();
+
+  //   // Append all form fields
+  //   Object.entries(data).forEach(([key, value]) => {
+  //     if (value !== null && value !== undefined) {
+  //       if (Array.isArray(value)) {
+  //         form.append(key, JSON.stringify(value));
+  //       } else {
+  //         form.append(key, String(value));
+  //       }
+  //     }
+  //   });
+
+  //   // Append photos
+  //   photos.forEach((file, index) => {
+  //     form.append('photos', file, file.name);
+  //   });
+
+  //   return this.http.post(`${this.api}/questionnaire/submit`, form);
+  // }
 
 }

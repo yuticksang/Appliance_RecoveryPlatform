@@ -23,6 +23,7 @@ export const getCategories = async (req: AuthRequest, res: Response) => {
     const result = await pool.query(
       `SELECT "categoryID" as id, "categoryName" as name 
        FROM "Category" 
+       WHERE "status" = 'ACTIVE'
        ORDER BY "categoryID" ASC`
     );
     
@@ -48,6 +49,7 @@ export const getBrandsByCategory = async (req: AuthRequest, res: Response) => {
        FROM "Appliance" a
        JOIN "Brand" b ON a."brandID" = b."brandID"
        WHERE a."categoryID" = $1
+       AND b."status" = 'ACTIVE'
        ORDER BY b."brandName" ASC`,
       [rawId]
     );
@@ -58,12 +60,15 @@ export const getBrandsByCategory = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: 'Failed to fetch brands' });
   }
 };
+
 // Get Models by Brand
 export const getModelsByBrand = async (req: AuthRequest, res: Response) => {
   try {
     console.log('getModelsByBrand req.params:', req.params);
-    const rawId = (req.params.brandId ?? req.params.brandID ?? req.params.id ?? '').toString().trim();
-    if (!rawId) {
+    //get categoryID and brandID from req.params
+    const rawCategoryId = (req.params.categoryId ?? req.params.categoryID ?? '').toString().trim();
+    const rawBrandId = (req.params.brandId ?? req.params.brandID ?? req.params.id ?? '').toString().trim();
+    if (!rawBrandId) {
       return res.status(400).json({ message: 'brandId is required' });
     }
 
@@ -71,8 +76,10 @@ export const getModelsByBrand = async (req: AuthRequest, res: Response) => {
       `SELECT "applianceID" AS id, "modelName" AS name, "modelCode" AS code
        FROM "Appliance"
        WHERE "brandID" = $1
+       AND "categoryID" = $2
+       AND "status" = 'ACTIVE'
        ORDER BY "modelName" ASC`,
-      [rawId]
+      [rawBrandId, rawCategoryId]
     );
 
     return res.json(result.rows);
@@ -81,6 +88,50 @@ export const getModelsByBrand = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: 'Failed to fetch models' });
   }
 };
+
+// Get Condition Group and Condition Options
+export const getConditionGroups = async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await pool.query(`
+          SELECT 
+            cg."groupID",
+            cg."criteriaName" as "sectionName",
+            cg."question_title" as question,
+            cg."question_type" as type,
+            cg."display_order" as "displayOrder",
+            COALESCE(
+              json_agg(
+                json_build_object(
+                  'id', co."conditionID",
+                  'code', co.code,
+                  'description', co.description,
+                  'image', 
+                    CASE 
+                      WHEN co.image IS NOT NULL AND co.image != '' 
+                      THEN 'http://localhost:3000' || co.image
+                      ELSE NULL 
+                    END
+                ) ORDER BY co."conditionID"
+              ) FILTER (WHERE co."conditionID" IS NOT NULL),
+              '[]'
+            ) as options
+          FROM "ConditionGroup" cg
+          LEFT JOIN "ConditionOption" co ON co."groupID" = cg."groupID"
+          WHERE cg.status = 'ACTIVE'
+          GROUP BY cg."groupID", cg."criteriaName", cg."question_title", cg."question_type", cg."display_order"
+          ORDER BY cg."display_order" ASC
+        `);
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get condition groups error:', error);
+    res.status(500).json({ message: 'Failed to fetch condition groups' });
+  }
+};
+
+
+
+
 
 // ---------- Multer: Save to local uploads (fallback) ----------
 const uploadDir = path.join(__dirname, '../../uploads/questionnaire');
@@ -128,24 +179,18 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
 
     const {
       modelId,
-      workingStatus,
-      physicalCondition,
-      notes,
       addressId,
+      initialFunctionalStatus,
+      initialPhysicalCondition,
       valuationWorth,
-      issues: issuesJson = '[]',
+      selectedConditionIds: selectedIdsJson,
       pickupDate,
-      pickupTime
+      pickupTime,
+      notes
     } = req.body;
 
-    let issues: string[] = [];
-    try {
-      issues = JSON.parse(issuesJson);
-    } catch (e) {
-      console.warn('Failed to parse issues, using empty array');
-    }
 
-    if (!modelId || !addressId || !workingStatus || !physicalCondition) {
+    if (!modelId || !addressId || !initialFunctionalStatus || !initialPhysicalCondition) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
@@ -173,15 +218,37 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
         sellerId,
         modelId,
         addressId,
-        workingStatus,
-        physicalCondition,
+        initialFunctionalStatus,
+        initialPhysicalCondition,
         parseFloat(valuationWorth) || 0,
-        notes === 'null' ? null : notes || null
+        notes || null
       ]
     );
 
 
     const finalId = subRes.rows[0].submittedApplianceID;
+
+    // SAVE CHECKLIST ISSUES TO ConditionSelected
+    if (selectedIdsJson) {
+      let conditionIds: string[] = [];
+      try {
+        conditionIds = JSON.parse(selectedIdsJson);
+      } catch (e) {
+        console.warn('Invalid selectedConditionIds JSON:', selectedIdsJson);
+      }
+
+      if (Array.isArray(conditionIds) && conditionIds.length > 0) {
+        for (const conditionID of conditionIds) {
+          await client.query(
+            `INSERT INTO "ConditionSelected" 
+            ("conditionID", "submittedApplianceID", "isChecked", "created_at")
+            VALUES ($1, $2, true, NOW())`,
+            [conditionID, finalId]
+          );
+        }
+        console.log(`Saved ${conditionIds.length} issues for ${finalId}`);
+      }
+    }
 
     // Insert Pickup Table
     if (!pickupDate || !pickupTime) {
@@ -229,31 +296,6 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       [transactionId]
     );
 
-    // Save selected conditions/issues to ConditionSelected table
-    if (issues && issues.length > 0) {
-      for (const issueText of issues) {
-        // Try to find matching conditionID by description
-        const conditionResult = await client.query(
-          `SELECT "conditionID" FROM "ConditionOption" WHERE description = $1 LIMIT 1`,
-          [issueText]
-        );
-
-        if (conditionResult.rows.length > 0) {
-          const conditionId = conditionResult.rows[0].conditionID;
-          // Generate a unique conditionSelectionID
-          const selectionId = `CS-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-          await client.query(
-            `INSERT INTO "ConditionSelected" ("conditionSelectionID", "conditionID", "submittedApplianceID", "isChecked", created_at)
-             VALUES ($1, $2, $3, true, NOW())`,
-            [selectionId, conditionId, finalId]
-          );
-        } else {
-          console.warn(`Condition not found for issue: ${issueText}`);
-        }
-      }
-      console.log(`✅ Saved ${issues.length} selected conditions for ${finalId}`);
-    }
 
     // Upload photos to Supabase Storage
     const files = req.files as Express.Multer.File[];

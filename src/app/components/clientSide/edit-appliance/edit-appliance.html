@@ -1,0 +1,165 @@
+<main class="page-bg py-5">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading appliance details...</p>
+  </div>
+
+  <!-- Edit Form -->
+  <div *ngIf="!loading" class="form-container">
+    <!-- Header -->
+    <div class="edit-header">
+      <button class="back-btn" (click)="goBack()">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path d="M10 18L2 10L10 2L11.4 3.4L5.8 9H18V11H5.8L11.4 16.6L10 18Z"/>
+        </svg>
+        Back
+      </button>
+      <h2 class="page-title">Edit Appliance Details</h2>
+    </div>
+
+    <!-- Appliance Selection -->
+    <section class="edit-section">
+      <h3 class="section-title">Appliance Information</h3>
+
+      <!-- Category -->
+      <div class="form-section">
+        <label class="question">Appliance Category</label>
+        <select class="form-select" [(ngModel)]="applianceTypeId" (ngModelChange)="onCategoryChange()">
+          <option value="">Select appliance category</option>
+          <option *ngFor="let category of applianceTypes" [value]="category.id">{{ category.name }}</option>
+        </select>
+      </div>
+
+      <!-- Brand -->
+      <div class="form-section">
+        <label class="question">Brand <span class="required">*</span></label>
+        <select class="form-select" [(ngModel)]="selectedBrandId" (ngModelChange)="onBrandChange()">
+          <option value="">Select brand</option>
+          <option *ngFor="let brand of brands" [value]="brand.id">{{ brand.name }}</option>
+        </select>
+      </div>
+
+      <!-- Model -->
+      <div class="form-section">
+        <label class="question">Model <span class="required">*</span></label>
+        <select class="form-select" [(ngModel)]="selectedModelId">
+          <option value="">Select model</option>
+          <option *ngFor="let model of models" [value]="model.id">{{ model.name }}</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- Condition Questions -->
+    <section class="edit-section">
+      <h3 class="section-title">Appliance Condition</h3>
+
+      <div *ngFor="let group of conditionGroups()" class="question-section">
+        <p class="question">{{ group.question }}</p>
+
+        <!-- SINGLE CHOICE -->
+        <div *ngIf="group.type === 'single_choice'" class="form-section">
+          <select class="form-select" [(ngModel)]="selectedAnswers()[group.groupID]" (ngModelChange)="cdr.markForCheck()">
+            <option [ngValue]="null">Select an option</option>
+            <option *ngFor="let opt of group.options" [ngValue]="opt.id">
+              {{ opt.description }}
+            </option>
+          </select>
+        </div>
+
+        <!-- IMAGE SELECTION -->
+        <div *ngIf="group.type === 'image_selection'" class="image-grid">
+          <div *ngFor="let opt of group.options"
+              class="image-option"
+              [class.selected]="selectedAnswers()[group.groupID] === opt.id"
+              (click)="selectImageOption(group.groupID, opt.id)">
+            <img [src]="opt.image || 'assets/placeholder.png'" [alt]="opt.description">
+            <p>{{ opt.description }}</p>
+          </div>
+        </div>
+
+        <!-- MULTIPLE CHOICE -->
+        <div *ngIf="group.type === 'multiple_choice'" class="checklist">
+          <label *ngFor="let opt of group.options" class="checkbox-item">
+            <input type="checkbox"
+                  [checked]="selectedAnswers()[group.groupID]?.includes(opt.id)"
+                  (change)="toggleChecklist(group.groupID, opt.id)">
+            <span>{{ opt.description }}</span>
+          </label>
+        </div>
+
+        <!-- TEXTAREA -->
+        <div *ngIf="group.type === 'textarea'" class="form-section">
+          <textarea class="text-area"
+            [(ngModel)]="selectedAnswers()[group.groupID]"
+            placeholder="Enter your notes...">
+          </textarea>
+        </div>
+
+        <!-- FILE UPLOAD -->
+        <div *ngIf="group.type === 'file_upload'" class="file-upload-section">
+          <!-- Existing Photos -->
+          <div class="existing-photos" *ngIf="existingPhotos.length > 0">
+            <p class="upload-label">Current Photos</p>
+            <div class="thumbnails-grid">
+              <div *ngFor="let photo of existingPhotos; let i = index" class="thumbnail-item">
+                <img [src]="photo" alt="existing photo" class="thumbnail-img" (click)="openImageModal(photo)" />
+                <button class="remove-btn" (click)="removeExistingPhoto(i)">×</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Upload New Photos -->
+          <div class="upload-box"
+              (drop)="onFileDropped($event)"
+              (dragover)="$event.preventDefault()"
+              (dragenter)="$event.preventDefault()"
+              [class.has-files]="uploadedFiles.length > 0">
+
+            <!-- New file thumbnails -->
+            <div class="thumbnails-grid" *ngIf="uploadedFiles.length > 0">
+              <div *ngFor="let file of uploadedFiles; let i = index" class="thumbnail-item">
+                <img [src]="thumbnailUrls[i]"
+                    alt="preview"
+                    (click)="openImageModal(thumbnailUrls[i])"
+                    class="thumbnail-img" />
+                <button class="remove-btn" (click)="removeFile(i); $event.stopPropagation()">×</button>
+              </div>
+            </div>
+
+            <!-- Upload prompt -->
+            <div class="upload-prompt" *ngIf="(uploadedFiles.length + existingPhotos.length) < 10">
+              <p>Drag & drop new photos here, or click to select</p>
+              <input type="file"
+                    multiple
+                    accept="image/*"
+                    (change)="onFileSelected($event)"
+                    class="file-input" />
+              <button class="upload-btn">Choose Files</button>
+            </div>
+
+            <small class="upload-info">
+              Optional · Max {{ 10 - existingPhotos.length }} more photos · Max 5MB each · JPG/PNG/WEBP
+            </small>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Action Buttons -->
+    <div class="btn-row">
+      <button class="btn-secondary" (click)="goBack()" [disabled]="isSubmitting">Cancel</button>
+      <button class="btn-primary" (click)="submitForm()" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Saving...' : 'Save Changes' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Image Modal -->
+  <div class="image-modal-backdrop" *ngIf="showImageModal" (click)="closeImageModal()">
+    <div class="image-modal" (click)="$event.stopPropagation()">
+      <img [src]="selectedImageUrl" alt="Full size" />
+      <button class="close-modal-btn" (click)="closeImageModal()">×</button>
+    </div>
+  </div>
+</main>

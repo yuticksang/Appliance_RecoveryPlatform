@@ -143,8 +143,11 @@ export const getTransactionById = async (req: Request, res: Response) => {
         COALESCE(i."itemStatus", 'Awaiting Pick Up') as "itemStatus",
         i."updatedAt" as "itemStatusUpdatedAt",
         COALESCE(b."brandName", 'Unknown') as brand,
+        b."brandID" as "brandId",
         COALESCE(c."categoryName", 'Unknown') as category,
+        c."categoryID" as "categoryId",
         COALESCE(a."modelCode", 'N/A') as model,
+        a."applianceID" as "modelId",
         COALESCE(a."modelName", 'N/A') as "modelName",
         COALESCE(a.image_url, '') as "imageUrl",
         pa."receiverName" as "addressName",
@@ -429,5 +432,125 @@ export const updateTransaction = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('❌ Error updating transaction:', error);
     res.status(500).json({ message: 'Failed to update transaction', error: error instanceof Error ? error.message : 'Unknown error' });
+  }
+};
+
+/**
+ * Update appliance details for a submitted appliance (seller edit)
+ * Only allowed when transaction status is "Under Review"
+ */
+export const updateApplianceDetails = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params; // transaction ID
+    const {
+      modelId,
+      initialFunctionalStatus,
+      initialPhysicalCondition,
+      selectedConditionIds,
+      notes,
+      existingPhotos
+    } = req.body;
+
+    console.log('📝 Updating appliance details for transaction:', { id, ...req.body });
+
+    // Get the submittedApplianceID and current transaction status
+    const txnResult = await pool.query(
+      `SELECT sa."submittedApplianceID", t."transactionStatus", t."sellerID"
+       FROM "Transaction" t
+       JOIN "SubmittedAppliance" sa ON t."submittedApplianceID" = sa."submittedApplianceID"
+       WHERE t."transactionID" = $1`,
+      [id]
+    );
+
+    if (txnResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
+
+    const submittedApplianceID = txnResult.rows[0].submittedApplianceID;
+    const currentStatus = txnResult.rows[0].transactionStatus;
+
+    // Only allow editing if status is "Under Review"
+    if (currentStatus !== 'Under Review') {
+      return res.status(403).json({
+        message: 'Appliance details can only be edited when transaction status is "Under Review"'
+      });
+    }
+
+    // Update model (applianceID) if provided
+    if (modelId) {
+      await pool.query(
+        `UPDATE "SubmittedAppliance"
+         SET "applianceID" = $1
+         WHERE "submittedApplianceID" = $2`,
+        [modelId, submittedApplianceID]
+      );
+      console.log('✅ Updated model to:', modelId);
+    }
+
+    // Update condition fields
+    const updateFields: string[] = [];
+    const updateValues: any[] = [];
+    let paramIndex = 1;
+
+    if (initialFunctionalStatus !== undefined) {
+      updateFields.push(`"initialFunctionalStatus" = $${paramIndex++}`);
+      updateValues.push(initialFunctionalStatus);
+    }
+    if (initialPhysicalCondition !== undefined) {
+      updateFields.push(`"initialPhysicalCondition" = $${paramIndex++}`);
+      updateValues.push(initialPhysicalCondition);
+    }
+    if (notes !== undefined) {
+      updateFields.push(`note = $${paramIndex++}`);
+      updateValues.push(notes);
+    }
+
+    if (updateFields.length > 0) {
+      updateValues.push(submittedApplianceID);
+      await pool.query(
+        `UPDATE "SubmittedAppliance"
+         SET ${updateFields.join(', ')}
+         WHERE "submittedApplianceID" = $${paramIndex}`,
+        updateValues
+      );
+      console.log('✅ Updated condition fields');
+    }
+
+    // Update selected conditions if provided
+    if (selectedConditionIds) {
+      const conditionIds = JSON.parse(selectedConditionIds);
+
+      // Delete existing condition selections
+      await pool.query(
+        `DELETE FROM "ConditionSelected" WHERE "submittedApplianceID" = $1`,
+        [submittedApplianceID]
+      );
+
+      // Insert new condition selections
+      if (conditionIds.length > 0) {
+        const conditionValues = conditionIds.map((condId: string) =>
+          `('${submittedApplianceID}', '${condId}', true)`
+        ).join(',');
+
+        await pool.query(
+          `INSERT INTO "ConditionSelected" ("submittedApplianceID", "conditionID", "isChecked")
+           VALUES ${conditionValues}`
+        );
+        console.log(`✅ Updated ${conditionIds.length} condition selections`);
+      }
+    }
+
+    console.log('✅ Appliance details updated successfully');
+
+    res.json({
+      message: 'Appliance details updated successfully',
+      submittedApplianceID
+    });
+  } catch (error) {
+    console.error('❌ Error updating appliance details:', error);
+    res.status(500).json({
+      message: 'Failed to update appliance details',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
 };

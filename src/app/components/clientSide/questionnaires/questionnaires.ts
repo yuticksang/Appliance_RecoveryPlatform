@@ -16,6 +16,20 @@ interface Address {
   isDefault?: boolean;
 }
 
+interface ConditionGroup {
+  groupID: string;
+  sectionName: string;
+  question: string;
+  type: 'single_choice' | 'image_selection' | 'multiple_choice' | 'file_upload' | 'textarea';
+  displayOrder: number;
+  options: {
+    id: string;
+    code: string;
+    description: string;
+    image: string | null;
+  }[];
+}
+
 
 @Component({
   selector: 'app-questionnaires',
@@ -39,6 +53,8 @@ export class QuestionnairesComponent implements OnInit{
   totalSteps: number = 5;
 
   steps: number[] = [1, 2, 3, 4, 5];
+  isSubmitting = false;
+  
 
   // Step 1 - Appliance Type
   applianceTypeId: string = '';
@@ -53,27 +69,21 @@ export class QuestionnairesComponent implements OnInit{
   models: SimpleItem[] = [];
   
 
+  // Step 3 - With Condition Questions
+  conditionGroups = signal<ConditionGroup[]>([]);
+  selectedAnswers = signal<Record<string, any>>({}); // groupID → answer
+  group!: ConditionGroup;  // ← even better, with type
+
+
+
   // Step 3 - Condition Questionnaires
-  workingStatus: string = 'Partially working';
-  selectedIssues: string[] = [];
-  physicalCondition: string = '';
   notes: string = '';
   uploadedFiles: File[] = [];
+  thumbnailUrls: string[] = [];        // For 120x120 previews
+  selectedImageUrl: string = '';       // For modal
+  showImageModal = false;
 
-  issues: string[] = [
-    'Unusual sounds',
-    'Machine draining and spinning properly',
-    'Buttons, controls, and settings working correctly',
-    'Water leaking'
-  ];
 
-  physicalOptions = [
-    { id: 'a', label: 'Like New', img: '../../../assets/image/like-new.png' },
-    { id: 'b', label: 'Minor Scratches', img: '../../../assets/image/minor-scratches.png' },
-    { id: 'c', label: 'Missing Parts', img: '../../../assets/image/missing-parts.png' },
-    { id: 'd', label: 'Heavily Damaged', img: '../../../assets/image/heavily-damaged.png' },
-    { id: 'e', label: 'Rust or Corrosion', img: '../../../assets/image/rust.png' }
-  ];
 
   // Step 4 - Valuation
   valuationScore: number = 0;
@@ -124,14 +134,6 @@ export class QuestionnairesComponent implements OnInit{
     return new Date(this.pickupDate) < new Date(this.minDate);
   }
 
-  // Methods
-  toggleIssue(issue: string) {
-    if (this.selectedIssues.includes(issue)) {
-      this.selectedIssues = this.selectedIssues.filter(i => i !== issue);
-    } else {
-      this.selectedIssues.push(issue);
-    }
-  }
 
   allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
   maxFiles = 10;
@@ -155,20 +157,59 @@ export class QuestionnairesComponent implements OnInit{
 
   handleFileUpload(newFiles: File[]) {
     const valid: File[] = [];
+    const newThumbnails: string[] = [];
+
     for (const file of newFiles) {
       if (this.uploadedFiles.length >= this.maxFiles) break;
       if (!this.allowedTypes.includes(file.type)) continue;
       if (file.size / (1024 * 1024) > this.maxSizeMB) continue;
+
       valid.push(file);
+
+      // Create 120x120 thumbnail
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = 120;
+          canvas.height = 120;
+          const ctx = canvas.getContext('2d')!;
+          
+          // Crop to square from center
+          const size = Math.min(img.width, img.height);
+          const x = (img.width - size) / 2;
+          const y = (img.height - size) / 2;
+          
+          ctx.drawImage(img, x, y, size, size, 0, 0, 120, 120);
+          const thumbnail = canvas.toDataURL('image/jpeg', 0.8);
+          this.thumbnailUrls.push(thumbnail);
+          this.cdr.markForCheck();
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
     }
 
     this.uploadedFiles = [...this.uploadedFiles, ...valid];
-    this.cdr.markForCheck();   // ← BEST with OnPush
+    this.cdr.markForCheck();
   }
+
 
   removeFile(index: number) {
     this.uploadedFiles = this.uploadedFiles.filter((_, i) => i !== index);
+    this.thumbnailUrls = this.thumbnailUrls.filter((_, i) => i !== index);
     this.cdr.markForCheck();
+  }
+
+  openImageModal(url: string) {
+    this.selectedImageUrl = url;
+    this.showImageModal = true;
+  }
+
+  closeImageModal() {
+    this.showImageModal = false;
+    this.selectedImageUrl = '';
   }
 
   getFileUrl(file: File): string {
@@ -178,57 +219,49 @@ export class QuestionnairesComponent implements OnInit{
   calculateValuation() {
     let score = 0;
 
-    // Working status
-    if (this.workingStatus === 'Fully working') score += 40;
-    else if (this.workingStatus === 'Partially working') score += 25;
-    else score += 10;
+    // Functional Status (CG001)
+    const funcDesc = this.getFunctionalStatus();
+    if (funcDesc?.includes('Fully')) score += 40;
+    else if (funcDesc?.includes('Partially')) score += 25;
+    else if (funcDesc) score += 10;
 
-    // Component issues
-    if (this.selectedIssues.includes('None of the above')) score += 30;
-    else score += Math.max(0, 30 - this.selectedIssues.length * 5);
+    // Physical Condition (CG002)
+    const physDesc = this.getPhysicalCondition();
+    if (physDesc?.includes('Like New')) score += 30;
+    else if (physDesc?.includes('Minor')) score += 25;
+    else if (physDesc?.includes('Missing')) score += 15;
+    else if (physDesc?.includes('Heavily')) score += 10;
+    else if (physDesc?.includes('Rust')) score += 5;
 
-    // Physical condition
-    switch (this.physicalCondition) {
-      case 'Like New':
-        score += 30;
-        break;
-      case 'Minor Scratches':
-        score += 25;
-        break;
-      case 'Missing Parts':
-        score += 15;
-        break;
-      case 'Heavily Damaged':
-        score += 10;
-        break;
-      case 'Rust or Corrosion':
-        score += 5;
-        break;
-      default:
-        score += 0;
+    // Issues
+    const issueCount = this.getSelectedIssueDescriptions().length;
+    if (issueCount === 0 || this.getSelectedIssueDescriptions().includes('None of the above')) {
+      score += 30;
+    } else {
+      score += Math.max(0, 30 - issueCount * 5);
     }
 
-    // Clamp score to 100
     this.valuationScore = Math.min(score, 100);
-
-    // Label
-    if (this.valuationScore >= 85) this.valuationLabel = 'Excellent';
-    else if (this.valuationScore >= 70) this.valuationLabel = 'Good';
-    else if (this.valuationScore >= 50) this.valuationLabel = 'Fair';
-    else this.valuationLabel = 'Poor';
-
-    // Worth in RM (mock logic)
-    this.valuationWorth = Math.round((this.valuationScore / 100) * 1500); // Example base value = RM1500
+    this.valuationLabel = this.valuationScore >= 85 ? 'Excellent' 
+      : this.valuationScore >= 70 ? 'Good'
+      : this.valuationScore >= 50 ? 'Fair' : 'Poor';
+    this.valuationWorth = Math.round((this.valuationScore / 100) * 1500);
   }
 
 
   ngOnInit() {
     console.log('User:', this.currentUser());
     this.loadCategories(); // load actual types from backend
+    if (this.currentStep === 3) {
+      this.loadConditionGroups();
+    }
   }
 
   set currentStep(value: number) {
     this._currentStep = value;
+    if (value === 3) {
+      this.loadConditionGroups();
+    }
     if (value === 5 && this.addresses().length === 0) {
       console.log('STEP 5: Loading addresses...');
       this.loadAddresses();
@@ -276,7 +309,7 @@ export class QuestionnairesComponent implements OnInit{
     this.selectedBrand = this.brands.find(b => String(b.id) === String(this.selectedBrandId))?.name ?? '';
     if (!this.selectedBrandId) return;
 
-    this.questionnaireService.getModelsByBrand(this.selectedBrandId).subscribe({
+    this.questionnaireService.getModelsByCategoryBrand(this.applianceTypeId, this.selectedBrandId).subscribe({
       next: (ms) => {
         this.models = ms;
       },
@@ -299,6 +332,109 @@ export class QuestionnairesComponent implements OnInit{
     const m = this.models.find(x => String(x.id) === String(this.selectedModelId));
     return m ? String(m.name) : '';
   }
+
+
+  // Step 3 - Load Condition Groups and Options
+  loadConditionGroups() {
+    this.questionnaireService.getConditionGroups().subscribe({
+      next: (groups) => {
+        this.conditionGroups.set(groups);
+        // Initialize answers
+        const initial: Record<string, any> = {};
+        groups.forEach(g => {
+          if (g.type === 'multiple_choice') initial[g.groupID] = [];
+          else if (g.type === 'single_choice' || g.type === 'image_selection') initial[g.groupID] = '';
+          else if (g.type === 'textarea') initial[g.groupID] = '';
+        });
+        this.selectedAnswers.set(initial);
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.alertService.error('Failed to load questions');
+      }
+    });
+  }
+
+  toggleChecklist(groupId: string, optionId: string) {
+    this.selectedAnswers.update(ans => {
+      const current = ans[groupId] || [];
+      if (current.includes(optionId)) {
+        return { ...ans, [groupId]: current.filter((id: string) => id !== optionId) };
+      } else {
+        return { ...ans, [groupId]: [...current, optionId] };
+      }
+    });
+    this.onAnswerChange();
+  }
+
+  onAnswerChange() {
+    this.cdr.markForCheck();
+    this.calculateValuation(); // if needed
+  }
+
+  selectImageOption(groupId: string, optionId: string) {
+    this.selectedAnswers.update(current => ({
+      ...current,
+      [groupId]: optionId
+    }));
+    this.onAnswerChange();
+  }
+
+  toggleChecklistOption(groupId: string, optionId: string) {
+    this.selectedAnswers.update(current => {
+      const currentList = (current[groupId] || []) as string[];
+      if (currentList.includes(optionId)) {
+        return {
+          ...current,
+          [groupId]: currentList.filter(id => id !== optionId)
+        };
+      } else {
+        return {
+          ...current,
+          [groupId]: [...currentList, optionId]
+        };
+      }
+    });
+    this.onAnswerChange();
+  }
+
+  // Get answer for a specific group (by groupID)
+  getAnswer(groupId: string): any {
+    return this.selectedAnswers()[groupId];
+  }
+
+  getFunctionalStatus(): string {
+    const group = this.conditionGroups().find(g =>
+      g.sectionName.toLowerCase().includes('functional') ||
+      g.question.toLowerCase().includes('working')
+    );
+    if (!group) return '—';
+    const selectedId = this.selectedAnswers()[group.groupID];
+    return group.options.find(opt => opt.id === selectedId)?.description || '—';
+  }
+
+  getPhysicalCondition(): string {
+    const group = this.conditionGroups().find(g =>
+      g.sectionName.toLowerCase().includes('appearance') ||
+      g.sectionName.toLowerCase().includes('physical') ||
+      g.question.toLowerCase().includes('condition')
+    );
+    if (!group) return '—';
+    const selectedId = this.selectedAnswers()[group.groupID];
+    return group.options.find(opt => opt.id === selectedId)?.description || '—';
+  }
+
+  getSelectedIssueDescriptions(): string[] {
+    const group = this.conditionGroups().find(g => g.type === 'multiple_choice');
+    if (!group) return [];
+
+    const selectedIds = this.selectedAnswers()[group.groupID] || [];
+    return group.options
+      .filter(opt => selectedIds.includes(opt.id))
+      .map(opt => opt.description);
+  }
+
+
 
   // ──────────────────────────────────────────────────────────────────────
   //  ADDRESS CRUD -- step 5
@@ -495,10 +631,23 @@ export class QuestionnairesComponent implements OnInit{
 
     // Step 3 validation (ensure physical condition and working status selected)
     if (this.currentStep === 3) {
-      if (!this.workingStatus || !this.physicalCondition) {
-        this.alertService.error('Please answer all required questions.');
+      const unanswered = this.conditionGroups().filter(group => {
+        // Skip file_upload and textarea (optional)
+        if (group.type === 'file_upload' || group.type === 'textarea') return false;
+
+        const answer = this.selectedAnswers()[group.groupID];
+        return answer === undefined || answer === '' || answer === null || 
+              (Array.isArray(answer) && answer.length === 0);
+      });
+
+      if (unanswered.length > 0) {
+        this.alertService.error('Please complete all required questions.');
         return;
       }
+
+      // FILE UPLOAD IS 100% OPTIONAL — NO CHECK HERE
+      // User can skip even if file_upload group exists
+
       this.calculateValuation();
     }
 
@@ -537,10 +686,7 @@ export class QuestionnairesComponent implements OnInit{
     this.currentStep = 1;
     this.applianceTypeId = '';
     this.selectedBrand = '';
-    this.selectedModel = '';
-    this.workingStatus = 'Partially working';
-    this.selectedIssues = [];
-    this.physicalCondition = '';
+    this.selectedModelId = '';
     this.notes = '';
     this.uploadedFiles = [];
     this.valuationScore = 0;
@@ -551,37 +697,98 @@ export class QuestionnairesComponent implements OnInit{
   }
 
   submitForm() {
-    const user = this.currentUser();
-    const defaultAddr = this.defaultAddress();
+    // Prevent double submission
+    if (this.isSubmitting) return;
+    this.isSubmitting = true;
 
-    if (!user || !defaultAddr?.id) {
-      this.alertService.error('Please log in and select address');
+    const defaultAddr = this.defaultAddress();
+    if (!defaultAddr?.id) {
+      this.alertService.error('Please select a pickup address');
+      this.isSubmitting = false;
       return;
     }
 
+    // ──────────────────────────────────────────────────────────────
+    // 1. FUNCTIONAL STATUS — DYNAMIC & SAFE (no hardcoded ID)
+    // ──────────────────────────────────────────────────────────────
+    const functionalGroup = this.conditionGroups().find(g =>
+      g.sectionName.toLowerCase().includes('functional') ||
+      g.question.toLowerCase().includes('working') ||
+      g.question.toLowerCase().includes('function')
+    );
+
+    const functionalStatus = functionalGroup
+      ? functionalGroup.options.find(opt =>
+          opt.id === this.selectedAnswers()[functionalGroup.groupID]
+        )?.description || null
+      : null;
+
+    // ──────────────────────────────────────────────────────────────
+    // 2. PHYSICAL CONDITION — DYNAMIC & SAFE
+    // ──────────────────────────────────────────────────────────────
+    const appearanceGroup = this.conditionGroups().find(g =>
+      g.sectionName.toLowerCase().includes('appearance') ||
+      g.sectionName.toLowerCase().includes('physical') ||
+      g.sectionName.toLowerCase().includes('condition') ||
+      g.question.toLowerCase().includes('look') ||
+      g.question.toLowerCase().includes('damage')
+    );
+
+    const physicalCondition = appearanceGroup
+      ? appearanceGroup.options.find(opt =>
+          opt.id === this.selectedAnswers()[appearanceGroup.groupID]
+        )?.description || null
+      : null;
+
+    // ──────────────────────────────────────────────────────────────
+    // 3. CHECKLIST ISSUES (multiple_choice)
+    // ──────────────────────────────────────────────────────────────
+    const checklistGroup = this.conditionGroups().find(g => g.type === 'multiple_choice');
+    const selectedIssueIds = checklistGroup
+      ? (this.selectedAnswers()[checklistGroup.groupID] || []) as string[]
+      : [];
+
+    // ──────────────────────────────────────────────────────────────
+    // 4. NOTES (textarea)
+    // ──────────────────────────────────────────────────────────────
+    const notesGroup = this.conditionGroups().find(g => g.type === 'textarea');
+    const notes = notesGroup
+      ? (this.selectedAnswers()[notesGroup.groupID] || '').toString().trim() || null
+      : null;
+
+    // ──────────────────────────────────────────────────────────────
+    // 5. FINAL PAYLOAD — CLEAN & COMPLETE
+    // ──────────────────────────────────────────────────────────────
     const payload = {
-      modelId: this.selectedModelId,           // ← applianceID
-      workingStatus: this.workingStatus,
-      physicalCondition: this.physicalCondition,
-      notes: this.notes || null,
+      modelId: this.selectedModelId,
       addressId: defaultAddr.id,
-      valuationWorth: this.valuationWorth,
-      issues: JSON.stringify(this.selectedIssues),
       pickupDate: this.pickupDate,
-      pickupTime: this.pickupTime
+      pickupTime: this.pickupTime,
+      valuationWorth: this.valuationWorth,
+
+      initialFunctionalStatus: functionalStatus,
+      initialPhysicalCondition: physicalCondition,
+      selectedConditionIds: JSON.stringify(selectedIssueIds),
+      notes: notes
     };
 
-    console.log('PAYLOAD →', payload);
+    console.log('FINAL BULLETPROOF PAYLOAD →', payload);
 
+    // ──────────────────────────────────────────────────────────────
+    // 6. SUBMIT
+    // ──────────────────────────────────────────────────────────────
     this.questionnaireService.submitQuestionnaire(payload, this.uploadedFiles).subscribe({
-      next: (res) => {
-        this.alertService.success('Submitted!');
+      next: () => {
+        this.alertService.success('Submitted successfully!');
         this.currentStep = 6;
         this.cdr.markForCheck();
+        this.isSubmitting = false;
       },
       error: (err) => {
         console.error('Submit failed:', err);
-        this.alertService.error(err.error?.message || 'Failed');
+        this.alertService.error(err.error?.message || 'Submission failed. Please try again.');
+        this.cdr.markForCheck();
+        this.isSubmitting = false;
       }
     });
   }
