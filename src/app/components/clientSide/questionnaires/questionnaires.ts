@@ -51,6 +51,7 @@ export class QuestionnairesComponent implements OnInit{
   // Step tracking
   private _currentStep = 1;
   totalSteps: number = 5;
+  maxStepReached: number = 1; // Track the furthest step user has reached
 
   steps: number[] = [1, 2, 3, 4, 5];
   isSubmitting = false;
@@ -344,14 +345,20 @@ export class QuestionnairesComponent implements OnInit{
       next: (groups) => {
         this.conditionGroups.set(groups);
 
-        // Initialize answers
-        const initial: Record<string, any> = {};
-        groups.forEach(g => {
-          if (g.type === 'checkbox') initial[g.groupID] = [];
-          else if (g.type === 'radio' || g.type === 'image') initial[g.groupID] = '';
-          else if (g.type === 'textarea') initial[g.groupID] = '';
-        });
-        this.selectedAnswers.set(initial);
+        // Initialize answers ONLY if they don't exist yet (preserve existing answers)
+        const currentAnswers = this.selectedAnswers();
+        const hasExistingAnswers = Object.keys(currentAnswers).length > 0;
+
+        if (!hasExistingAnswers) {
+          const initial: Record<string, any> = {};
+          groups.forEach(g => {
+            if (g.type === 'checkbox') initial[g.groupID] = [];
+            else if (g.type === 'radio' || g.type === 'image') initial[g.groupID] = '';
+            else if (g.type === 'textarea') initial[g.groupID] = '';
+          });
+          this.selectedAnswers.set(initial);
+        }
+
         this.cdr.markForCheck();
       },
       error: (err) => {
@@ -706,7 +713,13 @@ export class QuestionnairesComponent implements OnInit{
         return;
       }
     }
-    if (this.currentStep < this.totalSteps) this.currentStep++;
+    if (this.currentStep < this.totalSteps) {
+      this.currentStep++;
+      // Update max step reached when moving forward
+      if (this.currentStep > this.maxStepReached) {
+        this.maxStepReached = this.currentStep;
+      }
+    }
   }
 
 
@@ -719,16 +732,25 @@ export class QuestionnairesComponent implements OnInit{
   }
 
   goToStep(step: number) {
-    // Optional: prevent jumping forward to unfinished steps
-    if (step <= this.currentStep) {
+    // Allow jumping to any step that user has already reached
+    if (step <= this.maxStepReached) {
       this.currentStep = step;
+    } else {
+      // Show warning if trying to skip ahead
+      this.alertService.error('Please complete the current step before proceeding.');
     }
+  }
+
+  // Helper to check if a step is accessible (for UI styling)
+  isStepAccessible(step: number): boolean {
+    return step <= this.maxStepReached;
   }
 
 
   startOver() {
     // Reset form and return to Step 1
     this.currentStep = 1;
+    this.maxStepReached = 1; // Reset max step reached
     this.applianceTypeId = '';
     this.selectedBrand = '';
     this.selectedModelId = '';

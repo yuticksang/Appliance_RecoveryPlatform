@@ -33,6 +33,31 @@
   align-items: center;
   position: relative;
   cursor: pointer;
+  transition: opacity 0.3s ease;
+
+  // Accessible steps are clickable
+  &.accessible {
+    cursor: pointer;
+
+    &:hover .circle {
+      transform: scale(1.05);
+      border-color: #4c6faf;
+    }
+  }
+
+  // Disabled steps are not clickable
+  &.disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+
+    .circle {
+      cursor: not-allowed;
+    }
+
+    &:hover .circle {
+      transform: none;
+    }
+  }
 }
 
 .circle {

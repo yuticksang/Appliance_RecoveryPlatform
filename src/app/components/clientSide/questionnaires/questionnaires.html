@@ -5,7 +5,12 @@
     <div
       *ngFor="let step of steps; let i = index"
       class="step"
-      [ngClass]="{ active: currentStep === i + 1, completed: currentStep > i + 1 }"
+      [ngClass]="{
+        active: currentStep === i + 1,
+        completed: currentStep > i + 1,
+        accessible: isStepAccessible(i + 1),
+        disabled: !isStepAccessible(i + 1)
+      }"
       (click)="goToStep(i + 1)"
     >
       <div class="circle">{{ i + 1 }}</div>
