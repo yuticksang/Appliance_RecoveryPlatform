@@ -26,7 +26,7 @@ export interface ConditionGroup {
   groupID: string;
   sectionName: string;
   question: string;
-  type: 'single_choice' | 'image_selection' | 'multiple_choice' | 'file_upload' | 'textarea';
+  type: 'radio' | 'image' | 'checkbox' | 'file_upload' | 'textarea';
   displayOrder: number;
   options: ConditionOption[];
 }

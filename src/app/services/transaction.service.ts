@@ -214,20 +214,4 @@ export class TransactionService {
       );
   }
 
-  /**
-   * Update appliance details for a submitted appliance (seller edit)
-   * Only works when transaction status is "Under Review"
-   */
-  updateApplianceDetails(transactionId: string | number, updateData: any): Observable<any> {
-    const token = this.getAuthToken();
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-
-    return this.http.put<any>(`${this.apiUrl}/transactions/${transactionId}/appliance`, updateData, { headers })
-      .pipe(
-        catchError(error => {
-          console.error('Error updating appliance details:', error);
-          throw error;
-        })
-      );
-  }
 }

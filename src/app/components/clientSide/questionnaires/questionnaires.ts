@@ -20,7 +20,7 @@ interface ConditionGroup {
   groupID: string;
   sectionName: string;
   question: string;
-  type: 'single_choice' | 'image_selection' | 'multiple_choice' | 'file_upload' | 'textarea';
+  type: 'radio' | 'image' | 'checkbox' | 'file_upload' | 'textarea';
   displayOrder: number;
   options: {
     id: string;
@@ -197,8 +197,13 @@ export class QuestionnairesComponent implements OnInit{
 
 
   removeFile(index: number) {
-    this.uploadedFiles = this.uploadedFiles.filter((_, i) => i !== index);
-    this.thumbnailUrls = this.thumbnailUrls.filter((_, i) => i !== index);
+    // Remove both the file and its thumbnail
+    this.uploadedFiles.splice(index, 1);
+    this.thumbnailUrls.splice(index, 1);
+
+    // Force change detection
+    this.uploadedFiles = [...this.uploadedFiles];
+    this.thumbnailUrls = [...this.thumbnailUrls];
     this.cdr.markForCheck();
   }
 
@@ -252,9 +257,9 @@ export class QuestionnairesComponent implements OnInit{
   ngOnInit() {
     console.log('User:', this.currentUser());
     this.loadCategories(); // load actual types from backend
-    if (this.currentStep === 3) {
-      this.loadConditionGroups();
-    }
+
+    // ALWAYS load condition groups on init
+    this.loadConditionGroups();
   }
 
   set currentStep(value: number) {
@@ -263,7 +268,6 @@ export class QuestionnairesComponent implements OnInit{
       this.loadConditionGroups();
     }
     if (value === 5 && this.addresses().length === 0) {
-      console.log('STEP 5: Loading addresses...');
       this.loadAddresses();
     }
   }
@@ -339,17 +343,19 @@ export class QuestionnairesComponent implements OnInit{
     this.questionnaireService.getConditionGroups().subscribe({
       next: (groups) => {
         this.conditionGroups.set(groups);
+
         // Initialize answers
         const initial: Record<string, any> = {};
         groups.forEach(g => {
-          if (g.type === 'multiple_choice') initial[g.groupID] = [];
-          else if (g.type === 'single_choice' || g.type === 'image_selection') initial[g.groupID] = '';
+          if (g.type === 'checkbox') initial[g.groupID] = [];
+          else if (g.type === 'radio' || g.type === 'image') initial[g.groupID] = '';
           else if (g.type === 'textarea') initial[g.groupID] = '';
         });
         this.selectedAnswers.set(initial);
         this.cdr.markForCheck();
       },
       error: (err) => {
+        console.error('Failed to load condition groups:', err);
         this.alertService.error('Failed to load questions');
       }
     });
@@ -403,29 +409,68 @@ export class QuestionnairesComponent implements OnInit{
     return this.selectedAnswers()[groupId];
   }
 
-  getFunctionalStatus(): string {
-    const group = this.conditionGroups().find(g =>
-      g.sectionName.toLowerCase().includes('functional') ||
-      g.question.toLowerCase().includes('working')
-    );
+  // Update answer for radio/textarea
+  updateAnswer(groupId: string, value: any) {
+    this.selectedAnswers.update(ans => ({...ans, [groupId]: value}));
+    this.onAnswerChange();
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // DYNAMIC ANSWER DISPLAY HELPERS (for Step 4 & 5)
+  // ─────────────────────────────────────────────────────────
+
+  // Get formatted answer for any question group
+  getFormattedAnswer(groupId: string): string {
+    const group = this.conditionGroups().find(g => g.groupID === groupId);
     if (!group) return '—';
-    const selectedId = this.selectedAnswers()[group.groupID];
-    return group.options.find(opt => opt.id === selectedId)?.description || '—';
+
+    const answer = this.selectedAnswers()[groupId];
+
+    // For radio/image: single selection
+    if (group.type === 'radio' || group.type === 'image') {
+      if (!answer) return '—';
+      return group.options.find(opt => opt.id === answer)?.description || '—';
+    }
+
+    // For checkbox: multiple selections
+    if (group.type === 'checkbox') {
+      if (!Array.isArray(answer) || answer.length === 0) return 'None selected';
+      return answer
+        .map(id => group.options.find(opt => opt.id === id)?.description)
+        .filter(Boolean)
+        .join(', ');
+    }
+
+    // For textarea: free text
+    if (group.type === 'textarea') {
+      return answer || '—';
+    }
+
+    return '—';
+  }
+
+  // Get all answered questions (exclude file_upload)
+  getAnsweredQuestions() {
+    return this.conditionGroups()
+      .filter(g => g.type !== 'file_upload')
+      .map(g => ({
+        question: g.question,
+        sectionName: g.sectionName,
+        answer: this.getFormattedAnswer(g.groupID)
+      }));
+  }
+
+  // Backwards compatibility helpers (for existing hardcoded logic)
+  getFunctionalStatus(): string {
+    return this.getFormattedAnswer('CG001');
   }
 
   getPhysicalCondition(): string {
-    const group = this.conditionGroups().find(g =>
-      g.sectionName.toLowerCase().includes('appearance') ||
-      g.sectionName.toLowerCase().includes('physical') ||
-      g.question.toLowerCase().includes('condition')
-    );
-    if (!group) return '—';
-    const selectedId = this.selectedAnswers()[group.groupID];
-    return group.options.find(opt => opt.id === selectedId)?.description || '—';
+    return this.getFormattedAnswer('CG002');
   }
 
   getSelectedIssueDescriptions(): string[] {
-    const group = this.conditionGroups().find(g => g.type === 'multiple_choice');
+    const group = this.conditionGroups().find(g => g.type === 'checkbox');
     if (!group) return [];
 
     const selectedIds = this.selectedAnswers()[group.groupID] || [];
@@ -709,55 +754,49 @@ export class QuestionnairesComponent implements OnInit{
     }
 
     // ──────────────────────────────────────────────────────────────
-    // 1. FUNCTIONAL STATUS — DYNAMIC & SAFE (no hardcoded ID)
+    // DYNAMIC SUBMISSION: Build answers array for ALL question groups
     // ──────────────────────────────────────────────────────────────
-    const functionalGroup = this.conditionGroups().find(g =>
-      g.sectionName.toLowerCase().includes('functional') ||
-      g.question.toLowerCase().includes('working') ||
-      g.question.toLowerCase().includes('function')
-    );
+    const questionAnswers = this.conditionGroups().map(group => {
+      const answer = this.selectedAnswers()[group.groupID];
 
-    const functionalStatus = functionalGroup
-      ? functionalGroup.options.find(opt =>
-          opt.id === this.selectedAnswers()[functionalGroup.groupID]
-        )?.description || null
-      : null;
+      // For radio/image: single conditionID
+      if (group.type === 'radio' || group.type === 'image') {
+        return {
+          groupID: group.groupID,
+          type: group.type,
+          answer: answer || null, // conditionID
+          answerText: answer ? group.options.find(opt => opt.id === answer)?.description : null
+        };
+      }
 
-    // ──────────────────────────────────────────────────────────────
-    // 2. PHYSICAL CONDITION — DYNAMIC & SAFE
-    // ──────────────────────────────────────────────────────────────
-    const appearanceGroup = this.conditionGroups().find(g =>
-      g.sectionName.toLowerCase().includes('appearance') ||
-      g.sectionName.toLowerCase().includes('physical') ||
-      g.sectionName.toLowerCase().includes('condition') ||
-      g.question.toLowerCase().includes('look') ||
-      g.question.toLowerCase().includes('damage')
-    );
+      // For checkbox: array of conditionIDs
+      if (group.type === 'checkbox') {
+        return {
+          groupID: group.groupID,
+          type: group.type,
+          answer: Array.isArray(answer) ? answer : [], // array of conditionIDs
+          answerText: Array.isArray(answer)
+            ? answer.map(id => group.options.find(opt => opt.id === id)?.description).filter(Boolean)
+            : []
+        };
+      }
 
-    const physicalCondition = appearanceGroup
-      ? appearanceGroup.options.find(opt =>
-          opt.id === this.selectedAnswers()[appearanceGroup.groupID]
-        )?.description || null
-      : null;
+      // For textarea: free text
+      if (group.type === 'textarea') {
+        return {
+          groupID: group.groupID,
+          type: group.type,
+          answer: answer || null,
+          answerText: answer || null
+        };
+      }
 
-    // ──────────────────────────────────────────────────────────────
-    // 3. CHECKLIST ISSUES (multiple_choice)
-    // ──────────────────────────────────────────────────────────────
-    const checklistGroup = this.conditionGroups().find(g => g.type === 'multiple_choice');
-    const selectedIssueIds = checklistGroup
-      ? (this.selectedAnswers()[checklistGroup.groupID] || []) as string[]
-      : [];
-
-    // ──────────────────────────────────────────────────────────────
-    // 4. NOTES (textarea)
-    // ──────────────────────────────────────────────────────────────
-    const notesGroup = this.conditionGroups().find(g => g.type === 'textarea');
-    const notes = notesGroup
-      ? (this.selectedAnswers()[notesGroup.groupID] || '').toString().trim() || null
-      : null;
+      // For file_upload: skip (handled separately)
+      return null;
+    }).filter(Boolean); // Remove nulls
 
     // ──────────────────────────────────────────────────────────────
-    // 5. FINAL PAYLOAD — CLEAN & COMPLETE
+    // PAYLOAD — FULLY DYNAMIC
     // ──────────────────────────────────────────────────────────────
     const payload = {
       modelId: this.selectedModelId,
@@ -766,16 +805,15 @@ export class QuestionnairesComponent implements OnInit{
       pickupTime: this.pickupTime,
       valuationWorth: this.valuationWorth,
 
-      initialFunctionalStatus: functionalStatus,
-      initialPhysicalCondition: physicalCondition,
-      selectedConditionIds: JSON.stringify(selectedIssueIds),
-      notes: notes
+      // Send all answers as structured JSON
+      questionAnswers: JSON.stringify(questionAnswers)
     };
 
-    console.log('FINAL BULLETPROOF PAYLOAD →', payload);
+    console.log('🚀 DYNAMIC PAYLOAD →', payload);
+    console.log('📋 Question Answers:', questionAnswers);
 
     // ──────────────────────────────────────────────────────────────
-    // 6. SUBMIT
+    // SUBMIT
     // ──────────────────────────────────────────────────────────────
     this.questionnaireService.submitQuestionnaire(payload, this.uploadedFiles).subscribe({
       next: () => {

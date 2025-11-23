@@ -204,11 +204,36 @@
   margin-top: 8px;
 }
 .remove-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 28px;
+  height: 28px;
   border: none;
-  background: transparent;
+  background: rgba(239, 68, 68, 0.95);
+  color: white;
+  border-radius: 50%;
   cursor: pointer;
-  color: #ef4444;
-  font-size: 16px;
+  font-size: 20px;
+  font-weight: bold;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 100;
+  pointer-events: auto; // Ensure it's clickable
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+
+  &:hover {
+    background: rgba(220, 38, 38, 1);
+    transform: scale(1.15);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+  }
+
+  &:active {
+    transform: scale(0.9);
+  }
 }
 
 .text-area {
@@ -340,21 +365,13 @@
   margin: 20px 0;
 }
 
-.upload-box {
+/* Wrapper that contains both thumbnails and upload box */
+.upload-container {
   border: 2px dashed #ccc;
   border-radius: 12px;
-  padding: 20px;
-  text-align: center;
   background: #fafafa;
+  padding: 20px;
   transition: all 0.3s;
-  position: relative;
-  min-height: 180px;
-
-  &.has-files {
-    border-style: solid;
-    border-color: #4c6faf;
-    background: #f8fbff;
-  }
 
   &:hover {
     border-color: #4c6faf;
@@ -362,11 +379,24 @@
   }
 }
 
+/* Thumbnails at the top of the container */
 .thumbnails-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+}
+
+/* Upload box sits below thumbnails */
+.upload-box {
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  text-align: center;
+  background: transparent;
+  transition: all 0.3s;
+  position: relative;
+  min-height: 120px;
 }
 
 .thumbnail-item {
@@ -387,23 +417,6 @@
   height: 120px;
   object-fit: cover;
   display: block;
-}
-
-.remove-btn {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  background: rgba(0,0,0,0.7);
-  color: white;
-  border: none;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  font-size: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .upload-prompt {

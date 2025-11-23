@@ -71,8 +71,10 @@
       <p class="question">{{ group.question }}</p>
 
       <!-- SINGLE CHOICE -->
-      <div *ngIf="group.type === 'single_choice'" class="form-section">
-        <select class="form-select" [(ngModel)]="selectedAnswers()[group.groupID]" (ngModelChange)="onAnswerChange()">
+      <div *ngIf="group.type === 'radio'" class="form-section">
+        <select class="form-select"
+                [ngModel]="getAnswer(group.groupID)"
+                (ngModelChange)="updateAnswer(group.groupID, $event)">
           <option [ngValue]="null">Select an option</option>
           <option *ngFor="let opt of group.options" [ngValue]="opt.id">
             {{ opt.description }}
@@ -81,10 +83,10 @@
       </div>
 
       <!-- IMAGE SELECTION -->
-      <div *ngIf="group.type === 'image_selection'" class="image-grid">
-        <div *ngFor="let opt of group.options" 
+      <div *ngIf="group.type === 'image'" class="image-grid">
+        <div *ngFor="let opt of group.options"
             class="image-option"
-            [class.selected]="selectedAnswers()[group.groupID] === opt.id"
+            [class.selected]="getAnswer(group.groupID) === opt.id"
             (click)="selectImageOption(group.groupID, opt.id)">
           <img [src]="opt.image || 'assets/placeholder.png'" [alt]="opt.description">
           <p>{{ opt.description }}</p>
@@ -92,10 +94,10 @@
       </div>
 
       <!-- MULTIPLE CHOICE -->
-      <div *ngIf="group.type === 'multiple_choice'" class="checklist">
+      <div *ngIf="group.type === 'checkbox'" class="checklist">
         <label *ngFor="let opt of group.options" class="checkbox-item">
           <input type="checkbox"
-                [checked]="selectedAnswers()[group.groupID]?.includes(opt.id)"
+                [checked]="getAnswer(group.groupID)?.includes(opt.id)"
                 (change)="toggleChecklistOption(group.groupID, opt.id)">
           <span>{{ opt.description }}</span>
         </label>
@@ -104,46 +106,54 @@
       <!-- TEXTAREA -->
       <div *ngIf="group.type === 'textarea'" class="form-section">
         <textarea class="text-area"
-          [(ngModel)]="selectedAnswers()[group.groupID]" 
-          placeholder="Enter your notes..."
-          (input)="onAnswerChange()">
+          [ngModel]="getAnswer(group.groupID)"
+          (ngModelChange)="updateAnswer(group.groupID, $event)"
+          placeholder="Enter your notes...">
         </textarea>
       </div>
 
 
       <!-- FILE UPLOAD — MODERN & BEAUTIFUL -->
       <div *ngIf="group.type === 'file_upload'" class="file-upload-section">
-        <div class="upload-box"
-            (drop)="onFileDropped($event)"
-            (dragover)="$event.preventDefault()"
-            (dragenter)="$event.preventDefault()"
-            [class.has-files]="uploadedFiles.length > 0">
-          
-          <!-- Show thumbnails if files exist -->
+        <!-- Container that groups thumbnails and upload box together -->
+        <div class="upload-container">
+          <!-- Show thumbnails at top (OUTSIDE upload-box but inside container) -->
           <div class="thumbnails-grid" *ngIf="uploadedFiles.length > 0">
-            <div *ngFor="let file of uploadedFiles; let i = index" class="thumbnail-item">
-              <img [src]="thumbnailUrls[i]" 
-                  alt="preview" 
-                  (click)="openImageModal(thumbnailUrls[i])" 
+            <div *ngFor="let file of uploadedFiles; let i = index"
+                 class="thumbnail-item"
+                 (click)="$event.stopPropagation()">
+              <img [src]="thumbnailUrls[i]"
+                  alt="preview"
+                  (click)="openImageModal(thumbnailUrls[i]); $event.stopPropagation()"
                   class="thumbnail-img" />
-              <button class="remove-btn" (click)="removeFile(i); $event.stopPropagation()">×</button>
+              <button type="button"
+                      class="remove-btn"
+                      (click)="removeFile(i); $event.stopPropagation(); $event.preventDefault()">×</button>
             </div>
           </div>
 
-          <!-- Upload prompt (only show if less than 10 files) -->
-          <div class="upload-prompt" *ngIf="uploadedFiles.length < 10">
-            <p>Drag & drop photos here, or click to select</p>
-            <input type="file" 
-                  multiple 
-                  accept="image/*" 
-                  (change)="onFileSelected($event)" 
-                  class="file-input" />
-            <button class="upload-btn">Choose Files</button>
-          </div>
+          <!-- Upload box (separate from thumbnails for event handling) -->
+          <div class="upload-box"
+              (drop)="onFileDropped($event)"
+              (dragover)="$event.preventDefault()"
+              (dragenter)="$event.preventDefault()"
+              [class.has-files]="uploadedFiles.length > 0">
 
-          <small class="upload-info">
-            Optional · Max 10 photos · Max 5MB each · JPG/PNG/WEBP
-          </small>
+            <!-- Upload prompt (only show if less than 10 files) -->
+            <div class="upload-prompt" *ngIf="uploadedFiles.length < 10">
+              <p>Drag & drop photos here, or click to select</p>
+              <input type="file"
+                    multiple
+                    accept="image/*"
+                    (change)="onFileSelected($event)"
+                    class="file-input" />
+              <button type="button" class="upload-btn">Choose Files</button>
+            </div>
+
+            <small class="upload-info">
+              Optional · Max 10 photos · Max 5MB each · JPG/PNG/WEBP
+            </small>
+          </div>
         </div>
       </div>
 
@@ -194,20 +204,17 @@
       </div>
     </div>
 
-    <!-- Appliance Details Box -->
+    <!-- Appliance Details Box - DYNAMIC -->
     <div class="valuation-details-box">
       <h4>Quote Summary</h4>
       <ul>
         <li><strong>Category:</strong> {{ getSelectedCategoryName() || '—' }}</li>
         <li><strong>Brand:</strong> {{  getSelectedBrandName() || '—' }}</li>
         <li><strong>Model:</strong> {{ getSelectedModelName() || '—' }}</li>
-        <li><strong>Physical Condition:</strong> {{ getPhysicalCondition() }}</li>
-        <li><strong>Functional Status:</strong> {{ getFunctionalStatus() }}</li>
-        <li><strong>Component Status:</strong> 
-          <span *ngIf="getSelectedIssueDescriptions().length > 0; else noneIssues">
-            {{ getSelectedIssueDescriptions().join(', ') }}
-          </span>
-          <ng-template #noneIssues>—</ng-template>
+
+        <!-- DYNAMIC: Show all answered questions -->
+        <li *ngFor="let qa of getAnsweredQuestions()">
+          <strong>{{ qa.sectionName }}:</strong> {{ qa.answer }}
         </li>
       </ul>
     </div>
@@ -287,14 +294,12 @@
             <li><strong>Category:</strong> {{ getSelectedCategoryName() || '—' }}</li>
             <li><strong>Brand:</strong> {{ getSelectedBrandName() || '—' }}</li>
             <li><strong>Model:</strong> {{ getSelectedModelName() || '—' }}</li>
-            <li><strong>Physical Condition:</strong> {{ getPhysicalCondition() }}</li>
-            <li><strong>Functional Status:</strong> {{ getFunctionalStatus() }}</li>
-            <li><strong>Component Status:</strong>
-              <span *ngIf="getSelectedIssueDescriptions().length > 0; else noneIssues">
-                {{ getSelectedIssueDescriptions().join(', ') }}
-              </span>
-              <ng-template #noneIssues>—</ng-template>
+
+            <!-- DYNAMIC: Show all answered questions -->
+            <li *ngFor="let qa of getAnsweredQuestions()">
+              <strong>{{ qa.sectionName }}:</strong> {{ qa.answer }}
             </li>
+
             <li><strong>Trade-in Value:</strong> RM {{ valuationWorth }} ({{ valuationLabel }})</li>
           </ul>
         </div>

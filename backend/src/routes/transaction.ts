@@ -5,8 +5,7 @@ import {
   getTransactionById,
   createTransaction,
   updateTransactionStatus,
-  updateTransaction,
-  updateApplianceDetails
+  updateTransaction
 } from '../controllers/transactionController';
 import { verifyToken } from '../middleware/authMiddleware';
 
@@ -30,8 +29,6 @@ router.post('/', createTransaction);
 // Update transaction status
 router.put('/:id/status', updateTransactionStatus);
 
-// Update appliance details (seller edit)
-router.put('/:id/appliance', updateApplianceDetails);
 
 // Update transaction (full edit - admin)
 router.put('/:id', updateTransaction);

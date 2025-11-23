@@ -93,33 +93,42 @@ export const getModelsByBrand = async (req: AuthRequest, res: Response) => {
 export const getConditionGroups = async (req: AuthRequest, res: Response) => {
   try {
     const result = await pool.query(`
-          SELECT 
+          SELECT
             cg."groupID",
-            cg."criteriaName" as "sectionName",
-            cg."question_title" as question,
-            cg."question_type" as type,
-            cg."display_order" as "displayOrder",
+            cg."criteriaName" AS "sectionName",
+            cg."question_title" AS question,
+            cg."question_type" AS type,
+            cg."display_order" AS "displayOrder",
             COALESCE(
               json_agg(
                 json_build_object(
                   'id', co."conditionID",
                   'code', co.code,
                   'description', co.description,
-                  'image', 
-                    CASE 
-                      WHEN co.image IS NOT NULL AND co.image != '' 
+                  'image',
+                    CASE
+                      WHEN co.image IS NOT NULL AND co.image != ''
                       THEN 'http://localhost:3000' || co.image
-                      ELSE NULL 
+                      ELSE NULL
                     END
-                ) ORDER BY co."conditionID"
+                )
+                ORDER BY co."conditionID"
               ) FILTER (WHERE co."conditionID" IS NOT NULL),
               '[]'
-            ) as options
+            ) AS options
+
           FROM "ConditionGroup" cg
-          LEFT JOIN "ConditionOption" co ON co."groupID" = cg."groupID"
-          WHERE cg.status = 'ACTIVE'
-          GROUP BY cg."groupID", cg."criteriaName", cg."question_title", cg."question_type", cg."display_order"
-          ORDER BY cg."display_order" ASC
+          LEFT JOIN "ConditionOption" co
+            ON co."groupID" = cg."groupID"
+          AND co.status = 'ACTIVE'          -- ONLY ACTIVE OPTIONS
+          WHERE cg.status = 'ACTIVE'          -- ONLY ACTIVE GROUPS
+          GROUP BY
+            cg."groupID",
+            cg."criteriaName",
+            cg."question_title",
+            cg."question_type",
+            cg."display_order"
+          ORDER BY cg."display_order" ASC;
         `);
 
     res.json(result.rows);
@@ -174,25 +183,32 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    console.log('BODY →', req.body);
-    console.log('FILES →', req.files);
+    console.log('📦 BODY →', req.body);
+    console.log('📁 FILES →', req.files);
 
     const {
       modelId,
       addressId,
-      initialFunctionalStatus,
-      initialPhysicalCondition,
       valuationWorth,
-      selectedConditionIds: selectedIdsJson,
       pickupDate,
       pickupTime,
-      notes
+      questionAnswers: questionAnswersJson
     } = req.body;
 
-
-    if (!modelId || !addressId || !initialFunctionalStatus || !initialPhysicalCondition) {
+    if (!modelId || !addressId) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
+
+    // Parse dynamic question answers
+    let questionAnswers: any[] = [];
+    try {
+      questionAnswers = JSON.parse(questionAnswersJson || '[]');
+    } catch (e) {
+      console.error('Failed to parse questionAnswers:', e);
+      return res.status(400).json({ message: 'Invalid question answers format' });
+    }
+
+    console.log('📋 Parsed Question Answers:', questionAnswers);
 
     // Get seller_id from users table
     const userRes = await client.query(
@@ -201,6 +217,21 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
     );
     if (!userRes.rows[0]?.seller_id) throw new Error('User not found');
     const sellerId = userRes.rows[0].seller_id;
+
+    // ─────────────────────────────────────────────────────────
+    // EXTRACT SPECIFIC FIELDS FROM DYNAMIC ANSWERS
+    // ─────────────────────────────────────────────────────────
+
+    // Strategy: Match by groupID directly (most reliable)
+    // CG001 = Functional Status
+    // CG002 = Physical Condition
+    const functionalAnswer = questionAnswers.find(qa => qa.groupID === 'CG001');
+    const physicalAnswer = questionAnswers.find(qa => qa.groupID === 'CG002');
+    const notesAnswer = questionAnswers.find(qa => qa.type === 'textarea');
+
+    console.log('🔍 Functional Answer:', functionalAnswer);
+    console.log('🔍 Physical Answer:', physicalAnswer);
+    console.log('🔍 Notes Answer:', notesAnswer);
 
     // Generate SAxxx ID
     const submittedApplianceID = await generateSubmittedApplianceID(client);
@@ -218,37 +249,43 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
         sellerId,
         modelId,
         addressId,
-        initialFunctionalStatus,
-        initialPhysicalCondition,
+        functionalAnswer?.answerText || 'Not Specified',
+        physicalAnswer?.answerText || 'Not Specified',
         parseFloat(valuationWorth) || 0,
-        notes || null
+        notesAnswer?.answer || null
       ]
     );
 
-
     const finalId = subRes.rows[0].submittedApplianceID;
 
-    // SAVE CHECKLIST ISSUES TO ConditionSelected
-    if (selectedIdsJson) {
-      let conditionIds: string[] = [];
-      try {
-        conditionIds = JSON.parse(selectedIdsJson);
-      } catch (e) {
-        console.warn('Invalid selectedConditionIds JSON:', selectedIdsJson);
+    // ─────────────────────────────────────────────────────────
+    // SAVE ALL ANSWERS TO ConditionSelected (for ALL types)
+    // ─────────────────────────────────────────────────────────
+    for (const qa of questionAnswers) {
+      // For radio/image: single conditionID
+      if ((qa.type === 'radio' || qa.type === 'image') && qa.answer) {
+        await client.query(
+          `INSERT INTO "ConditionSelected"
+          ("conditionID", "submittedApplianceID", "isChecked", "created_at")
+          VALUES ($1, $2, true, NOW())`,
+          [qa.answer, finalId]
+        );
       }
 
-      if (Array.isArray(conditionIds) && conditionIds.length > 0) {
-        for (const conditionID of conditionIds) {
+      // For checkbox: array of conditionIDs
+      if (qa.type === 'checkbox' && Array.isArray(qa.answer)) {
+        for (const conditionID of qa.answer) {
           await client.query(
-            `INSERT INTO "ConditionSelected" 
+            `INSERT INTO "ConditionSelected"
             ("conditionID", "submittedApplianceID", "isChecked", "created_at")
             VALUES ($1, $2, true, NOW())`,
             [conditionID, finalId]
           );
         }
-        console.log(`Saved ${conditionIds.length} issues for ${finalId}`);
       }
     }
+
+    console.log(`✅ Saved ${questionAnswers.length} question answers for ${finalId}`);
 
     // Insert Pickup Table
     if (!pickupDate || !pickupTime) {
