@@ -87,7 +87,9 @@
                   <th>
                     ID <i class="ri-arrow-up-down-line"></i>
                   </th>
-                  <th class="image-col">Image</th>
+                  @if(item.group.question_type === 'image') {
+                    <th class="image-col">Image</th>
+                  }
                   <th>Description <i class="ri-arrow-up-down-line"></i></th>
                   @if(item.group.criteriaCodePrefix === 'C' || item.group.criteriaCodePrefix === 'OT') {
                     <th>Question <i class="ri-arrow-up-down-line"></i></th>
@@ -102,14 +104,16 @@
                 <tr *ngFor="let option of getPagedOptions(item.group.groupID); let i = index">
                   <td class="narrow">{{ (getCurrentPage(item.group.groupID) - 1) * itemsPerPage() + i + 1 }}</td>
                   <td>{{ option.code || (item.group.criteriaCodePrefix ? item.group.criteriaCodePrefix + (i + 1).toString().padStart(3, '0') : option.conditionID) }}</td>
-                  <td class="image-col">
-                    @if(option.image) {
-                      <img [src]="getImageUrl(option.image)" alt="Condition" class="condition-image" />
-                    }
-                    @else {
-                      <div class="no-image"><i class="ri-image-line"></i></div>
-                    }
-                  </td>
+                  @if(item.group.question_type === 'image') {
+                    <td class="image-col">
+                      @if(option.image) {
+                        <img [src]="getImageUrl(option.image)" alt="Condition" class="condition-image" />
+                      }
+                      @else {
+                        <div class="no-image"><i class="ri-image-line"></i></div>
+                      }
+                    </td>
+                  }
                   <td>{{ option.description || '---' }}</td>
                   @if(item.group.criteriaCodePrefix === 'C' || item.group.criteriaCodePrefix === 'OT') {
                     <td class="question-cell">{{ option.question || '---' }}</td>

@@ -18,6 +18,7 @@ export class AddConditionGroupComponent {
   questionTypes = [
     { value: 'radio', label: 'Radio Buttons (Single Choice)' },
     { value: 'checkbox', label: 'Checkboxes (Multiple Choice)' },
+    { value: 'image', label: 'Image Selection' },
     { value: 'file_upload', label: 'File Upload' },
     { value: 'textarea', label: 'Text Area' }
   ];
