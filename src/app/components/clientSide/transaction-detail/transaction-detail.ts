@@ -24,6 +24,10 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   transactionId: string | number = 0; // Support both string and number IDs
   private authSubscription?: Subscription;
 
+  // Photos gallery
+  photos: string[] = [];
+  selectedPhotoIndex: number = 0;
+
   // Sticky header scroll behavior
   isHeaderVisible: boolean = true;
   private lastScrollTop: number = 0;
@@ -96,6 +100,31 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   // Check if transaction is in Pending Payment status (Case 5)
   get isPendingPayment(): boolean {
     return this.transaction?.transactionStatus === 'Pending Payment';
+  }
+
+  // Get the currently selected photo
+  get selectedPhoto(): string {
+    if (this.photos.length > 0) {
+      return this.photos[this.selectedPhotoIndex];
+    }
+    return this.transaction?.image || 'assets/image/placeholder-appliance.png';
+  }
+
+  // Check if there are multiple photos
+  get hasMultiplePhotos(): boolean {
+    return this.photos.length > 1;
+  }
+
+  // Check if there are any photos
+  get hasPhotos(): boolean {
+    return this.photos.length > 0;
+  }
+
+  // Select a photo by index
+  selectPhoto(index: number): void {
+    if (index >= 0 && index < this.photos.length) {
+      this.selectedPhotoIndex = index;
+    }
   }
 
   ngOnInit(): void {
@@ -215,6 +244,15 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
           city: data.city || 'N/A',
           state: data.state || 'N/A'
         };
+
+        // Load seller-submitted photos from backend (not the catalog image)
+        if (data.photos && data.photos.length > 0) {
+          this.photos = data.photos;
+          this.selectedPhotoIndex = 0;
+        } else {
+          // No photos submitted by seller
+          this.photos = [];
+        }
 
         // Load REAL appliance details
         this.loadRealDetails(data);

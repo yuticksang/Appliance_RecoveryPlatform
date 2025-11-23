@@ -139,6 +139,23 @@
   gap: 10px;
 }
 
+.condition-group {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+
+  .group-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+}
+
 .physical-grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);

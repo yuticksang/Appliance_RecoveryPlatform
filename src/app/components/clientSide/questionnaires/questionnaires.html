@@ -76,10 +76,14 @@
     </div>
 
     <div class="form-section">
-      <label class="question">2. Does the appliance show any of the following?</label>
+      <label class="question">2. Does the appliance have any of the following issues?</label>
+
+      <!-- Display checklist options from database -->
       <div class="checkbox-list">
         <label *ngFor="let issue of issues" class="checkbox-item">
-          <input type="checkbox" [checked]="selectedIssues.includes(issue)" (change)="toggleIssue(issue)" />
+          <input type="checkbox"
+                 [checked]="selectedIssues.includes(issue)"
+                 (change)="toggleIssue(issue)" />
           {{ issue }}
         </label>
       </div>

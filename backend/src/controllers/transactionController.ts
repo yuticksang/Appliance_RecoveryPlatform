@@ -185,8 +185,18 @@ export const getTransactionById = async (req: Request, res: Response) => {
     // Add selected issues to the response
     transaction.selectedIssues = conditionsResult.rows.map(row => row.description || row.code);
 
+    // Fetch photos for this submission
+    const photosResult = await pool.query(
+      `SELECT "photoURL" FROM "Photo" WHERE "submittedApplianceID" = $1 ORDER BY "photoID"`,
+      [transaction.submittedApplianceID]
+    );
+
+    // Add photos array to the response
+    transaction.photos = photosResult.rows.map(row => row.photoURL);
+
     console.log(`✅ Found transaction ${id}:`, transaction);
     console.log(`📋 Selected issues:`, transaction.selectedIssues);
+    console.log(`📷 Photos:`, transaction.photos);
 
     res.json(transaction);
   } catch (error) {

@@ -230,28 +230,37 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
 
     // Save selected conditions/issues to ConditionSelected table
     if (issues && issues.length > 0) {
+      console.log(`📋 Processing ${issues.length} selected issues:`, issues);
+      let savedCount = 0;
+
       for (const issueText of issues) {
-        // Try to find matching conditionID by description
+        // Try to find matching conditionID by description (case-insensitive)
         const conditionResult = await client.query(
-          `SELECT "conditionID" FROM "ConditionOption" WHERE description = $1 LIMIT 1`,
-          [issueText]
+          `SELECT "conditionID", description FROM "ConditionOption"
+           WHERE LOWER(description) = LOWER($1)
+           OR LOWER(description) LIKE LOWER($2)
+           LIMIT 1`,
+          [issueText, `%${issueText}%`]
         );
 
         if (conditionResult.rows.length > 0) {
           const conditionId = conditionResult.rows[0].conditionID;
-          // Generate a unique conditionSelectionID
-          const selectionId = `CS-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
+          // Let database generate conditionSelectionID using sequence (CS001, CS002, etc.)
           await client.query(
-            `INSERT INTO "ConditionSelected" ("conditionSelectionID", "conditionID", "submittedApplianceID", "isChecked", created_at)
-             VALUES ($1, $2, $3, true, NOW())`,
-            [selectionId, conditionId, finalId]
+            `INSERT INTO "ConditionSelected" ("conditionID", "submittedApplianceID", "isChecked", created_at)
+             VALUES ($1, $2, true, NOW())`,
+            [conditionId, finalId]
           );
+          savedCount++;
+          console.log(`✅ Saved condition: "${issueText}" -> ${conditionId}`);
         } else {
-          console.warn(`Condition not found for issue: ${issueText}`);
+          console.warn(`⚠️ Condition not found for issue: "${issueText}"`);
         }
       }
-      console.log(`✅ Saved ${issues.length} selected conditions for ${finalId}`);
+      console.log(`✅ Saved ${savedCount}/${issues.length} selected conditions for ${finalId}`);
+    } else {
+      console.log(`ℹ️ No issues to save for ${finalId}`);
     }
 
     // Upload photos to Supabase Storage

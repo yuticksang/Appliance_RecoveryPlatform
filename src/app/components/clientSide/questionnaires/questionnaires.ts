@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, ChangeDetectorRef, OnInit, inject, signal, computed } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
-import { QuestionnaireService, Category,  SimpleItem } from '../../../services/questionnaire.service';
+import { QuestionnaireService, Category, SimpleItem, ConditionGroup, ConditionOption } from '../../../services/questionnaire.service';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../services/auth.service';
 import { AlertService } from '../../../services/alert.service';
@@ -55,17 +55,22 @@ export class QuestionnairesComponent implements OnInit{
 
   // Step 3 - Condition Questionnaires
   workingStatus: string = 'Partially working';
-  selectedIssues: string[] = [];
+  selectedConditionIds: string[] = [];  // Store conditionIDs instead of text
   physicalCondition: string = '';
   notes: string = '';
   uploadedFiles: File[] = [];
 
+  // Condition groups from database
+  conditionGroups: ConditionGroup[] = [];
+
+  // Fallback hardcoded issues (will be replaced by DB data)
   issues: string[] = [
     'Unusual sounds',
     'Machine draining and spinning properly',
     'Buttons, controls, and settings working correctly',
     'Water leaking'
   ];
+  selectedIssues: string[] = []; // Keep for backward compatibility
 
   physicalOptions = [
     { id: 'a', label: 'Like New', img: '../../../assets/image/like-new.png' },
@@ -225,6 +230,38 @@ export class QuestionnairesComponent implements OnInit{
   ngOnInit() {
     console.log('User:', this.currentUser());
     this.loadCategories(); // load actual types from backend
+    this.loadConditionGroups(); // load condition groups from backend
+  }
+
+  private loadConditionGroups(): void {
+    this.questionnaireService.getAllConditionOptions().subscribe({
+      next: (data) => {
+        if (data.groups && data.groups.length > 0) {
+          // Only get the "Checklist" group for the issues section
+          const checklistGroup = data.groups.find(g =>
+            g.criteriaName.toLowerCase().includes('checklist')
+          );
+
+          if (checklistGroup) {
+            this.conditionGroups = [checklistGroup];
+            // Build issues array from checklist options only
+            this.issues = checklistGroup.options.map(opt => opt.description);
+          } else {
+            // If no checklist group found, use all groups
+            this.conditionGroups = data.groups;
+            this.issues = data.groups.flatMap(g =>
+              g.options.map(opt => opt.description)
+            );
+          }
+          console.log('✅ Loaded condition groups:', this.conditionGroups);
+          console.log('✅ Built issues array:', this.issues);
+        }
+      },
+      error: (err) => {
+        console.error('Failed to load condition groups:', err);
+        // Keep fallback hardcoded issues
+      }
+    });
   }
 
   set currentStep(value: number) {
