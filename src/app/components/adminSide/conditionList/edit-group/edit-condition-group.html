@@ -31,6 +31,60 @@
         <small class="hint">Code prefix cannot be changed after creation</small>
       </div>
 
+      <!-- Only show question fields for non-Photo/Notes groups -->
+      @if(shouldShowQuestionFields()) {
+        <div class="form-group">
+          <label for="display_order">Display Order <span class="required">*</span></label>
+          <input
+            id="display_order"
+            type="number"
+            formControlName="display_order"
+            placeholder="e.g., 1, 2, 3"
+            min="1"
+            [class.error]="display_order?.invalid && display_order?.touched">
+
+          <div *ngIf="display_order?.invalid && display_order?.touched" class="error-message">
+            <small *ngIf="display_order?.errors?.['min']">Order must be at least 1</small>
+            <small *ngIf="display_order?.errors?.['duplicate']">
+              Order {{ display_order?.value }} is already used by "{{ getDuplicateGroupName() }}"
+            </small>
+          </div>
+          <small class="hint">Determines the order of questions in the questionnaire</small>
+        </div>
+
+        <div class="form-group">
+          <label for="question_title">Question Title <span class="required">*</span></label>
+          <input
+            id="question_title"
+            type="text"
+            formControlName="question_title"
+            placeholder="e.g., Is the appliance currently working?"
+            [class.error]="question_title?.invalid && question_title?.touched">
+
+          <div *ngIf="question_title?.invalid && question_title?.touched" class="error-message">
+            <small *ngIf="question_title?.errors?.['required']">Question title is required</small>
+          </div>
+          <small class="hint">This question will be displayed in the questionnaire</small>
+        </div>
+
+        <div class="form-group">
+          <label for="question_type">Question Type <span class="required">*</span></label>
+          <select
+            id="question_type"
+            formControlName="question_type"
+            [class.error]="question_type?.invalid && question_type?.touched">
+            <option *ngFor="let type of questionTypes" [value]="type.value">
+              {{ type.label }}
+            </option>
+          </select>
+
+          <div *ngIf="question_type?.invalid && question_type?.touched" class="error-message">
+            <small *ngIf="question_type?.errors?.['required']">Question type is required</small>
+          </div>
+          <small class="hint">Select how users will answer this question</small>
+        </div>
+      }
+
       <div class="form-actions">
         <button type="button" class="btn-secondary" (click)="onClose()">Cancel</button>
         <button type="submit" class="btn-primary" [disabled]="editGroupForm.invalid">

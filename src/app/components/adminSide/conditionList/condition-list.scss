@@ -145,7 +145,7 @@ $Space: 'Space Grotesk', sans-serif;
   .group-title-section {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 15px;
     flex: 1;
 
     .group-title-row {
@@ -182,95 +182,12 @@ $Space: 'Space Grotesk', sans-serif;
           color: $muted;
         }
 
-        .metadata-value {
+        .metadata-value-readonly {
           font-size: 14px;
           color: $ink;
           padding: 4px 8px;
           border-radius: 4px;
-          cursor: pointer;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          transition: all 0.2s;
-          border: 1px solid transparent;
-
-          .edit-icon {
-            font-size: 12px;
-            opacity: 0;
-            transition: opacity 0.2s;
-          }
-
-          &:hover {
-            background: rgba(255, 255, 255, 0.6);
-            border-color: $line;
-
-            .edit-icon {
-              opacity: 1;
-            }
-          }
-        }
-
-        .inline-edit-wrapper {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-
-          .inline-edit-input {
-            height: 32px;
-            border: 1px solid $blue-2;
-            border-radius: 6px;
-            padding: 0 10px;
-            font-size: 14px;
-            min-width: 80px;
-            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
-
-            &[type="number"] {
-              width: 80px;
-            }
-
-            &[type="text"] {
-              min-width: 300px;
-            }
-
-            &:focus {
-              outline: none;
-              border-color: $blue-2;
-            }
-          }
-
-          .inline-btn {
-            width: 28px;
-            height: 28px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-
-            i {
-              font-size: 16px;
-            }
-
-            &.save-btn {
-              background: #16a34a;
-              color: white;
-
-              &:hover {
-                background: #15803d;
-              }
-            }
-
-            &.cancel-btn {
-              background: #dc2626;
-              color: white;
-
-              &:hover {
-                background: #b91c1c;
-              }
-            }
-          }
+          background: rgba(255, 255, 255, 0.5);
         }
       }
     }
@@ -615,6 +532,36 @@ $Space: 'Space Grotesk', sans-serif;
             &:hover {
                 background: #b91c1c;
             }
+        }
+    }
+}
+
+// Simple box for file_upload and textarea groups
+.simple-box {
+    padding: 0;
+    background: white;
+
+    .simple-box-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        padding: 60px 40px;
+        background: white;
+
+        .box-icon {
+            font-size: 64px;
+            color: $muted;
+            opacity: 0.5;
+        }
+
+        .box-description {
+            font-size: 15px;
+            color: $muted;
+            text-align: center;
+            margin: 0;
+            max-width: 400px;
         }
     }
 }

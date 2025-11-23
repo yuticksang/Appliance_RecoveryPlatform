@@ -53,7 +53,7 @@ export const getAllConditionGroups = async (req: Request, res: Response) => {
 
 export const createConditionGroup = async (req: Request, res: Response) => {
   try {
-    const { criteriaName, criteriaCodePrefix, question_title } = req.body;
+    const { criteriaName, criteriaCodePrefix, question_title, question_type } = req.body;
 
     if (!criteriaName) {
       return res.status(400).json({ message: 'Criteria name is required' });
@@ -65,6 +65,10 @@ export const createConditionGroup = async (req: Request, res: Response) => {
 
     if (!question_title) {
       return res.status(400).json({ message: 'Question title is required' });
+    }
+
+    if (!question_type) {
+      return res.status(400).json({ message: 'Question type is required' });
     }
 
     // Check if criteria name already exists
@@ -94,10 +98,10 @@ export const createConditionGroup = async (req: Request, res: Response) => {
     const nextOrder = maxOrderResult.rows[0].max_order + 1;
 
     const result = await pool.query(
-      `INSERT INTO "ConditionGroup" ("criteriaName", "criteriaCodePrefix", "question_title", "display_order", status)
-       VALUES ($1, $2, $3, $4, 'ACTIVE')
-       RETURNING "groupID", "criteriaName", "criteriaCodePrefix", "question_title", "display_order", created_at, status`,
-      [criteriaName, criteriaCodePrefix, question_title, nextOrder]
+      `INSERT INTO "ConditionGroup" ("criteriaName", "criteriaCodePrefix", "question_title", "question_type", "display_order", status)
+       VALUES ($1, $2, $3, $4, $5, 'ACTIVE')
+       RETURNING "groupID", "criteriaName", "criteriaCodePrefix", "question_title", "question_type", "display_order", created_at, status`,
+      [criteriaName, criteriaCodePrefix, question_title, question_type, nextOrder]
     );
 
     console.log('✅ Created condition group:', result.rows[0]);

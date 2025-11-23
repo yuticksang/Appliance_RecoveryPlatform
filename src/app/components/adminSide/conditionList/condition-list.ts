@@ -83,12 +83,6 @@ export class ConditionListComponent implements OnInit {
   confirmAction = signal<'delete' | null>(null);
   confirmTarget = signal<ConditionOption | null>(null);
 
-  // Inline editing state
-  editingGroupId = signal<string | null>(null);
-  editingField = signal<'question_title' | 'display_order' | null>(null);
-  tempQuestionTitle = signal<string>('');
-  tempDisplayOrder = signal<number | null>(null);
-
   ngOnInit() {
     this.loadConditionGroups();
     this.loadConditionOptions();
@@ -341,7 +335,9 @@ export class ConditionListComponent implements OnInit {
   onGroupAdded(newGroup: any) {
     const groupData = {
       criteriaName: newGroup.criteriaName,
-      criteriaCodePrefix: newGroup.criteriaCodePrefix || ''
+      criteriaCodePrefix: newGroup.criteriaCodePrefix,
+      question_title: newGroup.question_title,
+      question_type: newGroup.question_type
     };
 
     this.http.post(`${this.apiUrl}/admin/condition-groups`, groupData)
@@ -360,7 +356,11 @@ export class ConditionListComponent implements OnInit {
   onGroupUpdated(updatedGroup: any) {
     this.http.put(`${this.apiUrl}/admin/condition-groups/${updatedGroup.groupID}`, {
       criteriaName: updatedGroup.criteriaName,
-      criteriaCodePrefix: updatedGroup.criteriaCodePrefix
+      criteriaCodePrefix: updatedGroup.criteriaCodePrefix,
+      question_title: updatedGroup.question_title,
+      question_type: updatedGroup.question_type,
+      display_order: updatedGroup.display_order,
+      status: updatedGroup.status
     })
       .subscribe({
         next: () => {
@@ -537,110 +537,13 @@ export class ConditionListComponent implements OnInit {
     return `${this.apiUrl.replace('/api', '')}${imagePath}`;
   }
 
-  // -------- Inline Editing Methods ----------
-  startEditingQuestionTitle(group: ConditionGroup) {
-    this.editingGroupId.set(group.groupID);
-    this.editingField.set('question_title');
-    this.tempQuestionTitle.set(group.question_title || '');
-  }
-
-  startEditingDisplayOrder(group: ConditionGroup) {
-    this.editingGroupId.set(group.groupID);
-    this.editingField.set('display_order');
-    this.tempDisplayOrder.set(group.display_order || null);
-  }
-
-  isEditingQuestionTitle(groupId: string): boolean {
-    return this.editingGroupId() === groupId && this.editingField() === 'question_title';
-  }
-
-  isEditingDisplayOrder(groupId: string): boolean {
-    return this.editingGroupId() === groupId && this.editingField() === 'display_order';
-  }
-
-  cancelInlineEdit() {
-    this.editingGroupId.set(null);
-    this.editingField.set(null);
-    this.tempQuestionTitle.set('');
-    this.tempDisplayOrder.set(null);
-  }
-
-  saveQuestionTitle(group: ConditionGroup) {
-    const newTitle = this.tempQuestionTitle().trim();
-
-    // For Photo and Notes groups, question_title is optional
-    if (!newTitle && group.criteriaCodePrefix !== 'P' && group.criteriaCodePrefix !== 'N') {
-      this.alertService.error('Question title is required for this condition type');
-      return;
-    }
-
-    this.http.put(`${this.apiUrl}/admin/condition-groups/${group.groupID}`, {
-      criteriaName: group.criteriaName,
-      criteriaCodePrefix: group.criteriaCodePrefix,
-      question_title: newTitle || null,
-      question_type: group.question_type,
-      display_order: group.display_order,
-      status: group.status
-    })
-      .subscribe({
-        next: () => {
-          this.loadConditionGroups();
-          this.cancelInlineEdit();
-          this.alertService.success('Question title updated successfully');
-        },
-        error: (err) => {
-          console.error('Update question title error:', err);
-          this.alertService.error(err.error?.message || 'Failed to update question title');
-        }
-      });
-  }
-
-  saveDisplayOrder(group: ConditionGroup) {
-    const newOrder = this.tempDisplayOrder();
-
-    if (newOrder === null || newOrder === undefined) {
-      this.alertService.error('Display order is required');
-      return;
-    }
-
-    if (newOrder < 1) {
-      this.alertService.error('Display order must be at least 1');
-      return;
-    }
-
-    // Check for duplicate display order
-    const duplicate = this.conditionGroups().find(g =>
-      g.groupID !== group.groupID && g.display_order === newOrder
-    );
-
-    if (duplicate) {
-      this.alertService.error(`Display order ${newOrder} is already used by "${duplicate.criteriaName}"`);
-      return;
-    }
-
-    this.http.put(`${this.apiUrl}/admin/condition-groups/${group.groupID}`, {
-      criteriaName: group.criteriaName,
-      criteriaCodePrefix: group.criteriaCodePrefix,
-      question_title: group.question_title,
-      question_type: group.question_type,
-      display_order: newOrder,
-      status: group.status
-    })
-      .subscribe({
-        next: () => {
-          this.loadConditionGroups();
-          this.cancelInlineEdit();
-          this.alertService.success('Display order updated successfully');
-        },
-        error: (err) => {
-          console.error('Update display order error:', err);
-          this.alertService.error(err.error?.message || 'Failed to update display order');
-        }
-      });
-  }
-
   shouldShowQuestionFields(group: ConditionGroup): boolean {
-    // Show question_title and display_order for all groups except Photo (P) and Notes (N)
-    return group.criteriaCodePrefix !== 'P' && group.criteriaCodePrefix !== 'N';
+    // All groups should show question and order metadata
+    return true;
+  }
+
+  shouldShowTableColumns(group: ConditionGroup): boolean {
+    // Only show table columns if NOT file_upload or textarea
+    return group.question_type !== 'file_upload' && group.question_type !== 'textarea';
   }
 }
