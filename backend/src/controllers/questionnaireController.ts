@@ -327,13 +327,6 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       ]
     );
 
-    // Insert Slip Table
-    await client.query(
-      `INSERT INTO "RecoverySlip" (
-        "submittedApplianceID"
-      ) VALUES ($1)`,
-      [finalId]
-    );
 
     // Create Transaction record
     const transactionId = `TXN-${Date.now()}`;
