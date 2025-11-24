@@ -2,71 +2,76 @@
 <div class="modal-overlay" (click)="onClose()">
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
-      <h3>Edit Admin</h3>
+      <h3>Edit Condition Score</h3>
       <button class="close-btn" (click)="onClose()">×</button>
     </div>
 
-    <form>
-      <div class="form-group">
-        <label for="fullName">Full Name</label>
-        <div class="input-with-reset">
-          <input id="fullName" type="text" placeholder="Enter full name (optional)">
+    <form (ngSubmit)="onSubmit()">
+
+      <div class="form-row">
+        <div class="form-group half-width">
+          <label for="Criteria">Criteria</label>
+          <input
+            id="Criteria"
+            type="text"
+            [value]="criteriaName()"
+            readonly
+            class="readonly-input">
         </div>
 
-        <!-- <small class="help-text">Leave empty to keep current value</small> -->
-      </div>
-
-      <div class="form-group">
-        <label for="username">Username</label>
-        <div class="input-with-reset">
-          <input id="username" type="text" placeholder="Enter username (optional)">
+        <div class="form-group half-width">
+          <label for="category">Appliance Category</label>
+          <input
+            id="category"
+            type="text"
+            [value]="categoryName"
+            readonly
+            class="readonly-input">
         </div>
-        <div class="error-message" style="display: none;">
-          <small>Username must be at least 3 characters if provided</small>
-        </div>
-        <!-- <small class="help-text">Leave empty to keep current value. Must be at least 3 characters if changed.</small> -->
       </div>
 
       <div class="form-row">
         <div class="form-group half-width">
-          <label for="password">Password</label>
+          <label for="description">Description</label>
           <input
-            id="password"
-            type="password"
-            placeholder="Enter new password (min 8 chars)">
-
-          <div class="error-message" style="display: none;">
-            <small>Password must be at least 8 characters</small>
-          </div>
-
-          <!-- <small class="help-text">Leave empty to keep current password</small> -->
+            id="description"
+            type="text"
+            [value]="description()"
+            readonly
+            class="readonly-input">
         </div>
 
         <div class="form-group half-width">
-          <label for="confirmPassword">Confirm Password</label>
+          <label for="scoreValue">Score Value <span class="required">*</span></label>
           <input
-            id="confirmPassword"
-            type="password"
-            placeholder="Confirm new password">
+            id="score"
+            type="text"
+            [ngModel]="scoreValue()"
+            (ngModelChange)="onScoreChange($event)"
+            name="score"
+            required
+            placeholder="Enter score value"
+            [class.invalid-input]="!isValidScore()">
 
-          <div class="error-message" style="display: none;">
-            <small>Passwords do not match</small>
+         <div class="error-message" *ngIf="errorMessage()">
+            <small>{{ errorMessage() }}</small>
           </div>
+          <small class="help-text">Only numbers 0-100 are allowed.</small>
         </div>
       </div>
 
-      <div class="changes-summary" style="display: none;">
+
+
+      <div class="changes-summary" *ngIf="hasChanges() && isValidScore()">
         <h4>Changes to be saved:</h4>
         <ul>
-          <li>Full Name: "Old Name" → "New Name"</li>
-          <li>Username: "Old Username" → "New Username"</li>
-          <li>Password: Will be updated (new password set)</li>
+         <li>Score Value: {{ originalScoreValue() }} → {{ scoreValue() }}</li>
         </ul>
       </div>
 
       <div class="form-actions">
-        <button type="button" class="btn-secondary">Cancel</button>
-        <button type="submit" class="btn-success" title="Save changes">Save Changes</button>
+        <button type="button" class="btn-secondary" (click)="onClose()">Cancel</button>
+        <button type="submit" class="btn-success"  [disabled]="!hasChanges() || isSaving()" title="Save changes">Save Changes</button>
       </div>
     </form>
   </div>

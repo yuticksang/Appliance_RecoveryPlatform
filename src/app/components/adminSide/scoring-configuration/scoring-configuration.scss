@@ -171,18 +171,22 @@ $Space: 'Space Grotesk', sans-serif;
 }
 
 .table-wrap {
+    width: 100%;
     border: none;
     border-radius: 0;
     margin-bottom: 0;
     overflow-x: auto;
     overflow-y: hidden;
     margin-bottom: 20px;
-    
+    border: 1px solid #ffffff;
+    -webkit-overflow-scrolling: touch;
 }
 
 .grid {
     width: 100%;
+    min-width: 1000px;
     border-collapse: collapse;
+    table-layout: fixed;
     font-size: 15px;
 
     thead th {
@@ -190,15 +194,11 @@ $Space: 'Space Grotesk', sans-serif;
         text-align: left;
         color: $muted;
         font-weight: 600;
-        height: 40px;
-        border-bottom: 1px solid $line;
-        border-right: 1px solid $line;
-        border-top: 1px solid #e0e0e0;
-        padding: 20px 18px;
+        height: 60px;
+        padding: 10px 20px;
         white-space: nowrap;
+        vertical-align: middle;
         
-
-
         &:last-child {
             border-right: none;
         }
@@ -217,27 +217,38 @@ $Space: 'Space Grotesk', sans-serif;
     }
 
     .col-id {
-        min-width: 150px;
+        width: 10%;
     }
     .col-image {
-        min-width: 150px;
+        width: 30%;
     }
-
     .col-condition {
-        min-width: 200px;
+        width: 25%;
     }
 
     .col-score-value{
-        min-width: 180px;
+        width: 20%;
     }
 
     tbody td {
-        border-bottom: 1px solid $line;
+       border-bottom: 1px solid $line;
         border-right: 1px solid $line;
         padding: 15px 20px;
+        vertical-align: middle;
+
+      
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        
+      
+        max-width: 0;
+        
 
         &:last-child {
             border-right: none;
+            overflow: visible; 
+            max-width: none;   
         }
     }
 
@@ -254,6 +265,7 @@ $Space: 'Space Grotesk', sans-serif;
     }
 
     .actions {
+        width: 100px;
         text-align: left;
         white-space: nowrap;
 
@@ -262,7 +274,7 @@ $Space: 'Space Grotesk', sans-serif;
             align-items: center;
             justify-content: center;
             padding: 10px;
-            
+            flex-shrink: 0;
             border: 1px solid #ddd;
             border-radius: 4px;
             background: transparent;
