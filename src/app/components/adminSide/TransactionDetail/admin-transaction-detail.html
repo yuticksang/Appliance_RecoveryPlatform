@@ -1,0 +1,212 @@
+<main class="transaction-detail-page">
+  <!-- Loading State -->
+  <div *ngIf="loading()" class="loading-container">
+    <div class="spinner"></div>
+    <p>Loading transaction details...</p>
+  </div>
+
+  <!-- Transaction Detail Content -->
+  <div *ngIf="!loading() && transaction()" class="detail-container">
+    <!-- Status Header Bar -->
+    <div class="status-header-bar">
+      <div class="status-badges-container">
+        <div class="status-group">
+          <span class="status-label">Transaction Status</span>
+          <div *ngIf="!editMode()">
+            <span class="status-badge" [ngClass]="getStatusClass(transaction()?.transactionStatus)">
+              {{ transaction()?.transactionStatus }}
+            </span>
+          </div>
+          <select *ngIf="editMode()" class="edit-select-inline" [(ngModel)]="transactionStatus">
+            <option *ngFor="let status of transactionStatuses" [value]="status">
+              {{ status }}
+            </option>
+          </select>
+        </div>
+
+        <div class="status-divider"></div>
+
+        <div class="status-group">
+          <span class="status-label">Item Status</span>
+          <div *ngIf="!editMode()">
+            <span class="status-badge" [ngClass]="getItemStatusClass(transaction()?.itemStatus)">
+              {{ transaction()?.itemStatus }}
+            </span>
+          </div>
+          <select *ngIf="editMode()" class="edit-select-inline" [(ngModel)]="itemStatus">
+            <option *ngFor="let status of itemStatuses" [value]="status">
+              {{ status }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Action Buttons for Admin (Edit Mode) -->
+      <div class="action-buttons">
+        <button *ngIf="!editMode()" class="btn-edit" (click)="toggleEditMode()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5L13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175l-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+          </svg>
+          Edit Transaction
+        </button>
+        <div *ngIf="editMode()" class="edit-actions">
+          <button class="btn-save" (click)="saveChanges()">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+            </svg>
+            Save Changes
+          </button>
+          <button class="btn-cancel" (click)="cancelEdit()">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
+            </svg>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="content-grid">
+      <!-- Left Column - Customer Info -->
+      <div class="left-column">
+        <!-- Customer ID -->
+        <div class="info-section">
+          <h3 class="section-title">CUSTOMER ID</h3>
+          <p class="info-value">{{ transaction()?.sellerId }}</p>
+        </div>
+
+        <!-- Customer Name -->
+        <div class="info-section">
+          <h3 class="section-title">CUSTOMER NAME</h3>
+          <p class="info-value">{{ transaction()?.sellerName }}</p>
+        </div>
+
+        <!-- Contact Number -->
+        <div class="info-section">
+          <h3 class="section-title">CONTACT NUMBER</h3>
+          <p class="info-value">{{ transaction()?.sellerPhone || 'N/A' }}</p>
+        </div>
+
+        <!-- Address -->
+        <div class="info-section">
+          <h3 class="section-title">ADDRESS</h3>
+          <p class="info-value">{{ transaction()?.pickupAddress || 'N/A' }}</p>
+          <p class="info-value" *ngIf="transaction()?.city">{{ transaction()?.city }}, {{ transaction()?.state }} {{ transaction()?.zipCode }}</p>
+        </div>
+
+        <!-- Submitted Date -->
+        <div class="info-section">
+          <h3 class="section-title">SUBMITTED DATE</h3>
+          <p class="info-value">{{ formatDate(transaction()?.submittedDate) }}</p>
+        </div>
+      </div>
+
+      <!-- Right Column - Appliance Information -->
+      <div class="right-column">
+        <div class="appliance-info-card">
+          <!-- Appliance Image -->
+          <div class="appliance-image-section">
+            <img [src]="transaction()?.imageUrl || 'assets/image/placeholder-appliance.png'"
+                 [alt]="transaction()?.modelName"
+                 class="appliance-image">
+            <div class="image-dots">
+              <span class="dot active"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            </div>
+          </div>
+
+          <!-- Price Section -->
+          <div class="price-section">
+            <!-- Show only estimated price for Under Review and Awaiting Pick Up -->
+            <div *ngIf="isUnderReviewOrAwaitingPickup()" class="price-row-single">
+              <div class="price-item-single">
+                <span class="price-label-small">ESTIMATED PRICE</span>
+                <div>
+                  <span class="price-label">RM</span>
+                  <span class="price-value">${{ transaction()?.estimatedPrice?.toFixed(2) || '0.00' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Show both estimated and final price for other statuses -->
+            <div *ngIf="!isUnderReviewOrAwaitingPickup()" class="price-row">
+              <div class="price-item">
+                <span class="price-label-small">ESTIMATED</span>
+                <div>
+                  <span class="price-label">RM</span>
+                  <span class="price-value">${{ transaction()?.estimatedPrice?.toFixed(2) || '0.00' }}</span>
+                </div>
+              </div>
+              <div class="price-item final">
+                <span class="price-label-small">FINAL PRICE</span>
+                <div *ngIf="!editMode()">
+                  <span class="price-label">RM</span>
+                  <span class="price-value">${{ transaction()?.finalPrice?.toFixed(2) || transaction()?.estimatedPrice?.toFixed(2) || '0.00' }}</span>
+                </div>
+                <input *ngIf="editMode()" type="number" class="edit-input-price" [(ngModel)]="finalPrice" step="0.01" placeholder="Enter final price" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Appliance Details Grid -->
+          <div class="details-grid">
+            <div class="detail-item">
+              <h4 class="detail-label">BRAND</h4>
+              <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.brand }}</p>
+              <input *ngIf="editMode()" type="text" class="edit-input" [(ngModel)]="brand" placeholder="Enter brand">
+            </div>
+            <div class="detail-item">
+              <h4 class="detail-label">MODEL</h4>
+              <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.model }}</p>
+              <input *ngIf="editMode()" type="text" class="edit-input" [(ngModel)]="model" placeholder="Enter model">
+            </div>
+            <div class="detail-item">
+              <h4 class="detail-label">CATEGORY</h4>
+              <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.category }}</p>
+              <input *ngIf="editMode()" type="text" class="edit-input" [(ngModel)]="category" placeholder="Enter category">
+            </div>
+            <div class="detail-item">
+              <h4 class="detail-label">MODEL NAME</h4>
+              <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.modelName }}</p>
+              <input *ngIf="editMode()" type="text" class="edit-input" [(ngModel)]="modelName" placeholder="Enter model name">
+            </div>
+            <div class="detail-item">
+              <h4 class="detail-label">FUNCTIONAL STATUS</h4>
+              <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.initialFunctionalStatus || 'N/A' }}</p>
+              <select *ngIf="editMode()" class="edit-select" [(ngModel)]="functionalStatus">
+                <option value="">Select status</option>
+                <option *ngFor="let status of functionalStatuses" [value]="status">{{ status }}</option>
+              </select>
+            </div>
+            <div class="detail-item">
+              <h4 class="detail-label">APPEARANCE STATUS</h4>
+              <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.initialPhysicalCondition || 'N/A' }}</p>
+              <select *ngIf="editMode()" class="edit-select" [(ngModel)]="appearanceStatus">
+                <option value="">Select status</option>
+                <option *ngFor="let status of appearanceStatuses" [value]="status">{{ status }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Note -->
+          <div class="note-section" *ngIf="transaction()?.note || editMode()">
+            <h4 class="note-label">NOTE</h4>
+            <p *ngIf="!editMode()" class="note-value">{{ transaction()?.note }}</p>
+            <textarea *ngIf="editMode()" class="edit-textarea" [(ngModel)]="note"
+                      rows="3" placeholder="Enter note..."></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="!loading() && !transaction()" class="error-container">
+    <p>Transaction not found</p>
+    <button class="btn-back" (click)="goBack()">Go Back to Transactions</button>
+  </div>
+</main>

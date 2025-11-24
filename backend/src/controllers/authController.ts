@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import pool from '../config/database';
+import { OAuth2Client } from 'google-auth-library';
 
 // Define JWT payload interface
 interface JwtPayload {
@@ -21,14 +22,24 @@ export const register = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Email, password, name, and username are required' });
     }
 
-    // Check if user exists
-    const userExists = await pool.query(
-      'SELECT "userID" FROM users WHERE email = $1 OR username = $2',
-      [email, username]
+    // Check if email exists for sellers only
+    const emailExists = await pool.query(
+      'SELECT "userID" FROM users WHERE email = $1 AND user_type = $2',
+      [email, 'seller']
     );
 
-    if (userExists.rows.length > 0) {
-      return res.status(400).json({ message: 'User with this email or username already exists' });
+    if (emailExists.rows.length > 0) {
+      return res.status(400).json({ message: 'Email already exists for sellers' });
+    }
+
+    // Check if username exists for sellers only
+    const usernameExists = await pool.query(
+      'SELECT "userID" FROM users WHERE username = $1 AND user_type = $2',
+      [username, 'seller']
+    );
+
+    if (usernameExists.rows.length > 0) {
+      return res.status(400).json({ message: 'Username already exists for sellers' });
     }
 
     // Hash password
@@ -112,7 +123,21 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Invalid username or email.' });
     }
 
-    const user = result.rows[0];
+    // Handle multiple users with same email/username
+    // Check password against all matching accounts
+    let user = null;
+    for (const potentialUser of result.rows) {
+      const isPasswordValid = await bcrypt.compare(password, potentialUser.password);
+      if (isPasswordValid) {
+        user = potentialUser;
+        break;
+      }
+    }
+
+    if (!user) {
+      console.log('❌ Invalid password');
+      return res.status(401).json({ message: 'Invalid password. Please try again.' });
+    }
     console.log('👤 User found:', {
       username: user.username,
       admin_id: user.admin_id,
@@ -132,13 +157,6 @@ export const login = async (req: Request, res: Response) => {
         : (user.user_status === 'INACTIVE' ? 'Please verify your email first' : 'Account is blocked');
 
       return res.status(401).json({ message });
-    }
-
-    // Check password
-    const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) {
-      console.log('❌ Invalid password for user:', user.username);
-      return res.status(401).json({ message: 'Invalid password. Please try again.' });
     }
 
     console.log('✅ Login successful for:', user.username || user.email);
@@ -173,6 +191,9 @@ export const login = async (req: Request, res: Response) => {
         username: user.username,
         userType: user.user_type,
         adminRole: user.admin_role || null,
+        sellerId: user.seller_id || null,
+        buyerId: user.buyer_id || null,
+        adminId: user.admin_id || null,
         phone: user.phone
       }
     });
@@ -279,11 +300,24 @@ export const updateProfile = async (req: Request, res: Response) => {
     const userId = req.params.id; // Now a string ID
     const { name, username, phone } = req.body;
 
-    // Check if username is being updated and if it's unique
+    // Check if username is being updated and if it's unique within the same user_type
     if (username !== undefined) {
+      // First get the current user's type
+      const currentUser = await pool.query(
+        'SELECT user_type FROM users WHERE "userID" = $1',
+        [userId]
+      );
+
+      if (currentUser.rows.length === 0) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const userType = currentUser.rows[0].user_type;
+
+      // Check if username exists for the same user_type (excluding current user)
       const existingUser = await pool.query(
-        'SELECT "userID" FROM users WHERE username = $1 AND "userID" != $2',
-        [username, userId]
+        'SELECT "userID" FROM users WHERE username = $1 AND user_type = $2 AND "userID" != $3',
+        [username, userType, userId]
       );
 
       if (existingUser.rows.length > 0) {
@@ -329,5 +363,132 @@ export const updateProfile = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Update profile error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const googleLogin = async (req: Request, res: Response) => {
+  try {
+    const { idToken } = req.body;
+
+    console.log('🔐 Google login attempt with token:', idToken ? 'Token received' : 'No token');
+
+    if (!idToken) {
+      return res.status(400).json({ message: 'ID token is required' });
+    }
+
+    // Initialize Google OAuth client with your Client ID
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+    console.log('🔑 Verifying Google token with Client ID:', process.env.GOOGLE_CLIENT_ID);
+
+    // Verify the Google ID token
+    const ticket = await client.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    console.log('✅ Google token verified successfully:', { email: payload?.email, name: payload?.name });
+
+    if (!payload || !payload.email) {
+      return res.status(400).json({ message: 'Invalid Google token' });
+    }
+
+    const { email, name, sub: googleId, email_verified } = payload;
+
+    console.log('🔐 Google login attempt:', { email, name });
+
+    // Check if user exists with this email
+    let userResult = await pool.query(
+      'SELECT * FROM users WHERE email = $1 AND user_type = $2',
+      [email, 'seller']
+    );
+
+    let user;
+
+    if (userResult.rows.length === 0) {
+      // User doesn't exist, create new user
+      console.log('📝 Creating new user from Google login');
+
+      // Generate username from email or name
+      const baseUsername = (email.split('@')[0] || name?.toLowerCase().replace(/\s+/g, '') || 'user').substring(0, 20);
+      let username = baseUsername;
+      let counter = 1;
+
+      // Check if username is unique
+      while (true) {
+        const usernameExists = await pool.query(
+          'SELECT "userID" FROM users WHERE username = $1 AND user_type = $2',
+          [username, 'seller']
+        );
+
+        if (usernameExists.rows.length === 0) break;
+        username = `${baseUsername}${counter++}`;
+      }
+
+      // Get next seller_id
+      const sellerIdResult = await pool.query("SELECT 'S' || LPAD(nextval('seller_id_seq')::text, 3, '0') as seller_id");
+      const nextSellerId = sellerIdResult.rows[0].seller_id;
+
+      // Create user without password (Google auth)
+      userResult = await pool.query(
+        `INSERT INTO users (email, name, username, user_type, user_status, email_verified, can_change_password, seller_id, google_id)
+         VALUES ($1, $2, $3, 'seller', 'ACTIVE', $4, false, $5, $6)
+         RETURNING "userID", email, name, username, user_type, user_status, seller_id`,
+        [email, name, username, email_verified || false, nextSellerId, googleId]
+      );
+
+      user = userResult.rows[0];
+    } else {
+      // User exists, update last login
+      user = userResult.rows[0];
+
+      // Update google_id if not set
+      if (!user.google_id) {
+        await pool.query(
+          'UPDATE users SET google_id = $1 WHERE "userID" = $2',
+          [googleId, user.userID]
+        );
+      }
+
+      console.log('✅ Existing user logged in with Google');
+    }
+
+    // Update last login
+    await pool.query(
+      'UPDATE users SET last_login = NOW() WHERE "userID" = $1',
+      [user.userID]
+    );
+
+    // Generate JWT token
+    const jwtPayload: JwtPayload = {
+      userId: user.userID,
+      email: user.email,
+      username: user.username,
+      userType: user.user_type
+    };
+
+    const token = jwt.sign(jwtPayload, process.env.JWT_SECRET as string, {
+      expiresIn: '7d'
+    });
+
+    res.json({
+      message: 'Google login successful',
+      token,
+      user: {
+        id: user.userID,
+        email: user.email,
+        name: user.name,
+        username: user.username,
+        userType: user.user_type,
+        sellerId: user.seller_id || null,
+        buyerId: user.buyer_id || null,
+        adminId: user.admin_id || null,
+        phone: user.phone
+      }
+    });
+  } catch (error) {
+    console.error('Google login error:', error);
+    res.status(500).json({ message: 'Google login failed', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 };

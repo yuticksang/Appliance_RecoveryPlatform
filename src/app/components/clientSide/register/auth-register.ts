@@ -1,9 +1,12 @@
-import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, inject, OnInit, PLATFORM_ID } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { AlertService } from '../../../services/alert.service';
+import { AuthService } from '../../../services/auth.service';
+
+declare const google: any;
 
 interface RegisterResponse {
   message: string;
@@ -24,11 +27,13 @@ interface RegisterResponse {
   templateUrl: './auth-register.html',
   styleUrls: ['./auth-register.scss']
 })
-export class AuthRegisterComponent {
+export class AuthRegisterComponent implements OnInit {
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private http = inject(HttpClient);
   private alertService = inject(AlertService);
+  private authService = inject(AuthService);
+  private platformId = inject(PLATFORM_ID);
 
   hide1 = true;
   hide2 = true;
@@ -55,6 +60,86 @@ export class AuthRegisterComponent {
 
   get f() {
     return this.form.controls;
+  }
+
+  ngOnInit() {
+    if (isPlatformBrowser(this.platformId)) {
+      this.initializeGoogleSignIn();
+    }
+  }
+
+  initializeGoogleSignIn() {
+    if (typeof google !== 'undefined') {
+      google.accounts.id.initialize({
+        client_id: '75292015195-pjehlbl1ubh48illla4nn0hhggil9ck2.apps.googleusercontent.com',
+        callback: (response: any) => this.handleGoogleCallback(response)
+      });
+
+      google.accounts.id.renderButton(
+        document.getElementById('google-signup-button'),
+        {
+          type: 'standard',
+          theme: 'outline',
+          size: 'large'
+        }
+      );
+
+      google.accounts.id.cancel();
+    } else {
+      setTimeout(() => this.initializeGoogleSignIn(), 100);
+    }
+  }
+
+  signupWithGoogle() {
+    const googleButton = document.getElementById('google-signup-button');
+    if (googleButton) {
+      const button = googleButton.querySelector('div[role="button"]') as HTMLElement;
+      if (button) {
+        button.click();
+      }
+    }
+  }
+
+  handleGoogleCallback(response: any) {
+    this.loading = true;
+    const idToken = response.credential;
+
+    if (!idToken) {
+      this.alertService.error('Failed to get Google authentication token');
+      this.loading = false;
+      return;
+    }
+
+    this.authService.loginWithGoogle(idToken).subscribe({
+      next: (response) => {
+        const userType = response.user.userType;
+
+        if (userType === 'seller') {
+          this.authService.setAuthData(response);
+
+          this.authService.fetchProfile().subscribe({
+            next: (profile) => {
+              this.authService.setProfile(profile);
+            },
+            error: (err) => {
+              console.error('Failed to load profile:', err);
+            }
+          });
+
+          this.alertService.success('Signed up with Google successfully!');
+          this.router.navigate(['/home']);
+        } else {
+          this.alertService.error('Access denied. Please use seller account.');
+          this.loading = false;
+        }
+      },
+      error: (err) => {
+        const errorMessage = err.error?.message || 'Google signup failed. Please try again.';
+        this.alertService.error(errorMessage);
+        this.loading = false;
+        console.error('Google signup error:', err);
+      }
+    });
   }
 
 

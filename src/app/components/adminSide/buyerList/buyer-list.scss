@@ -34,13 +34,16 @@ $Space: 'Space Grotesk', sans-serif;
     margin-bottom: 12px;
 
     .btn-primary {
-        padding: 15px 30px;
+        height: 36px;
+        padding: 0 30px;
         border-radius: 8px;
         background: white;
         border: 2px solid $blue-2;
         font-weight: 600;
         cursor: pointer;
         color: $blue-2;
+        display: flex;
+        align-items: center;
     }
 
     .toolbar-right {

@@ -1,0 +1,33 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Edit Brand</h3>
+      <button class="close-btn" (click)="onClose()">×</button>
+    </div>
+
+    <form [formGroup]="editBrandForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="brandName">Brand Name</label>
+        <input id="brandName" type="text" formControlName="brandName" placeholder="Enter brand name"
+          [class.error]="brandName?.invalid && brandName?.touched">
+
+        <div *ngIf="brandName?.invalid && brandName?.touched" class="error-message">
+          <small *ngIf="brandName?.errors?.['required']">Brand name is required</small>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description" formControlName="description" placeholder="Enter description (optional)"
+          rows="3"></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="onClose()">Cancel</button>
+        <button type="submit" class="btn-success" [disabled]="editBrandForm.invalid">
+          Update Brand
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

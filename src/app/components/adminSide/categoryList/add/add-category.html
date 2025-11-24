@@ -1,0 +1,33 @@
+<div class="modal-overlay" (click)="onClose()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Add New Category</h3>
+      <button class="close-btn" (click)="onClose()">×</button>
+    </div>
+
+    <form [formGroup]="addCategoryForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="categoryName">Category Name</label>
+        <input id="categoryName" type="text" formControlName="categoryName" placeholder="Enter category name"
+          [class.error]="categoryName?.invalid && categoryName?.touched">
+
+        <div *ngIf="categoryName?.invalid && categoryName?.touched" class="error-message">
+          <small *ngIf="categoryName?.errors?.['required']">Category name is required</small>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description" formControlName="description" placeholder="Enter description (optional)"
+          rows="3"></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="onClose()">Cancel</button>
+        <button type="submit" class="btn-success" [disabled]="addCategoryForm.invalid">
+          Add Category
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

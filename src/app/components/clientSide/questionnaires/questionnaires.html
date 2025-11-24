@@ -1,0 +1,441 @@
+<main class="page-bg py-5">
+
+  <!-- Progress Circle Stepper -->
+  <div class="progress-stepper" *ngIf="currentStep !== 6">
+    <div
+      *ngFor="let step of steps; let i = index"
+      class="step"
+      [ngClass]="{
+        active: currentStep === i + 1,
+        completed: currentStep > i + 1,
+        accessible: isStepAccessible(i + 1),
+        disabled: !isStepAccessible(i + 1)
+      }"
+      (click)="goToStep(i + 1)"
+    >
+      <div class="circle">{{ i + 1 }}</div>
+    </div>
+  </div>
+
+
+
+  <!-- Step 1 -->
+  <div *ngIf="currentStep === 1" class="form-container">
+    <h3 class="step-title">Step 1: Select Appliance Category</h3>
+
+    <div class="form-section">
+      <label class="question">Appliance Category</label>
+      <select class="form-select" [(ngModel)]="applianceTypeId" (ngModelChange)="onCategoryChange()">
+        <option value="">Select appliance category</option>
+        <option *ngFor="let category of applianceTypes" [value]="category.id">{{ category.name }}</option>
+      </select>
+    </div>
+
+    <div class="btn-row">
+      <button (click)="nextStep()">Next</button>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div *ngIf="currentStep === 2" class="form-container">
+    <h3 class="step-title">Step 2: Select Appliance Details</h3>
+
+    <!-- Brand -->
+    <div class="form-section">
+      <label class="question">Brand <span class="required"></span></label>
+      <select class="form-select" [(ngModel)]="selectedBrandId" (ngModelChange)="onBrandChange()">
+        <option value="">Select brand</option>
+        <option *ngFor="let brand of brands" [value]="brand.id">{{ brand.name }}</option>
+      </select>
+    </div>
+    
+
+    <!-- Model -->
+    <div class="form-section">
+      <label class="question">Model <span class="required"></span></label>
+      <select class="form-select" [(ngModel)]="selectedModelId">
+        <option value="">Select model</option>
+        <option *ngFor="let model of models" [value]="model.id">{{ model.name }}</option>
+      </select>
+    </div>
+
+    <!-- Navigation -->
+    <div class="btn-row">
+      <button (click)="prevStep()">Back</button>
+      <button (click)="nextStep()">Next</button>
+    </div>
+  </div>
+
+
+  <!-- Step 3 -->
+  <div *ngIf="currentStep === 3" class="form-container">
+    <h3 class="step-title">Step 3: Appliance Condition</h3>
+
+    <!-- DYNAMIC QUESTIONS -->
+    <div *ngFor="let group of conditionGroups()" class="question-section">
+      <p class="question">{{ group.question }}</p>
+
+      <!-- SINGLE CHOICE -->
+      <div *ngIf="group.type === 'radio'" class="form-section">
+        <select class="form-select"
+                [ngModel]="getAnswer(group.groupID)"
+                (ngModelChange)="updateAnswer(group.groupID, $event)">
+          <option [ngValue]="null">Select an option</option>
+          <option *ngFor="let opt of group.options" [ngValue]="opt.id">
+            {{ opt.description }}
+          </option>
+        </select>
+      </div>
+
+      <!-- IMAGE SELECTION -->
+      <div *ngIf="group.type === 'image'" class="image-grid">
+        <div *ngFor="let opt of group.options"
+            class="image-option"
+            [class.selected]="getAnswer(group.groupID) === opt.id"
+            (click)="selectImageOption(group.groupID, opt.id)">
+          <img [src]="opt.image || 'assets/placeholder.png'" [alt]="opt.description">
+          <p>{{ opt.description }}</p>
+        </div>
+      </div>
+
+      <!-- MULTIPLE CHOICE -->
+      <div *ngIf="group.type === 'checkbox'" class="checklist">
+        <label *ngFor="let opt of group.options" class="checkbox-item">
+          <input type="checkbox"
+                [checked]="getAnswer(group.groupID)?.includes(opt.id)"
+                (change)="toggleChecklistOption(group.groupID, opt.id)">
+          <span>{{ opt.description }}</span>
+        </label>
+      </div>
+
+      <!-- TEXTAREA -->
+      <div *ngIf="group.type === 'textarea'" class="form-section">
+        <textarea class="text-area"
+          [ngModel]="getAnswer(group.groupID)"
+          (ngModelChange)="updateAnswer(group.groupID, $event)"
+          placeholder="Enter your notes...">
+        </textarea>
+      </div>
+
+
+      <!-- FILE UPLOAD — MODERN & BEAUTIFUL -->
+      <div *ngIf="group.type === 'file_upload'" class="file-upload-section">
+        <!-- Container that groups thumbnails and upload box together -->
+        <div class="upload-container">
+          <!-- Show thumbnails at top (OUTSIDE upload-box but inside container) -->
+          <div class="thumbnails-grid" *ngIf="uploadedFiles.length > 0">
+            <div *ngFor="let file of uploadedFiles; let i = index"
+                 class="thumbnail-item"
+                 (click)="$event.stopPropagation()">
+              <img [src]="thumbnailUrls[i]"
+                  alt="preview"
+                  (click)="openImageModal(thumbnailUrls[i]); $event.stopPropagation()"
+                  class="thumbnail-img" />
+              <button type="button"
+                      class="remove-btn"
+                      (click)="removeFile(i); $event.stopPropagation(); $event.preventDefault()">×</button>
+            </div>
+          </div>
+
+          <!-- Upload box (separate from thumbnails for event handling) -->
+          <div class="upload-box"
+              (drop)="onFileDropped($event)"
+              (dragover)="$event.preventDefault()"
+              (dragenter)="$event.preventDefault()"
+              [class.has-files]="uploadedFiles.length > 0">
+
+            <!-- Upload prompt (only show if less than 10 files) -->
+            <div class="upload-prompt" *ngIf="uploadedFiles.length < 10">
+              <p>Drag & drop photos here, or click to select</p>
+              <input type="file"
+                    multiple
+                    accept="image/*"
+                    (change)="onFileSelected($event)"
+                    class="file-input" />
+              <button type="button" class="upload-btn">Choose Files</button>
+            </div>
+
+            <small class="upload-info">
+              Optional · Max 10 photos · Max 5MB each · JPG/PNG/WEBP
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <!-- FULL IMAGE MODAL -->
+      <div class="image-modal-backdrop" *ngIf="showImageModal" (click)="closeImageModal()">
+        <div class="image-modal" (click)="$event.stopPropagation()">
+          <img [src]="selectedImageUrl" alt="Full size" />
+          <button class="close-modal-btn" (click)="closeImageModal()">×</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- NAVIGATION BUTTONS — MOVED OUTSIDE LOOP → NEVER COVERED BY FILE INPUT -->
+    <!-- Navigation -->
+    <div class="btn-row">
+      <button (click)="prevStep(); $event.stopPropagation()">Back</button>
+      <button (click)="nextStep(); $event.stopPropagation()">Next</button>
+    </div>
+  </div>
+
+  <!-- Step 4 -->
+  <div *ngIf="currentStep === 4" class="form-container">
+    <h3 class="step-title">Step 4: Appliance Valuation Summary</h3>
+
+    <div class="valuation-summary">
+      <div class="valuation-worth">
+        <p class="worth-title">Estimated Worth</p>
+        <h3>RM {{ valuationWorth }}</h3>
+      </div>
+
+      <!-- Circular Percentage -->
+      <div class="circle-progress">
+        <svg class="progress-ring" width="160" height="160">
+          <circle class="progress-ring__background" cx="80" cy="80" r="70"></circle>
+          <circle
+            class="progress-ring__circle"
+            cx="80"
+            cy="80"
+            r="70"
+            [attr.stroke-dasharray]="440"
+            [attr.stroke-dashoffset]="440 - (440 * valuationScore) / 100"
+          ></circle>
+        </svg>
+        <div class="progress-text">
+          <h2>{{ valuationScore }}%</h2>
+          <p>{{ valuationLabel }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Appliance Details Box - DYNAMIC -->
+    <div class="valuation-details-box">
+      <h4>Quote Summary</h4>
+      <ul>
+        <li><strong>Category:</strong> {{ getSelectedCategoryName() || '—' }}</li>
+        <li><strong>Brand:</strong> {{  getSelectedBrandName() || '—' }}</li>
+        <li><strong>Model:</strong> {{ getSelectedModelName() || '—' }}</li>
+
+        <!-- DYNAMIC: Show all answered questions -->
+        <li *ngFor="let qa of getAnsweredQuestions()">
+          <strong>{{ qa.sectionName }}:</strong> {{ qa.answer }}
+        </li>
+      </ul>
+    </div>
+
+    <!-- Red Note -->
+    <p class="valuation-note">
+      Note: The estimated trade-in value is preliminary. <br />
+      Our team will verify your appliance’s condition and send you a finalized offer for confirmation before processing.
+    </p>
+
+    <!-- Buttons -->
+    <div class="btn-row">
+      <!-- <button class="start-over-btn" (click)="goToStep(1)">Start Over</button> -->
+      <button class="start-over-btn" (click)="prevStep()">Back</button>
+      <button class="accept-offer-btn" (click)="nextStep()">Accept Offer</button>
+    </div>
+  </div>
+
+  <!-- Step 5 -->
+  <div *ngIf="currentStep === 5" class="form-container step-5-grid">
+    <h3 class="step-title">Step 5: Pickup Information</h3>
+
+    <div class="step-5-content">
+      <!-- LEFT -->
+      <div class="left-section">
+        <label class="question">Pickup Address</label>
+        <div class="pickup-card" (click)="openAddressModal(); $event.stopPropagation()">
+          <ng-container *ngIf="defaultAddress(); else noAddr">
+            <p><strong>Receiver Name: </strong>{{ defaultAddress()?.name }}</p>
+            <p><strong>Phone No: </strong>{{ defaultAddress()?.phone }}</p>
+            <p><strong>Address: </strong>{{ defaultAddress()?.pickup }}, {{ defaultAddress()?.zip}} {{ defaultAddress()?.city}}, {{ defaultAddress()?.state}}</p>
+          </ng-container>
+          <ng-template #noAddr>
+            <p class="no-address">Click to select / add address</p>
+          </ng-template>
+        </div>
+
+        <!-- Date & Time -->
+        <div class="form-section">
+          <label class="question">Pickup Date</label>
+          <input 
+            type="date" 
+            class="form-control" 
+            [(ngModel)]="pickupDate"
+            [min]="minDate"
+            required />
+          <small style="color: red;" *ngIf="pickupDate && isDateInvalid()">
+            Please select a date from tomorrow onwards
+          </small>
+        </div>
+        <div class="form-section">
+          <label class="question">Pickup Time Slot</label>
+          <select class="form-select" [(ngModel)]="pickupTime">
+            <option value="">Select Time Slot</option>
+            <option *ngFor="let s of timeSlots" [value]="s">{{ s }}</option>
+          </select>
+        </div>
+
+        <div class="btn-row center-btns">
+          <button (click)="prevStep()">Back</button>
+          <button class="submit-btn"
+                  [disabled]="!defaultAddress() || !pickupDate || !pickupTime || isSubmitting"
+                  (click)="submitForm()">
+            {{ isSubmitting ? 'Submitting...' : 'Submit' }}
+          </button>
+        </div>
+      </div>
+
+      <!-- RIGHT – summary (unchanged) -->
+      <div class="right-section">
+        <div class="summary-card">
+          <h3 class="step-title">Appliance Summary</h3>
+          <div class="photo-preview" *ngIf="uploadedFiles.length > 0">
+            <img [src]="getFileUrl(uploadedFiles[0])" alt="Uploaded photo" />
+          </div>
+          <ul>
+            <li><strong>Category:</strong> {{ getSelectedCategoryName() || '—' }}</li>
+            <li><strong>Brand:</strong> {{ getSelectedBrandName() || '—' }}</li>
+            <li><strong>Model:</strong> {{ getSelectedModelName() || '—' }}</li>
+
+            <!-- DYNAMIC: Show all answered questions -->
+            <li *ngFor="let qa of getAnsweredQuestions()">
+              <strong>{{ qa.sectionName }}:</strong> {{ qa.answer }}
+            </li>
+
+            <li><strong>Trade-in Value:</strong> RM {{ valuationWorth }} ({{ valuationLabel }})</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL – ROOT LEVEL (outside any container) -->
+  <div class="modal-backdrop" *ngIf="showAddressModal()" (click)="closeAddressModal()">
+    <div class="modal address-modal" (click)="$event.stopPropagation()">
+
+      <!-- Header -->
+      <div class="modal-header">
+        <h3 class="step-title">Pickup Address</h3>
+        <button class="add-btn" (click)="addressForm.reset(); editingAddressId.set(null); $event.stopPropagation()">+</button>
+      </div>
+
+      
+      <!-- ADDRESS LIST ITEM -->
+      <div *ngFor="let a of addresses()"
+          class="address-item"
+          [class.default]="a.isDefault"
+          (click)="selectDefault(a); $event.stopPropagation()">
+
+        <div class="address-info">
+          <p><strong>Name: </strong>{{ a.name }}</p>
+          <p><strong>Phone No: </strong>{{ a.phone }}</p>
+          <p><strong>Address: </strong>{{ a.pickup }}, {{ a.zip }} {{ a.city }}, {{ a.state }}</p>
+        </div>
+
+        <div class="address-icons">
+          <button (click)="startEdit(a); $event.stopPropagation()">✎</button>
+          <button (click)="deleteAddress(a.id!); $event.stopPropagation()">🗑</button>
+        </div>
+      </div>
+
+
+      <!-- FORM (Add / Edit) -->
+      <form [formGroup]="addressForm" (ngSubmit)="saveAddress()" class="address-form">
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" formControlName="name" placeholder="Enter full name" />
+          <div class="error" *ngIf="addressForm.get('name')?.invalid && addressForm.get('name')?.touched">
+            <span *ngIf="addressForm.get('name')?.errors?.['required']">Name is required</span>
+            <span *ngIf="addressForm.get('name')?.errors?.['minlength']">Name must be at least 2 characters</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Phone No</label>
+            <input type="text" formControlName="phone" placeholder="012-3456789" />
+            <div class="error" *ngIf="addressForm.get('phone')?.invalid && addressForm.get('phone')?.touched">
+              <span *ngIf="addressForm.get('phone')?.errors?.['required']">Phone number is required</span>
+              <span *ngIf="addressForm.get('phone')?.errors?.['pattern']">
+                Invalid format. Use: 012-3456789 or +60123456789
+              </span>
+            </div>
+          </div>
+          <div class="form-group half">
+            <label>Zip Code</label>
+            <input type="text" formControlName="zip" placeholder="55100" maxlength="5" />
+            <div class="error" *ngIf="addressForm.get('zip')?.invalid && addressForm.get('zip')?.touched">
+              <span *ngIf="addressForm.get('zip')?.errors?.['required']">Zip code is required</span>
+              <span *ngIf="addressForm.get('zip')?.errors?.['pattern'] || addressForm.get('zip')?.errors?.['minlength'] || addressForm.get('zip')?.errors?.['maxlength']">
+                Must be exactly 5 digits
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group half">
+            <label>State</label>
+            <select class="form-dropdown" formControlName="state" (change)="onStateChange($event)">
+              <option value="">Select State</option>
+              <option *ngFor="let state of malaysianStates" [value]="state">{{ state }}</option>
+            </select>
+            <div class="error" *ngIf="addressForm.get('state')?.invalid && addressForm.get('state')?.touched">
+              Please select a state
+            </div>
+          </div>
+          <div class="form-group half">
+            <label>City</label>
+            <select formControlName="city" [disabled]="!availableCities.length">
+              <option value="">Select City</option>
+              <option *ngFor="let city of availableCities" [value]="city">{{ city }}</option>
+            </select>
+            <div class="error" *ngIf="addressForm.get('city')?.invalid && addressForm.get('city')?.touched">
+              Please select a city
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Pickup Address</label>
+          <input type="text" formControlName="pickup" placeholder="Street address, building, unit number" />
+          <div class="error" *ngIf="addressForm.get('pickup')?.invalid && addressForm.get('pickup')?.touched">
+            <span *ngIf="addressForm.get('pickup')?.errors?.['required']">Pickup address is required</span>
+            <span *ngIf="addressForm.get('pickup')?.errors?.['minlength']">Address must be at least 5 characters</span>
+          </div>
+        </div>
+
+        <div class="form-group checkbox">
+          <label>
+            <input type="checkbox" formControlName="setAsDefault" />Set as default address
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" [disabled]="addressForm.invalid">
+            {{ editingAddressId() ? 'Update' : 'Save' }}
+          </button>
+        </div>
+      </form>
+
+
+      <!-- Confirm (optional) -->
+      <!-- <div class="modal-footer">
+        <button class="confirm-btn" (click)="closeAddressModal()">Confirm</button>
+      </div> -->
+    </div>
+  </div>
+
+  <!-- Success submit -->
+  <div *ngIf="currentStep === 6" class="form-container step-6-complete">
+    <div class="completion-message">
+      <img src="assets/icons/Checkmark.png" alt="Success" class="success-icon" />
+      <h3>You are Done!</h3>
+      <p>Your submission has been successfully processed.</p>
+    </div>
+  </div>
+
+</main>

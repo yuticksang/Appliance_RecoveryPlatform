@@ -18,14 +18,19 @@ export const getAllUsers = async (req: Request, res: Response) => {
   }
 };
 
-// Check if username is available
+// Check if username is available for a specific user type
 export const checkUsername = async (req: Request, res: Response) => {
   try {
     const { username } = req.params;
+    const { user_type } = req.query; // Get user_type from query params
+
+    if (!user_type) {
+      return res.status(400).json({ message: 'user_type is required' });
+    }
 
     const result = await pool.query(
-      'SELECT "userID" FROM users WHERE username = $1',
-      [username]
+      'SELECT "userID" FROM users WHERE username = $1 AND user_type = $2',
+      [username, user_type]
     );
 
     res.json({ available: result.rows.length === 0 });
@@ -47,15 +52,28 @@ export const createUser = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Password, name, and username are required' });
     }
 
-    // Check if username already exists
+    // Check if username already exists for this user_type
     const existingUser = await pool.query(
-      'SELECT "userID" FROM users WHERE username = $1',
-      [username]
+      'SELECT "userID" FROM users WHERE username = $1 AND user_type = $2',
+      [username, user_type || 'admin']
     );
 
     if (existingUser.rows.length > 0) {
-      console.log('❌ Username already exists:', username);
-      return res.status(400).json({ message: 'Username already exists' });
+      console.log('❌ Username already exists for', user_type || 'admin', ':', username);
+      return res.status(400).json({ message: 'Username already exists for this user type' });
+    }
+
+    // Check if email already exists for this user_type (if email is provided)
+    if (req.body.email) {
+      const existingEmail = await pool.query(
+        'SELECT "userID" FROM users WHERE email = $1 AND user_type = $2',
+        [req.body.email, user_type || 'admin']
+      );
+
+      if (existingEmail.rows.length > 0) {
+        console.log('❌ Email already exists for', user_type || 'admin', ':', req.body.email);
+        return res.status(400).json({ message: 'Email already exists for this user type' });
+      }
     }
 
     // Hash password
@@ -114,14 +132,38 @@ export const updateUser = async (req: Request, res: Response) => {
     const { id } = req.params; // This is now userID (string)
     const { name, username, password, email, phone } = req.body;
 
-    // Check if username is taken by another user
+    // Get current user's type
+    const currentUser = await pool.query(
+      'SELECT user_type FROM users WHERE "userID" = $1',
+      [id]
+    );
+
+    if (currentUser.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const userType = currentUser.rows[0].user_type;
+
+    // Check if username is taken by another user of the same type
     const existingUser = await pool.query(
-      'SELECT "userID" FROM users WHERE username = $1 AND "userID" != $2',
-      [username, id]
+      'SELECT "userID" FROM users WHERE username = $1 AND user_type = $2 AND "userID" != $3',
+      [username, userType, id]
     );
 
     if (existingUser.rows.length > 0) {
-      return res.status(400).json({ message: 'Username already exists' });
+      return res.status(400).json({ message: 'Username already exists for this user type' });
+    }
+
+    // Check if email is taken by another user of the same type (if email is provided)
+    if (email !== undefined && email !== null && email !== '') {
+      const existingEmail = await pool.query(
+        'SELECT "userID" FROM users WHERE email = $1 AND user_type = $2 AND "userID" != $3',
+        [email, userType, id]
+      );
+
+      if (existingEmail.rows.length > 0) {
+        return res.status(400).json({ message: 'Email already exists for this user type' });
+      }
     }
 
     // Build dynamic update fields
@@ -254,5 +296,457 @@ export const deleteUser = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Delete user error:', error);
     res.status(500).json({ message: 'Failed to delete user' });
+  }
+};
+
+// =====================================================
+// APPLIANCE MANAGEMENT
+// =====================================================
+
+// Get all categories
+export const getAllCategories = async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      'SELECT "categoryID", "categoryName", description, count, status, created_at FROM "Category" ORDER BY "categoryName" ASC'
+    );
+
+    console.log('📂 Fetched categories:', result.rows.length);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get all categories error:', error);
+    res.status(500).json({ message: 'Failed to fetch categories' });
+  }
+};
+
+// Get all brands
+export const getAllBrands = async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      'SELECT "brandID", "brandName", description, count, status, created_at FROM "Brand" ORDER BY "brandName" ASC'
+    );
+
+    console.log('🏷️ Fetched brands:', result.rows.length);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get all brands error:', error);
+    res.status(500).json({ message: 'Failed to fetch brands' });
+  }
+};
+
+// Get all appliances with category and brand names
+export const getAllAppliances = async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      `SELECT
+        a."applianceID",
+        a."categoryID",
+        a."brandID",
+        a."modelCode",
+        a."modelName",
+        a.description,
+        a.status,
+        a.created_at,
+        c."categoryName",
+        b."brandName"
+      FROM "Appliance" a
+      LEFT JOIN "Category" c ON a."categoryID" = c."categoryID"
+      LEFT JOIN "Brand" b ON a."brandID" = b."brandID"
+      ORDER BY a."applianceID" ASC`
+    );
+
+    console.log('📱 Fetched appliances:', result.rows.length);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get all appliances error:', error);
+    res.status(500).json({ message: 'Failed to fetch appliances' });
+  }
+};
+
+// Create new appliance
+export const createAppliance = async (req: Request, res: Response) => {
+  try {
+    const { categoryID, brandID, modelCode, modelName, description } = req.body;
+
+    // Validate required fields
+    if (!categoryID || !brandID || !modelCode || !modelName) {
+      return res.status(400).json({ message: 'Category, Brand, Model Code, and Model Name are required' });
+    }
+
+    // Check if model code already exists
+    const existing = await pool.query(
+      'SELECT "applianceID" FROM "Appliance" WHERE "modelCode" = $1',
+      [modelCode]
+    );
+
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ message: 'Model code already exists' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO "Appliance" ("categoryID", "brandID", "modelCode", "modelName", description)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [categoryID, brandID, modelCode, modelName, description || null]
+    );
+
+    console.log('✅ Appliance created:', result.rows[0]);
+    res.status(201).json({
+      message: 'Appliance created successfully',
+      appliance: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Create appliance error:', error);
+    res.status(500).json({ message: 'Failed to create appliance' });
+  }
+};
+
+// Update appliance
+export const updateAppliance = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { categoryID, brandID, modelCode, modelName, description } = req.body;
+
+    // Check if model code is taken by another appliance
+    const existing = await pool.query(
+      'SELECT "applianceID" FROM "Appliance" WHERE "modelCode" = $1 AND "applianceID" != $2',
+      [modelCode, id]
+    );
+
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ message: 'Model code already exists' });
+    }
+
+    const result = await pool.query(
+      `UPDATE "Appliance"
+       SET "categoryID" = $1, "brandID" = $2, "modelCode" = $3, "modelName" = $4, description = $5
+       WHERE "applianceID" = $6
+       RETURNING *`,
+      [categoryID, brandID, modelCode, modelName, description || null, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Appliance not found' });
+    }
+
+    console.log('✅ Appliance updated:', result.rows[0]);
+    res.json({
+      message: 'Appliance updated successfully',
+      appliance: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Update appliance error:', error);
+    res.status(500).json({ message: 'Failed to update appliance' });
+  }
+};
+
+
+// Update appliance status
+export const updateApplianceStatus = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!['ACTIVE', 'INACTIVE'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    const result = await pool.query(
+      'UPDATE "Appliance" SET status = $1 WHERE "applianceID" = $2 RETURNING "applianceID", status',
+      [status, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Appliance not found' });
+    }
+
+    console.log('✅ Appliance status updated:', result.rows[0]);
+    res.json({
+      message: 'Appliance status updated successfully',
+      appliance: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Update appliance status error:', error);
+    res.status(500).json({ message: 'Failed to update appliance status' });
+  }
+};
+
+// =====================================================
+// CATEGORY MANAGEMENT
+// =====================================================
+
+// Create new category
+export const createCategory = async (req: Request, res: Response) => {
+  try {
+    const { categoryName, description } = req.body;
+
+    if (!categoryName) {
+      return res.status(400).json({ message: 'Category name is required' });
+    }
+
+    // Check if category name already exists
+    const existing = await pool.query(
+      'SELECT "categoryID" FROM "Category" WHERE "categoryName" = $1',
+      [categoryName]
+    );
+
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ message: 'Category name already exists' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO "Category" ("categoryName", description, count, status)
+       VALUES ($1, $2, 0, 'ACTIVE')
+       RETURNING *`,
+      [categoryName, description || null]
+    );
+
+    console.log('✅ Category created:', result.rows[0]);
+    res.status(201).json({
+      message: 'Category created successfully',
+      category: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Create category error:', error);
+    res.status(500).json({ message: 'Failed to create category' });
+  }
+};
+
+// Update category
+export const updateCategory = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { categoryName, description } = req.body;
+
+    // Check if category name is taken by another category
+    const existing = await pool.query(
+      'SELECT "categoryID" FROM "Category" WHERE "categoryName" = $1 AND "categoryID" != $2',
+      [categoryName, id]
+    );
+
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ message: 'Category name already exists' });
+    }
+
+    const result = await pool.query(
+      `UPDATE "Category"
+       SET "categoryName" = $1, description = $2
+       WHERE "categoryID" = $3
+       RETURNING *`,
+      [categoryName, description || null, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    console.log('✅ Category updated:', result.rows[0]);
+    res.json({
+      message: 'Category updated successfully',
+      category: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Update category error:', error);
+    res.status(500).json({ message: 'Failed to update category' });
+  }
+};
+
+// Update category status
+export const updateCategoryStatus = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!['ACTIVE', 'INACTIVE'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    // If trying to set status to INACTIVE, check if this is the last active category
+    if (status === 'INACTIVE') {
+      const activeCount = await pool.query(
+        'SELECT COUNT(*) as count FROM "Category" WHERE status = $1',
+        ['ACTIVE']
+      );
+
+      if (parseInt(activeCount.rows[0].count) <= 1) {
+        return res.status(400).json({ message: 'Cannot deactivate the last active category. At least one category must remain active.' });
+      }
+    }
+
+    const result = await pool.query(
+      'UPDATE "Category" SET status = $1 WHERE "categoryID" = $2 RETURNING "categoryID", status',
+      [status, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+
+    console.log('✅ Category status updated:', result.rows[0]);
+    res.json({
+      message: 'Category status updated successfully',
+      category: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Update category status error:', error);
+    res.status(500).json({ message: 'Failed to update category status' });
+  }
+};
+
+// =====================================================
+// BRAND MANAGEMENT
+// =====================================================
+
+// Create new brand
+export const createBrand = async (req: Request, res: Response) => {
+  try {
+    const { brandName, description } = req.body;
+
+    if (!brandName) {
+      return res.status(400).json({ message: 'Brand name is required' });
+    }
+
+    // Check if brand name already exists
+    const existing = await pool.query(
+      'SELECT "brandID" FROM "Brand" WHERE "brandName" = $1',
+      [brandName]
+    );
+
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ message: 'Brand name already exists' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO "Brand" ("brandName", description, count, status)
+       VALUES ($1, $2, 0, 'ACTIVE')
+       RETURNING *`,
+      [brandName, description || null]
+    );
+
+    console.log('✅ Brand created:', result.rows[0]);
+    res.status(201).json({
+      message: 'Brand created successfully',
+      brand: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Create brand error:', error);
+    res.status(500).json({ message: 'Failed to create brand' });
+  }
+};
+
+// Update brand
+export const updateBrand = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { brandName, description } = req.body;
+
+    // Check if brand name is taken by another brand
+    const existing = await pool.query(
+      'SELECT "brandID" FROM "Brand" WHERE "brandName" = $1 AND "brandID" != $2',
+      [brandName, id]
+    );
+
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ message: 'Brand name already exists' });
+    }
+
+    const result = await pool.query(
+      `UPDATE "Brand"
+       SET "brandName" = $1, description = $2
+       WHERE "brandID" = $3
+       RETURNING *`,
+      [brandName, description || null, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Brand not found' });
+    }
+
+    console.log('✅ Brand updated:', result.rows[0]);
+    res.json({
+      message: 'Brand updated successfully',
+      brand: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Update brand error:', error);
+    res.status(500).json({ message: 'Failed to update brand' });
+  }
+};
+
+// Update brand status
+export const updateBrandStatus = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!['ACTIVE', 'INACTIVE'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    // If trying to set status to INACTIVE, check if this is the last active brand
+    if (status === 'INACTIVE') {
+      const activeCount = await pool.query(
+        'SELECT COUNT(*) as count FROM "Brand" WHERE status = $1',
+        ['ACTIVE']
+      );
+
+      if (parseInt(activeCount.rows[0].count) <= 1) {
+        return res.status(400).json({ message: 'Cannot deactivate the last active brand. At least one brand must remain active.' });
+      }
+    }
+
+    const result = await pool.query(
+      'UPDATE "Brand" SET status = $1 WHERE "brandID" = $2 RETURNING "brandID", status',
+      [status, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Brand not found' });
+    }
+
+    console.log('✅ Brand status updated:', result.rows[0]);
+    res.json({
+      message: 'Brand status updated successfully',
+      brand: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Update brand status error:', error);
+    res.status(500).json({ message: 'Failed to update brand status' });
+  }
+};
+
+// =====================================================
+// PRICE LIST MANAGEMENT
+// =====================================================
+
+// Get all buyer prices for appliances
+export const getAllBuyerPrices = async (req: Request, res: Response) => {
+  try {
+    const result = await pool.query(
+      `SELECT
+        ba."buyerID",
+        ba."applianceID",
+        ba."basePrice",
+        u.buyer_id,
+        u.name as "buyerName",
+        u.username as "buyerUsername",
+        a."modelCode",
+        a."modelName",
+        c."categoryName",
+        b."brandName",
+        a.status as "applianceStatus"
+      FROM "BuyerAppliance" ba
+      LEFT JOIN users u ON ba."buyerID" = u."userID"
+      LEFT JOIN "Appliance" a ON ba."applianceID" = a."applianceID"
+      LEFT JOIN "Category" c ON a."categoryID" = c."categoryID"
+      LEFT JOIN "Brand" b ON a."brandID" = b."brandID"
+      WHERE u.user_type = 'buyer'
+      ORDER BY u.buyer_id ASC, c."categoryName" ASC, b."brandName" ASC, a."modelName" ASC`
+    );
+
+    console.log('💰 Fetched buyer prices:', result.rows.length);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Get buyer prices error:', error);
+    res.status(500).json({ message: 'Failed to fetch buyer prices' });
   }
 };

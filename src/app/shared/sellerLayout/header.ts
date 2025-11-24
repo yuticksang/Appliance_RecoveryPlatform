@@ -22,7 +22,7 @@ export class ClientHeaderComponent {
   user = computed(() => {
     const profile = this.authService.userProfile();
     if (!profile) return null;
-    return { username: profile.name || profile.username };
+    return { username: profile.username };
   });
 
   logout() {

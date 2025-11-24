@@ -7,7 +7,7 @@ import { AlertService } from '../../../services/alert.service';
 type SellerStatus = 'ACTIVE' | 'INACTIVE';
 
 interface SellerRow {
-  id: number;
+  id: string;
   sellerId: string;
   fullName: string;
   username: string;
@@ -18,7 +18,7 @@ interface SellerRow {
   createdAt: string;
 }
 
-type SortKey = 'fullName' | 'email' | 'status';
+type SortKey = 'sellerId' | 'fullName' | 'username' | 'email' | 'status';
 type SortDir = 'asc' | 'desc';
 
 @Component({
@@ -66,17 +66,28 @@ export class SellerListComponent implements OnInit {
           // Filter and transform seller users
           const sellerUsers = users
             .filter(user => user.user_type === 'seller')
-            .map((user) => ({
-              id: user.id,
-              sellerId: user.seller_id || '---',
-              fullName: user.name || '',
-              username: user.username || '',
-              email: user.email || '',
-              phone: user.phone || '',
-              address: user.address || '',
-              status: user.user_status as SellerStatus,
-              createdAt: user.created_at || ''
-            }));
+            .map((user) => {
+              console.log(`🔍 Seller User ${user.username} - Full Object:`, user);
+              console.log(`🔍 user.id:`, user.id);
+              console.log(`🔍 user.seller_id:`, user.seller_id);
+              console.log(`🔍 user.userID:`, user.userID);
+              console.log(`🔍 user.user_id:`, user.user_id);
+
+              const sellerRow = {
+                id: user.id || user.userID || user.user_id || user.seller_id,
+                sellerId: user.seller_id || '---',
+                fullName: user.name || '',
+                username: user.username || '',
+                email: user.email || '',
+                phone: user.phone || '',
+                address: user.address || '',
+                status: user.user_status as SellerStatus,
+                createdAt: user.created_at || ''
+              };
+
+              console.log(`🔍 Mapped SellerRow:`, sellerRow);
+              return sellerRow;
+            });
 
           this.rows.set(sellerUsers);
           this.loading.set(false);
@@ -97,7 +108,7 @@ export class SellerListComponent implements OnInit {
       r.fullName.toLowerCase().includes(q) ||
       r.email.toLowerCase().includes(q) ||
       r.phone.toLowerCase().includes(q) ||
-      r.address.toLowerCase().includes(q) ||
+      r.sellerId.toLowerCase().includes(q) ||
       r.status.toLowerCase().includes(q)
     );
 
@@ -177,6 +188,7 @@ export class SellerListComponent implements OnInit {
         });
     }
 
+    this.onCancelConfirm();
   }
 
   onCancelConfirm() {

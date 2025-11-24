@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -27,7 +27,7 @@ interface LoginResponse {
   templateUrl: './admin-login.html',
   styleUrls: ['./admin-login.scss']
 })
-export class AdminLoginComponent {
+export class AdminLoginComponent implements OnInit {
   hide = true;
   loading = false;
   error = '';
@@ -49,6 +49,10 @@ export class AdminLoginComponent {
     });
   }
 
+  ngOnInit() {
+    // Handle dynamic form state here if needed in the future
+  }
+
   get emailOrUsername() { return this.form.get('emailOrUsername'); }
   get password() { return this.form.get('password'); }
 
@@ -60,6 +64,8 @@ export class AdminLoginComponent {
 
     this.loading = true;
     this.error = '';
+    // Disable form while loading
+    this.form.disable();
 
     this.http.post<LoginResponse>(`${this.apiBase}/api/auth/login`, this.form.value)
       .subscribe({
@@ -72,6 +78,7 @@ export class AdminLoginComponent {
             this.error = 'Access denied. Admin credentials required.';
             this.alertService.error('Access denied. Admin credentials required.');
             this.loading = false;
+            this.form.enable();
             return;
           }
 
@@ -88,12 +95,9 @@ export class AdminLoginComponent {
           // Show success message
           this.alertService.success('Login successful! Welcome back.');
 
-          // Route based on user role
-          const isSuperAdmin = user.userType === 'superadmin' || user.adminRole === 'SUPER_ADMIN';
-          const targetRoute = isSuperAdmin ? '/admin/admins' : '/admin/sellers';
-
-          console.log(`Navigating to ${targetRoute}...`);
-          this.router.navigate([targetRoute]).then(
+          // Redirect all admins to dashboard
+          console.log('Navigating to /admin/dashboard...');
+          this.router.navigate(['/admin/dashboard']).then(
             success => console.log('Navigation success:', success),
             error => console.error('Navigation error:', error)
           );
@@ -102,6 +106,7 @@ export class AdminLoginComponent {
           this.error = err?.error?.message || 'Login failed. Please try again.';
           this.alertService.error(this.error);
           this.loading = false;
+          this.form.enable();
         }
       });
   }
