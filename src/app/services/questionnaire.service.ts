@@ -92,9 +92,10 @@ export class QuestionnaireService {
 
 
 
-  // NEW: Fetch dynamic condition groups (questions + options)
-  getConditionGroups(): Observable<ConditionGroup[]> {
-    return this.http.get<ConditionGroup[]>(`${this.api}/condition-groups`, this.buildHeaders()).pipe(
+  // NEW: Fetch dynamic condition groups (questions + options) filtered by category
+  getConditionGroups(categoryId: string | number): Observable<ConditionGroup[]> {
+    if (!categoryId) return of([]);
+    return this.http.get<ConditionGroup[]>(`${this.api}/condition-groups/${categoryId}`, this.buildHeaders()).pipe(
       catchError(err => {
         console.warn('Failed to load condition groups', err);
         return of([]);

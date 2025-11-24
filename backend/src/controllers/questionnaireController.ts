@@ -89,9 +89,16 @@ export const getModelsByBrand = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// Get Condition Group and Condition Options
+// Get Condition Group and Condition Options (filtered by category)
 export const getConditionGroups = async (req: AuthRequest, res: Response) => {
   try {
+    console.log('getConditionGroups req.params:', req.params);
+    const categoryId = req.params.categoryId;
+
+    if (!categoryId) {
+      return res.status(400).json({ message: 'categoryId is required' });
+    }
+
     const result = await pool.query(`
           SELECT
             cg."groupID",
@@ -101,7 +108,7 @@ export const getConditionGroups = async (req: AuthRequest, res: Response) => {
             cg."display_order" AS "displayOrder",
             COALESCE(
               json_agg(
-                json_build_object(
+                DISTINCT jsonb_build_object(
                   'id', co."conditionID",
                   'code', co.code,
                   'description', co.description,
@@ -112,7 +119,17 @@ export const getConditionGroups = async (req: AuthRequest, res: Response) => {
                       ELSE NULL
                     END
                 )
-                ORDER BY co."conditionID"
+                ORDER BY jsonb_build_object(
+                  'id', co."conditionID",
+                  'code', co.code,
+                  'description', co.description,
+                  'image',
+                    CASE
+                      WHEN co.image IS NOT NULL AND co.image != ''
+                      THEN 'http://localhost:3000' || co.image
+                      ELSE NULL
+                    END
+                )
               ) FILTER (WHERE co."conditionID" IS NOT NULL),
               '[]'
             ) AS options
@@ -120,8 +137,31 @@ export const getConditionGroups = async (req: AuthRequest, res: Response) => {
           FROM "ConditionGroup" cg
           LEFT JOIN "ConditionOption" co
             ON co."groupID" = cg."groupID"
-          AND co.status = 'ACTIVE'          -- ONLY ACTIVE OPTIONS
-          WHERE cg.status = 'ACTIVE'          -- ONLY ACTIVE GROUPS
+            AND co.status = 'ACTIVE'
+            AND (
+              -- Include options that are linked to this category
+              EXISTS (
+                SELECT 1
+                FROM "Category_Condition" cc
+                WHERE cc."conditionID" = co."conditionID"
+                AND cc."categoryID" = $1
+              )
+              -- OR if this is a question type that doesn't have options (textarea, file_upload)
+              OR cg."question_type" IN ('textarea', 'file_upload')
+            )
+          WHERE cg.status = 'ACTIVE'
+          AND (
+            -- Include groups that have options linked to this category
+            EXISTS (
+              SELECT 1
+              FROM "ConditionOption" co2
+              JOIN "Category_Condition" cc ON cc."conditionID" = co2."conditionID"
+              WHERE co2."groupID" = cg."groupID"
+              AND cc."categoryID" = $1
+            )
+            -- OR include groups that are textarea/file_upload (no options needed)
+            OR cg."question_type" IN ('textarea', 'file_upload')
+          )
           GROUP BY
             cg."groupID",
             cg."criteriaName",
@@ -129,7 +169,7 @@ export const getConditionGroups = async (req: AuthRequest, res: Response) => {
             cg."question_type",
             cg."display_order"
           ORDER BY cg."display_order" ASC;
-        `);
+        `, [categoryId]);
 
     res.json(result.rows);
   } catch (error) {

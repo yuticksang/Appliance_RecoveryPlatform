@@ -34,7 +34,7 @@ const router = Router();
 router.get('/categories', verifyToken, getCategories);
 router.get('/brands/:categoryId', verifyToken, getBrandsByCategory);
 router.get('/models/:categoryId/:brandId', verifyToken, getModelsByBrand);
-router.get('/condition-groups', verifyToken, getConditionGroups);
+router.get('/condition-groups/:categoryId', verifyToken, getConditionGroups);
 
 // // Address routes
 // router.get('/addresses/:userId', verifyToken, getAddresses);

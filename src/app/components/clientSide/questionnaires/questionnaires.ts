@@ -339,10 +339,16 @@ export class QuestionnairesComponent implements OnInit{
   }
 
 
-  // Step 3 - Load Condition Groups and Options
+  // Step 3 - Load Condition Groups and Options (filtered by category)
   loadConditionGroups() {
-    this.questionnaireService.getConditionGroups().subscribe({
+    if (!this.applianceTypeId) {
+      console.warn('Cannot load condition groups: applianceTypeId is not set');
+      return;
+    }
+
+    this.questionnaireService.getConditionGroups(this.applianceTypeId).subscribe({
       next: (groups) => {
+        console.log('✅ Loaded condition groups for category:', this.applianceTypeId, groups);
         this.conditionGroups.set(groups);
 
         // Initialize answers ONLY if they don't exist yet (preserve existing answers)
