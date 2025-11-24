@@ -467,6 +467,12 @@ CREATE TABLE "Pickup" (
     "addressID" VARCHAR(20),
     "pickupDate" DATE,
     "pickupTimeSlot" VARCHAR(50),
+    "snapshotReceiverName" VARCHAR(255),
+    "snapshotPhoneNum" VARCHAR(50),
+    "snapshotAddress" TEXT,
+    "snapshotCity" VARCHAR(100),
+    "snapshotState" VARCHAR(100),
+    "snapshotZipCode" VARCHAR(20),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY ("submittedApplianceID") REFERENCES "SubmittedAppliance"("submittedApplianceID") ON DELETE CASCADE,
     FOREIGN KEY ("addressID") REFERENCES "PickupAddress"("addressID") ON DELETE SET NULL

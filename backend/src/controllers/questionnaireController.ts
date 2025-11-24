@@ -351,19 +351,45 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       throw new Error('Please select pickup date and time');
     }
 
-    // Insert Pickup Table
+    // Fetch current address details to snapshot them
+    const addressSnapshot = await client.query(
+      `SELECT "receiverName", "phoneNum", "pickupAddress", city, state, "zipCode"
+       FROM "PickupAddress"
+       WHERE "addressID" = $1`,
+      [addressId]
+    );
+
+    if (addressSnapshot.rows.length === 0) {
+      throw new Error('Selected pickup address not found');
+    }
+
+    const addr = addressSnapshot.rows[0];
+
+    // Insert Pickup Table with snapshot data
     await client.query(
       `INSERT INTO "Pickup" (
-        "submittedApplianceID", 
-        "addressID", 
-        "pickupDate", 
-        "pickupTimeSlot"
-      ) VALUES ($1, $2, $3, $4)`,
+        "submittedApplianceID",
+        "addressID",
+        "pickupDate",
+        "pickupTimeSlot",
+        "snapshotReceiverName",
+        "snapshotPhoneNum",
+        "snapshotAddress",
+        "snapshotCity",
+        "snapshotState",
+        "snapshotZipCode"
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [
         finalId,
         addressId,
-        pickupDate,      // Format: YYYY-MM-DD
-        pickupTime       // Format: "14:00-16:00" or whatever you send
+        pickupDate,
+        pickupTime,
+        addr.receiverName,
+        addr.phoneNum,
+        addr.pickupAddress,
+        addr.city,
+        addr.state,
+        addr.zipCode
       ]
     );
 

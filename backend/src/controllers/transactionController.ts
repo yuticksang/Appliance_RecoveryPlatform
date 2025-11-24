@@ -150,12 +150,13 @@ export const getTransactionById = async (req: Request, res: Response) => {
         a."applianceID" as "modelId",
         COALESCE(a."modelName", 'N/A') as "modelName",
         COALESCE(a.image_url, '') as "imageUrl",
-        pa."receiverName" as "addressName",
-        pa."phoneNum" as "addressPhone",
-        pa.state,
-        pa.city,
-        pa."zipCode",
-        pa."pickupAddress",
+        p."addressID" as "addressId",
+        COALESCE(p."snapshotReceiverName", 'N/A') as "addressName",
+        COALESCE(p."snapshotPhoneNum", 'N/A') as "addressPhone",
+        COALESCE(p."snapshotState", 'N/A') as state,
+        COALESCE(p."snapshotCity", 'N/A') as city,
+        COALESCE(p."snapshotZipCode", 'N/A') as "zipCode",
+        COALESCE(p."snapshotAddress", 'N/A') as "pickupAddress",
         TO_CHAR(p."pickupDate", 'YYYY-MM-DD') as "pickupDate",
         p."pickupTimeSlot"
       FROM "Transaction" t
@@ -165,7 +166,6 @@ export const getTransactionById = async (req: Request, res: Response) => {
       LEFT JOIN "Appliance" a ON sa."applianceID" = a."applianceID"
       LEFT JOIN "Brand" b ON a."brandID" = b."brandID"
       LEFT JOIN "Category" c ON a."categoryID" = c."categoryID"
-      LEFT JOIN "PickupAddress" pa ON sa."addressID" = pa."addressID"
       LEFT JOIN "Pickup" p ON sa."submittedApplianceID" = p."submittedApplianceID"
       WHERE t."transactionID" = $1`,
       [id]
