@@ -232,7 +232,7 @@
               <!-- DYNAMIC QUESTION ANSWERS (non-checkbox types: radio, image, textarea) -->
               <div class="detail-item" *ngFor="let qa of beforeReview.dynamicAnswers">
                 <ng-container *ngIf="qa.type !== 'checkbox'">
-                  <h4 class="detail-label">{{ qa.question | uppercase }}</h4>
+                  <h4 class="detail-label">{{ qa.sectionName | uppercase }}</h4>
                   <p class="detail-value">{{ qa.answer }}</p>
                 </ng-container>
               </div>
@@ -281,7 +281,7 @@
               <!-- DYNAMIC QUESTION ANSWERS (non-checkbox types: radio, image, textarea) -->
               <div class="detail-item" *ngFor="let qa of afterReview.dynamicAnswers">
                 <ng-container *ngIf="qa.type !== 'checkbox'">
-                  <h4 class="detail-label">{{ qa.question | uppercase }}</h4>
+                  <h4 class="detail-label">{{ qa.sectionName | uppercase }}</h4>
                   <p class="detail-value">{{ qa.answer }}</p>
                 </ng-container>
               </div>
@@ -333,7 +333,7 @@
             <!-- DYNAMIC QUESTION ANSWERS (non-checkbox types: radio, image, textarea) -->
             <div class="detail-item" *ngFor="let qa of applianceInfo.dynamicAnswers">
               <ng-container *ngIf="qa.type !== 'checkbox'">
-                <h4 class="detail-label">{{ qa.question | uppercase }}</h4>
+                <h4 class="detail-label">{{ qa.sectionName | uppercase }}</h4>
                 <p class="detail-value">{{ qa.answer }}</p>
               </ng-container>
             </div>

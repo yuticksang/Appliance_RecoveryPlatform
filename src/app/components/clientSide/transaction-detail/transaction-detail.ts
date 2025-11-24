@@ -264,9 +264,9 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         };
 
         this.customerInfo = {
-          name: data.sellerName || 'Unknown',
+          name: data.addressName || 'Unknown',
           email: data.sellerEmail || 'N/A',
-          contactNumber: data.sellerPhone || 'N/A',
+          contactNumber: data.addressPhone || 'N/A',
           address: data.pickupAddress || 'N/A',
           city: data.city || 'N/A',
           state: data.state || 'N/A',

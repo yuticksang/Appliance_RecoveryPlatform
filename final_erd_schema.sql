@@ -164,6 +164,7 @@ CREATE TABLE "PickupAddress" (
     "zipCode" VARCHAR(20) NOT NULL,
     "pickupAddress" TEXT NOT NULL,
     "isDefault" BOOLEAN DEFAULT false,
+    status VARCHAR(50),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY ("sellerID") REFERENCES users("userID") ON DELETE CASCADE
 );

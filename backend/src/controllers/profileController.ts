@@ -22,8 +22,8 @@ export const getAddresses = async (req: AuthRequest, res: Response) => {
 
     // Now get addresses using seller_id
     const result = await pool.query(
-      `SELECT "addressID", "receiverName", "phoneNum", state, city, "zipCode", "pickupAddress", "isDefault"
-       FROM "PickupAddress" WHERE "sellerID" = $1 ORDER BY "addressID" DESC`,
+      `SELECT "addressID", "receiverName", "phoneNum", state, city, "zipCode", "pickupAddress", "isDefault", "status"
+       FROM "PickupAddress" WHERE "sellerID" = $1 AND status = 'ACTIVE' ORDER BY "addressID" DESC`,
       [sellerId]
     );
 
@@ -67,8 +67,8 @@ export const createAddress = async (req: AuthRequest, res: Response) => {
     const sellerId = userResult.rows[0].seller_id;
 
     const result = await pool.query(
-      `INSERT INTO "PickupAddress" ("sellerID", "receiverName", "phoneNum", state, city, "zipCode", "pickupAddress")
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO "PickupAddress" ("sellerID", "receiverName", "phoneNum", state, city, "zipCode", "pickupAddress", status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'ACTIVE')
        RETURNING "addressID", "receiverName", "phoneNum", state, city, "zipCode", "pickupAddress"`,
       [sellerId, name, phone, state, city, zip, pickup]
     );
@@ -157,8 +157,12 @@ export const deleteAddress = async (req: AuthRequest, res: Response) => {
 
     const sellerId = userResult.rows[0].seller_id;
 
+    // Soft delete: Set status to INACTIVE instead of deleting the record
     const result = await pool.query(
-      'DELETE FROM "PickupAddress" WHERE "addressID" = $1 AND "sellerID" = $2 RETURNING "addressID"',
+      `UPDATE "PickupAddress"
+       SET status = 'INACTIVE'
+       WHERE "addressID" = $1 AND "sellerID" = $2
+       RETURNING "addressID"`,
       [addressId, sellerId]
     );
 

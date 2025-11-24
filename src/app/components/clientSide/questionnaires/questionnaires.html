@@ -346,42 +346,65 @@
       <form [formGroup]="addressForm" (ngSubmit)="saveAddress()" class="address-form">
         <div class="form-group">
           <label>Name</label>
-          <input type="text" formControlName="name" />
+          <input type="text" formControlName="name" placeholder="Enter full name" />
           <div class="error" *ngIf="addressForm.get('name')?.invalid && addressForm.get('name')?.touched">
-            Required
+            <span *ngIf="addressForm.get('name')?.errors?.['required']">Name is required</span>
+            <span *ngIf="addressForm.get('name')?.errors?.['minlength']">Name must be at least 2 characters</span>
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
             <label>Phone No</label>
-            <input type="text" formControlName="phone" />
+            <input type="text" formControlName="phone" placeholder="012-3456789" />
             <div class="error" *ngIf="addressForm.get('phone')?.invalid && addressForm.get('phone')?.touched">
-              Invalid phone
+              <span *ngIf="addressForm.get('phone')?.errors?.['required']">Phone number is required</span>
+              <span *ngIf="addressForm.get('phone')?.errors?.['pattern']">
+                Invalid format. Use: 012-3456789 or +60123456789
+              </span>
             </div>
           </div>
           <div class="form-group half">
             <label>Zip Code</label>
-            <input type="text" formControlName="zip" placeholder="55100" />
+            <input type="text" formControlName="zip" placeholder="55100" maxlength="5" />
+            <div class="error" *ngIf="addressForm.get('zip')?.invalid && addressForm.get('zip')?.touched">
+              <span *ngIf="addressForm.get('zip')?.errors?.['required']">Zip code is required</span>
+              <span *ngIf="addressForm.get('zip')?.errors?.['pattern'] || addressForm.get('zip')?.errors?.['minlength'] || addressForm.get('zip')?.errors?.['maxlength']">
+                Must be exactly 5 digits
+              </span>
+            </div>
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group half">
             <label>State</label>
-            <input type="text" formControlName="state" placeholder="Kuala Lumpur" />
+            <select class="form-dropdown" formControlName="state" (change)="onStateChange($event)">
+              <option value="">Select State</option>
+              <option *ngFor="let state of malaysianStates" [value]="state">{{ state }}</option>
+            </select>
+            <div class="error" *ngIf="addressForm.get('state')?.invalid && addressForm.get('state')?.touched">
+              Please select a state
+            </div>
           </div>
           <div class="form-group half">
             <label>City</label>
-            <input type="text" formControlName="city" placeholder="Kuala Lumpur" />
+            <select formControlName="city" [disabled]="!availableCities.length">
+              <option value="">Select City</option>
+              <option *ngFor="let city of availableCities" [value]="city">{{ city }}</option>
+            </select>
+            <div class="error" *ngIf="addressForm.get('city')?.invalid && addressForm.get('city')?.touched">
+              Please select a city
+            </div>
           </div>
         </div>
 
         <div class="form-group">
           <label>Pickup Address</label>
-          <input type="text" formControlName="pickup" />
+          <input type="text" formControlName="pickup" placeholder="Street address, building, unit number" />
           <div class="error" *ngIf="addressForm.get('pickup')?.invalid && addressForm.get('pickup')?.touched">
-            Required
+            <span *ngIf="addressForm.get('pickup')?.errors?.['required']">Pickup address is required</span>
+            <span *ngIf="addressForm.get('pickup')?.errors?.['minlength']">Address must be at least 5 characters</span>
           </div>
         </div>
 

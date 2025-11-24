@@ -100,18 +100,67 @@ export class QuestionnairesComponent implements OnInit{
   editingAddressId = signal<string | null>(null);
 
   addressForm: FormGroup = this.fb.group({
-    name: ['', [Validators.required]],  
-    phone: ['', [Validators.required, Validators.pattern(/^(\+?60|0)?[1-9]\d{8,9}$/)]],
+    name: ['', [Validators.required, Validators.minLength(2)]],
+    phone: ['', [
+      Validators.required,
+      Validators.pattern(/^(\+?60|0)?[1-9]\d{8,9}$/)
+    ]],
     state: ['', [Validators.required]],
     city: ['', [Validators.required]],
-    zip: ['', [Validators.required]],
-    pickup: ['', [Validators.required]],
+    zip: ['', [
+      Validators.required,
+      Validators.pattern(/^\d{5}$/),
+      Validators.minLength(5),
+      Validators.maxLength(5)
+    ]],
+    pickup: ['', [Validators.required, Validators.minLength(5)]],
     setAsDefault: [false],
   });
 
   loading = false;
   success = '';
   error = '';
+
+  // Malaysian states and cities data
+  malaysianStates = [
+    'Johor',
+    'Kedah',
+    'Kelantan',
+    'Kuala Lumpur',
+    'Labuan',
+    'Melaka',
+    'Negeri Sembilan',
+    'Pahang',
+    'Penang',
+    'Perak',
+    'Perlis',
+    'Putrajaya',
+    'Sabah',
+    'Sarawak',
+    'Selangor',
+    'Terengganu'
+  ];
+
+  malaysianCities: { [key: string]: string[] } = {
+    'Johor': ['Johor Bahru', 'Muar', 'Batu Pahat', 'Kluang', 'Segamat', 'Pontian', 'Kulai', 'Kota Tinggi', 'Mersing'],
+    'Kedah': ['Alor Setar', 'Sungai Petani', 'Kulim', 'Jitra', 'Langkawi', 'Kuala Kedah', 'Baling'],
+    'Kelantan': ['Kota Bharu', 'Kuala Krai', 'Tanah Merah', 'Pasir Mas', 'Gua Musang', 'Machang', 'Tumpat'],
+    'Kuala Lumpur': ['Kuala Lumpur'],
+    'Labuan': ['Labuan'],
+    'Melaka': ['Melaka City', 'Alor Gajah', 'Jasin', 'Masjid Tanah'],
+    'Negeri Sembilan': ['Seremban', 'Port Dickson', 'Nilai', 'Bahau', 'Tampin', 'Kuala Pilah', 'Rembau'],
+    'Pahang': ['Kuantan', 'Temerloh', 'Bentong', 'Raub', 'Jerantut', 'Pekan', 'Kuala Lipis', 'Cameron Highlands'],
+    'Penang': ['George Town', 'Butterworth', 'Bukit Mertajam', 'Nibong Tebal', 'Permatang Pauh', 'Bayan Lepas'],
+    'Perak': ['Ipoh', 'Taiping', 'Teluk Intan', 'Sitiawan', 'Kuala Kangsar', 'Batu Gajah', 'Lumut', 'Kampar', 'Tapah'],
+    'Perlis': ['Kangar', 'Arau', 'Kuala Perlis'],
+    'Putrajaya': ['Putrajaya'],
+    'Sabah': ['Kota Kinabalu', 'Sandakan', 'Tawau', 'Lahad Datu', 'Keningau', 'Semporna', 'Kudat', 'Beaufort'],
+    'Sarawak': ['Kuching', 'Miri', 'Sibu', 'Bintulu', 'Limbang', 'Sarikei', 'Kapit', 'Sri Aman'],
+    'Selangor': ['Shah Alam', 'Petaling Jaya', 'Subang Jaya', 'Klang', 'Ampang', 'Kajang', 'Selayang', 'Rawang', 'Sepang', 'Puchong', 'Seri Kembangan', 'Bangi', 'Cyberjaya'],
+    'Terengganu': ['Kuala Terengganu', 'Kemaman', 'Dungun', 'Marang', 'Jerteh', 'Kuala Berang']
+  };
+
+  availableCities: string[] = [];
 
   pickupDate: string = '';
   minDate: string;
@@ -549,8 +598,27 @@ export class QuestionnairesComponent implements OnInit{
     this.addressForm.reset();
   }
 
+  /* ────── STATE CHANGE HANDLER ────── */
+  onStateChange(event: Event) {
+    const selectedState = (event.target as HTMLSelectElement).value;
+
+    if (selectedState && this.malaysianCities[selectedState]) {
+      this.availableCities = this.malaysianCities[selectedState];
+    } else {
+      this.availableCities = [];
+    }
+
+    // Reset city when state changes
+    this.addressForm.patchValue({ city: '' });
+  }
+
   /* ────── EDIT ────── */
   startEdit(addr: Address) {
+    // First set the state and update available cities
+    if (addr.state && this.malaysianCities[addr.state]) {
+      this.availableCities = this.malaysianCities[addr.state];
+    }
+
     this.addressForm.patchValue({
       name: addr.name ?? '',
       phone: addr.phone ?? '',
