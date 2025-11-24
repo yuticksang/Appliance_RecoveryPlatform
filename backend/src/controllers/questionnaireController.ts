@@ -369,14 +369,21 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
 
 
     // Create Transaction record
-    const transactionId = `TXN-${Date.now()}`;
     await client.query(
       `INSERT INTO "Transaction" (
-        "transactionID", "submittedApplianceID", "sellerID",
+        "submittedApplianceID", "sellerID",
         "transactionStatus", "createdAt", "updatedAt"
-      ) VALUES ($1, $2, $3, 'Under Review', NOW(), NOW())`,
-      [transactionId, finalId, sellerId]
+      ) VALUES ($1, $2, 'Under Review', NOW(), NOW())`,
+      [finalId, sellerId]
     );
+
+    // Get transactionID
+    const transRes = await client.query(
+      `SELECT "transactionID" FROM "Transaction" WHERE "submittedApplianceID" = $1`,
+      [finalId]
+    );
+
+    const transactionId = transRes.rows[0]?.transactionID;
 
     // Create ItemStatus record
     await client.query(
