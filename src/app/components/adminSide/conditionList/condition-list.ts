@@ -65,6 +65,10 @@ export class ConditionListComponent implements OnInit {
   selectedGroupFilter = signal<string>('all');
   search = signal<string>('');
 
+  // Sort state per group
+  sortFields = signal<{ [groupId: string]: string }>({});
+  sortDirections = signal<{ [groupId: string]: 'asc' | 'desc' }>({});
+
   // Pagination per group
   currentPages = signal<{ [groupId: string]: number }>({});
   itemsPerPage = signal<number>(10);
@@ -144,6 +148,8 @@ export class ConditionListComponent implements OnInit {
     const options = this.conditionOptions();
     const search = this.search().toLowerCase();
     const selectedGroupId = this.selectedGroupFilter();
+    const sortFields = this.sortFields();
+    const sortDirections = this.sortDirections();
 
     // Filter groups first if a specific group is selected
     let filteredGroups = groups;
@@ -163,6 +169,28 @@ export class ConditionListComponent implements OnInit {
           (opt.description || '').toLowerCase().includes(search)
         );
       }
+
+      // Apply sorting
+      const sortField = sortFields[group.groupID] || 'code';
+      const sortDirection = sortDirections[group.groupID] || 'asc';
+
+      groupOptions = [...groupOptions].sort((a: any, b: any) => {
+        let aVal = a[sortField];
+        let bVal = b[sortField];
+
+        // Handle null/undefined values
+        if (aVal == null) aVal = '';
+        if (bVal == null) bVal = '';
+
+        // Convert to lowercase for string comparison
+        if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+        if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+
+        // Compare
+        if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
 
       return {
         group,
@@ -227,6 +255,36 @@ export class ConditionListComponent implements OnInit {
     const pages: { [key: string]: number } = {};
     this.activeGroups().forEach(g => pages[g.groupID] = 1);
     this.currentPages.set(pages);
+  }
+
+  onSort(groupId: string, field: string) {
+    const sortFields = { ...this.sortFields() };
+    const sortDirections = { ...this.sortDirections() };
+
+    if (sortFields[groupId] === field) {
+      // Toggle direction if same field
+      sortDirections[groupId] = sortDirections[groupId] === 'asc' ? 'desc' : 'asc';
+    } else {
+      // Set new field with ascending order
+      sortFields[groupId] = field;
+      sortDirections[groupId] = 'asc';
+    }
+
+    this.sortFields.set(sortFields);
+    this.sortDirections.set(sortDirections);
+
+    // Reset to page 1 for this group
+    const pages = { ...this.currentPages() };
+    pages[groupId] = 1;
+    this.currentPages.set(pages);
+  }
+
+  getSortIcon(groupId: string, field: string): string {
+    const sortFields = this.sortFields();
+    const sortDirections = this.sortDirections();
+
+    if (sortFields[groupId] !== field) return '↕';
+    return sortDirections[groupId] === 'asc' ? '↑' : '↓';
   }
 
   addNewConditionType() {

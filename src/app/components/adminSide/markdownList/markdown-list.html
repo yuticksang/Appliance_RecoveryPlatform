@@ -1,0 +1,254 @@
+<main class="brand-page">
+  <div class="brand-container">
+    <div class="page-head">
+      <h1 class="page-title">Markdown List</h1>
+      <div class="breadcrumb">Dashboard / Appliances / <span>Markdown List</span></div>
+    </div>
+
+    <!-- toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <button class="clear-btn" (click)="clearFilters()">Clear Filters</button>
+      </div>
+      <div class="toolbar-right">
+        <!-- Category Filter -->
+        <div class="select-wrapper">
+          <select class="category-select" [value]="selectedCategoryFilter()" (change)="onCategoryFilterChange($any($event.target).value)">
+            <option value="all">All Categories</option>
+            <option *ngFor="let category of categories()" [value]="category.categoryName">
+              {{ category.categoryName }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Buyer Filter -->
+        <div class="select-wrapper">
+          <select class="buyer-select" [value]="selectedBuyerFilter()" (change)="onBuyerFilterChange($any($event.target).value)">
+            <option value="all">All Buyers</option>
+            <option *ngFor="let buyer of uniqueBuyers()" [value]="buyer.id">
+              {{ buyer.name }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Markdown Range Filters -->
+        <div class="range-filters">
+          <input type="number" placeholder="Min %" [value]="minMarkdown() ?? ''"
+            (input)="onMinMarkdownChange($any($event.target).value)"
+            class="range-input" min="0" max="100" />
+          <span class="range-separator">-</span>
+          <input type="number" placeholder="Max %" [value]="maxMarkdown() ?? ''"
+            (input)="onMaxMarkdownChange($any($event.target).value)"
+            class="range-input" min="0" max="100" />
+        </div>
+
+        <!-- Search -->
+        <div class="search">
+          <input type="text" placeholder="Search..." [value]="search()"
+            (input)="onSearchInput($any($event.target).value)" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div *ngIf="loading()" class="loading">Loading markdowns...</div>
+
+    <!-- Error state -->
+    <div *ngIf="error()" class="error-message">{{ error() }}</div>
+
+    <!-- Markdown List Table -->
+    <div class="markdown-groups" *ngIf="!loading() && !error()">
+      <!-- Functional Status Group -->
+      <div class="markdown-group">
+        <div class="group-header">
+          <h2 class="group-title">Functional Status</h2>
+        </div>
+
+        <div class="table-wrap">
+          <table class="grid">
+            <thead>
+              <tr>
+                <th class="narrow">#</th>
+                <th class="sortable" (click)="onSort('conditionCode')">
+                  ID <span class="sort-icon">{{ getSortIcon('conditionCode') }}</span>
+                </th>
+                <th class="sortable" (click)="onSort('conditionDescription')">
+                  Status <span class="sort-icon">{{ getSortIcon('conditionDescription') }}</span>
+                </th>
+                <th class="sortable" (click)="onSort('categoryNames')">
+                  Category <span class="sort-icon">{{ getSortIcon('categoryNames') }}</span>
+                </th>
+                <th class="sortable" (click)="onSort('buyerID')">
+                  Buyer ID <span class="sort-icon">{{ getSortIcon('buyerID') }}</span>
+                </th>
+                <th class="sortable" (click)="onSort('markdownPercentage')">
+                  Markdown Percentage <span class="sort-icon">{{ getSortIcon('markdownPercentage') }}</span>
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let markdown of paginatedFunctional(); let i = index">
+                <td class="narrow">{{ getRowNumber('functional', i) }}</td>
+                <td>{{ markdown.conditionCode }}</td>
+                <td>{{ markdown.conditionDescription || '---' }}</td>
+                <td>{{ markdown.categoryNames || '---' }}</td>
+                <td>{{ markdown.buyerID }}</td>
+                <td>{{ markdown.markdownPercentage }}%</td>
+              </tr>
+              <tr *ngIf="paginatedFunctional().length === 0">
+                <td colspan="6" class="no-data">No functional status markdowns found</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Functional Pager -->
+        <div class="pager">
+          <button class="page-btn" (click)="goToPage('functional', getCurrentPage('functional') - 1)"
+            [disabled]="getCurrentPage('functional') === 1">‹</button>
+
+          <button class="page-btn active">{{ getCurrentPage('functional') }}</button>
+
+          <button class="page-btn" (click)="goToPage('functional', getCurrentPage('functional') + 1)"
+            [disabled]="getCurrentPage('functional') === totalPagesFunctional()">›</button>
+
+          <div class="page-size">
+            <select [ngModel]="itemsPerPage()" (ngModelChange)="setPageSize($event)">
+              <option *ngFor="let n of itemsPerPageOptions" [value]="n">{{ n }}</option>
+            </select>
+            <span>/Page</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Appearance Status Group -->
+      <div class="markdown-group">
+        <div class="group-header">
+          <h2 class="group-title">Appearance Status</h2>
+        </div>
+
+        <div class="table-wrap">
+          <table class="grid">
+            <thead>
+              <tr>
+                <th class="narrow">#</th>
+                <th class="sortable" (click)="onSort('conditionCode')">
+                  ID <span class="sort-icon">{{ getSortIcon('conditionCode') }}</span>
+                </th>
+                <th class="sortable" (click)="onSort('conditionDescription')">
+                  Status <span class="sort-icon">{{ getSortIcon('conditionDescription') }}</span>
+                </th>
+                <th class="sortable" (click)="onSort('categoryNames')">
+                  Category <span class="sort-icon">{{ getSortIcon('categoryNames') }}</span>
+                </th>
+                <th class="sortable" (click)="onSort('buyerID')">
+                  Buyer ID <span class="sort-icon">{{ getSortIcon('buyerID') }}</span>
+                </th>
+                <th class="sortable" (click)="onSort('markdownPercentage')">
+                  Markdown Percentage <span class="sort-icon">{{ getSortIcon('markdownPercentage') }}</span>
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let markdown of paginatedAppearance(); let i = index">
+                <td class="narrow">{{ getRowNumber('appearance', i) }}</td>
+                <td>{{ markdown.conditionCode }}</td>
+                <td>{{ markdown.conditionDescription || '---' }}</td>
+                <td>{{ markdown.categoryNames || '---' }}</td>
+                <td>{{ markdown.buyerID }}</td>
+                <td>{{ markdown.markdownPercentage }}%</td>
+              </tr>
+              <tr *ngIf="paginatedAppearance().length === 0">
+                <td colspan="6" class="no-data">No appearance status markdowns found</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Appearance Pager -->
+        <div class="pager">
+          <button class="page-btn" (click)="goToPage('appearance', getCurrentPage('appearance') - 1)"
+            [disabled]="getCurrentPage('appearance') === 1">‹</button>
+
+          <button class="page-btn active">{{ getCurrentPage('appearance') }}</button>
+
+          <button class="page-btn" (click)="goToPage('appearance', getCurrentPage('appearance') + 1)"
+            [disabled]="getCurrentPage('appearance') === totalPagesAppearance()">›</button>
+
+          <div class="page-size">
+            <select [ngModel]="itemsPerPage()" (ngModelChange)="setPageSize($event)">
+              <option *ngFor="let n of itemsPerPageOptions" [value]="n">{{ n }}</option>
+            </select>
+            <span>/Page</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Checklist Group -->
+      <div class="markdown-group">
+        <div class="group-header">
+          <h2 class="group-title">Checklist</h2>
+        </div>
+
+        <div class="table-wrap">
+          <table class="grid">
+            <thead>
+              <tr>
+                <th class="narrow">#</th>
+                <th class="sortable" (click)="onSort('conditionCode')">
+                  ID <span class="sort-icon">{{ getSortIcon('conditionCode') }}</span>
+                </th>
+                <th class="sortable" (click)="onSort('conditionDescription')">
+                  Status <span class="sort-icon">{{ getSortIcon('conditionDescription') }}</span>
+                </th>
+                <th class="sortable" (click)="onSort('categoryNames')">
+                  Category <span class="sort-icon">{{ getSortIcon('categoryNames') }}</span>
+                </th>
+                <th class="sortable" (click)="onSort('buyerID')">
+                  Buyer ID <span class="sort-icon">{{ getSortIcon('buyerID') }}</span>
+                </th>
+                <th class="sortable" (click)="onSort('markdownPercentage')">
+                  Markdown Percentage <span class="sort-icon">{{ getSortIcon('markdownPercentage') }}</span>
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let markdown of paginatedChecklist(); let i = index">
+                <td class="narrow">{{ getRowNumber('checklist', i) }}</td>
+                <td>{{ markdown.conditionCode }}</td>
+                <td>{{ markdown.conditionDescription || '---' }}</td>
+                <td>{{ markdown.categoryNames || '---' }}</td>
+                <td>{{ markdown.buyerID }}</td>
+                <td>{{ markdown.markdownPercentage }}%</td>
+              </tr>
+              <tr *ngIf="paginatedChecklist().length === 0">
+                <td colspan="6" class="no-data">No checklist markdowns found</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Checklist Pager -->
+        <div class="pager">
+          <button class="page-btn" (click)="goToPage('checklist', getCurrentPage('checklist') - 1)"
+            [disabled]="getCurrentPage('checklist') === 1">‹</button>
+
+          <button class="page-btn active">{{ getCurrentPage('checklist') }}</button>
+
+          <button class="page-btn" (click)="goToPage('checklist', getCurrentPage('checklist') + 1)"
+            [disabled]="getCurrentPage('checklist') === totalPagesChecklist()">›</button>
+
+          <div class="page-size">
+            <select [ngModel]="itemsPerPage()" (ngModelChange)="setPageSize($event)">
+              <option *ngFor="let n of itemsPerPageOptions" [value]="n">{{ n }}</option>
+            </select>
+            <span>/Page</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

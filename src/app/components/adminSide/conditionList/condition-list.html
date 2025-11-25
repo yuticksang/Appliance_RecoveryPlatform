@@ -84,18 +84,26 @@
               <thead>
                 <tr>
                   <th class="narrow">#</th>
-                  <th>
-                    ID <i class="ri-arrow-up-down-line"></i>
+                  <th class="sortable" (click)="onSort(item.group.groupID, 'code')">
+                    ID <span class="sort-icon">{{ getSortIcon(item.group.groupID, 'code') }}</span>
                   </th>
                   @if(item.group.question_type === 'image') {
                     <th class="image-col">Image</th>
                   }
-                  <th>Description <i class="ri-arrow-up-down-line"></i></th>
+                  <th class="sortable" (click)="onSort(item.group.groupID, 'description')">
+                    Description <span class="sort-icon">{{ getSortIcon(item.group.groupID, 'description') }}</span>
+                  </th>
                   @if(item.group.criteriaCodePrefix === 'C' || item.group.criteriaCodePrefix === 'OT') {
-                    <th>Question <i class="ri-arrow-up-down-line"></i></th>
+                    <th class="sortable" (click)="onSort(item.group.groupID, 'question')">
+                      Question <span class="sort-icon">{{ getSortIcon(item.group.groupID, 'question') }}</span>
+                    </th>
                   }
-                  <th>Category <i class="ri-arrow-up-down-line"></i></th>
-                  <th>Status <i class="ri-arrow-up-down-line"></i></th>
+                  <th class="sortable" (click)="onSort(item.group.groupID, 'categories')">
+                    Category <span class="sort-icon">{{ getSortIcon(item.group.groupID, 'categories') }}</span>
+                  </th>
+                  <th class="sortable" (click)="onSort(item.group.groupID, 'status')">
+                    Status <span class="sort-icon">{{ getSortIcon(item.group.groupID, 'status') }}</span>
+                  </th>
                   <th class="actions">Actions</th>
                 </tr>
               </thead>
@@ -144,9 +152,7 @@
             <button class="page-btn" (click)="goToPage(item.group.groupID, getCurrentPage(item.group.groupID) - 1)"
               [disabled]="getCurrentPage(item.group.groupID) === 1">‹</button>
 
-            <button class="page-btn" *ngFor="let p of getPageNumbers(item.group.groupID)"
-              [class.active]="p === getCurrentPage(item.group.groupID)"
-              (click)="goToPage(item.group.groupID, p)">{{ p }}</button>
+            <button class="page-btn active">{{ getCurrentPage(item.group.groupID) }}</button>
 
             <button class="page-btn" (click)="goToPage(item.group.groupID, getCurrentPage(item.group.groupID) + 1)"
               [disabled]="getCurrentPage(item.group.groupID) === getTotalPages(item.group.groupID)">›</button>

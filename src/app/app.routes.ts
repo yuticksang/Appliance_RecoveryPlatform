@@ -89,6 +89,10 @@ export const routes: Routes = [
             {
               path: 'condition',
               loadComponent: () => import('./components/adminSide/conditionList/condition-list').then(m => m.ConditionListComponent)
+            },
+            {
+              path: 'markdown-list',
+              loadComponent: () => import('./components/adminSide/markdownList/markdown-list').then(m => m.MarkdownListComponent)
             }
           ]
         },
@@ -127,7 +131,7 @@ export const routes: Routes = [
         children: [
           {
             path: '',
-            loadComponent: () => import('./components/buyerSide/dashboard/buyer-dashboard').then(m => m.BuyerDashboardComponent) // Placeholder for All Appliances
+            loadComponent: () => import('./components/buyerSide/applianceList/buyer-appliance-list').then(m => m.BuyerApplianceListComponent)
           },
           {
             path: 'condition-markdown',

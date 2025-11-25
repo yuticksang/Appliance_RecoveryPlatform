@@ -8,6 +8,7 @@ import path from 'path';
 import authRoutes from './routes/auth';
 import adminRoutes from './routes/admin';
 import profileRoutes from './routes/profile';
+import buyerRoutes from './routes/buyer';
 
 dotenv.config();
 const app = express();
@@ -46,6 +47,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/buyer', buyerRoutes);
 app.use('/api', profileRoutes);
 
 // Health route

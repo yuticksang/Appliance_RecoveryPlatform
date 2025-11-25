@@ -32,7 +32,8 @@ import {
   deleteConditionOption,
   getConditionCategories,
   updateConditionCategories,
-  updateDisplayOrders
+  updateDisplayOrders,
+  getAllBuyerMarkdowns
 } from '../controllers/conditionController';
 import { optionalUpload } from '../middleware/upload';
 
@@ -164,5 +165,12 @@ router.put('/condition-options/:conditionId/categories', updateConditionCategori
 
 // Add this route
 router.put('/categories/:categoryId/display-orders', updateDisplayOrders);
+
+// =====================================================
+// BUYER MARKDOWN ROUTES
+// =====================================================
+
+// Get all buyer markdowns
+router.get('/buyer-markdowns', getAllBuyerMarkdowns);
 
 export default router;

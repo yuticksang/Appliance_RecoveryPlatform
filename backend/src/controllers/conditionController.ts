@@ -209,7 +209,7 @@ export const getAllConditionOptions = async (req: Request, res: Response) => {
               STRING_AGG(c."categoryName", ', ' ORDER BY c."categoryName") as categories
        FROM "ConditionOption" co
        LEFT JOIN "ConditionGroup" cg ON co."groupID" = cg."groupID"
-       LEFT JOIN "ConditionCategory" cc ON co."conditionID" = cc."conditionID"
+       LEFT JOIN "Category_Condition" cc ON co."conditionID" = cc."conditionID"
        LEFT JOIN "Category" c ON cc."categoryID" = c."categoryID"
        GROUP BY co."conditionID", co."groupID", co.code, co.description, co.image, co.status, co.question, co.created_at,
                 cg."criteriaName", cg."criteriaCodePrefix", cg.created_at
@@ -232,7 +232,7 @@ export const getConditionOptionsByGroup = async (req: Request, res: Response) =>
       `SELECT co."conditionID", co."groupID", co.code, co.description, co.image, co.status, co.question, co.created_at,
               STRING_AGG(c."categoryName", ', ' ORDER BY c."categoryName") as categories
        FROM "ConditionOption" co
-       LEFT JOIN "ConditionCategory" cc ON co."conditionID" = cc."conditionID"
+       LEFT JOIN "Category_Condition" cc ON co."conditionID" = cc."conditionID"
        LEFT JOIN "Category" c ON cc."categoryID" = c."categoryID"
        WHERE co."groupID" = $1
        GROUP BY co."conditionID"
@@ -419,8 +419,8 @@ export const getConditionCategories = async (req: Request, res: Response) => {
     const { conditionId } = req.params;
 
     const result = await pool.query(
-      `SELECT cc."categoryID", c."categoryName"
-       FROM "ConditionCategory" cc
+      `SELECT cc."categoryID", c."categoryName", cc."scoreValue"
+       FROM "Category_Condition" cc
        LEFT JOIN "Category" c ON cc."categoryID" = c."categoryID"
        WHERE cc."conditionID" = $1`,
       [conditionId]
@@ -440,7 +440,7 @@ export const updateConditionCategories = async (req: Request, res: Response) => 
 
     // Delete existing categories for this condition
     await pool.query(
-      'DELETE FROM "ConditionCategory" WHERE "conditionID" = $1',
+      'DELETE FROM "Category_Condition" WHERE "conditionID" = $1',
       [conditionId]
     );
 
@@ -448,7 +448,7 @@ export const updateConditionCategories = async (req: Request, res: Response) => 
     if (categoryIDs && categoryIDs.length > 0) {
       const values = categoryIDs.map((catId: string) => `('${conditionId}', '${catId}')`).join(',');
       await pool.query(
-        `INSERT INTO "ConditionCategory" ("conditionID", "categoryID") VALUES ${values}`
+        `INSERT INTO "Category_Condition" ("conditionID", "categoryID") VALUES ${values}`
       );
     }
 
@@ -474,22 +474,139 @@ export const updateDisplayOrders = async (req: Request, res: Response) => {
     }
 
     await pool.query('BEGIN');
-    
+
     for (const order of orders) {
       await pool.query(`
-        UPDATE "Category_ConditionGroup" 
-        SET "display_order" = $1 
+        UPDATE "Category_ConditionGroup"
+        SET "display_order" = $1
         WHERE "categoryID" = $2 AND "groupID" = $3
       `, [order.display_order, categoryId, order.groupID]);
     }
-    
+
     await pool.query('COMMIT');
-    
+
     console.log('✅ Updated display orders for category:', categoryId);
     res.json({ message: 'Display orders updated successfully' });
   } catch (error) {
     await pool.query('ROLLBACK');
     console.error('Error updating display orders:', error);
     res.status(500).json({ message: 'Failed to update display orders' });
+  }
+};
+
+// =====================================================
+// BUYER MARKDOWN MANAGEMENT
+// =====================================================
+
+export const getAllBuyerMarkdowns = async (req: Request, res: Response) => {
+  try {
+    const {
+      categoryName,
+      buyerID,
+      minMarkdown,
+      maxMarkdown,
+      search,
+      sortField = 'conditionCode',
+      sortDirection = 'asc'
+    } = req.query;
+
+    let whereConditions: string[] = [];
+    let queryParams: any[] = [];
+    let paramCount = 0;
+
+    // Build WHERE conditions based on filters
+    if (categoryName && categoryName !== 'all') {
+      paramCount++;
+      whereConditions.push(`EXISTS (
+        SELECT 1 FROM "Category_Condition" cc2
+        LEFT JOIN "Category" c2 ON cc2."categoryID" = c2."categoryID"
+        WHERE cc2."conditionID" = co."conditionID"
+        AND c2."categoryName" = $${paramCount}
+      )`);
+      queryParams.push(categoryName);
+    }
+
+    if (buyerID && buyerID !== 'all') {
+      paramCount++;
+      whereConditions.push(`bm."buyerID" = $${paramCount}`);
+      queryParams.push(buyerID);
+    }
+
+    if (minMarkdown) {
+      paramCount++;
+      whereConditions.push(`bm."markdownPercentage" >= $${paramCount}`);
+      queryParams.push(parseFloat(minMarkdown as string));
+    }
+
+    if (maxMarkdown) {
+      paramCount++;
+      whereConditions.push(`bm."markdownPercentage" <= $${paramCount}`);
+      queryParams.push(parseFloat(maxMarkdown as string));
+    }
+
+    if (search) {
+      paramCount++;
+      whereConditions.push(`(
+        co.code ILIKE $${paramCount} OR
+        co.description ILIKE $${paramCount} OR
+        u.username ILIKE $${paramCount} OR
+        bm."buyerID" ILIKE $${paramCount}
+      )`);
+      queryParams.push(`%${search}%`);
+    }
+
+    const whereClause = whereConditions.length > 0
+      ? 'WHERE ' + whereConditions.join(' AND ')
+      : '';
+
+    // Validate sort field to prevent SQL injection
+    const validSortFields = ['conditionCode', 'conditionDescription', 'buyerID', 'markdownPercentage', 'categoryNames'];
+    const safeSortField = validSortFields.includes(sortField as string) ? sortField : 'conditionCode';
+    const safeSortDirection = sortDirection === 'desc' ? 'DESC' : 'ASC';
+
+    // Map frontend field names to database column names
+    const fieldMap: Record<string, string> = {
+      'conditionCode': 'co.code',
+      'conditionDescription': 'co.description',
+      'buyerID': 'bm."buyerID"',
+      'markdownPercentage': 'bm."markdownPercentage"',
+      'categoryNames': 'categoryNames'
+    };
+
+    const dbSortField = fieldMap[safeSortField as string] || 'co.code';
+
+    const query = `
+      SELECT
+        bm."buyerID",
+        u.username as "buyerName",
+        bm."conditionID",
+        co.code as "conditionCode",
+        co.description as "conditionDescription",
+        bm."markdownPercentage",
+        (
+          SELECT STRING_AGG(DISTINCT c2."categoryName", ', ' ORDER BY c2."categoryName")
+          FROM "Category_Condition" cc2
+          LEFT JOIN "Category" c2 ON cc2."categoryID" = c2."categoryID"
+          WHERE cc2."conditionID" = co."conditionID"
+        ) as "categoryNames"
+      FROM "BuyerMarkdown" bm
+      LEFT JOIN users u ON bm."buyerID" = u."userID"
+      LEFT JOIN "ConditionOption" co ON bm."conditionID" = co."conditionID"
+      ${whereClause}
+      ORDER BY ${dbSortField} ${safeSortDirection}, bm."buyerID" ASC
+    `;
+
+    const result = await pool.query(query, queryParams);
+
+    console.log('📂 Fetched buyer markdowns:', result.rows.length);
+    res.json(result.rows);
+  } catch (error: any) {
+    console.error('Get buyer markdowns error:', error);
+    console.error('Error message:', error.message);
+    console.error('Error detail:', error.detail);
+    res.status(500).json({
+      message: 'Failed to fetch buyer markdowns',
+      error: error.message
+    });
   }
 };
