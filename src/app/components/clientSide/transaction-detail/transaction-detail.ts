@@ -361,6 +361,9 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     this.conditionGroups = data.conditionGroups || {};
     this.conditionGroupNames = data.conditionGroupNames || {};
 
+    console.log('🔍 Loaded conditionGroups:', this.conditionGroups);
+    console.log('🔍 Loaded conditionGroupNames:', this.conditionGroupNames);
+
     // If awaiting confirmation, show before/after review comparison
     if (this.isAwaitingConfirmation) {
       // Before review - original seller submission
