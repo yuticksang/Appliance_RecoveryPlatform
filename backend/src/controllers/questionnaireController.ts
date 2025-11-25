@@ -280,14 +280,17 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
     const subRes = await client.query(
       `INSERT INTO "SubmittedAppliance" (
         "submittedApplianceID", "sellerID", "applianceID", "addressID",
+        "initialFunctionalStatus", "initialPhysicalCondition",
         "initialOfferPrice", "note"
-      ) VALUES ($1, $2, $3, $4, $5, $6)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING "submittedApplianceID"`,
       [
         submittedApplianceID,
         sellerId,
         modelId,
         addressId,
+        functionalAnswer?.answerText || 'Not Specified',
+        physicalAnswer?.answerText || 'Not Specified',
         parseFloat(valuationWorth) || 0,
         notesAnswer?.answer || null
       ]
