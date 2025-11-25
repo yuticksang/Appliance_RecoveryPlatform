@@ -260,14 +260,15 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
 
     // ─────────────────────────────────────────────────────────
     // SAVE ALL ANSWERS TO ConditionSelected (for ALL types)
+    // selectedBy = 'seller' for initial submission
     // ─────────────────────────────────────────────────────────
     for (const qa of questionAnswers) {
       // For radio/image: single conditionID
       if ((qa.type === 'radio' || qa.type === 'image') && qa.answer) {
         await client.query(
           `INSERT INTO "ConditionSelected"
-          ("conditionID", "submittedApplianceID", "isChecked", "created_at")
-          VALUES ($1, $2, true, NOW())`,
+          ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt")
+          VALUES ($1, $2, true, 'seller', NOW())`,
           [qa.answer, finalId]
         );
       }
@@ -277,8 +278,8 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
         for (const conditionID of qa.answer) {
           await client.query(
             `INSERT INTO "ConditionSelected"
-            ("conditionID", "submittedApplianceID", "isChecked", "created_at")
-            VALUES ($1, $2, true, NOW())`,
+            ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt")
+            VALUES ($1, $2, true, 'seller', NOW())`,
             [conditionID, finalId]
           );
         }
@@ -308,13 +309,13 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       ]
     );
 
-    // Insert Slip Table
-    await client.query(
-      `INSERT INTO "RecoverySlip" (
-        "submittedApplianceID"
-      ) VALUES ($1)`,
-      [finalId]
-    );
+    // // Insert Slip Table
+    // await client.query(
+    //   `INSERT INTO "RecoverySlip" (
+    //     "submittedApplianceID"
+    //   ) VALUES ($1)`,
+    //   [finalId]
+    // );
 
     // Create Transaction record
     const transactionId = `TXN-${Date.now()}`;

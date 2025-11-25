@@ -7,8 +7,50 @@
 
   <!-- Transaction Detail Content -->
   <div *ngIf="!loading() && transaction()" class="detail-container">
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1 class="page-title">Appliance Information</h1>
+      <p class="breadcrumb">Dashboard / Transactions / Transaction Detail</p>
+    </div>
+
+    <!-- Submitted Date Info -->
+    <div class="submitted-date-info">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+        <line x1="16" y1="2" x2="16" y2="6"/>
+        <line x1="8" y1="2" x2="8" y2="6"/>
+        <line x1="3" y1="10" x2="21" y2="10"/>
+      </svg>
+      <span>Submitted on {{ transaction()?.submittedDate | date:'dd MMM yyyy, h:mm a' }}</span>
+    </div>
+
     <!-- Status Header Bar -->
     <div class="status-header-bar">
+      <!-- Action Buttons for Admin (Edit Mode) - LEFT -->
+      <div class="action-buttons">
+        <button *ngIf="!editMode()" class="btn-edit" (click)="toggleEditMode()">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5L13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175l-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+          </svg>
+          Edit Transaction
+        </button>
+        <div *ngIf="editMode()" class="edit-actions">
+          <button class="btn-save" (click)="saveChanges()">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
+            </svg>
+            Save Changes
+          </button>
+          <button class="btn-cancel" (click)="cancelEdit()">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
+            </svg>
+            Cancel
+          </button>
+        </div>
+      </div>
+
+      <!-- Status Badges - RIGHT -->
       <div class="status-badges-container">
         <div class="status-group">
           <span class="status-label">Transaction Status</span>
@@ -40,36 +82,53 @@
           </select>
         </div>
       </div>
-
-      <!-- Action Buttons for Admin (Edit Mode) -->
-      <div class="action-buttons">
-        <button *ngIf="!editMode()" class="btn-edit" (click)="toggleEditMode()">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5L13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175l-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
-          </svg>
-          Edit Transaction
-        </button>
-        <div *ngIf="editMode()" class="edit-actions">
-          <button class="btn-save" (click)="saveChanges()">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
-            </svg>
-            Save Changes
-          </button>
-          <button class="btn-cancel" (click)="cancelEdit()">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-              <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
-            </svg>
-            Cancel
-          </button>
-        </div>
-      </div>
     </div>
 
     <!-- Main Content Grid -->
     <div class="content-grid">
-      <!-- Left Column - Customer Info -->
+      <!-- Left Column - Photos + Customer Info -->
       <div class="left-column">
+        <!-- Photos Gallery Section -->
+        <div class="photos-gallery-section">
+          <!-- Show photos if available -->
+          <ng-container *ngIf="hasPhotos; else noPhotos">
+            <!-- Main Photo (clickable to enlarge) -->
+            <div class="main-photo-container" (click)="openLightbox(selectedPhotoIndex)">
+              <img [src]="selectedPhoto" [alt]="transaction()?.modelName" class="main-photo clickable">
+              <div class="photo-zoom-hint">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <path d="M21 21l-4.35-4.35"/>
+                  <path d="M11 8v6M8 11h6"/>
+                </svg>
+              </div>
+            </div>
+
+            <!-- Thumbnails (only show if multiple photos) -->
+            <div *ngIf="hasMultiplePhotos" class="thumbnails-container">
+              <div
+                *ngFor="let photo of photos; let i = index"
+                class="thumbnail"
+                [class.active]="i === selectedPhotoIndex"
+                (click)="selectPhoto(i)">
+                <img [src]="photo" [alt]="'Photo ' + (i + 1)">
+              </div>
+            </div>
+          </ng-container>
+
+          <!-- No photos placeholder -->
+          <ng-template #noPhotos>
+            <div class="no-photo-placeholder">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+              <p>No photo submitted</p>
+            </div>
+          </ng-template>
+        </div>
+
         <!-- Customer ID -->
         <div class="info-section">
           <h3 class="section-title">CUSTOMER ID</h3>
@@ -94,136 +153,297 @@
           <p class="info-value">{{ transaction()?.pickupAddress || 'N/A' }}</p>
           <p class="info-value" *ngIf="transaction()?.city">{{ transaction()?.city }}, {{ transaction()?.state }} {{ transaction()?.zipCode }}</p>
         </div>
-
-        <!-- Submitted Date -->
-        <div class="info-section">
-          <h3 class="section-title">SUBMITTED DATE</h3>
-          <p class="info-value">{{ formatDate(transaction()?.submittedDate) }}</p>
-        </div>
       </div>
 
       <!-- Right Column - Appliance Information -->
       <div class="right-column">
         <div class="appliance-info-card">
-          <!-- Appliance Image -->
-          <div class="appliance-image-section">
-            <img [src]="transaction()?.imageUrl || 'assets/image/placeholder-appliance.png'"
-                 [alt]="transaction()?.modelName"
-                 class="appliance-image">
-            <div class="image-dots">
-              <span class="dot active"></span>
-              <span class="dot"></span>
-              <span class="dot"></span>
-              <span class="dot"></span>
-              <span class="dot"></span>
-            </div>
-          </div>
-
-          <!-- Price Section -->
-          <div class="price-section">
-            <!-- Show only estimated price for Under Review and Awaiting Pick Up -->
-            <div *ngIf="isUnderReviewOrAwaitingPickup()" class="price-row-single">
-              <div class="price-item-single">
-                <span class="price-label-small">ESTIMATED PRICE</span>
-                <div>
-                  <span class="price-label">RM</span>
-                  <span class="price-value">{{ (transaction()?.estimatedPrice | number:'1.2-2') || '0.00' }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Show both estimated and final price for other statuses -->
-            <div *ngIf="!isUnderReviewOrAwaitingPickup()" class="price-row">
-              <div class="price-item">
-                <span class="price-label-small">ESTIMATED</span>
-                <div>
-                  <span class="price-label">RM</span>
-                  <span class="price-value">{{ (transaction()?.estimatedPrice | number:'1.2-2') || '0.00' }}</span>
-                </div>
-              </div>
-              <div class="price-item final">
-                <span class="price-label-small">FINAL PRICE</span>
-                <div *ngIf="!editMode()">
-                  <span class="price-label">RM</span>
-                  <span class="price-value">{{ (transaction()?.finalPrice || transaction()?.estimatedPrice | number:'1.2-2') || '0.00' }}</span>
-                </div>
-                <input *ngIf="editMode()" type="number" class="edit-input-price" [(ngModel)]="finalPrice" step="0.01" placeholder="Enter final price" />
-              </div>
-            </div>
-          </div>
-
-          <!-- Appliance Details Grid -->
-          <div class="details-grid">
-            <div class="detail-item">
-              <h4 class="detail-label">CATEGORY</h4>
-              <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.category || 'N/A' }}</p>
-              <select *ngIf="editMode()" class="edit-select" [(ngModel)]="selectedCategoryId" (ngModelChange)="onCategoryChange()">
-                <option [ngValue]="null">Select category</option>
-                <option *ngFor="let cat of categories" [ngValue]="cat.categoryID">{{ cat.categoryName }}</option>
-              </select>
-            </div>
-            <div class="detail-item">
-              <h4 class="detail-label">BRAND</h4>
-              <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.brand || 'N/A' }}</p>
-              <select *ngIf="editMode()" class="edit-select" [(ngModel)]="selectedBrandId" (ngModelChange)="onBrandChange()">
-                <option [ngValue]="null">Select brand</option>
-                <option *ngFor="let brand of brands" [ngValue]="brand.brandID">{{ brand.brandName }}</option>
-              </select>
-            </div>
-            <div class="detail-item">
-              <h4 class="detail-label">MODEL NAME</h4>
-              <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.modelName || 'N/A' }}</p>
-              <select *ngIf="editMode()" class="edit-select" [(ngModel)]="selectedApplianceId" (ngModelChange)="onApplianceChange()">
-                <option [ngValue]="null">Select model name</option>
-                <option *ngFor="let appliance of filteredAppliances" [ngValue]="appliance.applianceID">
-                  {{ appliance.modelName }}
-                </option>
-              </select>
-            </div>
-            <div class="detail-item">
-              <h4 class="detail-label">MODEL CODE</h4>
-              <p class="detail-value">{{ getSelectedModelCode() || transaction()?.model || 'N/A' }}</p>
-            </div>
-
-            <!-- Dynamic Condition Groups (from backend) -->
-            <ng-container *ngFor="let group of conditionGroups">
+          <!-- ========================================== -->
+          <!-- SECTION 1: APPLIANCE INFORMATION          -->
+          <!-- Simple display - no before/after          -->
+          <!-- ========================================== -->
+          <div class="appliance-info-section">
+            <div class="details-grid">
               <div class="detail-item">
-                <h4 class="detail-label">{{ group.criteriaName | uppercase }}</h4>
-                <p *ngIf="!editMode()" class="detail-value">{{ getConditionValue(group.criteriaName) }}</p>
-                <select *ngIf="editMode()" class="edit-select" [(ngModel)]="selectedConditions[group.groupID]">
-                  <option value="">Select {{ group.criteriaName }}</option>
-                  <option *ngFor="let option of group.options" [value]="option.description">
-                    {{ option.description }}
+                <h4 class="detail-label">CATEGORY</h4>
+                <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.category || 'N/A' }}</p>
+                <select *ngIf="editMode()" class="edit-select" [(ngModel)]="selectedCategoryId" (ngModelChange)="onCategoryChange()">
+                  <option [ngValue]="null">Select category</option>
+                  <option *ngFor="let cat of categories" [ngValue]="cat.categoryID">{{ cat.categoryName }}</option>
+                </select>
+              </div>
+              <div class="detail-item">
+                <h4 class="detail-label">BRAND</h4>
+                <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.brand || 'N/A' }}</p>
+                <select *ngIf="editMode()" class="edit-select" [(ngModel)]="selectedBrandId" (ngModelChange)="onBrandChange()">
+                  <option [ngValue]="null">Select brand</option>
+                  <option *ngFor="let brand of brands" [ngValue]="brand.brandID">{{ brand.brandName }}</option>
+                </select>
+              </div>
+              <div class="detail-item">
+                <h4 class="detail-label">MODEL NAME</h4>
+                <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.modelName || 'N/A' }}</p>
+                <select *ngIf="editMode()" class="edit-select" [(ngModel)]="selectedApplianceId" (ngModelChange)="onApplianceChange()">
+                  <option [ngValue]="null">Select model name</option>
+                  <option *ngFor="let appliance of filteredAppliances" [ngValue]="appliance.applianceID">
+                    {{ appliance.modelName }}
                   </option>
                 </select>
               </div>
-            </ng-container>
-          </div>
-
-          <!-- Checklist Section (for checklist-type condition groups, view mode only) -->
-          <div class="condition-groups-section" *ngIf="hasConditionGroups() && !editMode()">
-            <div *ngFor="let groupName of getConditionGroupNames()" class="condition-group">
-              <h4 class="condition-group-label">{{ groupName | uppercase }}</h4>
-              <ul class="condition-list">
-                <li *ngFor="let condition of transaction()?.conditionGroups[groupName]" class="condition-item">
-                  <span class="check-icon-circle">
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                      <circle cx="10" cy="10" r="10" fill="#48bb78"/>
-                      <path d="M6 10l3 3 5-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </span>
-                  <span class="condition-text">{{ condition }}</span>
-                </li>
-              </ul>
+              <div class="detail-item">
+                <h4 class="detail-label">MODEL CODE</h4>
+                <p class="detail-value">{{ getSelectedModelCode() || transaction()?.model || 'N/A' }}</p>
+              </div>
             </div>
           </div>
 
-          <!-- Note -->
-          <div class="note-section" *ngIf="transaction()?.note || editMode()">
+          <!-- ========================================== -->
+          <!-- SECTION 2: INSPECTION & PRICING           -->
+          <!-- Always show Before/After comparison       -->
+          <!-- ========================================== -->
+          <div class="inspection-section">
+            <h3 class="section-title">Inspection & Pricing</h3>
+
+            <!-- VIEW MODE: Before/After Comparison -->
+            <ng-container *ngIf="!editMode()">
+              <!-- Column Headers (only once at top) -->
+              <div class="review-columns-header">
+                <div class="header-label">BEFORE REVIEW</div>
+                <div class="header-label after">AFTER REVIEW</div>
+              </div>
+
+              <!-- Price Comparison - HIDDEN FOR NOW (will implement later) -->
+              <!-- <div class="inspection-item">
+                <h4 class="inspection-label">PRICE</h4>
+                <div class="inspection-columns">
+                  <div class="column-content">
+                    <div class="price-display">
+                      <span class="price-label">RM</span>
+                      <span class="price-value">{{ (transaction()?.estimatedPrice | number:'1.2-2') || '0.00' }}</span>
+                    </div>
+                  </div>
+                  <div class="column-content">
+                    <div class="price-display">
+                      <span class="price-label">RM</span>
+                      <span class="price-value" [class.changed]="transaction()?.finalPrice && transaction()?.finalPrice !== transaction()?.estimatedPrice">
+                        {{ (transaction()?.finalPrice | number:'1.2-2') || (transaction()?.estimatedPrice | number:'1.2-2') || '0.00' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div> -->
+
+              <!-- Condition Groups Comparison (radio, dropdown, checkbox, image types - NOT textarea/file_upload) -->
+              <ng-container *ngFor="let group of conditionGroups">
+                <div class="inspection-item" *ngIf="group.question_type !== 'textarea' && group.question_type !== 'file_upload'">
+                  <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
+                  <div class="inspection-columns">
+                    <!-- Before (Seller's submission) -->
+                    <div class="column-content">
+                      <ng-container *ngIf="transaction()?.sellerConditions?.[group.groupID]; else noSellerValue">
+                        <!-- Check if array (checkbox) or string (radio/dropdown/image) -->
+                        <ul class="condition-list" *ngIf="Array.isArray(transaction()?.sellerConditions?.[group.groupID]); else singleSellerValue">
+                          <li *ngFor="let condition of transaction()?.sellerConditions?.[group.groupID]" class="condition-item">
+                            <span class="check-icon-circle" *ngIf="group.question_type === 'checkbox'">
+                              <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                                <circle cx="10" cy="10" r="10" fill="#718096"/>
+                                <path d="M6 10l3 3 5-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                              </svg>
+                            </span>
+                            <span class="condition-text">{{ condition }}</span>
+                          </li>
+                        </ul>
+                        <ng-template #singleSellerValue>
+                          <p class="note-text">{{ transaction()?.sellerConditions?.[group.groupID] }}</p>
+                        </ng-template>
+                      </ng-container>
+                      <ng-template #noSellerValue>
+                        <p class="note-text empty">N/A</p>
+                      </ng-template>
+                    </div>
+
+                    <!-- After (Admin's review) -->
+                    <div class="column-content">
+                      <ng-container *ngIf="transaction()?.adminConditions?.[group.groupID]; else showSellerAsConfirmed">
+                        <!-- Check if array (checkbox) or string (radio/dropdown/image) -->
+                        <ul class="condition-list" *ngIf="Array.isArray(transaction()?.adminConditions?.[group.groupID]); else singleAdminValue">
+                          <li *ngFor="let condition of transaction()?.adminConditions?.[group.groupID]" class="condition-item">
+                            <span class="check-icon-circle" *ngIf="group.question_type === 'checkbox'">
+                              <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                                <circle cx="10" cy="10" r="10" fill="#48bb78"/>
+                                <path d="M6 10l3 3 5-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                              </svg>
+                            </span>
+                            <span class="condition-text">{{ condition }}</span>
+                          </li>
+                        </ul>
+                        <ng-template #singleAdminValue>
+                          <p class="note-text" [class.changed]="transaction()?.sellerConditions?.[group.groupID] !== transaction()?.adminConditions?.[group.groupID]">
+                            {{ transaction()?.adminConditions?.[group.groupID] }}
+                          </p>
+                        </ng-template>
+                      </ng-container>
+                      <ng-template #showSellerAsConfirmed>
+                        <!-- No admin value = admin confirmed seller's value -->
+                        <ng-container *ngIf="transaction()?.sellerConditions?.[group.groupID]; else noValue">
+                          <ul class="condition-list" *ngIf="Array.isArray(transaction()?.sellerConditions?.[group.groupID]); else singleSellerValue2">
+                            <li *ngFor="let condition of transaction()?.sellerConditions?.[group.groupID]" class="condition-item">
+                              <span class="check-icon-circle" *ngIf="group.question_type === 'checkbox'">
+                                <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                                  <circle cx="10" cy="10" r="10" fill="#718096"/>
+                                  <path d="M6 10l3 3 5-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                              </span>
+                              <span class="condition-text">{{ condition }}</span>
+                            </li>
+                          </ul>
+                          <ng-template #singleSellerValue2>
+                            <p class="note-text">{{ transaction()?.sellerConditions?.[group.groupID] }}</p>
+                          </ng-template>
+                        </ng-container>
+                        <ng-template #noValue>
+                          <p class="note-text empty">N/A</p>
+                        </ng-template>
+                      </ng-template>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+
+              <!-- Textarea type groups (Notes) - Before/After Comparison -->
+              <ng-container *ngFor="let group of conditionGroups">
+                <div class="inspection-item" *ngIf="group.question_type === 'textarea'">
+                  <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
+                  <div class="inspection-columns">
+                    <div class="column-content">
+                      <p class="note-text">{{ transaction()?.sellerConditions?.[group.groupID] || 'N/A' }}</p>
+                    </div>
+                    <div class="column-content">
+                      <p class="note-text" [class.changed]="transaction()?.adminConditions?.[group.groupID] && transaction()?.adminConditions?.[group.groupID] !== transaction()?.sellerConditions?.[group.groupID]">
+                        {{ transaction()?.adminConditions?.[group.groupID] || transaction()?.sellerConditions?.[group.groupID] || 'N/A' }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+
+              <!-- File upload type groups (Photos) - Before/After Comparison -->
+              <ng-container *ngFor="let group of conditionGroups">
+                <div class="inspection-item" *ngIf="group.question_type === 'file_upload'">
+                  <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
+                  <div class="inspection-columns">
+                    <div class="column-content">
+                      <!-- Seller's photos -->
+                      <div class="photo-grid" *ngIf="transaction()?.sellerConditions?.[group.groupID]?.length; else noSellerPhotos">
+                        <img *ngFor="let photo of transaction()?.sellerConditions?.[group.groupID]" [src]="photo" alt="Seller photo" class="review-photo">
+                      </div>
+                      <ng-template #noSellerPhotos>
+                        <p class="note-text empty">No photos</p>
+                      </ng-template>
+                    </div>
+                    <div class="column-content">
+                      <!-- Admin's photos -->
+                      <div class="photo-grid" *ngIf="transaction()?.adminConditions?.[group.groupID]?.length; else noAdminPhotos">
+                        <img *ngFor="let photo of transaction()?.adminConditions?.[group.groupID]" [src]="photo" alt="Admin photo" class="review-photo">
+                      </div>
+                      <ng-template #noAdminPhotos>
+                        <p class="note-text empty">{{ transaction()?.sellerConditions?.[group.groupID]?.length ? 'Same as seller' : 'No photos' }}</p>
+                      </ng-template>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+            </ng-container>
+
+            <!-- EDIT MODE: Admin can modify values -->
+            <ng-container *ngIf="editMode()">
+              <!-- Price Input - HIDDEN FOR NOW (will implement later) -->
+              <!-- <div class="inspection-item-edit">
+                <h4 class="inspection-label">FINAL PRICE</h4>
+                <div class="price-input-container">
+                  <span class="price-label">RM</span>
+                  <input type="number" class="edit-input-price" [(ngModel)]="finalPrice" step="0.01" placeholder="Enter final price" />
+                  <span class="estimated-hint">(Estimated: RM {{ (transaction()?.estimatedPrice | number:'1.2-2') || '0.00' }})</span>
+                </div>
+              </div> -->
+
+              <!-- Dynamic Condition Groups -->
+              <ng-container *ngFor="let group of conditionGroups">
+                <!-- Skip file_upload and textarea types here -->
+                <ng-container *ngIf="group.question_type !== 'file_upload' && group.question_type !== 'textarea'">
+
+                  <!-- Radio/Dropdown/Image type (single selection) -->
+                  <div class="inspection-item-edit" *ngIf="group.question_type === 'radio' || group.question_type === 'dropdown' || group.question_type === 'image'">
+                    <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
+                    <select class="edit-select" [(ngModel)]="selectedConditions[group.groupID]">
+                      <option value="">Select {{ group.criteriaName }}</option>
+                      <option *ngFor="let option of group.options" [value]="option.description">
+                        {{ option.description }}
+                      </option>
+                    </select>
+                  </div>
+
+                  <!-- Checkbox type (multiple choice) -->
+                  <div class="inspection-item-edit full-width" *ngIf="group.question_type === 'checkbox'">
+                    <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
+                    <div class="checkbox-options">
+                      <label *ngFor="let option of group.options" class="checkbox-option">
+                        <input type="checkbox"
+                               [checked]="isCheckboxOptionSelected(group.groupID, option.description)"
+                               (change)="toggleCheckboxOption(group.groupID, option.description)">
+                        <span class="checkbox-label">{{ option.description }}</span>
+                      </label>
+                    </div>
+                  </div>
+
+                </ng-container>
+              </ng-container>
+
+              <!-- Textarea type condition groups (e.g., Notes) -->
+              <ng-container *ngFor="let group of conditionGroups">
+                <div class="inspection-item-edit full-width" *ngIf="group.question_type === 'textarea'">
+                  <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
+                  <textarea class="edit-textarea" [(ngModel)]="selectedConditions[group.groupID]"
+                            rows="3" [placeholder]="'Enter ' + group.criteriaName.toLowerCase() + '...'"></textarea>
+                </div>
+              </ng-container>
+
+              <!-- File Upload type condition groups -->
+              <ng-container *ngFor="let group of conditionGroups">
+                <div class="inspection-item-edit full-width" *ngIf="group.question_type === 'file_upload'">
+                  <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
+                  <div class="file-upload-container">
+                    <input type="file" [id]="'file-' + group.groupID" multiple accept="image/*"
+                           (change)="onFileSelected($event, group.groupID)" class="file-input">
+                    <label [for]="'file-' + group.groupID" class="file-upload-btn">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                      </svg>
+                      Upload Photos
+                    </label>
+                    <!-- Preview uploaded files -->
+                    <div class="uploaded-previews" *ngIf="(uploadedFilePreviews[group.groupID]?.length ?? 0) > 0">
+                      <div *ngFor="let preview of (uploadedFilePreviews[group.groupID] ?? []); let i = index" class="preview-item">
+                        <img [src]="preview" alt="Preview">
+                        <button type="button" class="remove-preview" (click)="removeUploadedFile(group.groupID, i)">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 6L6 18M6 6l12 12"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+            </ng-container>
+          </div>
+
+          <!-- Note - VIEW MODE only (from transaction data, not dynamic groups) -->
+          <div class="note-section" *ngIf="transaction()?.note && !editMode()">
             <h4 class="note-label">NOTE</h4>
-            <p *ngIf="!editMode()" class="note-value">{{ transaction()?.note }}</p>
-            <textarea *ngIf="editMode()" class="edit-textarea" [(ngModel)]="note"
-                      rows="3" placeholder="Enter note..."></textarea>
+            <p class="note-value">{{ transaction()?.note }}</p>
           </div>
         </div>
       </div>
@@ -234,5 +454,71 @@
   <div *ngIf="!loading() && !transaction()" class="error-container">
     <p>Transaction not found</p>
     <button class="btn-back" (click)="goBack()">Go Back to Transactions</button>
+  </div>
+
+  <!-- Photo Lightbox Modal -->
+  <div *ngIf="showPhotoLightbox" class="lightbox-overlay" (click)="closeLightbox()">
+    <div class="lightbox-content" (click)="$event.stopPropagation()">
+      <!-- Close button -->
+      <button class="lightbox-close" (click)="closeLightbox()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+
+      <!-- Zoom controls -->
+      <div class="lightbox-zoom-controls">
+        <button class="zoom-btn" (click)="zoomOut()" [disabled]="lightboxZoomLevel <= minZoom" title="Zoom Out">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+            <path d="M8 11h6"/>
+          </svg>
+        </button>
+        <span class="zoom-level">{{ (lightboxZoomLevel * 100).toFixed(0) }}%</span>
+        <button class="zoom-btn" (click)="zoomIn()" [disabled]="lightboxZoomLevel >= maxZoom" title="Zoom In">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+            <path d="M11 8v6M8 11h6"/>
+          </svg>
+        </button>
+        <button class="zoom-btn reset-btn" (click)="resetZoom()" *ngIf="lightboxZoomLevel !== 1" title="Reset Zoom">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Previous button -->
+      <button *ngIf="hasMultiplePhotos" class="lightbox-nav lightbox-prev" (click)="prevLightboxPhoto()">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+
+      <!-- Main enlarged photo with zoom -->
+      <div class="lightbox-photo-wrapper" [class.zoomed]="lightboxZoomLevel > 1">
+        <img
+          [src]="photos[lightboxPhotoIndex]"
+          [alt]="'Photo ' + (lightboxPhotoIndex + 1)"
+          class="lightbox-photo"
+          [style.transform]="'scale(' + lightboxZoomLevel + ')'"
+        >
+      </div>
+
+      <!-- Next button -->
+      <button *ngIf="hasMultiplePhotos" class="lightbox-nav lightbox-next" (click)="nextLightboxPhoto()">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
+
+      <!-- Photo counter -->
+      <div *ngIf="hasMultiplePhotos" class="lightbox-counter">
+        {{ lightboxPhotoIndex + 1 }} / {{ photos.length }}
+      </div>
+    </div>
   </div>
 </main>

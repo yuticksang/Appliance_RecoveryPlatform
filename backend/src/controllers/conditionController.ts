@@ -52,10 +52,16 @@ export const getAllConditionGroups = async (req: Request, res: Response) => {
 };
 
 // Get active condition groups with their active options (for admin edit dropdowns)
+// Optional categoryId query param to filter options by category
 export const getActiveConditionGroupsWithOptions = async (req: Request, res: Response) => {
   try {
+    const { categoryId } = req.query;
+    console.log('📋 Getting condition groups, categoryId:', categoryId);
+
     // Get all active condition groups
-    const groupsResult = await pool.query(`
+    // Note: Category filtering for groups is done via Category_ConditionGroup table
+    // But we'll show all groups and filter options by category instead
+    const groupsQuery = `
       SELECT
         cg."groupID",
         cg."criteriaName",
@@ -64,11 +70,14 @@ export const getActiveConditionGroupsWithOptions = async (req: Request, res: Res
         cg."display_order"
       FROM "ConditionGroup" cg
       WHERE cg."status" = 'ACTIVE'
-      ORDER BY COALESCE(cg."display_order", 999999) ASC, cg."created_at" ASC
-    `);
+      ORDER BY COALESCE(cg."display_order", 999999) ASC
+    `;
 
-    // Get all active options for active groups
-    const optionsResult = await pool.query(`
+    const groupsResult = await pool.query(groupsQuery);
+    console.log('📂 Found groups:', groupsResult.rows.length);
+
+    // Get all active options for active groups (optionally filtered by category)
+    let optionsQuery = `
       SELECT
         co."conditionID",
         co."groupID",
@@ -78,7 +87,31 @@ export const getActiveConditionGroupsWithOptions = async (req: Request, res: Res
       INNER JOIN "ConditionGroup" cg ON co."groupID" = cg."groupID"
       WHERE co."status" = 'ACTIVE' AND cg."status" = 'ACTIVE'
       ORDER BY co.created_at ASC
-    `);
+    `;
+
+    let optionsResult;
+    if (categoryId) {
+      // Filter options by category using Category_Condition junction table
+      optionsQuery = `
+        SELECT
+          co."conditionID",
+          co."groupID",
+          co.code,
+          co.description
+        FROM "ConditionOption" co
+        INNER JOIN "ConditionGroup" cg ON co."groupID" = cg."groupID"
+        LEFT JOIN "Category_Condition" cc ON co."conditionID" = cc."conditionID"
+        WHERE co."status" = 'ACTIVE' AND cg."status" = 'ACTIVE'
+        AND (cc."categoryID" = $1 OR cc."categoryID" IS NULL OR NOT EXISTS (
+          SELECT 1 FROM "Category_Condition" WHERE "conditionID" = co."conditionID"
+        ))
+        ORDER BY co.created_at ASC
+      `;
+      optionsResult = await pool.query(optionsQuery, [categoryId]);
+    } else {
+      optionsResult = await pool.query(optionsQuery);
+    }
+    console.log('📂 Found options:', optionsResult.rows.length);
 
     // Group options by groupID
     const groupsWithOptions = groupsResult.rows.map(group => ({
@@ -86,10 +119,11 @@ export const getActiveConditionGroupsWithOptions = async (req: Request, res: Res
       options: optionsResult.rows.filter(opt => opt.groupID === group.groupID)
     }));
 
-    console.log('📂 Fetched active condition groups with options:', groupsWithOptions.length);
+    console.log('📂 Fetched active condition groups with options:', groupsWithOptions.length, categoryId ? `for category ${categoryId}` : '');
     res.json(groupsWithOptions);
   } catch (error: any) {
     console.error('Get active condition groups with options error:', error);
+    console.error('Error details:', error.message, error.stack);
     res.status(500).json({
       message: 'Failed to fetch condition groups with options',
       error: error.message
@@ -255,7 +289,7 @@ export const getAllConditionOptions = async (req: Request, res: Response) => {
               STRING_AGG(c."categoryName", ', ' ORDER BY c."categoryName") as categories
        FROM "ConditionOption" co
        LEFT JOIN "ConditionGroup" cg ON co."groupID" = cg."groupID"
-       LEFT JOIN "ConditionCategory" cc ON co."conditionID" = cc."conditionID"
+       LEFT JOIN "Category_Condition" cc ON co."conditionID" = cc."conditionID"
        LEFT JOIN "Category" c ON cc."categoryID" = c."categoryID"
        GROUP BY co."conditionID", co."groupID", co.code, co.description, co.image, co.status, co.question, co.created_at,
                 cg."criteriaName", cg."criteriaCodePrefix", cg.created_at
@@ -264,9 +298,10 @@ export const getAllConditionOptions = async (req: Request, res: Response) => {
 
     console.log('📂 Fetched condition options:', result.rows.length);
     res.json(result.rows);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get all condition options error:', error);
-    res.status(500).json({ message: 'Failed to fetch condition options' });
+    console.error('Error details:', error.message);
+    res.status(500).json({ message: 'Failed to fetch condition options', error: error.message });
   }
 };
 
@@ -278,7 +313,7 @@ export const getConditionOptionsByGroup = async (req: Request, res: Response) =>
       `SELECT co."conditionID", co."groupID", co.code, co.description, co.image, co.status, co.question, co.created_at,
               STRING_AGG(c."categoryName", ', ' ORDER BY c."categoryName") as categories
        FROM "ConditionOption" co
-       LEFT JOIN "ConditionCategory" cc ON co."conditionID" = cc."conditionID"
+       LEFT JOIN "Category_Condition" cc ON co."conditionID" = cc."conditionID"
        LEFT JOIN "Category" c ON cc."categoryID" = c."categoryID"
        WHERE co."groupID" = $1
        GROUP BY co."conditionID"
@@ -466,7 +501,7 @@ export const getConditionCategories = async (req: Request, res: Response) => {
 
     const result = await pool.query(
       `SELECT cc."categoryID", c."categoryName"
-       FROM "ConditionCategory" cc
+       FROM "Category_Condition" cc
        LEFT JOIN "Category" c ON cc."categoryID" = c."categoryID"
        WHERE cc."conditionID" = $1`,
       [conditionId]
@@ -486,7 +521,7 @@ export const updateConditionCategories = async (req: Request, res: Response) => 
 
     // Delete existing categories for this condition
     await pool.query(
-      'DELETE FROM "ConditionCategory" WHERE "conditionID" = $1',
+      'DELETE FROM "Category_Condition" WHERE "conditionID" = $1',
       [conditionId]
     );
 
@@ -494,7 +529,7 @@ export const updateConditionCategories = async (req: Request, res: Response) => 
     if (categoryIDs && categoryIDs.length > 0) {
       const values = categoryIDs.map((catId: string) => `('${conditionId}', '${catId}')`).join(',');
       await pool.query(
-        `INSERT INTO "ConditionCategory" ("conditionID", "categoryID") VALUES ${values}`
+        `INSERT INTO "Category_Condition" ("conditionID", "categoryID") VALUES ${values}`
       );
     }
 

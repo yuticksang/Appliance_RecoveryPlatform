@@ -34,9 +34,17 @@ export class TransactionService {
    * Get the authentication token (supports both seller and admin tokens)
    */
   private getAuthToken(): string | null {
-    // Check for seller/buyer token first, then admin token
-    // This ensures seller-specific requests use the seller's token when available
-    return localStorage.getItem('token') || localStorage.getItem('admin_token');
+    // Check for admin token first if admin is logged in
+    const adminUser = localStorage.getItem('admin_user');
+    const adminToken = localStorage.getItem('admin_token');
+    const sellerToken = localStorage.getItem('token');
+
+    // If admin is logged in, use admin token
+    if (adminUser && adminToken) {
+      return adminToken;
+    }
+    // Otherwise use seller/buyer token
+    return sellerToken;
   }
 
   /**
@@ -264,12 +272,18 @@ export class TransactionService {
 
   /**
    * Get active condition groups with their active options (for admin edit dropdowns)
+   * @param categoryId Optional category ID to filter options by category
    */
-  getActiveConditionGroupsWithOptions(): Observable<any[]> {
+  getActiveConditionGroupsWithOptions(categoryId?: string | number): Observable<any[]> {
     const token = this.getAuthToken();
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
-    return this.http.get<any[]>(`${this.apiUrl}/admin/condition-groups/active-with-options`, { headers })
+    let url = `${this.apiUrl}/admin/condition-groups/active-with-options`;
+    if (categoryId) {
+      url += `?categoryId=${categoryId}`;
+    }
+
+    return this.http.get<any[]>(url, { headers })
       .pipe(
         catchError(error => {
           console.error('Error fetching condition groups:', error);

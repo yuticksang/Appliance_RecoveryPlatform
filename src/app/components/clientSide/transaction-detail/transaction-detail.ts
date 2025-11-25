@@ -43,6 +43,13 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   showCancelConfirmModal: boolean = false;
   showCancelSuccessModal: boolean = false;
 
+  // Photo lightbox modal
+  showPhotoLightbox: boolean = false;
+  lightboxPhotoIndex: number = 0;
+  lightboxZoomLevel: number = 1;
+  minZoom: number = 1;
+  maxZoom: number = 3;
+
   // Customer info
   customerInfo = {
     name: '',
@@ -80,8 +87,6 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     model: string;
     modelName: string;
     category: string;
-    functionalStatus: string;
-    appearanceStatus: string;
     score: number;
     note: string;
   } = {
@@ -90,8 +95,6 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     model: '',
     modelName: '',
     category: '',
-    functionalStatus: '',
-    appearanceStatus: '',
     score: 0,
     note: ''
   };
@@ -134,16 +137,79 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Open photo lightbox
+  openLightbox(index: number): void {
+    this.lightboxPhotoIndex = index;
+    this.showPhotoLightbox = true;
+  }
+
+  // Close photo lightbox
+  closeLightbox(): void {
+    this.showPhotoLightbox = false;
+    this.lightboxZoomLevel = 1; // Reset zoom when closing
+  }
+
+  // Zoom in photo
+  zoomIn(): void {
+    if (this.lightboxZoomLevel < this.maxZoom) {
+      this.lightboxZoomLevel = Math.min(this.lightboxZoomLevel + 0.5, this.maxZoom);
+    }
+  }
+
+  // Zoom out photo
+  zoomOut(): void {
+    if (this.lightboxZoomLevel > this.minZoom) {
+      this.lightboxZoomLevel = Math.max(this.lightboxZoomLevel - 0.5, this.minZoom);
+    }
+  }
+
+  // Reset zoom
+  resetZoom(): void {
+    this.lightboxZoomLevel = 1;
+  }
+
+  // Navigate to previous photo in lightbox
+  prevLightboxPhoto(): void {
+    this.lightboxZoomLevel = 1; // Reset zoom when changing photos
+    if (this.lightboxPhotoIndex > 0) {
+      this.lightboxPhotoIndex--;
+    } else {
+      this.lightboxPhotoIndex = this.photos.length - 1;
+    }
+  }
+
+  // Navigate to next photo in lightbox
+  nextLightboxPhoto(): void {
+    this.lightboxZoomLevel = 1; // Reset zoom when changing photos
+    if (this.lightboxPhotoIndex < this.photos.length - 1) {
+      this.lightboxPhotoIndex++;
+    } else {
+      this.lightboxPhotoIndex = 0;
+    }
+  }
+
   ngOnInit(): void {
     // Get transaction ID from route
     this.route.params.subscribe(params => {
       // Support both string IDs (e.g., "TXN-123") and numeric IDs
       this.transactionId = params['id'];
+      console.log('📍 Transaction detail component initialized with ID:', this.transactionId);
 
       // Wait for auth to be ready before loading transaction details
       this.authSubscription = this.authService.currentUser$
         .pipe(
-          filter(user => user !== null && user.userType === 'seller'),
+          filter(user => {
+            console.log('🔐 Auth filter checking user:', user);
+            // Allow seller users to access transaction details
+            if (user !== null && user.userType === 'seller') {
+              return true;
+            }
+            // If user is logged in but not as seller, redirect
+            if (user !== null && user.userType !== 'seller') {
+              console.warn('⚠️ User is not a seller, userType:', user.userType);
+            }
+            return false;
+          }),
           take(1) // Only take the first emission, then auto-unsubscribe
         )
         .subscribe((user) => {
@@ -154,6 +220,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
             return;
           }
 
+          console.log('✅ User authenticated as seller:', user);
           const sellerId = user.sellerId;
           if (sellerId) {
             this.loadTransactionDetail(sellerId);
@@ -216,13 +283,17 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
       next: (data) => {
         console.log('✅ Transaction data loaded:', data);
         console.log('🔍 Comparing sellerIds - Data:', data.sellerId, 'Current:', sellerId);
+        console.log('🔍 Type check - Data sellerId type:', typeof data.sellerId, 'Current sellerId type:', typeof sellerId);
 
         // Verify this transaction belongs to the current seller
-        if (data.sellerId !== sellerId) {
+        // Use String() to ensure consistent comparison (handle number vs string)
+        if (String(data.sellerId) !== String(sellerId)) {
           console.error('❌ Unauthorized access to transaction. Expected:', sellerId, 'Got:', data.sellerId);
           this.router.navigate(['/transactions']);
           return;
         }
+
+        console.log('✅ Seller ID verified, loading transaction details...');
 
         // Map backend data to transaction object
         this.transaction = {
@@ -292,7 +363,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         model: data.model,
         category: data.category,
         score: this.calculateScoreFromGroups(this.conditionGroups),
-        note: data.note || 'No notes'
+        note: data.note || ''
       };
 
       // After review - admin's assessment (revised price & condition)
@@ -302,7 +373,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         model: data.model,
         category: data.category,
         score: this.calculateScoreFromGroups(this.conditionGroups),
-        note: data.note || 'No notes'
+        note: data.note || ''
       };
     } else {
       // For other statuses, use current appliance info
@@ -312,10 +383,8 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         model: data.model,
         modelName: data.modelName,
         category: data.category,
-        functionalStatus: data.initialFunctionalStatus,
-        appearanceStatus: data.initialPhysicalCondition,
         score: this.calculateScoreFromGroups(this.conditionGroups),
-        note: data.note || 'No notes'
+        note: data.note || ''
       };
     }
   }
@@ -541,6 +610,19 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
       'Confirmed': 'status-confirmed',
       'Under Review': 'status-review',
       'Picked Up': 'status-picked-up'
+    };
+    return statusMap[status] || '';
+  }
+
+  getItemStatusClass(status: string): string {
+    const statusMap: { [key: string]: string } = {
+      'Picked Up': 'item-picked-up',
+      'Returned': 'item-returned',
+      'Awaiting Pick Up': 'item-awaiting',
+      'Awaiting Picked Up': 'item-awaiting',
+      'Pending Further Action': 'item-pending',
+      'Unresponded': 'item-unresponded',
+      'Awaiting Return': 'item-awaiting-return'
     };
     return statusMap[status] || '';
   }
