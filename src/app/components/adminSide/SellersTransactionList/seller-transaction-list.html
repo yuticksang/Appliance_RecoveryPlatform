@@ -1,0 +1,144 @@
+<main class="transactions-page">
+  <div class="transactions-container">
+    <div class="page-head">
+      <h1 class="page-title">Transaction's List</h1>
+      <div class="breadcrumb">Dashboard / <span>Transaction</span></div>
+    </div>
+
+    <!-- Filters & Actions Bar -->
+    <div class="filters-bar">
+      <div class="filters-right">
+        <!-- Category Dropdown -->
+        <div class="filter-dropdown">
+          <select
+            [(ngModel)]="selectedCategory"
+            (change)="onCategoryChange()"
+            class="filter-select">
+            <option value="">Select a Category</option>
+            <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
+          </select>
+        </div>
+
+        <!-- Brand Dropdown -->
+        <div class="filter-dropdown">
+          <select
+            [(ngModel)]="selectedBrand"
+            (change)="onBrandChange()"
+            class="filter-select">
+            <option value="">Select a Brand</option>
+            <option *ngFor="let brand of brands" [value]="brand">{{ brand }}</option>
+          </select>
+        </div>
+
+        <!-- Search Box -->
+        <div class="search-box">
+          <input
+            type="text"
+            placeholder="Search..."
+            [(ngModel)]="searchQuery"
+            (input)="onSearch()"
+            class="search-input">
+          <span class="search-icon">🔍</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transactions Table -->
+    <div class="table-wrapper">
+      <!-- Loading State -->
+      <div *ngIf="loading" class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading transactions...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="!loading && filteredTransactions.length === 0" class="empty-state">
+        <p>No transactions found.</p>
+        <p class="empty-hint">Try adjusting your filters or search query.</p>
+      </div>
+
+      <!-- Table -->
+      <table *ngIf="!loading && filteredTransactions.length > 0" class="transactions-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Transaction ID</th>
+            <th>Seller ID</th>
+            <th>Buyer ID</th>
+            <th>Category</th>
+            <th>Brand</th>
+            <th>Model</th>
+            <th>Transaction Status</th>
+            <th>Item Status</th>
+            <th class="actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let transaction of paginatedTransactions; let i = index"
+              class="transaction-row"
+              (click)="viewTransactionDetail(transaction.id)">
+            <td>{{ (currentPage - 1) * itemsPerPage + i + 1 }}</td>
+            <td class="transaction-id">{{ transaction.id }}</td>
+            <td>{{ transaction.sellerId }}</td>
+            <td>{{ transaction.id }}</td>
+            <td>{{ transaction.category }}</td>
+            <td>{{ transaction.brand }}</td>
+            <td>{{ transaction.model }}</td>
+            <td>
+              <span
+                class="status-badge"
+                [ngClass]="getStatusClass(transaction.transactionStatus)">
+                {{ transaction.transactionStatus }}
+              </span>
+            </td>
+            <td>
+              <span
+                class="status-badge"
+                [ngClass]="getItemStatusClass(transaction.itemStatus)">
+                {{ transaction.itemStatus }}
+              </span>
+            </td>
+            <td class="actions">
+              <button class="icon" title="Edit" (click)="editTransaction(transaction, $event)">
+                <img src="assets/icons/edit.png" alt="Edit" class="action-icon">
+              </button>
+              <span class="icon-placeholder"></span>
+              <button class="icon danger" title="Delete" (click)="deleteTransaction(transaction, $event)">
+                <img src="assets/icons/delete.png" alt="Delete" class="action-icon">
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination" *ngIf="!loading && filteredTransactions.length > 0">
+      <button
+        class="page-btn"
+        (click)="goToPage(currentPage - 1)"
+        [disabled]="currentPage === 1">
+        ‹
+      </button>
+
+      <button
+        *ngFor="let page of pageNumbers"
+        class="page-btn"
+        [class.active]="page === currentPage"
+        (click)="goToPage(page)">
+        {{ page }}
+      </button>
+
+      <button
+        class="page-btn"
+        (click)="goToPage(currentPage + 1)"
+        [disabled]="currentPage === totalPages">
+        ›
+      </button>
+
+      <div class="page-size">
+        <span>{{ itemsPerPage }} /Page</span>
+      </div>
+    </div>
+  </div>
+</main>

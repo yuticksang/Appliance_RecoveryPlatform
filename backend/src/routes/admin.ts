@@ -40,6 +40,7 @@ import { optionalUpload } from '../middleware/upload';
 console.log('📍📍📍 admin routes loaded! 📍📍📍');
 
 const router = express.Router();
+router.use(express.json());
 
 // =====================================================
 // USER MANAGEMENT ROUTES

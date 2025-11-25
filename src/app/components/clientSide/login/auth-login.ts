@@ -118,7 +118,7 @@ export class AuthLoginComponent implements OnInit {
             // Show alert for wrong user type
             this.alertService.error('Access denied. Please use seller account to login.');
             this.loading = false;
-            this.form.enable();
+            this.form.enable(); // Re-enable form
           }
         },
         error: (err) => {
@@ -126,7 +126,7 @@ export class AuthLoginComponent implements OnInit {
           const errorMessage = err.error?.message || 'Login failed. Please check your credentials.';
           this.alertService.error(errorMessage);
           this.loading = false;
-          this.form.enable();
+          this.form.enable(); // Re-enable form
           console.error('Login error:', err);
         }
       });

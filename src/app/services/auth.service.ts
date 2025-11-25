@@ -12,9 +12,12 @@ interface User {
   username: string;
   userType: string;
   phone?: string;
+  sellerId?: string;  // For sellers: 'S001', 'S002', etc.
+  buyerId?: string;   // For buyers: 'B001', 'B002', etc.
+  adminId?: string;   // For admins: 'A001', 'A002', etc.
 }
 
-interface UserProfile extends User {
+export interface UserProfile extends User {
   emailVerified?: boolean;
   lastLogin?: string;
   createdAt?: string;
@@ -230,14 +233,22 @@ export class AuthService {
   }
 
   // HTTP interceptor helper
+  // getAuthHeaders(): HttpHeaders {
+  //   const token = this.getToken();
+  //   return new HttpHeaders({
+  //     'Authorization': token ? `Bearer ${token}` : '',
+  //     'Content-Type': 'application/json'
+  //   });
+  // }
+
+  // GOOD — Only add Authorization, NEVER Content-Type
   getAuthHeaders(): HttpHeaders {
     const token = this.getToken();
     return new HttpHeaders({
-      'Authorization': token ? `Bearer ${token}` : '',
-      'Content-Type': 'application/json'
+      Authorization: token ? `Bearer ${token}` : ''
+      // DO NOT set Content-Type here!
     });
   }
-
   // Address methods
   getAddresses(userId: string): Observable<any[]> {
     return this.http.get<any[]>(`${this.apiUrl}/addresses/${userId}`, {
@@ -263,6 +274,14 @@ export class AuthService {
     });
   }
 
+  setDefaultAddress(userId: string, addressId: string): Observable<any> {
+    return this.http.patch<any>(
+      `${this.apiUrl}/addresses/${userId}/${addressId}/default`,
+      {},
+      { headers: this.getAuthHeaders() }
+    );
+  }
+
   // Bank methods
   getBankDetails(userId: string): Observable<any> {
     return this.http.get<any>(`${this.apiUrl}/bank/${userId}`, {
@@ -286,5 +305,62 @@ export class AuthService {
     return this.http.delete<any>(`${this.apiUrl}/bank/${userId}`, {
       headers: this.getAuthHeaders()
     });
+  }
+
+  // Backward-compatible methods for components using the old API
+  getCurrentUser(): User | null {
+    return this.currentUserSubject.value;
+  }
+
+  getCurrentUserId(): string | null {
+    return this.currentUserSubject.value?.id || null;
+  }
+
+  /**
+   * Get the seller ID for the current user (e.g., 'S001')
+   * Returns null if user is not a seller or not logged in
+   */
+  getSellerId(): string | null {
+    const user = this.currentUserSubject.value;
+    if (!user || user.userType !== 'seller') {
+      return null;
+    }
+    return user.sellerId || null;
+  }
+
+  /**
+   * Get the buyer ID for the current user (e.g., 'B001')
+   * Returns null if user is not a buyer or not logged in
+   */
+  getBuyerId(): string | null {
+    const user = this.currentUserSubject.value;
+    if (!user || user.userType !== 'buyer') {
+      return null;
+    }
+    return user.buyerId || null;
+  }
+
+  /**
+   * Get the admin ID for the current user (e.g., 'A001')
+   * Returns null if user is not an admin or not logged in
+   */
+  getAdminId(): string | null {
+    const user = this.currentUserSubject.value;
+    if (!user || (user.userType !== 'admin' && user.userType !== 'superadmin')) {
+      return null;
+    }
+    return user.adminId || null;
+  }
+
+  setCurrentUser(user: User | null): void {
+    this.currentUserSubject.next(user);
+    this.currentUser.set(user);
+    if (user) {
+      this.isLoggedIn.set(true);
+      localStorage.setItem('user', JSON.stringify(user));
+    } else {
+      this.isLoggedIn.set(false);
+      localStorage.removeItem('user');
+    }
   }
 }

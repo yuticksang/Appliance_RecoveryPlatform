@@ -1,0 +1,104 @@
+<div class="recovery-slip-container">
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <p>Loading recovery slip...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="error-container">
+    <p>Failed to load recovery slip data. Please try again.</p>
+    <button (click)="goBackToTransaction()">Go Back</button>
+  </div>
+
+  <!-- Recovery Slip Content -->
+  <div *ngIf="!loading && !error">
+    <span class="back-link" (click)="goBackToTransaction()">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M10 18L2 10L10 2L11.4 3.4L5.8 9H18V11H5.8L11.4 16.6L10 18Z"/>
+      </svg>
+      Back to Transaction Details
+    </span>
+
+  <!-- Download / Print Icons -->
+  <div class="action-icons">
+    <button (click)="downloadPDF()" title="Download PDF">
+      <i class="fas fa-download"></i>
+    </button>
+    <button (click)="printSlip()" title="Print Slip">
+      <i class="fas fa-print"></i>
+    </button>
+  </div>
+
+  <!-- Recovery Slip Content -->
+  <div class="slip-card" #recoverySlip>
+    <h1 class="title">Recovery Slip</h1>
+    <p class="date">
+      Date: {{ recoveryData.date }}<br>
+      Receipt No: {{ recoveryData.receiptNo }}
+    </p>
+
+    <!-- Seller Details -->
+    <div class="section">
+      <h3 class="section-title">Seller Details</h3>
+      <div class="section-content">
+        <p><strong>Name:</strong> {{ recoveryData.seller.name }}</p>
+        <p><strong>Phone No:</strong> {{ recoveryData.seller.phone }}</p>
+        <p><strong>Address:</strong> {{ recoveryData.seller.address }}</p>
+      </div>
+    </div>
+
+    <!-- Appliance Details -->
+    <div class="section">
+      <h3 class="section-title">Appliance Details</h3>
+      <div class="section-content">
+        <p><strong>Appliance ID:</strong> {{ recoveryData.appliance.id }}</p>
+        <p><strong>Category:</strong> {{ recoveryData.appliance.category }}</p>
+        <p><strong>Brand:</strong> {{ recoveryData.appliance.brand }}</p>
+        <p><strong>Model:</strong> {{ recoveryData.appliance.model }}</p>
+        <p><strong>Trade-in Value:</strong> {{ recoveryData.appliance.tradeValue }}</p>
+
+        <!-- Dynamic Question Answers -->
+        <div *ngFor="let qa of recoveryData.appliance.dynamicAnswers" style="margin-top: 10px;">
+          <!-- For radio, image, and textarea types: show question and answer -->
+          <p *ngIf="qa.type !== 'checkbox'">
+            <strong>{{ qa.sectionName }}:</strong> {{ qa.answer }}
+          </p>
+
+          <!-- For checkbox type: show section name with bullet list -->
+          <div *ngIf="qa.type === 'checkbox' && qa.answer && $any(qa.answer).length > 0">
+            <p><strong>{{ qa.sectionName }}:</strong></p>
+            <ul style="margin-left: 20px; margin-top: 5px;">
+              <li *ngFor="let option of $any(qa.answer)">{{ option }}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delivery Details -->
+    <div class="section">
+      <h3 class="section-title">Delivery Details</h3>
+      <div class="section-content">
+        <p><strong>Pickup Date:</strong> {{ recoveryData.delivery.pickupDate }}</p>
+        <p><strong>Pickup Time Slot:</strong> {{ recoveryData.delivery.pickupTime }}</p>
+      </div>
+    </div>
+
+    <!-- Terms and Conditions -->
+    <div class="section">
+      <h3 class="section-title">Terms and Conditions</h3>
+      <div class="section-content">
+        <ul>
+          <li>Payment will be processed upon successful pickup and verification of the appliance.</li>
+          <li>Ez Recover reserves the right to adjust the trade-in value based on the actual condition upon inspection.</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="footer-text">
+      Thank you for choosing Ez Recover!<br>
+      <em>Sustainable Appliance Recovery</em>
+    </p>
+  </div>
+  </div>
+</div>

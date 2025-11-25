@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
-import { AuthRequest } from '../middleware/authMiddleware';
+import { AuthRequest, verifyToken } from '../middleware/authMiddleware';
 
 // ==================== ADDRESS CRUD ====================
 
@@ -22,8 +22,8 @@ export const getAddresses = async (req: AuthRequest, res: Response) => {
 
     // Now get addresses using seller_id
     const result = await pool.query(
-      `SELECT "addressID", "receiverName", "phoneNum", state, city, "zipCode", "pickupAddress"
-       FROM "PickupAddress" WHERE "sellerID" = $1 ORDER BY "addressID" DESC`,
+      `SELECT "addressID", "receiverName", "phoneNum", state, city, "zipCode", "pickupAddress", "isDefault", "status"
+       FROM "PickupAddress" WHERE "sellerID" = $1 AND status = 'ACTIVE' ORDER BY "addressID" DESC`,
       [sellerId]
     );
 
@@ -67,8 +67,8 @@ export const createAddress = async (req: AuthRequest, res: Response) => {
     const sellerId = userResult.rows[0].seller_id;
 
     const result = await pool.query(
-      `INSERT INTO "PickupAddress" ("sellerID", "receiverName", "phoneNum", state, city, "zipCode", "pickupAddress")
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO "PickupAddress" ("sellerID", "receiverName", "phoneNum", state, city, "zipCode", "pickupAddress", status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'ACTIVE')
        RETURNING "addressID", "receiverName", "phoneNum", state, city, "zipCode", "pickupAddress"`,
       [sellerId, name, phone, state, city, zip, pickup]
     );
@@ -92,6 +92,9 @@ export const createAddress = async (req: AuthRequest, res: Response) => {
 
 export const updateAddress = async (req: AuthRequest, res: Response) => {
   try {
+    
+    console.log('RAW BODY:', req.body); // ← MUST SHOW PAYLOAD
+
     const userId = req.params.userId; // This is userID (U001, U002, etc.)
     const addressId = req.params.addressId; // String ID
     const { name, phone, state, city, zip, pickup } = req.body;
@@ -154,8 +157,12 @@ export const deleteAddress = async (req: AuthRequest, res: Response) => {
 
     const sellerId = userResult.rows[0].seller_id;
 
+    // Soft delete: Set status to INACTIVE instead of deleting the record
     const result = await pool.query(
-      'DELETE FROM "PickupAddress" WHERE "addressID" = $1 AND "sellerID" = $2 RETURNING "addressID"',
+      `UPDATE "PickupAddress"
+       SET status = 'INACTIVE'
+       WHERE "addressID" = $1 AND "sellerID" = $2
+       RETURNING "addressID"`,
       [addressId, sellerId]
     );
 
@@ -167,6 +174,48 @@ export const deleteAddress = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error('Delete address error:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// PATCH /api/addresses/:userId/:addressId/default
+export const setDefaultAddress = async (req: AuthRequest, res: Response) => {
+  const { userId, addressId } = req.params;
+
+  try {
+    const seller = await pool.query(
+      'SELECT "seller_id" FROM "users" WHERE "userID" = $1',
+      [userId]
+    );
+    if (seller.rows.length === 0) return res.status(404).json({ error: 'User not found' });
+
+    const sellerId = seller.rows[0].seller_id;
+
+    // Verify address exists
+    const check = await pool.query(
+      'SELECT 1 FROM "PickupAddress" WHERE "addressID" = $1 AND "sellerID" = $2',
+      [addressId, sellerId]
+    );
+    if (check.rows.length === 0) {
+      return res.status(404).json({ error: 'Address not found' });
+    }
+
+    // Reset all
+    await pool.query(
+      'UPDATE "PickupAddress" SET "isDefault" = false WHERE "sellerID" = $1',
+      [sellerId]
+    );
+
+    // Set default
+    const result = await pool.query(
+      'UPDATE "PickupAddress" SET "isDefault" = true WHERE "addressID" = $1 AND "sellerID" = $2 RETURNING *',
+      [addressId, sellerId]
+    );
+
+    res.json({ success: true, address: result.rows[0] });
+  } catch (err) {
+    console.error('Set default error:', err);
+    const message = err instanceof Error ? err.message : 'Unknown server error';
+    res.status(500).json({ error: message });
   }
 };
 

@@ -127,7 +127,7 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Invalid username or email.' });
     }
 
-    // Handle multiple users with same email/username across different roles
+    // Handle multiple users with same email/username
     // Check password against all matching accounts
     let user = null;
     for (const potentialUser of result.rows) {
@@ -142,7 +142,6 @@ export const login = async (req: Request, res: Response) => {
       console.log('❌ Invalid password');
       return res.status(401).json({ message: 'Invalid password. Please try again.' });
     }
-
     console.log('👤 User found:', {
       username: user.username,
       admin_id: user.admin_id,
@@ -206,6 +205,9 @@ export const login = async (req: Request, res: Response) => {
         username: user.username,
         userType: user.user_type,
         adminRole: user.admin_role || null,
+        sellerId: user.seller_id || null,
+        buyerId: user.buyer_id || null,
+        adminId: user.admin_id || null,
         phone: user.phone
       }
     });
@@ -658,7 +660,11 @@ export const googleLogin = async (req: Request, res: Response) => {
         email: user.email,
         name: user.name,
         username: user.username,
-        userType: user.user_type
+        userType: user.user_type,
+        sellerId: user.seller_id || null,
+        buyerId: user.buyer_id || null,
+        adminId: user.admin_id || null,
+        phone: user.phone
       }
     });
   } catch (error) {

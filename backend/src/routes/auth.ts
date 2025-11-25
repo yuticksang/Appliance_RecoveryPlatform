@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
 import {
   login,
   register,
@@ -13,7 +13,8 @@ import {
 } from '../controllers/authController';
 import { verifyToken as verifyTokenMiddleware } from '../middleware/authMiddleware';
 
-const router = Router();
+const router = express.Router();
+router.use(express.json());
 
 router.post('/register', register);
 router.post('/login', login);
