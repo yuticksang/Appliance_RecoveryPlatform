@@ -411,7 +411,9 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
 
   // Helper to get display name for a groupID (e.g., "CG001" -> "Functional Status")
   getGroupDisplayName(groupId: string): string {
-    return this.conditionGroupNames[groupId] || groupId;
+    const displayName = this.conditionGroupNames[groupId] || groupId;
+    console.log(`🔍 getGroupDisplayName(${groupId}) = ${displayName}`);
+    return displayName;
   }
 
   goBack(): void {
