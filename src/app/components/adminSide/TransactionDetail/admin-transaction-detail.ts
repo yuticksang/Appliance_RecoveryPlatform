@@ -134,7 +134,7 @@ export class AdminTransactionDetailComponent implements OnInit {
         this.transactionStatus = data.transactionStatus;
         this.itemStatus = data.itemStatus;
         this.finalPrice = data.finalPrice || data.estimatedPrice || 0;
-        this.note = data.note || '';
+        this.note = data.finalNote || ''; // Admin's review note
 
         // Load seller-submitted photos from backend
         if (data.photos && data.photos.length > 0) {
@@ -380,10 +380,10 @@ export class AdminTransactionDetailComponent implements OnInit {
       model: selectedAppliance?.modelCode || '',
       category: selectedCategory?.categoryName || '',
       modelName: selectedAppliance?.modelName || '',
-      note: this.note,
-      // Send dynamic admin conditions (includes condition-based photo uploads as base64)
+      finalNote: this.note, // Admin's review note
+      // Send admin checklist conditions
       adminConditions: adminConditions,
-      // Send main photos array (existing photos from Photo table)
+      // Send main photos array with remarks
       photos: photosArray
     };
 
@@ -410,7 +410,7 @@ export class AdminTransactionDetailComponent implements OnInit {
       this.transactionStatus = txn.transactionStatus;
       this.itemStatus = txn.itemStatus;
       this.finalPrice = txn.finalPrice || txn.estimatedPrice;
-      this.note = txn.note || '';
+      this.note = (txn as any).finalNote || txn.note || ''; // Admin's review note
       // Reset selected IDs
       this.setSelectedIdsFromTransaction(txn);
       // Reset selected conditions

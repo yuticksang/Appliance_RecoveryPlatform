@@ -310,7 +310,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
           submittedDate: new Date(data.submittedDate),
           estimatedPrice: data.estimatedPrice,
           finalPrice: data.finalPrice,
-          note: data.note
+          note: data.finalNote || data.initialNote || data.note // Show final note if reviewed, otherwise initial
         };
 
         // Load REAL customer info from database
@@ -363,7 +363,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         model: data.model,
         category: data.category,
         score: this.calculateScoreFromGroups(this.conditionGroups),
-        note: data.note || ''
+        note: data.initialNote || data.note || '' // Seller's original note
       };
 
       // After review - admin's assessment (revised price & condition)
@@ -373,7 +373,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         model: data.model,
         category: data.category,
         score: this.calculateScoreFromGroups(this.conditionGroups),
-        note: data.note || ''
+        note: data.finalNote || '' // Admin's review note
       };
     } else {
       // For other statuses, use current appliance info
@@ -384,7 +384,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         modelName: data.modelName,
         category: data.category,
         score: this.calculateScoreFromGroups(this.conditionGroups),
-        note: data.note || ''
+        note: data.finalNote || data.initialNote || data.note || '' // Show final note if available, otherwise initial
       };
     }
   }
