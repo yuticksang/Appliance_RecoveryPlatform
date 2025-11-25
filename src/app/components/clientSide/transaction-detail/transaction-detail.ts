@@ -100,7 +100,10 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   };
 
   // Dynamic condition groups from backend (e.g., "Functional Status", "Appearance Status", "Checklist")
-  conditionGroups: { [key: string]: string[] } = {};
+  conditionGroups: { [key: string]: string | string[] } = {};
+
+  // Expose Array to template for Array.isArray() check
+  Array = Array;
 
   // Check if transaction needs review comparison
   get isAwaitingConfirmation(): boolean {

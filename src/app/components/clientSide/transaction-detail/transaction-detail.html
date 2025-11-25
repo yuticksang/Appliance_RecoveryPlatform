@@ -252,11 +252,18 @@
             <div class="condition-groups-section" *ngIf="hasConditionGroups()">
               <div *ngFor="let groupName of getConditionGroupNames()" class="condition-group">
                 <h4 class="condition-group-label">{{ groupName | uppercase }}</h4>
-                <ul class="condition-list">
+
+                <!-- If value is an array (checkbox) -->
+                <ul class="condition-list" *ngIf="Array.isArray(conditionGroups[groupName])">
                   <li *ngFor="let condition of conditionGroups[groupName]" class="condition-item">
-                    <span class="check-icon" *ngIf="groupName.toLowerCase() === 'checklist'">✓</span> {{ condition }}
+                    <span class="check-icon">✓</span> {{ condition }}
                   </li>
                 </ul>
+
+                <!-- If value is a string (radio/dropdown/textarea) -->
+                <p class="condition-value" *ngIf="!Array.isArray(conditionGroups[groupName])">
+                  {{ conditionGroups[groupName] }}
+                </p>
               </div>
             </div>
 
@@ -296,11 +303,18 @@
             <div class="condition-groups-section" *ngIf="hasConditionGroups()">
               <div *ngFor="let groupName of getConditionGroupNames()" class="condition-group">
                 <h4 class="condition-group-label">{{ groupName | uppercase }}</h4>
-                <ul class="condition-list">
+
+                <!-- If value is an array (checkbox) -->
+                <ul class="condition-list" *ngIf="Array.isArray(conditionGroups[groupName])">
                   <li *ngFor="let condition of conditionGroups[groupName]" class="condition-item">
-                    <span class="check-icon" *ngIf="groupName.toLowerCase() === 'checklist'">✓</span> {{ condition }}
+                    <span class="check-icon">✓</span> {{ condition }}
                   </li>
                 </ul>
+
+                <!-- If value is a string (radio/dropdown/textarea) -->
+                <p class="condition-value" *ngIf="!Array.isArray(conditionGroups[groupName])">
+                  {{ conditionGroups[groupName] }}
+                </p>
               </div>
             </div>
 
