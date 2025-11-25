@@ -188,7 +188,7 @@ export const getTransactionById = async (req: Request, res: Response) => {
               COALESCE(cs."selectedBy", 'seller') as "selectedBy"
        FROM "ConditionSelected" cs
        LEFT JOIN "ConditionOption" co ON cs."conditionID" = co."conditionID"
-       LEFT JOIN "ConditionGroup" cg ON co."groupID" = cg."groupID" OR cs."conditionID" = cg."groupID"
+       LEFT JOIN "ConditionGroup" cg ON COALESCE(co."groupID", cs."groupID") = cg."groupID"
        WHERE cs."submittedApplianceID" = $1 AND cs."isChecked" = true
        ORDER BY cg."display_order", cs."selectedAt"`,
       [transaction.submittedApplianceID]
@@ -317,14 +317,27 @@ export const getTransactionById = async (req: Request, res: Response) => {
         : row.selectedOptions[0]?.description || 'N/A'
     }));
 
-    // Fetch photos for this submission
+    // Fetch photos for this submission (distinguish seller vs admin by remark field)
     const photosResult = await pool.query(
-      `SELECT "photoURL" FROM "Photo" WHERE "submittedApplianceID" = $1 ORDER BY "photoID"`,
+      `SELECT "photoURL", "remark", "uploadDate" FROM "Photo"
+       WHERE "submittedApplianceID" = $1
+       ORDER BY "uploadDate", "photoID"`,
       [transaction.submittedApplianceID]
     );
 
-    // Add photos array to the response
-    transaction.photos = photosResult.rows.map(row => row.photoURL);
+    // Separate photos by who uploaded them (seller vs admin)
+    const sellerPhotos = photosResult.rows
+      .filter(row => !row.remark || row.remark !== 'admin')
+      .map(row => row.photoURL);
+
+    const adminPhotos = photosResult.rows
+      .filter(row => row.remark === 'admin')
+      .map(row => row.photoURL);
+
+    // Add photos arrays to the response
+    transaction.photos = sellerPhotos; // Backward compatibility
+    transaction.sellerPhotos = sellerPhotos;
+    transaction.adminPhotos = adminPhotos;
 
     console.log(`✅ Found transaction ${id}:`, transaction);
     console.log(`📋 Selected issues:`, transaction.selectedIssues);
@@ -701,35 +714,33 @@ export const updateTransaction = async (req: Request, res: Response) => {
     // ─────────────────────────────────────────────────────────
     // SAVE ADMIN PHOTOS TO Photo TABLE
     // photos is an array of { photoURL: string, remark?: string, groupID?: string }
-    // remark: optional description added by admin
+    // remark: 'admin' to distinguish from seller photos
     // Only update if photos array is explicitly provided
     // ─────────────────────────────────────────────────────────
     if (photos && Array.isArray(photos) && photos.length > 0) {
       console.log('📷 Processing photos:', photos.length, 'photos');
 
       try {
-        // Delete existing photos for this submission
-        // Note: This replaces ALL photos, seller and admin
-        // If you want to keep seller photos, modify this logic
+        // Delete only existing ADMIN photos for this submission (keep seller photos)
         await pool.query(
-          `DELETE FROM "Photo" WHERE "submittedApplianceID" = $1`,
+          `DELETE FROM "Photo" WHERE "submittedApplianceID" = $1 AND "remark" = 'admin'`,
           [submittedApplianceID]
         );
 
-        console.log('✅ Deleted existing photos');
+        console.log('✅ Deleted existing admin photos');
 
-        // Insert new photos
+        // Insert new admin photos with remark='admin' to distinguish from seller photos
         for (const photo of photos) {
           if (photo && photo.photoURL && photo.photoURL.trim() !== '') {
             await pool.query(
               `INSERT INTO "Photo" ("submittedApplianceID", "photoURL", "remark", "uploadDate")
-               VALUES ($1, $2, $3, NOW())`,
-              [submittedApplianceID, photo.photoURL, photo.remark || '']
+               VALUES ($1, $2, 'admin', NOW())`,
+              [submittedApplianceID, photo.photoURL]
             );
           }
         }
 
-        console.log('✅ Photos saved successfully');
+        console.log('✅ Admin photos saved successfully');
       } catch (photoError) {
         console.error('❌ Error saving photos:', photoError);
         console.error('❌ Photo error details:', {
