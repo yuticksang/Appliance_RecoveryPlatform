@@ -264,13 +264,13 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
 
     // Strategy: Match by groupID directly (most reliable)
     // CG001 = Functional Status
-    // CG002 = Physical Condition
+    // CG002 = Appearance Status (formerly Physical Condition)
     const functionalAnswer = questionAnswers.find(qa => qa.groupID === 'CG001');
-    const physicalAnswer = questionAnswers.find(qa => qa.groupID === 'CG002');
+    const appearanceAnswer = questionAnswers.find(qa => qa.groupID === 'CG002');
     const notesAnswer = questionAnswers.find(qa => qa.type === 'textarea');
 
     console.log('🔍 Functional Answer:', functionalAnswer);
-    console.log('🔍 Physical Answer:', physicalAnswer);
+    console.log('🔍 Appearance Answer:', appearanceAnswer);
     console.log('🔍 Notes Answer:', notesAnswer);
 
     // Generate SAxxx ID
@@ -280,8 +280,8 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
     const subRes = await client.query(
       `INSERT INTO "SubmittedAppliance" (
         "submittedApplianceID", "sellerID", "applianceID", "addressID",
-        "initialFunctionalStatus", "initialPhysicalCondition",
-        "initialOfferPrice", "note"
+        "initialFunctionalStatus", "initialAppearanceStatus",
+        "initialOfferPrice", "initialNote"
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING "submittedApplianceID"`,
       [
@@ -290,7 +290,7 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
         modelId,
         addressId,
         functionalAnswer?.answerText || 'Not Specified',
-        physicalAnswer?.answerText || 'Not Specified',
+        appearanceAnswer?.answerText || 'Not Specified',
         parseFloat(valuationWorth) || 0,
         notesAnswer?.answer || null
       ]
@@ -299,28 +299,17 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
     const finalId = subRes.rows[0].submittedApplianceID;
 
     // ─────────────────────────────────────────────────────────
-    // SAVE ALL ANSWERS TO ConditionSelected (for ALL types)
+    // SAVE CHECKLIST ANSWERS TO ConditionSelected
     // selectedBy = 'seller' for initial submission
+    // Only checkbox type (checklist items) are stored here
     // ─────────────────────────────────────────────────────────
     let savedCount = 0;
     for (const qa of questionAnswers) {
       console.log(`🔄 Processing question: groupID=${qa.groupID}, type=${qa.type}, answer=`, qa.answer);
 
-      // For radio/image: single conditionID
-      if ((qa.type === 'radio' || qa.type === 'image') && qa.answer) {
-        console.log(`  → Saving radio/image answer: ${qa.answer}`);
-        await client.query(
-          `INSERT INTO "ConditionSelected"
-          ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt")
-          VALUES ($1, $2, true, 'seller', NOW())`,
-          [qa.answer, finalId]
-        );
-        savedCount++;
-      }
-
-      // For checkbox: array of conditionIDs
+      // Only save checkbox type (checklist items) to ConditionSelected
       if (qa.type === 'checkbox' && Array.isArray(qa.answer)) {
-        console.log(`  → Saving ${qa.answer.length} checkbox answers`);
+        console.log(`  → Saving ${qa.answer.length} checklist items`);
         for (const conditionID of qa.answer) {
           await client.query(
             `INSERT INTO "ConditionSelected"
@@ -330,11 +319,6 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
           );
           savedCount++;
         }
-      }
-
-      // Textarea is saved to note field, not ConditionSelected
-      if (qa.type === 'textarea') {
-        console.log(`  → Textarea saved to note field (not ConditionSelected)`);
       }
     }
 

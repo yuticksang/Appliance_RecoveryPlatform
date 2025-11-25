@@ -21,12 +21,13 @@ export const getTransactionsBySeller = async (req: Request, res: Response) => {
         sa."submittedApplianceID",
         sa."submissionDate" as "submittedDate",
         sa."initialFunctionalStatus",
-        sa."initialPhysicalCondition",
+        sa."initialAppearanceStatus",
         sa."finalFunctionalStatus",
-        sa."finalPhysicalCondition",
+        sa."finalAppearanceStatus",
         sa."initialOfferPrice" as "estimatedPrice",
         sa."finalOfferPrice" as "finalPrice",
-        sa.note,
+        sa."initialNote",
+        sa."finalNote",
         t."transactionStatus",
         t."createdAt",
         t."updatedAt",
@@ -75,12 +76,13 @@ export const getAllTransactions = async (req: Request, res: Response) => {
         sa."submittedApplianceID",
         sa."submissionDate" as "submittedDate",
         sa."initialFunctionalStatus",
-        sa."initialPhysicalCondition",
+        sa."initialAppearanceStatus",
         sa."finalFunctionalStatus",
-        sa."finalPhysicalCondition",
+        sa."finalAppearanceStatus",
         sa."initialOfferPrice" as "estimatedPrice",
         sa."finalOfferPrice" as "finalPrice",
-        sa.note,
+        sa."initialNote",
+        sa."finalNote",
         t."transactionStatus",
         t."createdAt",
         t."updatedAt",
@@ -135,12 +137,13 @@ export const getTransactionById = async (req: Request, res: Response) => {
         sa."submittedApplianceID",
         sa."submissionDate" as "submittedDate",
         COALESCE(sa."initialFunctionalStatus", 'N/A') as "initialFunctionalStatus",
-        COALESCE(sa."initialPhysicalCondition", 'N/A') as "initialPhysicalCondition",
+        COALESCE(sa."initialAppearanceStatus", 'N/A') as "initialAppearanceStatus",
         sa."finalFunctionalStatus",
-        sa."finalPhysicalCondition",
+        sa."finalAppearanceStatus",
         COALESCE(sa."initialOfferPrice", 0) as "estimatedPrice",
         sa."finalOfferPrice" as "finalPrice",
-        COALESCE(sa.note, '') as note,
+        COALESCE(sa."initialNote", '') as "initialNote",
+        COALESCE(sa."finalNote", '') as "finalNote",
         t."transactionStatus",
         t."createdAt",
         t."updatedAt",
@@ -472,7 +475,8 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
         sa."submissionDate" as "submittedDate",
         sa."initialOfferPrice" as "estimatedPrice",
         sa."finalOfferPrice" as "finalPrice",
-        sa.note,
+        sa."initialNote",
+        sa."finalNote",
         t."transactionStatus",
         t."updatedAt",
         i."itemStatus",
@@ -515,17 +519,16 @@ export const updateTransaction = async (req: Request, res: Response) => {
       model,
       category,
       modelName,
-      initialFunctionalStatus,
-      initialPhysicalCondition,
-      note,
-      // New: dynamic condition selections from admin
-      // Format: { [groupID]: conditionID | conditionID[] }
+      finalFunctionalStatus,
+      finalAppearanceStatus,
+      finalNote,
+      // Admin's checklist selections
       adminConditions,
-      // Photo uploads from admin (base64 data URLs)
+      // Photo uploads from admin (base64 data URLs with remark)
       photos
     } = req.body;
 
-    console.log('📝 Updating transaction with full data:', { id, transactionStatus, itemStatus, finalPrice, note, hasPhotos: !!photos, photoCount: photos?.length });
+    console.log('📝 Updating transaction with full data:', { id, transactionStatus, itemStatus, finalPrice, finalNote, hasPhotos: !!photos, photoCount: photos?.length });
 
     // Get the submittedApplianceID for this transaction
     const txnResult = await pool.query(
@@ -539,13 +542,15 @@ export const updateTransaction = async (req: Request, res: Response) => {
 
     const submittedApplianceID = txnResult.rows[0].submittedApplianceID;
 
-    // Update SubmittedAppliance table (keep for backward compatibility)
+    // Update SubmittedAppliance table with admin's review data
     await pool.query(
       `UPDATE "SubmittedAppliance"
        SET "finalOfferPrice" = COALESCE($1, "finalOfferPrice"),
-           note = COALESCE($2, note)
-       WHERE "submittedApplianceID" = $3`,
-      [finalPrice, note, submittedApplianceID]
+           "finalFunctionalStatus" = COALESCE($2, "finalFunctionalStatus"),
+           "finalAppearanceStatus" = COALESCE($3, "finalAppearanceStatus"),
+           "finalNote" = COALESCE($4, "finalNote")
+       WHERE "submittedApplianceID" = $5`,
+      [finalPrice, finalFunctionalStatus, finalAppearanceStatus, finalNote, submittedApplianceID]
     );
 
     // Update Transaction status if provided
@@ -578,85 +583,45 @@ export const updateTransaction = async (req: Request, res: Response) => {
     }
 
     // ─────────────────────────────────────────────────────────
-    // SAVE ADMIN CONDITION SELECTIONS TO ConditionSelected
+    // SAVE ADMIN CHECKLIST SELECTIONS TO ConditionSelected
     // selectedBy = 'admin' for admin review
-    // Only update if adminConditions is explicitly provided and has entries
-    // Filter out textarea and file_upload types as they're not stored in ConditionSelected
+    // Only checkbox (checklist) items are stored here
+    // Functional Status, Appearance Status, and Notes are in SubmittedAppliance
     // ─────────────────────────────────────────────────────────
     if (adminConditions && typeof adminConditions === 'object' && Object.keys(adminConditions).length > 0) {
-      console.log('📋 Saving admin conditions:', adminConditions);
+      console.log('📋 Saving admin checklist selections:', adminConditions);
 
       try {
-        // Fetch condition groups to identify textarea and file_upload types
-        const groupTypesResult = await pool.query(
-          `SELECT "groupID", question_type FROM "ConditionGroup"`
-        );
-
-        const groupTypes: { [key: string]: string } = {};
-        groupTypesResult.rows.forEach(row => {
-          groupTypes[row.groupID] = row.question_type;
-        });
-
-        console.log('📋 Group types:', groupTypes);
-
-        // Separate regular conditions from textarea/file_upload types
-        const regularConditions: { [key: string]: string | string[] } = {};
-        const textareaConditions: { [key: string]: string } = {};
-        const fileUploadConditions: { [key: string]: string[] } = {};
-
-        for (const [groupID, value] of Object.entries(adminConditions)) {
-          const questionType = groupTypes[groupID];
-
-          if (questionType === 'textarea') {
-            // Textarea: store as text value
-            textareaConditions[groupID] = value as string;
-            console.log(`📝 Found textarea condition for group ${groupID}`);
-          } else if (questionType === 'file_upload') {
-            // File upload: store as array of base64 strings
-            fileUploadConditions[groupID] = Array.isArray(value) ? value : [value];
-            console.log(`📸 Found file_upload condition for group ${groupID}`);
-          } else {
-            // Regular conditions (radio, checkbox, dropdown, image)
-            regularConditions[groupID] = value as string | string[];
-          }
-        }
-
-        console.log('📋 Regular conditions:', regularConditions);
-        console.log('📝 Textarea conditions:', textareaConditions);
-        console.log('📸 File upload conditions:', fileUploadConditions);
-
-        // First, delete ALL existing admin selections for this submission
+        // First, delete ALL existing admin checklist selections for this submission
         await pool.query(
           `DELETE FROM "ConditionSelected"
            WHERE "submittedApplianceID" = $1 AND "selectedBy" = 'admin'`,
           [submittedApplianceID]
         );
 
-        console.log('✅ Deleted existing admin conditions');
+        console.log('✅ Deleted existing admin checklist selections');
 
-        // Insert regular conditions (radio, checkbox, dropdown, image)
-        if (Object.keys(regularConditions).length > 0) {
-          for (const [groupID, value] of Object.entries(regularConditions)) {
-            console.log(`📋 Processing group ${groupID} with value:`, value);
+        // Insert checklist items (checkbox type only)
+        for (const [groupID, value] of Object.entries(adminConditions)) {
+          console.log(`📋 Processing checklist group ${groupID} with value:`, value);
 
-            if (!value) {
-              console.log(`⚠️ Skipping empty value for group ${groupID}`);
-              continue; // Skip empty values
+          if (!value) {
+            console.log(`⚠️ Skipping empty value for group ${groupID}`);
+            continue;
+          }
+
+          // Checkbox values are always arrays
+          const conditionIDs = Array.isArray(value) ? value : [value];
+
+          for (const conditionID of conditionIDs) {
+            console.log(`📋 Processing conditionID: "${conditionID}"`);
+
+            if (!conditionID || (typeof conditionID === 'string' && conditionID.trim() === '')) {
+              console.log(`⚠️ Skipping empty conditionID for group ${groupID}`);
+              continue;
             }
 
-            // Handle array (checkbox) or string (radio/dropdown/image)
-            const conditionIDs = Array.isArray(value) ? value : [value];
-
-            for (const conditionID of conditionIDs) {
-              console.log(`📋 Processing conditionID/description: "${conditionID}" (type: ${typeof conditionID})`);
-
-              if (!conditionID || (typeof conditionID === 'string' && conditionID.trim() === '')) {
-                console.log(`⚠️ Skipping empty conditionID for group ${groupID}`);
-                continue;
-              }
-
-              // If conditionID is a description, we need to find the actual conditionID
-              // Check if it looks like a condition ID (starts with CO) or is a description
+            // If conditionID is a description, find the actual conditionID
               let actualConditionID = conditionID;
 
               if (typeof conditionID !== 'string' || !conditionID.startsWith('CO')) {
@@ -688,63 +653,12 @@ export const updateTransaction = async (req: Request, res: Response) => {
                 [actualConditionID, submittedApplianceID]
               );
 
-              console.log(`✅ Successfully inserted condition ${actualConditionID}`);
+              console.log(`✅ Successfully inserted checklist item ${actualConditionID}`);
             }
-          }
-
-          console.log('✅ Regular admin conditions saved successfully');
-        }
-
-        // Insert textarea conditions (notes, descriptions, etc.)
-        if (Object.keys(textareaConditions).length > 0) {
-          for (const [groupID, textValue] of Object.entries(textareaConditions)) {
-            if (!textValue || textValue.trim() === '') {
-              console.log(`⚠️ Skipping empty textarea for group ${groupID}`);
-              continue;
-            }
-
-            console.log(`📝 Inserting textarea condition for group ${groupID}`);
-
-            // For textarea groups (like Additional Notes), there are no options in ConditionOption
-            // We use NULL for conditionID and store the groupID separately
-            // This allows us to identify which group this entry belongs to
-            await pool.query(
-              `INSERT INTO "ConditionSelected"
-               ("conditionID", "groupID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "textValue")
-               VALUES (NULL, $1, $2, true, 'admin', NOW(), $3)`,
-              [groupID, submittedApplianceID, textValue]
-            );
-
-            console.log(`✅ Successfully inserted textarea condition for group ${groupID}`);
           }
         }
 
-        // Insert file_upload conditions (photos, documents, etc.)
-        if (Object.keys(fileUploadConditions).length > 0) {
-          for (const [groupID, files] of Object.entries(fileUploadConditions)) {
-            if (!files || files.length === 0) {
-              console.log(`⚠️ Skipping empty file upload for group ${groupID}`);
-              continue;
-            }
-
-            console.log(`📸 Inserting file_upload condition for group ${groupID} (${files.length} files)`);
-
-            // For file_upload, store each file as a JSON array in textValue
-            // We use NULL for conditionID and store the groupID separately
-            const filesJson = JSON.stringify(files);
-
-            await pool.query(
-              `INSERT INTO "ConditionSelected"
-               ("conditionID", "groupID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "textValue")
-               VALUES (NULL, $1, $2, true, 'admin', NOW(), $3)`,
-              [groupID, submittedApplianceID, filesJson]
-            );
-
-            console.log(`✅ Successfully inserted file_upload condition for group ${groupID}`);
-          }
-        }
-
-        console.log('✅ All admin conditions saved successfully');
+        console.log('✅ All admin checklist selections saved successfully');
       } catch (conditionError) {
         console.error('❌ Error saving admin conditions:', conditionError);
         console.error('❌ Error details:', {
@@ -758,30 +672,33 @@ export const updateTransaction = async (req: Request, res: Response) => {
 
     // ─────────────────────────────────────────────────────────
     // SAVE ADMIN PHOTOS TO Photo TABLE
-    // photos is an array of { photoURL: string } where photoURL can be:
-    // - Base64 data URL (new upload)
-    // - Existing URL from database (no change needed)
+    // photos is an array of { photoURL: string, remark: string }
+    // remark: description of the photo added by admin (e.g., "Scratches on back panel")
     // Only update if photos array is explicitly provided
     // ─────────────────────────────────────────────────────────
     if (photos && Array.isArray(photos) && photos.length > 0) {
-      console.log('📷 Processing photos:', photos.length, 'photos');
+      console.log('📷 Processing admin photos:', photos.length, 'photos');
 
       try {
-        // Delete existing photos for this submission
+        // Delete existing admin photos (with remark) for this submission
+        // Keep seller photos (without remark or with different remark pattern)
         await pool.query(
-          `DELETE FROM "Photo" WHERE "submittedApplianceID" = $1`,
+          `DELETE FROM "Photo"
+           WHERE "submittedApplianceID" = $1
+           AND "remark" IS NOT NULL
+           AND "remark" != ''`,
           [submittedApplianceID]
         );
 
-        console.log('✅ Deleted existing photos');
+        console.log('✅ Deleted existing admin photos');
 
-        // Insert new photos (filter out empty ones)
+        // Insert new admin photos with remarks
         for (const photo of photos) {
           if (photo && photo.photoURL && photo.photoURL.trim() !== '') {
             await pool.query(
-              `INSERT INTO "Photo" ("submittedApplianceID", "photoURL", "uploadedAt")
-               VALUES ($1, $2, NOW())`,
-              [submittedApplianceID, photo.photoURL]
+              `INSERT INTO "Photo" ("submittedApplianceID", "photoURL", "remark", "uploadDate")
+               VALUES ($1, $2, $3, NOW())`,
+              [submittedApplianceID, photo.photoURL, photo.remark || '']
             );
           }
         }
@@ -796,7 +713,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
         throw photoError;
       }
     } else {
-      console.log('📷 No photos to update (photos not provided or empty array)');
+      console.log('📷 No admin photos to update (photos not provided or empty array)');
     }
 
     console.log('✅ Transaction updated successfully');
