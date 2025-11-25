@@ -271,12 +271,15 @@ export const getTransactionById = async (req: Request, res: Response) => {
     console.log('📋 Admin conditions:', adminConditions);
 
     // Create a mapping of groupID to criteriaName for frontend display
+    // Use ALL condition groups, not just ones with answers
     const groupNames: { [key: string]: string } = {};
-    conditionsResult.rows.forEach(row => {
-      if (row.groupID && row.criteriaName && !groupNames[row.groupID]) {
+    conditionGroupsResult.rows.forEach(row => {
+      if (row.groupID && row.criteriaName) {
         groupNames[row.groupID] = row.criteriaName;
       }
     });
+
+    console.log('📋 Group names mapping:', groupNames);
 
     // Add both to response
     transaction.sellerConditions = sellerConditions;  // Before (what seller filled)
