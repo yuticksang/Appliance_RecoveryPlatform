@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { filter, take } from 'rxjs/operators';
@@ -9,7 +10,7 @@ import { AuthService } from '../../../services/auth.service';
 @Component({
   selector: 'app-transaction-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './transaction-detail.html',
   styleUrls: ['./transaction-detail.scss']
 })
@@ -43,6 +44,12 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   showCancelConfirmModal: boolean = false;
   showCancelSuccessModal: boolean = false;
 
+  // Edit mode states
+  isEditMode: boolean = false;
+  showEditSuccessModal: boolean = false;
+  showPickupWarningModal: boolean = false;
+  isWithin24Hours: boolean = false;
+
   // Customer info
   customerInfo = {
     name: '',
@@ -51,9 +58,42 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     address: '',
     city: '',
     state: '',
+    zipCode: '',
     pickupDate: '',
     pickupTimeSlot: ''
   };
+
+  // Edit form data
+  editForm = {
+    categoryId: '',
+    brandId: '',
+    modelId: '',
+    note: '',
+    snapshotReceiverName: '',
+    snapshotPhoneNum: '',
+    snapshotAddress: '',
+    snapshotCity: '',
+    snapshotState: '',
+    snapshotZipCode: '',
+    pickupDate: '',
+    pickupTimeSlot: ''
+  };
+
+  // Original values for comparison
+  originalPickupDate: string = '';
+  originalPickupTimeSlot: string = '';
+
+  // Available time slots
+  timeSlots = [
+    '10:00 AM - 12:00 PM',
+    '12:00 PM - 2:00 PM',
+    '2:00 PM - 4:00 PM',
+    '4:00 PM - 6:00 PM',
+    '6:00 PM - 8:00 PM'
+  ];
+
+  // Minimum pickup date (2 days from today)
+  minPickupDate: string = '';
 
   // Before review - seller's original submission
   beforeReview = {
@@ -107,6 +147,11 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     return this.transaction?.transactionStatus === 'Pending Payment';
   }
 
+  // Check if transaction allows editing (Awaiting Pick Up status)
+  get canEdit(): boolean {
+    return this.transaction?.itemStatus === 'Awaiting Pick Up';
+  }
+
   // Get the currently selected photo
   get selectedPhoto(): string {
     if (this.photos.length > 0) {
@@ -132,7 +177,25 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Calculate minimum pickup date (2 days from today)
+  private calculateMinPickupDate(): void {
+    const today = new Date();
+    const minDate = new Date(today);
+    minDate.setDate(today.getDate() + 2); // Add 2 days
+
+    // Format as YYYY-MM-DD for date input
+    const year = minDate.getFullYear();
+    const month = String(minDate.getMonth() + 1).padStart(2, '0');
+    const day = String(minDate.getDate()).padStart(2, '0');
+    this.minPickupDate = `${year}-${month}-${day}`;
+
+    console.log('📅 Minimum pickup date set to:', this.minPickupDate);
+  }
+
   ngOnInit(): void {
+    // Calculate minimum pickup date (2 days from today)
+    this.calculateMinPickupDate();
+
     // Get transaction ID from route
     this.route.params.subscribe(params => {
       // Support both string IDs (e.g., "TXN-123") and numeric IDs
@@ -270,9 +333,30 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
           address: data.pickupAddress || 'N/A',
           city: data.city || 'N/A',
           state: data.state || 'N/A',
+          zipCode: data.zipCode || 'N/A',
           pickupDate: data.pickupDate || 'Not scheduled',
           pickupTimeSlot: data.pickupTimeSlot || 'Not scheduled'
         };
+
+        // Initialize edit form with current values
+        this.editForm = {
+          categoryId: data.categoryId || '',
+          brandId: data.brandId || '',
+          modelId: data.modelId || '',
+          note: data.note || '',
+          snapshotReceiverName: data.addressName || '',
+          snapshotPhoneNum: data.addressPhone || '',
+          snapshotAddress: data.pickupAddress || '',
+          snapshotCity: data.city || '',
+          snapshotState: data.state || '',
+          snapshotZipCode: data.zipCode || '',
+          pickupDate: data.pickupDate || '',
+          pickupTimeSlot: data.pickupTimeSlot || ''
+        };
+
+        // Store original pickup date/time for comparison
+        this.originalPickupDate = data.pickupDate || '';
+        this.originalPickupTimeSlot = data.pickupTimeSlot || '';
 
         // Load seller-submitted photos from backend (not the catalog image)
         if (data.photos && data.photos.length > 0) {
@@ -550,6 +634,203 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   closeCancelSuccess(): void {
     this.showCancelSuccessModal = false;
     // Reload the page to show updated status
+    window.location.reload();
+  }
+
+  // ========== EDIT MODE FUNCTIONS ==========
+
+  // Enter edit mode
+  enterEditMode(): void {
+    if (!this.canEdit) {
+      alert('Editing is only allowed when item status is "Awaiting Pick Up"');
+      return;
+    }
+    this.isEditMode = true;
+    console.log('📝 Entered edit mode');
+  }
+
+  // Cancel edit mode
+  cancelEdit(): void {
+    this.isEditMode = false;
+    // Reset form to original values
+    if (this.transaction) {
+      this.editForm = {
+        categoryId: this.transaction.category || '',
+        brandId: this.transaction.brand || '',
+        modelId: this.transaction.model || '',
+        note: this.transaction.note || '',
+        snapshotReceiverName: this.customerInfo.name,
+        snapshotPhoneNum: this.customerInfo.contactNumber,
+        snapshotAddress: this.customerInfo.address,
+        snapshotCity: this.customerInfo.city,
+        snapshotState: this.customerInfo.state,
+        snapshotZipCode: this.customerInfo.zipCode,
+        pickupDate: this.originalPickupDate,
+        pickupTimeSlot: this.originalPickupTimeSlot
+      };
+    }
+    console.log('❌ Cancelled edit mode');
+  }
+
+  // Check if pickup date/time has been changed and is within 24 hours
+  checkPickupDateChange(): boolean {
+    const pickupDateChanged = this.editForm.pickupDate !== this.originalPickupDate;
+    const pickupTimeChanged = this.editForm.pickupTimeSlot !== this.originalPickupTimeSlot;
+
+    if (!pickupDateChanged && !pickupTimeChanged) {
+      return false; // No change
+    }
+
+    // Check if original pickup date is within 24 hours
+    if (this.originalPickupDate) {
+      const originalDate = new Date(this.originalPickupDate);
+      const now = new Date();
+      const hoursUntilPickup = (originalDate.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+      if (hoursUntilPickup <= 24 && hoursUntilPickup >= 0) {
+        this.isWithin24Hours = true;
+        return true; // Within 24 hours - show warning
+      }
+    }
+
+    this.isWithin24Hours = false;
+    return false; // Changed but not within 24 hours
+  }
+
+  // Validate pickup date
+  validatePickupDate(): boolean {
+    if (!this.editForm.pickupDate) {
+      return true; // No date selected, skip validation
+    }
+
+    const selectedDate = new Date(this.editForm.pickupDate);
+    const minDate = new Date(this.minPickupDate);
+
+    if (selectedDate < minDate) {
+      alert(`Invalid pickup date. Please select a date from ${this.minPickupDate} onwards (minimum 2 days from today).`);
+      return false;
+    }
+
+    return true;
+  }
+
+  // Called when pickup date input changes - immediately validate and reset if invalid
+  onPickupDateChange(): void {
+    if (!this.editForm.pickupDate) {
+      return;
+    }
+
+    const selectedDate = new Date(this.editForm.pickupDate);
+    const minDate = new Date(this.minPickupDate);
+
+    // If selected date is before minimum date, reset it and show alert
+    if (selectedDate < minDate) {
+      alert(`Invalid date selected. The earliest available pickup date is ${this.minPickupDate}.\n\nPlease select a date at least 2 days from today.`);
+      // Reset to minimum date or empty
+      this.editForm.pickupDate = this.minPickupDate;
+    }
+  }
+
+  // Save changes - check for validation and 24-hour warning first
+  saveChanges(): void {
+    // Validate pickup date first
+    if (!this.validatePickupDate()) {
+      return;
+    }
+
+    // Validate time slot
+    if (this.editForm.pickupTimeSlot && !this.timeSlots.includes(this.editForm.pickupTimeSlot)) {
+      alert('Invalid time slot. Please select from the dropdown.');
+      return;
+    }
+
+    // Check if pickup date/time changed and is within 24 hours
+    if (this.checkPickupDateChange()) {
+      // Show warning modal
+      this.showPickupWarningModal = true;
+      return;
+    }
+
+    // No warning needed, proceed with save
+    this.proceedWithSave();
+  }
+
+  // Cancel warning modal
+  cancelPickupWarning(): void {
+    this.showPickupWarningModal = false;
+  }
+
+  // Confirm save despite warning
+  confirmSaveWithWarning(): void {
+    this.showPickupWarningModal = false;
+    this.proceedWithSave();
+  }
+
+  // Actually save the changes
+  private proceedWithSave(): void {
+    if (!this.transaction) return;
+
+    this.loading = true;
+
+    // Prepare update payload
+    const updatePayload: any = {};
+
+    // Only include fields that were changed
+    if (this.editForm.note !== this.transaction.note) {
+      updatePayload.note = this.editForm.note;
+    }
+
+    // Include snapshot address fields if changed
+    if (this.editForm.snapshotReceiverName !== this.customerInfo.name) {
+      updatePayload.snapshotReceiverName = this.editForm.snapshotReceiverName;
+    }
+    if (this.editForm.snapshotPhoneNum !== this.customerInfo.contactNumber) {
+      updatePayload.snapshotPhoneNum = this.editForm.snapshotPhoneNum;
+    }
+    if (this.editForm.snapshotAddress !== this.customerInfo.address) {
+      updatePayload.snapshotAddress = this.editForm.snapshotAddress;
+    }
+    if (this.editForm.snapshotCity !== this.customerInfo.city) {
+      updatePayload.snapshotCity = this.editForm.snapshotCity;
+    }
+    if (this.editForm.snapshotState !== this.customerInfo.state) {
+      updatePayload.snapshotState = this.editForm.snapshotState;
+    }
+    if (this.editForm.snapshotZipCode !== this.customerInfo.zipCode) {
+      updatePayload.snapshotZipCode = this.editForm.snapshotZipCode;
+    }
+
+    // Include pickup date/time if changed
+    if (this.editForm.pickupDate !== this.originalPickupDate) {
+      updatePayload.pickupDate = this.editForm.pickupDate;
+    }
+    if (this.editForm.pickupTimeSlot !== this.originalPickupTimeSlot) {
+      updatePayload.pickupTimeSlot = this.editForm.pickupTimeSlot;
+    }
+
+    console.log('💾 Saving changes:', updatePayload);
+
+    // Call API to update submission details
+    this.transactionService.updateSubmissionDetails(this.transactionId, updatePayload).subscribe({
+      next: (response) => {
+        console.log('✅ Changes saved successfully:', response);
+        this.loading = false;
+        this.isEditMode = false;
+        this.showEditSuccessModal = true;
+      },
+      error: (error) => {
+        console.error('❌ Error saving changes:', error);
+        this.loading = false;
+        const errorMessage = error.error?.message || error.message || 'Unknown error';
+        alert(`Failed to save changes: ${errorMessage}`);
+      }
+    });
+  }
+
+  // Close edit success modal and reload
+  closeEditSuccess(): void {
+    this.showEditSuccessModal = false;
+    // Reload the page to show updated data
     window.location.reload();
   }
 

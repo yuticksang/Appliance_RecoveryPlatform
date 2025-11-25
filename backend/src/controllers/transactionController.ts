@@ -402,6 +402,141 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
 };
 
 /**
+ * Update submission details (seller edit when Awaiting Pick Up)
+ * Allows editing appliance info, dynamic conditions, photos, and pickup snapshot address
+ */
+export const updateSubmissionDetails = async (req: Request, res: Response) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const { id } = req.params;
+    const {
+      categoryId,
+      brandId,
+      modelId,
+      note,
+      questionAnswers, // Array of dynamic condition answers
+      snapshotReceiverName,
+      snapshotPhoneNum,
+      snapshotAddress,
+      snapshotCity,
+      snapshotState,
+      snapshotZipCode,
+      pickupDate,
+      pickupTimeSlot
+    } = req.body;
+
+    console.log('📝 Updating submission details for transaction:', id);
+    console.log('Request body:', req.body);
+
+    // Get transaction and verify status
+    const txnResult = await client.query(
+      `SELECT t."submittedApplianceID", i."itemStatus"
+       FROM "Transaction" t
+       LEFT JOIN "ItemStatus" i ON t."transactionID" = i."transactionID"
+       WHERE t."transactionID" = $1`,
+      [id]
+    );
+
+    if (txnResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
+
+    const { submittedApplianceID, itemStatus } = txnResult.rows[0];
+
+    // Only allow editing when Awaiting Pick Up
+    if (itemStatus !== 'Awaiting Pick Up') {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        message: `Cannot edit submission. Current status: ${itemStatus}. Editing is only allowed when status is "Awaiting Pick Up".`
+      });
+    }
+
+    // Update SubmittedAppliance table
+    if (modelId || note !== undefined) {
+      await client.query(
+        `UPDATE "SubmittedAppliance"
+         SET "applianceID" = COALESCE($1, "applianceID"),
+             note = COALESCE($2, note)
+         WHERE "submittedApplianceID" = $3`,
+        [modelId, note, submittedApplianceID]
+      );
+      console.log('✅ Updated SubmittedAppliance');
+    }
+
+    // Update dynamic condition selections if provided
+    if (questionAnswers && Array.isArray(questionAnswers)) {
+      // Delete existing condition selections
+      await client.query(
+        `DELETE FROM "ConditionSelected" WHERE "submittedApplianceID" = $1`,
+        [submittedApplianceID]
+      );
+      console.log('🗑️ Deleted old condition selections');
+
+      // Insert new selections
+      for (const qa of questionAnswers) {
+        if ((qa.type === 'radio' || qa.type === 'image') && qa.answer) {
+          await client.query(
+            `INSERT INTO "ConditionSelected" ("conditionID", "submittedApplianceID", "isChecked", "created_at")
+             VALUES ($1, $2, true, NOW())`,
+            [qa.answer, submittedApplianceID]
+          );
+        }
+        if (qa.type === 'checkbox' && Array.isArray(qa.answer)) {
+          for (const conditionID of qa.answer) {
+            await client.query(
+              `INSERT INTO "ConditionSelected" ("conditionID", "submittedApplianceID", "isChecked", "created_at")
+               VALUES ($1, $2, true, NOW())`,
+              [conditionID, submittedApplianceID]
+            );
+          }
+        }
+      }
+      console.log('✅ Inserted new condition selections');
+    }
+
+    // Update Pickup snapshot address and pickup date/time if any field is provided
+    if (snapshotReceiverName || snapshotPhoneNum || snapshotAddress ||
+        snapshotCity || snapshotState || snapshotZipCode || pickupDate || pickupTimeSlot) {
+      await client.query(
+        `UPDATE "Pickup"
+         SET "snapshotReceiverName" = COALESCE($1, "snapshotReceiverName"),
+             "snapshotPhoneNum" = COALESCE($2, "snapshotPhoneNum"),
+             "snapshotAddress" = COALESCE($3, "snapshotAddress"),
+             "snapshotCity" = COALESCE($4, "snapshotCity"),
+             "snapshotState" = COALESCE($5, "snapshotState"),
+             "snapshotZipCode" = COALESCE($6, "snapshotZipCode"),
+             "pickupDate" = COALESCE($7, "pickupDate"),
+             "pickupTimeSlot" = COALESCE($8, "pickupTimeSlot")
+         WHERE "submittedApplianceID" = $9`,
+        [snapshotReceiverName, snapshotPhoneNum, snapshotAddress,
+         snapshotCity, snapshotState, snapshotZipCode, pickupDate, pickupTimeSlot, submittedApplianceID]
+      );
+      console.log('✅ Updated Pickup snapshot address and date/time');
+    }
+
+    await client.query('COMMIT');
+    console.log('✅ Submission details updated successfully');
+
+    res.json({
+      message: 'Submission details updated successfully',
+      submittedApplianceID
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Error updating submission details:', error);
+    res.status(500).json({
+      message: 'Failed to update submission details',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  } finally {
+    client.release();
+  }
+};
+
+/**
  * Update transaction with full data (admin edit)
  */
 export const updateTransaction = async (req: Request, res: Response) => {

@@ -1056,3 +1056,45 @@ $Space: 'Space Grotesk', sans-serif;
     }
   }
 }
+
+/* Edit Mode Styles for Appliance Section */
+.edit-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #2d3748;
+  letter-spacing: 0.05em;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.edit-field-section {
+  margin-bottom: 1.5rem;
+}
+
+.edit-field-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #4a5568;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.edit-info-note {
+  background: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-top: 1.5rem;
+
+  p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #92400e;
+    line-height: 1.5;
+
+    strong {
+      font-weight: 600;
+    }
+  }
+}

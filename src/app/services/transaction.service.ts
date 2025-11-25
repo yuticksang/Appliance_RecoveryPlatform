@@ -214,4 +214,21 @@ export class TransactionService {
       );
   }
 
+  /**
+   * Update submission details (seller edit when Awaiting Pick Up)
+   * Allows editing appliance info, dynamic conditions, photos, and pickup snapshot address
+   */
+  updateSubmissionDetails(transactionId: string | number, updateData: any): Observable<any> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.put<any>(`${this.apiUrl}/transactions/${transactionId}/submission`, updateData, { headers })
+      .pipe(
+        catchError(error => {
+          console.error('Error updating submission details:', error);
+          throw error;
+        })
+      );
+  }
+
 }
