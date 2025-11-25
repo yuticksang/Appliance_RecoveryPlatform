@@ -251,7 +251,7 @@
             <!-- Dynamic Condition Groups -->
             <div class="condition-groups-section" *ngIf="hasConditionGroups()">
               <div *ngFor="let groupName of getConditionGroupNames()" class="condition-group">
-                <h4 class="condition-group-label">{{ groupName | uppercase }}</h4>
+                <h4 class="condition-group-label">{{ getGroupDisplayName(groupName) | uppercase }}</h4>
 
                 <!-- If value is an array (checkbox) -->
                 <ul class="condition-list" *ngIf="Array.isArray(conditionGroups[groupName])">
@@ -302,7 +302,7 @@
             <!-- Dynamic Condition Groups -->
             <div class="condition-groups-section" *ngIf="hasConditionGroups()">
               <div *ngFor="let groupName of getConditionGroupNames()" class="condition-group">
-                <h4 class="condition-group-label">{{ groupName | uppercase }}</h4>
+                <h4 class="condition-group-label">{{ getGroupDisplayName(groupName) | uppercase }}</h4>
 
                 <!-- If value is an array (checkbox) -->
                 <ul class="condition-list" *ngIf="Array.isArray(conditionGroups[groupName])">

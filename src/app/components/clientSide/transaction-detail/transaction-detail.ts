@@ -102,6 +102,9 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   // Dynamic condition groups from backend (e.g., "Functional Status", "Appearance Status", "Checklist")
   conditionGroups: { [key: string]: string | string[] } = {};
 
+  // Mapping of groupID to display name (e.g., {"CG001": "Functional Status", "CG002": "Appearance Status"})
+  conditionGroupNames: { [key: string]: string } = {};
+
   // Expose Array to template for Array.isArray() check
   Array = Array;
 
@@ -356,6 +359,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   loadRealDetails(data: any): void {
     // Load dynamic condition groups from backend
     this.conditionGroups = data.conditionGroups || {};
+    this.conditionGroupNames = data.conditionGroupNames || {};
 
     // If awaiting confirmation, show before/after review comparison
     if (this.isAwaitingConfirmation) {
@@ -400,6 +404,11 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   // Helper to check if there are any condition groups
   hasConditionGroups(): boolean {
     return Object.keys(this.conditionGroups).length > 0;
+  }
+
+  // Helper to get display name for a groupID (e.g., "CG001" -> "Functional Status")
+  getGroupDisplayName(groupId: string): string {
+    return this.conditionGroupNames[groupId] || groupId;
   }
 
   goBack(): void {

@@ -270,9 +270,18 @@ export const getTransactionById = async (req: Request, res: Response) => {
     console.log('📋 Seller conditions:', sellerConditions);
     console.log('📋 Admin conditions:', adminConditions);
 
+    // Create a mapping of groupID to criteriaName for frontend display
+    const groupNames: { [key: string]: string } = {};
+    conditionsResult.rows.forEach(row => {
+      if (row.groupID && row.criteriaName && !groupNames[row.groupID]) {
+        groupNames[row.groupID] = row.criteriaName;
+      }
+    });
+
     // Add both to response
     transaction.sellerConditions = sellerConditions;  // Before (what seller filled)
     transaction.adminConditions = adminConditions;    // After (what admin reviewed)
+    transaction.conditionGroupNames = groupNames;     // Mapping of groupID to display name
 
     // Keep conditionGroups for backward compatibility (show seller's original by default)
     transaction.conditionGroups = sellerConditions;
