@@ -34,9 +34,17 @@ export class TransactionService {
    * Get the authentication token (supports both seller and admin tokens)
    */
   private getAuthToken(): string | null {
-    // Check for seller/buyer token first, then admin token
-    // This ensures seller-specific requests use the seller's token when available
-    return localStorage.getItem('token') || localStorage.getItem('admin_token');
+    // Check for admin token first if admin is logged in
+    const adminUser = localStorage.getItem('admin_user');
+    const adminToken = localStorage.getItem('admin_token');
+    const sellerToken = localStorage.getItem('token');
+
+    // If admin is logged in, use admin token
+    if (adminUser && adminToken) {
+      return adminToken;
+    }
+    // Otherwise use seller/buyer token
+    return sellerToken;
   }
 
   /**
@@ -214,4 +222,73 @@ export class TransactionService {
       );
   }
 
+  /**
+   * Get all categories (for admin dropdown)
+   */
+  getAllCategories(): Observable<any[]> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.get<any[]>(`${this.apiUrl}/admin/categories`, { headers })
+      .pipe(
+        catchError(error => {
+          console.error('Error fetching categories:', error);
+          return of([]);
+        })
+      );
+  }
+
+  /**
+   * Get all brands (for admin dropdown)
+   */
+  getAllBrands(): Observable<any[]> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.get<any[]>(`${this.apiUrl}/admin/brands`, { headers })
+      .pipe(
+        catchError(error => {
+          console.error('Error fetching brands:', error);
+          return of([]);
+        })
+      );
+  }
+
+  /**
+   * Get all appliances (for admin dropdown)
+   */
+  getAllAppliances(): Observable<any[]> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.get<any[]>(`${this.apiUrl}/admin/appliances`, { headers })
+      .pipe(
+        catchError(error => {
+          console.error('Error fetching appliances:', error);
+          return of([]);
+        })
+      );
+  }
+
+  /**
+   * Get active condition groups with their active options (for admin edit dropdowns)
+   * @param categoryId Optional category ID to filter options by category
+   */
+  getActiveConditionGroupsWithOptions(categoryId?: string | number): Observable<any[]> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    let url = `${this.apiUrl}/admin/condition-groups/active-with-options`;
+    if (categoryId) {
+      url += `?categoryId=${categoryId}`;
+    }
+
+    return this.http.get<any[]>(url, { headers })
+      .pipe(
+        catchError(error => {
+          console.error('Error fetching condition groups:', error);
+          return of([]);
+        })
+      );
+  }
 }

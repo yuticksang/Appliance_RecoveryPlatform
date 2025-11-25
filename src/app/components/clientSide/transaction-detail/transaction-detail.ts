@@ -43,6 +43,13 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   showCancelConfirmModal: boolean = false;
   showCancelSuccessModal: boolean = false;
 
+  // Photo lightbox modal
+  showPhotoLightbox: boolean = false;
+  lightboxPhotoIndex: number = 0;
+  lightboxZoomLevel: number = 1;
+  minZoom: number = 1;
+  maxZoom: number = 3;
+
   // Customer info
   customerInfo = {
     name: '',
@@ -50,9 +57,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     contactNumber: '',
     address: '',
     city: '',
-    state: '',
-    pickupDate: '',
-    pickupTimeSlot: ''
+    state: ''
   };
 
   // Before review - seller's original submission
@@ -61,12 +66,8 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     brand: '',
     model: '',
     category: '',
-    functionalStatus: '',
-    condition: '',
     score: 0,
-    note: '',
-    selectedIssue: [] as string[],
-    dynamicAnswers: [] as Array<{ sectionName: string; question: string; type: string; answer: string | string[] }>
+    note: ''
   };
 
   // After review - admin's assessment
@@ -75,27 +76,31 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     brand: '',
     model: '',
     category: '',
-    functionalStatus: '',
-    condition: '',
     score: 0,
-    note: '',
-    selectedIssue: [] as string[],
-    dynamicAnswers: [] as Array<{ sectionName: string; question: string; type: string; answer: string | string[] }>
+    note: ''
   };
 
   // For non-awaiting status, use single appliance info
-  applianceInfo = {
+  applianceInfo: {
+    estimatedPrice: number;
+    brand: string;
+    model: string;
+    modelName: string;
+    category: string;
+    score: number;
+    note: string;
+  } = {
     estimatedPrice: 0,
     brand: '',
     model: '',
+    modelName: '',
     category: '',
-    functionalStatus: '',
-    condition: '',
     score: 0,
-    note: '',
-    selectedIssue: [] as string[],
-    dynamicAnswers: [] as Array<{ sectionName: string; question: string; type: string; answer: string | string[] }>
+    note: ''
   };
+
+  // Dynamic condition groups from backend (e.g., "Functional Status", "Appearance Status", "Checklist")
+  conditionGroups: { [key: string]: string[] } = {};
 
   // Check if transaction needs review comparison
   get isAwaitingConfirmation(): boolean {
@@ -132,54 +137,95 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Open photo lightbox
+  openLightbox(index: number): void {
+    this.lightboxPhotoIndex = index;
+    this.showPhotoLightbox = true;
+  }
+
+  // Close photo lightbox
+  closeLightbox(): void {
+    this.showPhotoLightbox = false;
+    this.lightboxZoomLevel = 1; // Reset zoom when closing
+  }
+
+  // Zoom in photo
+  zoomIn(): void {
+    if (this.lightboxZoomLevel < this.maxZoom) {
+      this.lightboxZoomLevel = Math.min(this.lightboxZoomLevel + 0.5, this.maxZoom);
+    }
+  }
+
+  // Zoom out photo
+  zoomOut(): void {
+    if (this.lightboxZoomLevel > this.minZoom) {
+      this.lightboxZoomLevel = Math.max(this.lightboxZoomLevel - 0.5, this.minZoom);
+    }
+  }
+
+  // Reset zoom
+  resetZoom(): void {
+    this.lightboxZoomLevel = 1;
+  }
+
+  // Navigate to previous photo in lightbox
+  prevLightboxPhoto(): void {
+    this.lightboxZoomLevel = 1; // Reset zoom when changing photos
+    if (this.lightboxPhotoIndex > 0) {
+      this.lightboxPhotoIndex--;
+    } else {
+      this.lightboxPhotoIndex = this.photos.length - 1;
+    }
+  }
+
+  // Navigate to next photo in lightbox
+  nextLightboxPhoto(): void {
+    this.lightboxZoomLevel = 1; // Reset zoom when changing photos
+    if (this.lightboxPhotoIndex < this.photos.length - 1) {
+      this.lightboxPhotoIndex++;
+    } else {
+      this.lightboxPhotoIndex = 0;
+    }
+  }
+
   ngOnInit(): void {
     // Get transaction ID from route
     this.route.params.subscribe(params => {
       // Support both string IDs (e.g., "TXN-123") and numeric IDs
       this.transactionId = params['id'];
-      console.log('📌 Transaction ID from route:', this.transactionId);
+      console.log('📍 Transaction detail component initialized with ID:', this.transactionId);
 
       // Wait for auth to be ready before loading transaction details
       this.authSubscription = this.authService.currentUser$
         .pipe(
           filter(user => {
-            console.log('🔍 Current user in filter:', user);
-            if (!user) {
-              console.warn('⚠️ User is null, waiting for authentication...');
-              return false;
+            console.log('🔐 Auth filter checking user:', user);
+            // Allow seller users to access transaction details
+            if (user !== null && user.userType === 'seller') {
+              return true;
             }
-            if (user.userType !== 'seller') {
-              console.error('❌ User type mismatch. Expected: "seller", Got:', user.userType);
-              console.error('User object:', user);
-              return false;
+            // If user is logged in but not as seller, redirect
+            if (user !== null && user.userType !== 'seller') {
+              console.warn('⚠️ User is not a seller, userType:', user.userType);
             }
-            return true;
+            return false;
           }),
           take(1) // Only take the first emission, then auto-unsubscribe
         )
-        .subscribe({
-          next: (user) => {
-            // TypeScript guard: double-check user is not null
-            if (!user) {
-              console.error('❌ User is null after filter');
-              this.router.navigate(['/transactions']);
-              return;
-            }
+        .subscribe((user) => {
+          // TypeScript guard: double-check user is not null
+          if (!user) {
+            console.error('❌ User is null after filter');
+            this.router.navigate(['/transactions']);
+            return;
+          }
 
-            console.log('✅ Authenticated user:', user);
-            const sellerId = user.sellerId;
-            if (sellerId) {
-              console.log('✅ Seller ID found:', sellerId);
-              this.loadTransactionDetail(sellerId);
-            } else {
-              console.error('❌ No seller ID found in user object');
-              console.error('User object:', user);
-              this.router.navigate(['/transactions']);
-            }
-          },
-          error: (error) => {
-            console.error('❌ Error in auth subscription:', error);
-            this.loading = false;
+          console.log('✅ User authenticated as seller:', user);
+          const sellerId = user.sellerId;
+          if (sellerId) {
+            this.loadTransactionDetail(sellerId);
+          } else {
+            console.error('❌ No seller ID found in user object');
             this.router.navigate(['/transactions']);
           }
         });
@@ -237,13 +283,17 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
       next: (data) => {
         console.log('✅ Transaction data loaded:', data);
         console.log('🔍 Comparing sellerIds - Data:', data.sellerId, 'Current:', sellerId);
+        console.log('🔍 Type check - Data sellerId type:', typeof data.sellerId, 'Current sellerId type:', typeof sellerId);
 
         // Verify this transaction belongs to the current seller
-        if (data.sellerId !== sellerId) {
+        // Use String() to ensure consistent comparison (handle number vs string)
+        if (String(data.sellerId) !== String(sellerId)) {
           console.error('❌ Unauthorized access to transaction. Expected:', sellerId, 'Got:', data.sellerId);
           this.router.navigate(['/transactions']);
           return;
         }
+
+        console.log('✅ Seller ID verified, loading transaction details...');
 
         // Map backend data to transaction object
         this.transaction = {
@@ -263,15 +313,14 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
           note: data.note
         };
 
+        // Load REAL customer info from database
         this.customerInfo = {
-          name: data.addressName || 'Unknown',
+          name: data.sellerName || 'Unknown',
           email: data.sellerEmail || 'N/A',
-          contactNumber: data.addressPhone || 'N/A',
+          contactNumber: data.sellerPhone || 'N/A',
           address: data.pickupAddress || 'N/A',
           city: data.city || 'N/A',
-          state: data.state || 'N/A',
-          pickupDate: data.pickupDate || 'Not scheduled',
-          pickupTimeSlot: data.pickupTimeSlot || 'Not scheduled'
+          state: data.state || 'N/A'
         };
 
         // Load seller-submitted photos from backend (not the catalog image)
@@ -302,11 +351,8 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   }
 
   loadRealDetails(data: any): void {
-    // Get selected issues from API response
-    const selectedIssues = data.selectedIssues || [];
-
-    // Get dynamic answers from API response
-    const dynamicAnswers = data.dynamicAnswers || [];
+    // Load dynamic condition groups from backend
+    this.conditionGroups = data.conditionGroups || {};
 
     // If awaiting confirmation, show before/after review comparison
     if (this.isAwaitingConfirmation) {
@@ -316,12 +362,8 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         brand: data.brand,
         model: data.model,
         category: data.category,
-        functionalStatus: data.initialFunctionalStatus || 'N/A',
-        condition: data.initialPhysicalCondition || 'N/A',
-        score: this.calculateScore(data.initialFunctionalStatus, data.initialPhysicalCondition),
-        note: data.note || 'No notes',
-        selectedIssue: selectedIssues,
-        dynamicAnswers: dynamicAnswers
+        score: this.calculateScoreFromGroups(this.conditionGroups),
+        note: data.note || ''
       };
 
       // After review - admin's assessment (revised price & condition)
@@ -330,12 +372,8 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         brand: data.brand,
         model: data.model,
         category: data.category,
-        functionalStatus: data.finalFunctionalStatus || data.initialFunctionalStatus || 'N/A',
-        condition: data.finalPhysicalCondition || data.initialPhysicalCondition || 'N/A',
-        score: this.calculateScore(data.finalFunctionalStatus, data.finalPhysicalCondition),
-        note: data.note || 'No notes',
-        selectedIssue: selectedIssues,
-        dynamicAnswers: dynamicAnswers
+        score: this.calculateScoreFromGroups(this.conditionGroups),
+        note: data.note || ''
       };
     } else {
       // For other statuses, use current appliance info
@@ -343,41 +381,51 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         estimatedPrice: data.finalPrice || data.estimatedPrice || 0,
         brand: data.brand,
         model: data.model,
+        modelName: data.modelName,
         category: data.category,
-        functionalStatus: data.finalFunctionalStatus || data.initialFunctionalStatus || 'N/A',
-        condition: data.finalPhysicalCondition || data.initialPhysicalCondition || 'N/A',
-        score: this.calculateScore(
-          data.finalFunctionalStatus || data.initialFunctionalStatus,
-          data.finalPhysicalCondition || data.initialPhysicalCondition
-        ),
-        note: data.note || 'No notes',
-        selectedIssue: selectedIssues,
-        dynamicAnswers: dynamicAnswers
+        score: this.calculateScoreFromGroups(this.conditionGroups),
+        note: data.note || ''
       };
     }
   }
 
-  // Helper function to calculate score based on condition
-  private calculateScore(functionalStatus: string, physicalCondition: string): number {
+  // Helper to get condition group names for iteration in template
+  getConditionGroupNames(): string[] {
+    return Object.keys(this.conditionGroups);
+  }
+
+  // Helper to check if there are any condition groups
+  hasConditionGroups(): boolean {
+    return Object.keys(this.conditionGroups).length > 0;
+  }
+
+  // Helper function to calculate score based on dynamic condition groups
+  private calculateScoreFromGroups(groups: { [key: string]: string[] }): number {
     let score = 0;
+    const allConditions = Object.values(groups).flat();
 
-    // Functional status scoring
-    if (functionalStatus?.includes('Working') || functionalStatus?.includes('Functioning')) {
-      score += 50;
-    } else if (functionalStatus?.includes('Minor')) {
-      score += 30;
-    }
+    // Score based on common condition keywords
+    allConditions.forEach(condition => {
+      const lowerCondition = condition.toLowerCase();
 
-    // Physical condition scoring
-    if (physicalCondition?.includes('Excellent') || physicalCondition?.includes('New')) {
-      score += 50;
-    } else if (physicalCondition?.includes('Good')) {
-      score += 40;
-    } else if (physicalCondition?.includes('Fair')) {
-      score += 30;
-    }
+      // Functional status scoring
+      if (lowerCondition.includes('fully functioning') || lowerCondition.includes('working')) {
+        score += 30;
+      } else if (lowerCondition.includes('partially')) {
+        score += 15;
+      }
 
-    return score;
+      // Physical condition scoring
+      if (lowerCondition.includes('new') || lowerCondition.includes('excellent')) {
+        score += 30;
+      } else if (lowerCondition.includes('good') || lowerCondition.includes('minor')) {
+        score += 20;
+      } else if (lowerCondition.includes('fair')) {
+        score += 10;
+      }
+    });
+
+    return Math.min(score, 100); // Cap at 100
   }
 
   goBack(): void {
@@ -385,17 +433,13 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   }
 
   viewRecoverySlip(): void {
-    this.router.navigate(['/recovery-slip', this.transactionId], {
-      state: { fromTransactionId: this.transactionId }
-    });
+    // TODO: Navigate to recovery slip page or open PDF
     console.log('View recovery slip for transaction:', this.transactionId);
   }
 
   viewPackagingInstruction(): void {
-    this.router.navigate(['/packaging-instruction'], {
-      state: { fromTransactionId: this.transactionId }
-    });
-    console.log('View packaging instruction for transaction:', this.transactionId);
+    // TODO: Navigate to packaging instruction page or open PDF
+    console.log('View packaging instruction');
   }
 
   // Step 1: Show accept confirmation modal
@@ -566,6 +610,19 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
       'Confirmed': 'status-confirmed',
       'Under Review': 'status-review',
       'Picked Up': 'status-picked-up'
+    };
+    return statusMap[status] || '';
+  }
+
+  getItemStatusClass(status: string): string {
+    const statusMap: { [key: string]: string } = {
+      'Picked Up': 'item-picked-up',
+      'Returned': 'item-returned',
+      'Awaiting Pick Up': 'item-awaiting',
+      'Awaiting Picked Up': 'item-awaiting',
+      'Pending Further Action': 'item-pending',
+      'Unresponded': 'item-unresponded',
+      'Awaiting Return': 'item-awaiting-return'
     };
     return statusMap[status] || '';
   }

@@ -300,6 +300,7 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
 
     // ─────────────────────────────────────────────────────────
     // SAVE ALL ANSWERS TO ConditionSelected (for ALL types)
+    // selectedBy = 'seller' for initial submission
     // ─────────────────────────────────────────────────────────
     let savedCount = 0;
     for (const qa of questionAnswers) {
@@ -310,8 +311,8 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
         console.log(`  → Saving radio/image answer: ${qa.answer}`);
         await client.query(
           `INSERT INTO "ConditionSelected"
-          ("conditionID", "submittedApplianceID", "isChecked", "created_at")
-          VALUES ($1, $2, true, NOW())`,
+          ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt")
+          VALUES ($1, $2, true, 'seller', NOW())`,
           [qa.answer, finalId]
         );
         savedCount++;
@@ -323,8 +324,8 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
         for (const conditionID of qa.answer) {
           await client.query(
             `INSERT INTO "ConditionSelected"
-            ("conditionID", "submittedApplianceID", "isChecked", "created_at")
-            VALUES ($1, $2, true, NOW())`,
+            ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt")
+            VALUES ($1, $2, true, 'seller', NOW())`,
             [conditionID, finalId]
           );
           savedCount++;
@@ -392,7 +393,6 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
         addr.zipCode
       ]
     );
-
 
     // Create Transaction record
     await client.query(

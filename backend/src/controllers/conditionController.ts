@@ -51,6 +51,86 @@ export const getAllConditionGroups = async (req: Request, res: Response) => {
   }
 };
 
+// Get active condition groups with their active options (for admin edit dropdowns)
+// Optional categoryId query param to filter options by category
+export const getActiveConditionGroupsWithOptions = async (req: Request, res: Response) => {
+  try {
+    const { categoryId } = req.query;
+    console.log('📋 Getting condition groups, categoryId:', categoryId);
+
+    // Get all active condition groups
+    // Note: Category filtering for groups is done via Category_ConditionGroup table
+    // But we'll show all groups and filter options by category instead
+    const groupsQuery = `
+      SELECT
+        cg."groupID",
+        cg."criteriaName",
+        cg."question_title",
+        cg."question_type",
+        cg."display_order"
+      FROM "ConditionGroup" cg
+      WHERE cg."status" = 'ACTIVE'
+      ORDER BY COALESCE(cg."display_order", 999999) ASC
+    `;
+
+    const groupsResult = await pool.query(groupsQuery);
+    console.log('📂 Found groups:', groupsResult.rows.length);
+
+    // Get all active options for active groups (optionally filtered by category)
+    let optionsQuery = `
+      SELECT
+        co."conditionID",
+        co."groupID",
+        co.code,
+        co.description
+      FROM "ConditionOption" co
+      INNER JOIN "ConditionGroup" cg ON co."groupID" = cg."groupID"
+      WHERE co."status" = 'ACTIVE' AND cg."status" = 'ACTIVE'
+      ORDER BY co.created_at ASC
+    `;
+
+    let optionsResult;
+    if (categoryId) {
+      // Filter options by category using Category_Condition junction table
+      optionsQuery = `
+        SELECT
+          co."conditionID",
+          co."groupID",
+          co.code,
+          co.description
+        FROM "ConditionOption" co
+        INNER JOIN "ConditionGroup" cg ON co."groupID" = cg."groupID"
+        LEFT JOIN "Category_Condition" cc ON co."conditionID" = cc."conditionID"
+        WHERE co."status" = 'ACTIVE' AND cg."status" = 'ACTIVE'
+        AND (cc."categoryID" = $1 OR cc."categoryID" IS NULL OR NOT EXISTS (
+          SELECT 1 FROM "Category_Condition" WHERE "conditionID" = co."conditionID"
+        ))
+        ORDER BY co.created_at ASC
+      `;
+      optionsResult = await pool.query(optionsQuery, [categoryId]);
+    } else {
+      optionsResult = await pool.query(optionsQuery);
+    }
+    console.log('📂 Found options:', optionsResult.rows.length);
+
+    // Group options by groupID
+    const groupsWithOptions = groupsResult.rows.map(group => ({
+      ...group,
+      options: optionsResult.rows.filter(opt => opt.groupID === group.groupID)
+    }));
+
+    console.log('📂 Fetched active condition groups with options:', groupsWithOptions.length, categoryId ? `for category ${categoryId}` : '');
+    res.json(groupsWithOptions);
+  } catch (error: any) {
+    console.error('Get active condition groups with options error:', error);
+    console.error('Error details:', error.message, error.stack);
+    res.status(500).json({
+      message: 'Failed to fetch condition groups with options',
+      error: error.message
+    });
+  }
+};
+
 export const createConditionGroup = async (req: Request, res: Response) => {
   try {
     const { criteriaName, criteriaCodePrefix, question_title, question_type } = req.body;
@@ -218,9 +298,10 @@ export const getAllConditionOptions = async (req: Request, res: Response) => {
 
     console.log('📂 Fetched condition options:', result.rows.length);
     res.json(result.rows);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get all condition options error:', error);
-    res.status(500).json({ message: 'Failed to fetch condition options' });
+    console.error('Error details:', error.message);
+    res.status(500).json({ message: 'Failed to fetch condition options', error: error.message });
   }
 };
 

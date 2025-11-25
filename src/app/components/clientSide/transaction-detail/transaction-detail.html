@@ -79,9 +79,25 @@
 
       <div class="title-status-row">
         <h1 class="page-title">APPLIANCE INFORMATION</h1>
-        <span class="status-badge" [ngClass]="getStatusClass(transaction.transactionStatus)">
-          {{ transaction.transactionStatus }}
-        </span>
+        <div class="status-badges">
+          <span class="status-badge" [ngClass]="getStatusClass(transaction.transactionStatus)">
+            {{ transaction.transactionStatus }}
+          </span>
+          <span class="status-badge item-status" [ngClass]="getItemStatusClass(transaction.itemStatus)">
+            {{ transaction.itemStatus }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Submitted Date Info -->
+      <div class="submitted-date-info">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <span>Submitted on {{ transaction.submittedDate | date:'dd MMM yyyy, h:mm a' }}</span>
       </div>
 
       <!-- Document Actions as Cards -->
@@ -132,9 +148,16 @@
         <div class="photos-gallery-section">
           <!-- Show photos if available -->
           <ng-container *ngIf="hasPhotos; else noPhotos">
-            <!-- Main Photo -->
-            <div class="main-photo-container">
-              <img [src]="selectedPhoto" [alt]="transaction.modelName" class="main-photo">
+            <!-- Main Photo (clickable to enlarge) -->
+            <div class="main-photo-container" (click)="openLightbox(selectedPhotoIndex)">
+              <img [src]="selectedPhoto" [alt]="transaction.modelName" class="main-photo clickable">
+              <div class="photo-zoom-hint">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <path d="M21 21l-4.35-4.35"/>
+                  <path d="M11 8v6M8 11h6"/>
+                </svg>
+              </div>
             </div>
 
             <!-- Thumbnails (only show if multiple photos) -->
@@ -193,16 +216,6 @@
             <p class="info-value">{{ customerInfo.state }}</p>
           </div>
         </div>
-
-        <div class="info-section">
-          <h3 class="section-title">PICKUP DATE</h3>
-          <p class="info-value">{{ customerInfo.pickupDate }}</p>
-        </div>
-
-        <div class="info-section">
-          <h3 class="section-title">PICKUP TIME SLOT</h3>
-          <p class="info-value">{{ customerInfo.pickupTimeSlot }}</p>
-        </div>
       </div>
 
       <!-- Right Column - Appliance Information -->
@@ -229,32 +242,27 @@
                 <h4 class="detail-label">CATEGORY</h4>
                 <p class="detail-value">{{ beforeReview.category }}</p>
               </div>
-              <!-- DYNAMIC QUESTION ANSWERS (non-checkbox types: radio, image, textarea) -->
-              <div class="detail-item" *ngFor="let qa of beforeReview.dynamicAnswers">
-                <ng-container *ngIf="qa.type !== 'checkbox'">
-                  <h4 class="detail-label">{{ qa.sectionName | uppercase }}</h4>
-                  <p class="detail-value">{{ qa.answer }}</p>
-                </ng-container>
-              </div>
               <div class="detail-item">
                 <h4 class="detail-label">SCORE</h4>
                 <p class="detail-value">{{ beforeReview.score }}</p>
               </div>
             </div>
-            <div class="note-section">
-              <h4 class="note-label">NOTE</h4>
-              <p class="note-value">{{ beforeReview.note }}</p>
-            </div>
-            <!-- DYNAMIC CHECKBOX QUESTIONS (displayed like Selected Issue) -->
-            <div class="idea-section" *ngFor="let qa of beforeReview.dynamicAnswers">
-              <ng-container *ngIf="qa.type === 'checkbox' && qa.answer && $any(qa.answer).length > 0">
-                <h4 class="idea-label">{{ qa.sectionName | uppercase }}</h4>
-                <ul class="idea-list">
-                  <li *ngFor="let option of $any(qa.answer)" class="idea-item">
-                    <span class="check-icon">✓</span> {{ option }}
+
+            <!-- Dynamic Condition Groups -->
+            <div class="condition-groups-section" *ngIf="hasConditionGroups()">
+              <div *ngFor="let groupName of getConditionGroupNames()" class="condition-group">
+                <h4 class="condition-group-label">{{ groupName | uppercase }}</h4>
+                <ul class="condition-list">
+                  <li *ngFor="let condition of conditionGroups[groupName]" class="condition-item">
+                    <span class="check-icon" *ngIf="groupName.toLowerCase() === 'checklist'">✓</span> {{ condition }}
                   </li>
                 </ul>
-              </ng-container>
+              </div>
+            </div>
+
+            <div class="note-section" *ngIf="beforeReview.note">
+              <h4 class="note-label">NOTE</h4>
+              <p class="note-value">{{ beforeReview.note }}</p>
             </div>
           </div>
 
@@ -278,32 +286,27 @@
                 <h4 class="detail-label">CATEGORY</h4>
                 <p class="detail-value">{{ afterReview.category }}</p>
               </div>
-              <!-- DYNAMIC QUESTION ANSWERS (non-checkbox types: radio, image, textarea) -->
-              <div class="detail-item" *ngFor="let qa of afterReview.dynamicAnswers">
-                <ng-container *ngIf="qa.type !== 'checkbox'">
-                  <h4 class="detail-label">{{ qa.sectionName | uppercase }}</h4>
-                  <p class="detail-value">{{ qa.answer }}</p>
-                </ng-container>
-              </div>
               <div class="detail-item">
                 <h4 class="detail-label">SCORE</h4>
                 <p class="detail-value">{{ afterReview.score }}</p>
               </div>
             </div>
-            <div class="note-section">
-              <h4 class="note-label">NOTE</h4>
-              <p class="note-value">{{ afterReview.note }}</p>
-            </div>
-            <!-- DYNAMIC CHECKBOX QUESTIONS (displayed like Selected Issue) -->
-            <div class="idea-section" *ngFor="let qa of afterReview.dynamicAnswers">
-              <ng-container *ngIf="qa.type === 'checkbox' && qa.answer && $any(qa.answer).length > 0">
-                <h4 class="idea-label">{{ qa.sectionName | uppercase }}</h4>
-                <ul class="idea-list">
-                  <li *ngFor="let option of $any(qa.answer)" class="idea-item">
-                    <span class="check-icon">✓</span> {{ option }}
+
+            <!-- Dynamic Condition Groups -->
+            <div class="condition-groups-section" *ngIf="hasConditionGroups()">
+              <div *ngFor="let groupName of getConditionGroupNames()" class="condition-group">
+                <h4 class="condition-group-label">{{ groupName | uppercase }}</h4>
+                <ul class="condition-list">
+                  <li *ngFor="let condition of conditionGroups[groupName]" class="condition-item">
+                    <span class="check-icon" *ngIf="groupName.toLowerCase() === 'checklist'">✓</span> {{ condition }}
                   </li>
                 </ul>
-              </ng-container>
+              </div>
+            </div>
+
+            <div class="note-section" *ngIf="afterReview.note">
+              <h4 class="note-label">NOTE</h4>
+              <p class="note-value">{{ afterReview.note }}</p>
             </div>
           </div>
         </div>
@@ -320,45 +323,38 @@
           <div class="details-grid">
             <div class="detail-item">
               <h4 class="detail-label">BRAND</h4>
-              <p class="detail-value">{{ applianceInfo.brand }}</p>
+              <p class="detail-value">{{ applianceInfo.brand || 'N/A' }}</p>
             </div>
             <div class="detail-item">
               <h4 class="detail-label">MODEL</h4>
-              <p class="detail-value">{{ applianceInfo.model }}</p>
+              <p class="detail-value">{{ applianceInfo.model || 'N/A' }}</p>
             </div>
             <div class="detail-item">
               <h4 class="detail-label">CATEGORY</h4>
-              <p class="detail-value">{{ applianceInfo.category }}</p>
-            </div>
-            <!-- DYNAMIC QUESTION ANSWERS (non-checkbox types: radio, image, textarea) -->
-            <div class="detail-item" *ngFor="let qa of applianceInfo.dynamicAnswers">
-              <ng-container *ngIf="qa.type !== 'checkbox'">
-                <h4 class="detail-label">{{ qa.sectionName | uppercase }}</h4>
-                <p class="detail-value">{{ qa.answer }}</p>
-              </ng-container>
+              <p class="detail-value">{{ applianceInfo.category || 'N/A' }}</p>
             </div>
             <div class="detail-item">
-              <h4 class="detail-label">SCORE</h4>
-              <p class="detail-value">{{ applianceInfo.score }}</p>
+              <h4 class="detail-label">MODEL NAME</h4>
+              <p class="detail-value">{{ applianceInfo.modelName || 'N/A' }}</p>
             </div>
           </div>
 
-          <!-- Note -->
-          <div class="note-section">
-            <h4 class="note-label">NOTE</h4>
-            <p class="note-value">{{ applianceInfo.note }}</p>
-          </div>
-
-          <!-- DYNAMIC CHECKBOX QUESTIONS (displayed like Selected Issue) -->
-          <div class="idea-section" *ngFor="let qa of applianceInfo.dynamicAnswers">
-            <ng-container *ngIf="qa.type === 'checkbox' && qa.answer && $any(qa.answer).length > 0">
-              <h4 class="idea-label">{{ qa.sectionName | uppercase }}</h4>
-              <ul class="idea-list">
-                <li *ngFor="let option of $any(qa.answer)" class="idea-item">
-                  <span class="check-icon">✓</span> {{ option }}
+          <!-- Dynamic Condition Groups - Shows all seller-submitted conditions -->
+          <div class="condition-groups-section" *ngIf="hasConditionGroups()">
+            <div *ngFor="let groupName of getConditionGroupNames()" class="condition-group">
+              <h4 class="condition-group-label">{{ groupName | uppercase }}</h4>
+              <ul class="condition-list">
+                <li *ngFor="let condition of conditionGroups[groupName]" class="condition-item">
+                  <span class="check-icon" *ngIf="groupName.toLowerCase() === 'checklist'">✓</span> {{ condition }}
                 </li>
               </ul>
-            </ng-container>
+            </div>
+          </div>
+
+          <!-- Note - only show if seller provided a note -->
+          <div class="note-section" *ngIf="applianceInfo.note">
+            <h4 class="note-label">NOTE</h4>
+            <p class="note-value">{{ applianceInfo.note }}</p>
           </div>
         </div>
       </div>
@@ -461,6 +457,72 @@
       </p>
       <div class="modal-actions">
         <button class="btn-modal-primary reject" (click)="closeCancelSuccess()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Photo Lightbox Modal -->
+  <div *ngIf="showPhotoLightbox" class="lightbox-overlay" (click)="closeLightbox()">
+    <div class="lightbox-content" (click)="$event.stopPropagation()">
+      <!-- Close button -->
+      <button class="lightbox-close" (click)="closeLightbox()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+
+      <!-- Zoom controls -->
+      <div class="lightbox-zoom-controls">
+        <button class="zoom-btn" (click)="zoomOut()" [disabled]="lightboxZoomLevel <= minZoom" title="Zoom Out">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+            <path d="M8 11h6"/>
+          </svg>
+        </button>
+        <span class="zoom-level">{{ (lightboxZoomLevel * 100).toFixed(0) }}%</span>
+        <button class="zoom-btn" (click)="zoomIn()" [disabled]="lightboxZoomLevel >= maxZoom" title="Zoom In">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+            <path d="M11 8v6M8 11h6"/>
+          </svg>
+        </button>
+        <button class="zoom-btn reset-btn" (click)="resetZoom()" *ngIf="lightboxZoomLevel !== 1" title="Reset Zoom">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Previous button -->
+      <button *ngIf="hasMultiplePhotos" class="lightbox-nav lightbox-prev" (click)="prevLightboxPhoto()">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+
+      <!-- Main enlarged photo with zoom -->
+      <div class="lightbox-photo-wrapper" [class.zoomed]="lightboxZoomLevel > 1">
+        <img
+          [src]="photos[lightboxPhotoIndex]"
+          [alt]="'Photo ' + (lightboxPhotoIndex + 1)"
+          class="lightbox-photo"
+          [style.transform]="'scale(' + lightboxZoomLevel + ')'"
+        >
+      </div>
+
+      <!-- Next button -->
+      <button *ngIf="hasMultiplePhotos" class="lightbox-nav lightbox-next" (click)="nextLightboxPhoto()">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
+
+      <!-- Photo counter -->
+      <div *ngIf="hasMultiplePhotos" class="lightbox-counter">
+        {{ lightboxPhotoIndex + 1 }} / {{ photos.length }}
       </div>
     </div>
   </div>
