@@ -20,18 +20,19 @@ export class AuthService {
   }
 
   private restoreUserFromStorage() {
-    // Use admin-specific storage keys
-    const token = localStorage.getItem('admin_token');
-    const userJson = localStorage.getItem('admin_user');
+    // Try to restore admin user first
+    const adminToken = localStorage.getItem('admin_token');
+    const adminUserJson = localStorage.getItem('admin_user');
 
-    if (token && userJson) {
+    if (adminToken && adminUserJson) {
       try {
-        const user = JSON.parse(userJson);
+        const user = JSON.parse(adminUserJson);
 
         // ONLY restore admin/superadmin users
         if (user.userType === 'admin' || user.userType === 'superadmin') {
           this.user.set(user);
           console.log('✅ Admin user restored from localStorage:', user);
+          return;
         } else {
           console.log('ℹ️ Non-admin user found in admin storage, clearing');
           localStorage.removeItem('admin_token');
@@ -42,6 +43,31 @@ export class AuthService {
         // Clear invalid data
         localStorage.removeItem('admin_token');
         localStorage.removeItem('admin_user');
+      }
+    }
+
+    // Try to restore buyer user
+    const buyerToken = localStorage.getItem('buyer_token');
+    const buyerUserJson = localStorage.getItem('buyer_user');
+
+    if (buyerToken && buyerUserJson) {
+      try {
+        const user = JSON.parse(buyerUserJson);
+
+        // ONLY restore buyer users
+        if (user.userType === 'buyer') {
+          this.user.set(user);
+          console.log('✅ Buyer user restored from localStorage:', user);
+        } else {
+          console.log('ℹ️ Non-buyer user found in buyer storage, clearing');
+          localStorage.removeItem('buyer_token');
+          localStorage.removeItem('buyer_user');
+        }
+      } catch (error) {
+        console.error('❌ Failed to restore buyer user from localStorage:', error);
+        // Clear invalid data
+        localStorage.removeItem('buyer_token');
+        localStorage.removeItem('buyer_user');
       }
     }
   }
@@ -65,9 +91,11 @@ export class AuthService {
 
   clearUser() {
     this.user.set(null);
-    // Clear admin-specific storage only
+    // Clear both admin and buyer storage
     localStorage.removeItem('admin_token');
     localStorage.removeItem('admin_user');
+    localStorage.removeItem('buyer_token');
+    localStorage.removeItem('buyer_user');
   }
 
   isAdmin() { return this.user()?.userType === 'admin'; }

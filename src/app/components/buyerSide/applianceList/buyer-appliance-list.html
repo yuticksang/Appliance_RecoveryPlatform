@@ -1,0 +1,236 @@
+<main class="appliance-page">
+  <div class="appliance-container">
+    <div class="page-head">
+      <h1 class="page-title">Appliance Recovery List</h1>
+      <div class="breadcrumb">Dashboard / Appliances / <span>All Appliances</span></div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <button class="add-btn" (click)="openAddModal()">
+          <i class="ri-add-line"></i> ADD APPLIANCE
+        </button>
+      </div>
+      <div class="toolbar-right">
+        <div class="search">
+          <input type="text" placeholder="Search..." [value]="search()"
+            (input)="onSearchInput($any($event.target).value)" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div *ngIf="loading()" class="loading">Loading appliances...</div>
+
+    <!-- Error state -->
+    <div *ngIf="error()" class="error-message">{{ error() }}</div>
+
+    <!-- Appliance Table -->
+    <div class="table-wrap" *ngIf="!loading() && !error()">
+      <table class="grid">
+        <thead>
+          <tr>
+            <th class="narrow">#</th>
+            <th (click)="onSort('applianceID')" class="sortable">
+              Appliance ID <span class="sort">{{ sortIcon('applianceID') }}</span>
+            </th>
+            <th class="non-sortable">Image</th>
+            <th (click)="onSort('modelCode')" class="sortable">
+              Model Code <span class="sort">{{ sortIcon('modelCode') }}</span>
+            </th>
+            <th (click)="onSort('modelName')" class="sortable">
+              Model Name <span class="sort">{{ sortIcon('modelName') }}</span>
+            </th>
+            <th (click)="onSort('categoryName')" class="sortable">
+              Category <span class="sort">{{ sortIcon('categoryName') }}</span>
+            </th>
+            <th (click)="onSort('brandName')" class="sortable">
+              Brand <span class="sort">{{ sortIcon('brandName') }}</span>
+            </th>
+            <th (click)="onSort('basePrice')" class="sortable">
+              Price <span class="sort">{{ sortIcon('basePrice') }}</span>
+            </th>
+            <th (click)="onSort('status')" class="sortable">
+              Status <span class="sort">{{ sortIcon('status') }}</span>
+            </th>
+            <th class="narrow">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let item of paginatedData(); let i = index">
+            <td class="narrow">{{ getRowNumber(i) }}</td>
+            <td>{{ item.applianceID }}</td>
+            <td class="image-col">
+              <div class="image-cell">
+                <img [src]="getImageSrc(item.image_url)" [alt]="item.modelName" class="appliance-image">
+              </div>
+            </td>
+            <td>{{ item.modelCode }}</td>
+            <td>{{ item.modelName }}</td>
+            <td>{{ item.categoryName }}</td>
+            <td>{{ item.brandName }}</td>
+            <td>RM {{ item.basePrice }}</td>
+            <td>
+              <span class="badge" [ngClass]="statusClass(item.status || 'ACTIVE')">
+                <span class="dot"></span> {{ item.status || 'ACTIVE' }}
+              </span>
+            </td>
+            <td class="actions">
+              <button class="icon" (click)="editAppliance(item)" title="Edit">
+                <img src="assets/icons/edit.png" class="action-icon" alt="Edit">
+              </button>
+              <button class="icon" [title]="getToggleTitle(item.status || 'ACTIVE')" (click)="toggleStatus(item)">
+                <img [src]="getToggleIconSrc(item.status || 'ACTIVE')" alt="Toggle Status" class="action-icon">
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="paginatedData().length === 0">
+            <td colspan="9" class="no-data">No appliances found</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pager -->
+    <div class="pager" *ngIf="!loading() && !error()">
+      <button class="page-btn" (click)="goToPage(currentPage() - 1)"
+        [disabled]="currentPage() === 1">‹</button>
+
+      <button class="page-btn active">{{ currentPage() }}</button>
+
+      <button class="page-btn" (click)="goToPage(currentPage() + 1)"
+        [disabled]="currentPage() === totalPages()">›</button>
+
+      <div class="page-size">
+        <select [ngModel]="itemsPerPage()" (ngModelChange)="setPageSize($event)">
+          <option *ngFor="let n of itemsPerPageOptions" [value]="n">{{ n }}</option>
+        </select>
+        <span>/Page</span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Add Appliance Modal -->
+<div class="modal-overlay" *ngIf="showAddModal()" (click)="closeAddModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Add Appliance</h2>
+      <button class="close-btn" (click)="closeAddModal()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Category and Brand Row -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>Category</label>
+          <select class="form-control" [value]="selectedCategory()"
+            (change)="onCategoryChange($any($event.target).value)">
+            <option value="">Select Category</option>
+            <option *ngFor="let cat of categories()" [value]="cat.categoryID">
+              {{ cat.categoryName }}
+            </option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Brand</label>
+          <select class="form-control" [value]="selectedBrand()"
+            (change)="onBrandChange($any($event.target).value)"
+            [disabled]="!selectedCategory() || filteredBrands().length === 0">
+            <option value="">Select Brand</option>
+            <option *ngFor="let brand of filteredBrands()" [value]="brand.brandID">
+              {{ brand.brandName }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Appliance Selection -->
+      <div class="form-group">
+        <label>Appliance</label>
+        <select class="form-control" [value]="selectedAppliance()"
+          (change)="selectedAppliance.set($any($event.target).value)"
+          [disabled]="!selectedBrand() || filteredAppliances().length === 0">
+          <option value="">Select Appliance</option>
+          <option *ngFor="let appliance of filteredAppliances()" [value]="appliance.applianceID">
+            {{ appliance.modelCode }} - {{ appliance.modelName }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Base Price -->
+      <div class="form-group">
+        <label>Base Price (RM)</label>
+        <input type="number" class="form-control" placeholder="Enter base price"
+          [value]="basePrice() ?? ''"
+          (input)="basePrice.set(+$any($event.target).value)"
+          min="0" step="0.01"
+          [disabled]="!selectedAppliance()">
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeAddModal()">Cancel</button>
+      <button class="btn-save" (click)="submitAddAppliance()"
+        [disabled]="!selectedAppliance() || !basePrice() || basePrice()! <= 0">
+        Add Appliance
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Appliance Modal -->
+<div class="modal-overlay" *ngIf="showEditModal()" (click)="closeEditModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Edit Appliance</h2>
+      <button class="close-btn" (click)="closeEditModal()">&times;</button>
+    </div>
+
+    <div class="modal-body" *ngIf="editingAppliance()">
+      <!-- Appliance Info (Read-only) -->
+      <div class="form-group">
+        <label>Appliance</label>
+        <input type="text" class="form-control"
+          [value]="editingAppliance()!.modelCode + ' - ' + editingAppliance()!.modelName"
+          readonly>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Category</label>
+          <input type="text" class="form-control"
+            [value]="editingAppliance()!.categoryName || '---'"
+            readonly>
+        </div>
+
+        <div class="form-group">
+          <label>Brand</label>
+          <input type="text" class="form-control"
+            [value]="editingAppliance()!.brandName || '---'"
+            readonly>
+        </div>
+      </div>
+
+      <!-- Base Price (Editable) -->
+      <div class="form-group">
+        <label>Base Price (RM)</label>
+        <input type="number" class="form-control" placeholder="Enter base price"
+          [value]="basePrice() ?? ''"
+          (input)="basePrice.set(+$any($event.target).value)"
+          min="0" step="0.01">
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeEditModal()">Cancel</button>
+      <button class="btn-save" (click)="submitEditAppliance()"
+        [disabled]="!basePrice() || basePrice()! <= 0">
+        Update Appliance
+      </button>
+    </div>
+  </div>
+</div>

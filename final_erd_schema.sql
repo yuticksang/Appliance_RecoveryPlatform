@@ -222,6 +222,10 @@ CREATE TABLE "ConditionGroup" (
     "groupID" VARCHAR(20) PRIMARY KEY DEFAULT ('CG' || LPAD(nextval('condition_group_id_seq')::text, 3, '0')),
     "criteriaName" VARCHAR(255) NOT NULL,
     "criteriaCodePrefix" VARCHAR(10),
+    question_title TEXT,
+    question_type VARCHAR(50),
+    display_order INTEGER,
+    status VARCHAR(50) DEFAULT 'ACTIVE',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -233,8 +237,9 @@ CREATE TABLE "ConditionOption" (
     "conditionID" VARCHAR(20) PRIMARY KEY DEFAULT ('CO' || LPAD(nextval('condition_option_id_seq')::text, 3, '0')),
     "groupID" VARCHAR(20),
     code VARCHAR(50),
+    description TEXT,
     image TEXT,
-    status VARCHAR(50),
+    status VARCHAR(50) DEFAULT 'ACTIVE',
     question TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY ("groupID") REFERENCES "ConditionGroup"("groupID") ON DELETE SET NULL

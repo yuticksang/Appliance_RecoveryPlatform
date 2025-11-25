@@ -13,6 +13,7 @@ import transactionRoutes from './routes/transaction';
 import cronRoutes from './routes/cron';
 import dbPool from './config/database';
 import questionnaireRouter from './routes/questionnaire';
+import buyerRoutes from './routes/buyer';
 
 dotenv.config();
 const app = express();
@@ -108,6 +109,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/buyer', buyerRoutes);
 app.use('/api', profileRoutes);
 app.use('/api', questionnaireRouter); 
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
