@@ -22,6 +22,7 @@ import {
 } from '../controllers/adminController';
 import {
   getAllConditionGroups,
+  getActiveConditionGroupsWithOptions,
   createConditionGroup,
   updateConditionGroup,
   updateConditionGroupStatus,
@@ -31,7 +32,8 @@ import {
   updateConditionOption,
   deleteConditionOption,
   getConditionCategories,
-  updateConditionCategories
+  updateConditionCategories,
+  updateDisplayOrders
 } from '../controllers/conditionController';
 import { optionalUpload } from '../middleware/upload';
 
@@ -124,6 +126,9 @@ router.get('/buyer-prices', getAllBuyerPrices);
 // Get all condition groups
 router.get('/condition-groups', getAllConditionGroups);
 
+// Get active condition groups with active options (for admin edit dropdowns)
+router.get('/condition-groups/active-with-options', getActiveConditionGroupsWithOptions);
+
 // Create new condition group
 router.post('/condition-groups', createConditionGroup);
 
@@ -161,5 +166,8 @@ router.get('/condition-options/:conditionId/categories', getConditionCategories)
 
 // Update categories for a condition
 router.put('/condition-options/:conditionId/categories', updateConditionCategories);
+
+// Add this route
+router.put('/categories/:categoryId/display-orders', updateDisplayOrders);
 
 export default router;

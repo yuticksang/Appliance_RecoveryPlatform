@@ -162,135 +162,37 @@
           </ng-template>
         </div>
 
-        <!-- Edit Button (Show when Awaiting Pick Up) -->
-        <div *ngIf="canEdit && !isEditMode" class="edit-button-container">
-          <button class="btn-edit" (click)="enterEditMode()">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M15.586 2.586a2 2 0 112.828 2.828l-1.414 1.414-2.828-2.828 1.414-1.414zm-1.414 3.414l-9 9V18h3l9-9-2.828-2.828z"/>
-            </svg>
-            Edit Details
-          </button>
+        <!-- Seller Information -->
+        <div class="info-section">
+          <h3 class="section-title">SELLER NAME</h3>
+          <p class="info-value">{{ customerInfo.name }}</p>
         </div>
 
-        <!-- Seller Information (View Mode) -->
-        <ng-container *ngIf="!isEditMode">
+        <div class="info-section">
+          <h3 class="section-title">EMAIL ADDRESS</h3>
+          <p class="info-value">{{ customerInfo.email }}</p>
+        </div>
+
+        <div class="info-section">
+          <h3 class="section-title">CONTACT NUMBER</h3>
+          <p class="info-value">{{ customerInfo.contactNumber }}</p>
+        </div>
+
+        <div class="info-section">
+          <h3 class="section-title">ADDRESS</h3>
+          <p class="info-value">{{ customerInfo.address }}</p>
+        </div>
+
+        <div class="info-section-row">
           <div class="info-section">
-            <h3 class="section-title">SELLER NAME</h3>
-            <p class="info-value">{{ customerInfo.name }}</p>
+            <h3 class="section-title">CITY</h3>
+            <p class="info-value">{{ customerInfo.city }}</p>
           </div>
-
           <div class="info-section">
-            <h3 class="section-title">EMAIL ADDRESS</h3>
-            <p class="info-value">{{ customerInfo.email }}</p>
+            <h3 class="section-title">STATE</h3>
+            <p class="info-value">{{ customerInfo.state }}</p>
           </div>
-
-          <div class="info-section">
-            <h3 class="section-title">CONTACT NUMBER</h3>
-            <p class="info-value">{{ customerInfo.contactNumber }}</p>
-          </div>
-
-          <div class="info-section">
-            <h3 class="section-title">ADDRESS</h3>
-            <p class="info-value">{{ customerInfo.address }}</p>
-          </div>
-
-          <div class="info-section-row">
-            <div class="info-section">
-              <h3 class="section-title">CITY</h3>
-              <p class="info-value">{{ customerInfo.city }}</p>
-            </div>
-            <div class="info-section">
-              <h3 class="section-title">STATE</h3>
-              <p class="info-value">{{ customerInfo.state }}</p>
-            </div>
-          </div>
-
-          <div class="info-section">
-            <h3 class="section-title">ZIP CODE</h3>
-            <p class="info-value">{{ customerInfo.zipCode }}</p>
-          </div>
-
-          <div class="info-section">
-            <h3 class="section-title">PICKUP DATE</h3>
-            <p class="info-value">{{ customerInfo.pickupDate }}</p>
-          </div>
-
-          <div class="info-section">
-            <h3 class="section-title">PICKUP TIME SLOT</h3>
-            <p class="info-value">{{ customerInfo.pickupTimeSlot }}</p>
-          </div>
-        </ng-container>
-
-        <!-- Seller Information (Edit Mode) -->
-        <ng-container *ngIf="isEditMode">
-          <div class="info-section">
-            <h3 class="section-title">SELLER NAME</h3>
-            <input type="text" class="edit-input" [(ngModel)]="editForm.snapshotReceiverName" placeholder="Enter seller name">
-          </div>
-
-          <div class="info-section">
-            <h3 class="section-title">EMAIL ADDRESS</h3>
-            <p class="info-value readonly">{{ customerInfo.email }} <span class="readonly-note">(Cannot be edited)</span></p>
-          </div>
-
-          <div class="info-section">
-            <h3 class="section-title">CONTACT NUMBER</h3>
-            <input type="text" class="edit-input" [(ngModel)]="editForm.snapshotPhoneNum" placeholder="Enter contact number">
-          </div>
-
-          <div class="info-section">
-            <h3 class="section-title">ADDRESS</h3>
-            <textarea class="edit-textarea" [(ngModel)]="editForm.snapshotAddress" placeholder="Enter address" rows="2"></textarea>
-          </div>
-
-          <div class="info-section-row">
-            <div class="info-section">
-              <h3 class="section-title">CITY</h3>
-              <input type="text" class="edit-input" [(ngModel)]="editForm.snapshotCity" placeholder="Enter city">
-            </div>
-            <div class="info-section">
-              <h3 class="section-title">STATE</h3>
-              <input type="text" class="edit-input" [(ngModel)]="editForm.snapshotState" placeholder="Enter state">
-            </div>
-          </div>
-
-          <div class="info-section">
-            <h3 class="section-title">ZIP CODE</h3>
-            <input type="text" class="edit-input" [(ngModel)]="editForm.snapshotZipCode" placeholder="Enter zip code">
-          </div>
-
-          <div class="info-section">
-            <h3 class="section-title">PICKUP DATE</h3>
-            <input type="date"
-                   class="edit-input"
-                   [(ngModel)]="editForm.pickupDate"
-                   [min]="minPickupDate"
-                   [attr.title]="'Earliest available date: ' + minPickupDate"
-                   (change)="onPickupDateChange()">
-            <small class="help-text">Minimum 2 days from today ({{ minPickupDate }})</small>
-          </div>
-
-          <div class="info-section">
-            <h3 class="section-title">PICKUP TIME SLOT</h3>
-            <select class="edit-input" [(ngModel)]="editForm.pickupTimeSlot">
-              <option value="" disabled>Select time slot</option>
-              <option *ngFor="let slot of timeSlots" [value]="slot">{{ slot }}</option>
-            </select>
-          </div>
-
-          <div class="warning-note">
-            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
-            </svg>
-            <span>Note: Changes to pickup date/time within 24 hours of scheduled pickup may incur a fine.</span>
-          </div>
-
-          <!-- Edit Action Buttons -->
-          <div class="edit-actions">
-            <button class="btn-cancel-edit" (click)="cancelEdit()">Cancel</button>
-            <button class="btn-save-edit" (click)="saveChanges()">Save Changes</button>
-          </div>
-        </ng-container>
+        </div>
       </div>
 
       <!-- Right Column - Appliance Information -->
@@ -317,32 +219,27 @@
                 <h4 class="detail-label">CATEGORY</h4>
                 <p class="detail-value">{{ beforeReview.category }}</p>
               </div>
-              <!-- DYNAMIC QUESTION ANSWERS (non-checkbox types: radio, image, textarea) -->
-              <div class="detail-item" *ngFor="let qa of beforeReview.dynamicAnswers">
-                <ng-container *ngIf="qa.type !== 'checkbox'">
-                  <h4 class="detail-label">{{ qa.sectionName | uppercase }}</h4>
-                  <p class="detail-value">{{ qa.answer }}</p>
-                </ng-container>
-              </div>
               <div class="detail-item">
                 <h4 class="detail-label">SCORE</h4>
                 <p class="detail-value">{{ beforeReview.score }}</p>
               </div>
             </div>
+
+            <!-- Dynamic Condition Groups -->
+            <div class="condition-groups-section" *ngIf="hasConditionGroups()">
+              <div *ngFor="let groupName of getConditionGroupNames()" class="condition-group">
+                <h4 class="condition-group-label">{{ groupName | uppercase }}</h4>
+                <ul class="condition-list">
+                  <li *ngFor="let condition of conditionGroups[groupName]" class="condition-item">
+                    <span class="check-icon">✓</span> {{ condition }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+
             <div class="note-section">
               <h4 class="note-label">NOTE</h4>
               <p class="note-value">{{ beforeReview.note }}</p>
-            </div>
-            <!-- DYNAMIC CHECKBOX QUESTIONS (displayed like Selected Issue) -->
-            <div class="idea-section" *ngFor="let qa of beforeReview.dynamicAnswers">
-              <ng-container *ngIf="qa.type === 'checkbox' && qa.answer && $any(qa.answer).length > 0">
-                <h4 class="idea-label">{{ qa.sectionName | uppercase }}</h4>
-                <ul class="idea-list">
-                  <li *ngFor="let option of $any(qa.answer)" class="idea-item">
-                    <span class="check-icon">✓</span> {{ option }}
-                  </li>
-                </ul>
-              </ng-container>
             </div>
           </div>
 
@@ -366,108 +263,84 @@
                 <h4 class="detail-label">CATEGORY</h4>
                 <p class="detail-value">{{ afterReview.category }}</p>
               </div>
-              <!-- DYNAMIC QUESTION ANSWERS (non-checkbox types: radio, image, textarea) -->
-              <div class="detail-item" *ngFor="let qa of afterReview.dynamicAnswers">
-                <ng-container *ngIf="qa.type !== 'checkbox'">
-                  <h4 class="detail-label">{{ qa.sectionName | uppercase }}</h4>
-                  <p class="detail-value">{{ qa.answer }}</p>
-                </ng-container>
-              </div>
               <div class="detail-item">
                 <h4 class="detail-label">SCORE</h4>
                 <p class="detail-value">{{ afterReview.score }}</p>
               </div>
             </div>
+
+            <!-- Dynamic Condition Groups -->
+            <div class="condition-groups-section" *ngIf="hasConditionGroups()">
+              <div *ngFor="let groupName of getConditionGroupNames()" class="condition-group">
+                <h4 class="condition-group-label">{{ groupName | uppercase }}</h4>
+                <ul class="condition-list">
+                  <li *ngFor="let condition of conditionGroups[groupName]" class="condition-item">
+                    <span class="check-icon">✓</span> {{ condition }}
+                  </li>
+                </ul>
+              </div>
+            </div>
+
             <div class="note-section">
               <h4 class="note-label">NOTE</h4>
               <p class="note-value">{{ afterReview.note }}</p>
-            </div>
-            <!-- DYNAMIC CHECKBOX QUESTIONS (displayed like Selected Issue) -->
-            <div class="idea-section" *ngFor="let qa of afterReview.dynamicAnswers">
-              <ng-container *ngIf="qa.type === 'checkbox' && qa.answer && $any(qa.answer).length > 0">
-                <h4 class="idea-label">{{ qa.sectionName | uppercase }}</h4>
-                <ul class="idea-list">
-                  <li *ngFor="let option of $any(qa.answer)" class="idea-item">
-                    <span class="check-icon">✓</span> {{ option }}
-                  </li>
-                </ul>
-              </ng-container>
             </div>
           </div>
         </div>
 
         <!-- Show Regular View for Other Statuses -->
         <div *ngIf="!isAwaitingConfirmation" class="appliance-info-card">
-          <!-- VIEW MODE -->
-          <ng-container *ngIf="!isEditMode">
-            <!-- Estimated Price -->
-            <div class="price-section">
-              <span class="price-label">RM</span>
-              <span class="price-value">{{ applianceInfo.estimatedPrice }}</span>
-            </div>
+          <!-- Estimated Price -->
+          <div class="price-section">
+            <span class="price-label">RM</span>
+            <span class="price-value">{{ applianceInfo.estimatedPrice }}</span>
+          </div>
 
-            <!-- Appliance Details Grid -->
-            <div class="details-grid">
-              <div class="detail-item">
-                <h4 class="detail-label">BRAND</h4>
-                <p class="detail-value">{{ applianceInfo.brand }}</p>
-              </div>
-              <div class="detail-item">
-                <h4 class="detail-label">MODEL</h4>
-                <p class="detail-value">{{ applianceInfo.model }}</p>
-              </div>
-              <div class="detail-item">
-                <h4 class="detail-label">CATEGORY</h4>
-                <p class="detail-value">{{ applianceInfo.category }}</p>
-              </div>
-              <!-- DYNAMIC QUESTION ANSWERS (non-checkbox types: radio, image, textarea) -->
-              <div class="detail-item" *ngFor="let qa of applianceInfo.dynamicAnswers">
-                <ng-container *ngIf="qa.type !== 'checkbox'">
-                  <h4 class="detail-label">{{ qa.sectionName | uppercase }}</h4>
-                  <p class="detail-value">{{ qa.answer }}</p>
-                </ng-container>
-              </div>
-              <div class="detail-item">
-                <h4 class="detail-label">SCORE</h4>
-                <p class="detail-value">{{ applianceInfo.score }}</p>
-              </div>
+          <!-- Appliance Details Grid -->
+          <div class="details-grid">
+            <div class="detail-item">
+              <h4 class="detail-label">BRAND</h4>
+              <p class="detail-value">{{ applianceInfo.brand || 'N/A' }}</p>
             </div>
-
-            <!-- Note -->
-            <div class="note-section">
-              <h4 class="note-label">NOTE</h4>
-              <p class="note-value">{{ applianceInfo.note }}</p>
+            <div class="detail-item">
+              <h4 class="detail-label">MODEL</h4>
+              <p class="detail-value">{{ applianceInfo.model || 'N/A' }}</p>
             </div>
-
-            <!-- DYNAMIC CHECKBOX QUESTIONS (displayed like Selected Issue) -->
-            <div class="idea-section" *ngFor="let qa of applianceInfo.dynamicAnswers">
-              <ng-container *ngIf="qa.type === 'checkbox' && qa.answer && $any(qa.answer).length > 0">
-                <h4 class="idea-label">{{ qa.sectionName | uppercase }}</h4>
-                <ul class="idea-list">
-                  <li *ngFor="let option of $any(qa.answer)" class="idea-item">
-                    <span class="check-icon">✓</span> {{ option }}
-                  </li>
-                </ul>
-              </ng-container>
+            <div class="detail-item">
+              <h4 class="detail-label">CATEGORY</h4>
+              <p class="detail-value">{{ applianceInfo.category || 'N/A' }}</p>
             </div>
-          </ng-container>
-
-          <!-- EDIT MODE -->
-          <ng-container *ngIf="isEditMode">
-            <h3 class="edit-section-title">APPLIANCE INFORMATION</h3>
-
-            <!-- Note Edit (Simple text field) -->
-            <div class="edit-field-section">
-              <h4 class="edit-field-label">NOTE</h4>
-              <textarea class="edit-textarea" [(ngModel)]="editForm.note"
-                        placeholder="Add notes about your appliance (optional)"
-                        rows="3"></textarea>
+            <div class="detail-item">
+              <h4 class="detail-label">MODEL NAME</h4>
+              <p class="detail-value">{{ applianceInfo.modelName || 'N/A' }}</p>
             </div>
-
-            <div class="edit-info-note">
-              <p><strong>Note:</strong> To change category, brand, model, or condition details, please contact support or cancel and resubmit your appliance.</p>
+            <div class="detail-item" *ngIf="applianceInfo.functionalStatus">
+              <h4 class="detail-label">FUNCTIONAL STATUS</h4>
+              <p class="detail-value">{{ applianceInfo.functionalStatus }}</p>
             </div>
-          </ng-container>
+            <div class="detail-item" *ngIf="applianceInfo.appearanceStatus">
+              <h4 class="detail-label">APPEARANCE STATUS</h4>
+              <p class="detail-value">{{ applianceInfo.appearanceStatus }}</p>
+            </div>
+          </div>
+
+          <!-- Dynamic Condition Groups -->
+          <div class="condition-groups-section" *ngIf="hasConditionGroups()">
+            <div *ngFor="let groupName of getConditionGroupNames()" class="condition-group">
+              <h4 class="condition-group-label">{{ groupName | uppercase }}</h4>
+              <ul class="condition-list">
+                <li *ngFor="let condition of conditionGroups[groupName]" class="condition-item">
+                  <span class="check-icon">✓</span> {{ condition }}
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Note -->
+          <div class="note-section">
+            <h4 class="note-label">NOTE</h4>
+            <p class="note-value">{{ applianceInfo.note }}</p>
+          </div>
         </div>
       </div>
     </div>
@@ -569,45 +442,6 @@
       </p>
       <div class="modal-actions">
         <button class="btn-modal-primary reject" (click)="closeCancelSuccess()">OK</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Edit Success Modal -->
-  <div *ngIf="showEditSuccessModal" class="modal-overlay" (click)="closeEditSuccess()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-icon success-icon">
-        <span class="emoji">✅</span>
-      </div>
-      <h3 class="modal-title success">Changes Saved!</h3>
-      <p class="modal-message">
-        Your submission details have been updated successfully.
-      </p>
-      <div class="modal-actions">
-        <button class="btn-modal-primary accept" (click)="closeEditSuccess()">OK</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Pickup Date Change Warning Modal -->
-  <div *ngIf="showPickupWarningModal" class="modal-overlay" (click)="cancelPickupWarning()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-icon warning-icon">
-        <span class="emoji">⚠️💰</span>
-      </div>
-      <h3 class="modal-title warning">Last-Minute Pickup Change Warning</h3>
-      <p class="modal-message">
-        <strong>You are changing the pickup date/time within 24 hours of the scheduled pickup.</strong>
-      </p>
-      <p class="modal-message">
-        According to our policy, <strong>last-minute changes may incur a fine</strong> to cover rescheduling costs and operational adjustments.
-      </p>
-      <p class="modal-message">
-        Are you sure you want to proceed with this change?
-      </p>
-      <div class="modal-actions">
-        <button class="btn-modal-secondary" (click)="cancelPickupWarning()">CANCEL</button>
-        <button class="btn-modal-primary reject" (click)="confirmSaveWithWarning()">YES, PROCEED</button>
       </div>
     </div>
   </div>

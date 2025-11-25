@@ -361,6 +361,10 @@ $Space: 'Space Grotesk', sans-serif;
   padding: 1rem;
   background: #f7fafc;
   border-radius: 6px;
+
+  &.full-width {
+    grid-column: 1 / -1;
+  }
 }
 
 .detail-label {
@@ -375,6 +379,77 @@ $Space: 'Space Grotesk', sans-serif;
   font-size: 0.875rem;
   color: #2d3748;
   margin: 0;
+  font-weight: 500;
+}
+
+/* Condition Groups Section */
+.condition-groups-section {
+  margin-bottom: 2rem;
+}
+
+.condition-group {
+  margin-bottom: 1rem;
+  padding: 1.25rem 1.5rem;
+  background: #f7fafc;
+  border-radius: 8px;
+  border-left: 3px solid #e2e8f0;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.condition-group-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #718096;
+  margin: 0 0 1rem 0;
+  letter-spacing: 0.05em;
+}
+
+.condition-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.condition-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: white;
+  border-bottom: 1px solid #edf2f7;
+
+  &:first-child {
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+  }
+
+  &:last-child {
+    border-bottom: none;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+  }
+}
+
+.check-icon-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  svg {
+    display: block;
+  }
+}
+
+.condition-text {
+  font-size: 0.9375rem;
+  color: #2d3748;
   font-weight: 500;
 }
 

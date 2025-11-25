@@ -127,7 +127,7 @@
                 <span class="price-label-small">ESTIMATED PRICE</span>
                 <div>
                   <span class="price-label">RM</span>
-                  <span class="price-value">${{ transaction()?.estimatedPrice?.toFixed(2) || '0.00' }}</span>
+                  <span class="price-value">{{ (transaction()?.estimatedPrice | number:'1.2-2') || '0.00' }}</span>
                 </div>
               </div>
             </div>
@@ -138,14 +138,14 @@
                 <span class="price-label-small">ESTIMATED</span>
                 <div>
                   <span class="price-label">RM</span>
-                  <span class="price-value">${{ transaction()?.estimatedPrice?.toFixed(2) || '0.00' }}</span>
+                  <span class="price-value">{{ (transaction()?.estimatedPrice | number:'1.2-2') || '0.00' }}</span>
                 </div>
               </div>
               <div class="price-item final">
                 <span class="price-label-small">FINAL PRICE</span>
                 <div *ngIf="!editMode()">
                   <span class="price-label">RM</span>
-                  <span class="price-value">${{ transaction()?.finalPrice?.toFixed(2) || transaction()?.estimatedPrice?.toFixed(2) || '0.00' }}</span>
+                  <span class="price-value">{{ (transaction()?.finalPrice || transaction()?.estimatedPrice | number:'1.2-2') || '0.00' }}</span>
                 </div>
                 <input *ngIf="editMode()" type="number" class="edit-input-price" [(ngModel)]="finalPrice" step="0.01" placeholder="Enter final price" />
               </div>
@@ -155,40 +155,66 @@
           <!-- Appliance Details Grid -->
           <div class="details-grid">
             <div class="detail-item">
-              <h4 class="detail-label">BRAND</h4>
-              <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.brand }}</p>
-              <input *ngIf="editMode()" type="text" class="edit-input" [(ngModel)]="brand" placeholder="Enter brand">
-            </div>
-            <div class="detail-item">
-              <h4 class="detail-label">MODEL</h4>
-              <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.model }}</p>
-              <input *ngIf="editMode()" type="text" class="edit-input" [(ngModel)]="model" placeholder="Enter model">
-            </div>
-            <div class="detail-item">
               <h4 class="detail-label">CATEGORY</h4>
-              <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.category }}</p>
-              <input *ngIf="editMode()" type="text" class="edit-input" [(ngModel)]="category" placeholder="Enter category">
+              <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.category || 'N/A' }}</p>
+              <select *ngIf="editMode()" class="edit-select" [(ngModel)]="selectedCategoryId" (ngModelChange)="onCategoryChange()">
+                <option [ngValue]="null">Select category</option>
+                <option *ngFor="let cat of categories" [ngValue]="cat.categoryID">{{ cat.categoryName }}</option>
+              </select>
+            </div>
+            <div class="detail-item">
+              <h4 class="detail-label">BRAND</h4>
+              <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.brand || 'N/A' }}</p>
+              <select *ngIf="editMode()" class="edit-select" [(ngModel)]="selectedBrandId" (ngModelChange)="onBrandChange()">
+                <option [ngValue]="null">Select brand</option>
+                <option *ngFor="let brand of brands" [ngValue]="brand.brandID">{{ brand.brandName }}</option>
+              </select>
             </div>
             <div class="detail-item">
               <h4 class="detail-label">MODEL NAME</h4>
-              <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.modelName }}</p>
-              <input *ngIf="editMode()" type="text" class="edit-input" [(ngModel)]="modelName" placeholder="Enter model name">
-            </div>
-            <div class="detail-item">
-              <h4 class="detail-label">FUNCTIONAL STATUS</h4>
-              <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.initialFunctionalStatus || 'N/A' }}</p>
-              <select *ngIf="editMode()" class="edit-select" [(ngModel)]="functionalStatus">
-                <option value="">Select status</option>
-                <option *ngFor="let status of functionalStatuses" [value]="status">{{ status }}</option>
+              <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.modelName || 'N/A' }}</p>
+              <select *ngIf="editMode()" class="edit-select" [(ngModel)]="selectedApplianceId" (ngModelChange)="onApplianceChange()">
+                <option [ngValue]="null">Select model name</option>
+                <option *ngFor="let appliance of filteredAppliances" [ngValue]="appliance.applianceID">
+                  {{ appliance.modelName }}
+                </option>
               </select>
             </div>
             <div class="detail-item">
-              <h4 class="detail-label">APPEARANCE STATUS</h4>
-              <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.initialPhysicalCondition || 'N/A' }}</p>
-              <select *ngIf="editMode()" class="edit-select" [(ngModel)]="appearanceStatus">
-                <option value="">Select status</option>
-                <option *ngFor="let status of appearanceStatuses" [value]="status">{{ status }}</option>
-              </select>
+              <h4 class="detail-label">MODEL CODE</h4>
+              <p class="detail-value">{{ getSelectedModelCode() || transaction()?.model || 'N/A' }}</p>
+            </div>
+
+            <!-- Dynamic Condition Groups (from backend) -->
+            <ng-container *ngFor="let group of conditionGroups">
+              <div class="detail-item">
+                <h4 class="detail-label">{{ group.criteriaName | uppercase }}</h4>
+                <p *ngIf="!editMode()" class="detail-value">{{ getConditionValue(group.criteriaName) }}</p>
+                <select *ngIf="editMode()" class="edit-select" [(ngModel)]="selectedConditions[group.groupID]">
+                  <option value="">Select {{ group.criteriaName }}</option>
+                  <option *ngFor="let option of group.options" [value]="option.description">
+                    {{ option.description }}
+                  </option>
+                </select>
+              </div>
+            </ng-container>
+          </div>
+
+          <!-- Checklist Section (for checklist-type condition groups, view mode only) -->
+          <div class="condition-groups-section" *ngIf="hasConditionGroups() && !editMode()">
+            <div *ngFor="let groupName of getConditionGroupNames()" class="condition-group">
+              <h4 class="condition-group-label">{{ groupName | uppercase }}</h4>
+              <ul class="condition-list">
+                <li *ngFor="let condition of transaction()?.conditionGroups[groupName]" class="condition-item">
+                  <span class="check-icon-circle">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                      <circle cx="10" cy="10" r="10" fill="#48bb78"/>
+                      <path d="M6 10l3 3 5-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                  <span class="condition-text">{{ condition }}</span>
+                </li>
+              </ul>
             </div>
           </div>
 
