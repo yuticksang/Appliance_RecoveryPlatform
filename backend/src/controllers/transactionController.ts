@@ -519,16 +519,14 @@ export const updateTransaction = async (req: Request, res: Response) => {
       model,
       category,
       modelName,
-      finalFunctionalStatus,
-      finalAppearanceStatus,
-      finalNote,
-      // Admin's checklist selections
+      // All admin's dynamic answers (radio, checkbox, dropdown, image, textarea, file_upload)
+      // Format: { [groupID]: conditionID | conditionID[] | textValue | base64Array }
       adminConditions,
-      // Photo uploads from admin (base64 data URLs with remark)
+      // Photo uploads from admin (base64 data URLs)
       photos
     } = req.body;
 
-    console.log('📝 Updating transaction with full data:', { id, transactionStatus, itemStatus, finalPrice, finalNote, hasPhotos: !!photos, photoCount: photos?.length });
+    console.log('📝 Updating transaction with full data:', { id, transactionStatus, itemStatus, finalPrice, adminConditions, hasPhotos: !!photos, photoCount: photos?.length });
 
     // Get the submittedApplianceID for this transaction
     const txnResult = await pool.query(
@@ -542,15 +540,12 @@ export const updateTransaction = async (req: Request, res: Response) => {
 
     const submittedApplianceID = txnResult.rows[0].submittedApplianceID;
 
-    // Update SubmittedAppliance table with admin's review data
+    // Update SubmittedAppliance table (only final offer price)
     await pool.query(
       `UPDATE "SubmittedAppliance"
-       SET "finalOfferPrice" = COALESCE($1, "finalOfferPrice"),
-           "finalFunctionalStatus" = COALESCE($2, "finalFunctionalStatus"),
-           "finalAppearanceStatus" = COALESCE($3, "finalAppearanceStatus"),
-           "finalNote" = COALESCE($4, "finalNote")
-       WHERE "submittedApplianceID" = $5`,
-      [finalPrice, finalFunctionalStatus, finalAppearanceStatus, finalNote, submittedApplianceID]
+       SET "finalOfferPrice" = COALESCE($1, "finalOfferPrice")
+       WHERE "submittedApplianceID" = $2`,
+      [finalPrice, submittedApplianceID]
     );
 
     // Update Transaction status if provided
@@ -583,81 +578,121 @@ export const updateTransaction = async (req: Request, res: Response) => {
     }
 
     // ─────────────────────────────────────────────────────────
-    // SAVE ADMIN CHECKLIST SELECTIONS TO ConditionSelected
+    // SAVE ADMIN DYNAMIC ANSWERS TO ConditionSelected
     // selectedBy = 'admin' for admin review
-    // Only checkbox (checklist) items are stored here
-    // Functional Status, Appearance Status, and Notes are in SubmittedAppliance
+    // Handles ALL types: radio, checkbox, dropdown, image, textarea, file_upload
     // ─────────────────────────────────────────────────────────
     if (adminConditions && typeof adminConditions === 'object' && Object.keys(adminConditions).length > 0) {
-      console.log('📋 Saving admin checklist selections:', adminConditions);
+      console.log('📋 Saving admin dynamic answers:', adminConditions);
 
       try {
-        // First, delete ALL existing admin checklist selections for this submission
+        // Fetch condition groups to identify question types
+        const groupTypesResult = await pool.query(
+          `SELECT "groupID", question_type FROM "ConditionGroup"`
+        );
+
+        const groupTypes: { [key: string]: string } = {};
+        groupTypesResult.rows.forEach(row => {
+          groupTypes[row.groupID] = row.question_type;
+        });
+
+        console.log('📋 Group types:', groupTypes);
+
+        // First, delete ALL existing admin answers for this submission
         await pool.query(
           `DELETE FROM "ConditionSelected"
            WHERE "submittedApplianceID" = $1 AND "selectedBy" = 'admin'`,
           [submittedApplianceID]
         );
 
-        console.log('✅ Deleted existing admin checklist selections');
+        console.log('✅ Deleted existing admin answers');
 
-        // Insert checklist items (checkbox type only)
+        // Process each group answer
         for (const [groupID, value] of Object.entries(adminConditions)) {
-          console.log(`📋 Processing checklist group ${groupID} with value:`, value);
+          const questionType = groupTypes[groupID];
+          console.log(`📋 Processing group ${groupID} (type: ${questionType}) with value:`, value);
 
           if (!value) {
             console.log(`⚠️ Skipping empty value for group ${groupID}`);
             continue;
           }
 
-          // Checkbox values are always arrays
-          const conditionIDs = Array.isArray(value) ? value : [value];
+          // Handle based on question type
+          if (questionType === 'textarea') {
+            // Save text value
+            console.log(`📝 Saving textarea answer (${(value as string).length} chars)`);
+            await pool.query(
+              `INSERT INTO "ConditionSelected"
+               ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue")
+               VALUES (NULL, $1, true, 'admin', NOW(), $2, $3)`,
+              [submittedApplianceID, groupID, value]
+            );
+          } else if (questionType === 'file_upload') {
+            // File upload handled through Photo table (see below)
+            console.log(`📸 File upload for group ${groupID} - handled via Photo table`);
+          } else if (questionType === 'checkbox') {
+            // Array of conditionIDs
+            const conditionIDs = Array.isArray(value) ? value : [value];
+            console.log(`☑️ Saving ${conditionIDs.length} checkbox items`);
 
-          for (const conditionID of conditionIDs) {
-            console.log(`📋 Processing conditionID: "${conditionID}"`);
+            for (const conditionID of conditionIDs) {
+              if (!conditionID || (typeof conditionID === 'string' && conditionID.trim() === '')) continue;
 
-            if (!conditionID || (typeof conditionID === 'string' && conditionID.trim() === '')) {
-              console.log(`⚠️ Skipping empty conditionID for group ${groupID}`);
-              continue;
+              let actualConditionID = conditionID;
+
+              // Look up conditionID if it's a description
+              if (typeof conditionID !== 'string' || !conditionID.startsWith('CO')) {
+                const condResult = await pool.query(
+                  `SELECT "conditionID" FROM "ConditionOption"
+                   WHERE "groupID" = $1 AND description = $2`,
+                  [groupID, conditionID]
+                );
+                if (condResult.rows.length > 0) {
+                  actualConditionID = condResult.rows[0].conditionID;
+                } else {
+                  console.warn(`⚠️ Condition not found: "${conditionID}" in group ${groupID}`);
+                  continue;
+                }
+              }
+
+              await pool.query(
+                `INSERT INTO "ConditionSelected"
+                 ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID")
+                 VALUES ($1, $2, true, 'admin', NOW(), $3)`,
+                [actualConditionID, submittedApplianceID, groupID]
+              );
             }
+          } else {
+            // radio, dropdown, image - single conditionID
+            console.log(`🔘 Saving ${questionType} answer: ${value}`);
 
-            // If conditionID is a description, find the actual conditionID
-            let actualConditionID = conditionID;
+            let actualConditionID = value;
 
-            if (typeof conditionID !== 'string' || !conditionID.startsWith('CO')) {
-              // It's a description, find the conditionID
-              console.log(`🔍 Looking up conditionID for description "${conditionID}" in group ${groupID}`);
-
+            // Look up conditionID if it's a description
+            if (typeof value !== 'string' || !value.startsWith('CO')) {
               const condResult = await pool.query(
                 `SELECT "conditionID" FROM "ConditionOption"
                  WHERE "groupID" = $1 AND description = $2`,
-                [groupID, conditionID]
+                [groupID, value]
               );
-
               if (condResult.rows.length > 0) {
                 actualConditionID = condResult.rows[0].conditionID;
-                console.log(`✅ Found conditionID: ${actualConditionID}`);
               } else {
-                console.warn(`⚠️ Could not find conditionID for description: "${conditionID}" in group ${groupID}`);
-                console.warn(`⚠️ Database query returned no results. Skipping this condition.`);
+                console.warn(`⚠️ Condition not found: "${value}" in group ${groupID}`);
                 continue;
               }
             }
 
-            console.log(`💾 Inserting condition: ${actualConditionID} for submission ${submittedApplianceID}`);
-
             await pool.query(
               `INSERT INTO "ConditionSelected"
-               ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt")
-               VALUES ($1, $2, true, 'admin', NOW())`,
-              [actualConditionID, submittedApplianceID]
+               ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID")
+               VALUES ($1, $2, true, 'admin', NOW(), $3)`,
+              [actualConditionID, submittedApplianceID, groupID]
             );
-
-            console.log(`✅ Successfully inserted checklist item ${actualConditionID}`);
           }
         }
 
-        console.log('✅ All admin checklist selections saved successfully');
+        console.log('✅ All admin dynamic answers saved successfully');
       } catch (conditionError) {
         console.error('❌ Error saving admin conditions:', conditionError);
         console.error('❌ Error details:', {
@@ -665,33 +700,31 @@ export const updateTransaction = async (req: Request, res: Response) => {
           stack: conditionError instanceof Error ? conditionError.stack : undefined,
           adminConditions
         });
-        throw conditionError; // Re-throw to be caught by outer catch block
+        throw conditionError;
       }
     }
 
     // ─────────────────────────────────────────────────────────
     // SAVE ADMIN PHOTOS TO Photo TABLE
-    // photos is an array of { photoURL: string, remark: string }
-    // remark: description of the photo added by admin (e.g., "Scratches on back panel")
+    // photos is an array of { photoURL: string, remark?: string, groupID?: string }
+    // remark: optional description added by admin
     // Only update if photos array is explicitly provided
     // ─────────────────────────────────────────────────────────
     if (photos && Array.isArray(photos) && photos.length > 0) {
-      console.log('📷 Processing admin photos:', photos.length, 'photos');
+      console.log('📷 Processing photos:', photos.length, 'photos');
 
       try {
-        // Delete existing admin photos (with remark) for this submission
-        // Keep seller photos (without remark or with different remark pattern)
+        // Delete existing photos for this submission
+        // Note: This replaces ALL photos, seller and admin
+        // If you want to keep seller photos, modify this logic
         await pool.query(
-          `DELETE FROM "Photo"
-           WHERE "submittedApplianceID" = $1
-           AND "remark" IS NOT NULL
-           AND "remark" != ''`,
+          `DELETE FROM "Photo" WHERE "submittedApplianceID" = $1`,
           [submittedApplianceID]
         );
 
-        console.log('✅ Deleted existing admin photos');
+        console.log('✅ Deleted existing photos');
 
-        // Insert new admin photos with remarks
+        // Insert new photos
         for (const photo of photos) {
           if (photo && photo.photoURL && photo.photoURL.trim() !== '') {
             await pool.query(
@@ -702,9 +735,9 @@ export const updateTransaction = async (req: Request, res: Response) => {
           }
         }
 
-        console.log('✅ Admin photos saved successfully');
+        console.log('✅ Photos saved successfully');
       } catch (photoError) {
-        console.error('❌ Error saving admin photos:', photoError);
+        console.error('❌ Error saving photos:', photoError);
         console.error('❌ Photo error details:', {
           message: photoError instanceof Error ? photoError.message : 'Unknown error',
           photosCount: photos.length
@@ -712,7 +745,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
         throw photoError;
       }
     } else {
-      console.log('📷 No admin photos to update (photos not provided or empty array)');
+      console.log('📷 No photos to update (photos not provided or empty array)');
     }
 
     console.log('✅ Transaction updated successfully');

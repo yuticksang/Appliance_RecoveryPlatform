@@ -262,63 +262,77 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
     // EXTRACT SPECIFIC FIELDS FROM DYNAMIC ANSWERS
     // ─────────────────────────────────────────────────────────
 
-    // Strategy: Match by groupID directly (most reliable)
-    // CG001 = Functional Status
-    // CG002 = Appearance Status (formerly Physical Condition)
-    const functionalAnswer = questionAnswers.find(qa => qa.groupID === 'CG001');
-    const appearanceAnswer = questionAnswers.find(qa => qa.groupID === 'CG002');
-    const notesAnswer = questionAnswers.find(qa => qa.type === 'textarea');
-
-    console.log('🔍 Functional Answer:', functionalAnswer);
-    console.log('🔍 Appearance Answer:', appearanceAnswer);
-    console.log('🔍 Notes Answer:', notesAnswer);
-
     // Generate SAxxx ID
     const submittedApplianceID = await generateSubmittedApplianceID(client);
 
-    // Insert into SubmittedAppliance
+    // Insert into SubmittedAppliance (only basic info, all questions go to ConditionSelected)
     const subRes = await client.query(
       `INSERT INTO "SubmittedAppliance" (
         "submittedApplianceID", "sellerID", "applianceID", "addressID",
-        "initialFunctionalStatus", "initialAppearanceStatus",
-        "initialOfferPrice", "initialNote"
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        "initialOfferPrice"
+      ) VALUES ($1, $2, $3, $4, $5)
       RETURNING "submittedApplianceID"`,
       [
         submittedApplianceID,
         sellerId,
         modelId,
         addressId,
-        functionalAnswer?.answerText || 'Not Specified',
-        appearanceAnswer?.answerText || 'Not Specified',
-        parseFloat(valuationWorth) || 0,
-        notesAnswer?.answer || null
+        parseFloat(valuationWorth) || 0
       ]
     );
 
     const finalId = subRes.rows[0].submittedApplianceID;
 
     // ─────────────────────────────────────────────────────────
-    // SAVE CHECKLIST ANSWERS TO ConditionSelected
+    // SAVE ALL DYNAMIC ANSWERS TO ConditionSelected
     // selectedBy = 'seller' for initial submission
-    // Only checkbox type (checklist items) are stored here
+    // Supports: radio, checkbox, dropdown, image, textarea, file_upload
     // ─────────────────────────────────────────────────────────
     let savedCount = 0;
     for (const qa of questionAnswers) {
       console.log(`🔄 Processing question: groupID=${qa.groupID}, type=${qa.type}, answer=`, qa.answer);
 
-      // Only save checkbox type (checklist items) to ConditionSelected
+      // For radio/image/dropdown: single conditionID
+      if ((qa.type === 'radio' || qa.type === 'image' || qa.type === 'dropdown') && qa.answer) {
+        console.log(`  → Saving ${qa.type} answer: ${qa.answer}`);
+        await client.query(
+          `INSERT INTO "ConditionSelected"
+          ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID")
+          VALUES ($1, $2, true, 'seller', NOW(), $3)`,
+          [qa.answer, finalId, qa.groupID]
+        );
+        savedCount++;
+      }
+
+      // For checkbox: array of conditionIDs
       if (qa.type === 'checkbox' && Array.isArray(qa.answer)) {
-        console.log(`  → Saving ${qa.answer.length} checklist items`);
+        console.log(`  → Saving ${qa.answer.length} checkbox items`);
         for (const conditionID of qa.answer) {
           await client.query(
             `INSERT INTO "ConditionSelected"
-            ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt")
-            VALUES ($1, $2, true, 'seller', NOW())`,
-            [conditionID, finalId]
+            ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID")
+            VALUES ($1, $2, true, 'seller', NOW(), $3)`,
+            [conditionID, finalId, qa.groupID]
           );
           savedCount++;
         }
+      }
+
+      // For textarea: save text value
+      if (qa.type === 'textarea' && qa.answer) {
+        console.log(`  → Saving textarea answer (${qa.answer.length} chars)`);
+        await client.query(
+          `INSERT INTO "ConditionSelected"
+          ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue")
+          VALUES (NULL, $1, true, 'seller', NOW(), $2, $3)`,
+          [finalId, qa.groupID, qa.answer]
+        );
+        savedCount++;
+      }
+
+      // For file_upload: photos are saved to Photo table (handled below)
+      if (qa.type === 'file_upload') {
+        console.log(`  → File upload - will be saved to Photo table with groupID`);
       }
     }
 
