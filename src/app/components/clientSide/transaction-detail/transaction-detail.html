@@ -255,7 +255,7 @@
 
                 <!-- If value is an array (checkbox) -->
                 <ul class="condition-list" *ngIf="Array.isArray(conditionGroups[groupName])">
-                  <li *ngFor="let condition of conditionGroups[groupName]" class="condition-item">
+                  <li *ngFor="let condition of $any(conditionGroups[groupName])" class="condition-item">
                     <span class="check-icon">✓</span> {{ condition }}
                   </li>
                 </ul>
@@ -306,7 +306,7 @@
 
                 <!-- If value is an array (checkbox) -->
                 <ul class="condition-list" *ngIf="Array.isArray(conditionGroups[groupName])">
-                  <li *ngFor="let condition of conditionGroups[groupName]" class="condition-item">
+                  <li *ngFor="let condition of $any(conditionGroups[groupName])" class="condition-item">
                     <span class="check-icon">✓</span> {{ condition }}
                   </li>
                 </ul>
