@@ -362,7 +362,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         brand: data.brand,
         model: data.model,
         category: data.category,
-        score: this.calculateScoreFromGroups(this.conditionGroups),
+        score: 0, // TODO: Will be fetched from other team's API
         note: data.initialNote || data.note || '' // Seller's original note
       };
 
@@ -372,7 +372,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         brand: data.brand,
         model: data.model,
         category: data.category,
-        score: this.calculateScoreFromGroups(this.conditionGroups),
+        score: 0, // TODO: Will be fetched from other team's API
         note: data.finalNote || '' // Admin's review note
       };
     } else {
@@ -383,7 +383,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         model: data.model,
         modelName: data.modelName,
         category: data.category,
-        score: this.calculateScoreFromGroups(this.conditionGroups),
+        score: 0, // TODO: Will be fetched from other team's API
         note: data.finalNote || data.initialNote || data.note || '' // Show final note if available, otherwise initial
       };
     }
@@ -397,35 +397,6 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   // Helper to check if there are any condition groups
   hasConditionGroups(): boolean {
     return Object.keys(this.conditionGroups).length > 0;
-  }
-
-  // Helper function to calculate score based on dynamic condition groups
-  private calculateScoreFromGroups(groups: { [key: string]: string[] }): number {
-    let score = 0;
-    const allConditions = Object.values(groups).flat();
-
-    // Score based on common condition keywords
-    allConditions.forEach(condition => {
-      const lowerCondition = condition.toLowerCase();
-
-      // Functional status scoring
-      if (lowerCondition.includes('fully functioning') || lowerCondition.includes('working')) {
-        score += 30;
-      } else if (lowerCondition.includes('partially')) {
-        score += 15;
-      }
-
-      // Physical condition scoring
-      if (lowerCondition.includes('new') || lowerCondition.includes('excellent')) {
-        score += 30;
-      } else if (lowerCondition.includes('good') || lowerCondition.includes('minor')) {
-        score += 20;
-      } else if (lowerCondition.includes('fair')) {
-        score += 10;
-      }
-    });
-
-    return Math.min(score, 100); // Cap at 100
   }
 
   goBack(): void {
