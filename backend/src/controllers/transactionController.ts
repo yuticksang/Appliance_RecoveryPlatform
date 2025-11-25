@@ -622,39 +622,38 @@ export const updateTransaction = async (req: Request, res: Response) => {
             }
 
             // If conditionID is a description, find the actual conditionID
-              let actualConditionID = conditionID;
+            let actualConditionID = conditionID;
 
-              if (typeof conditionID !== 'string' || !conditionID.startsWith('CO')) {
-                // It's a description, find the conditionID
-                console.log(`🔍 Looking up conditionID for description "${conditionID}" in group ${groupID}`);
+            if (typeof conditionID !== 'string' || !conditionID.startsWith('CO')) {
+              // It's a description, find the conditionID
+              console.log(`🔍 Looking up conditionID for description "${conditionID}" in group ${groupID}`);
 
-                const condResult = await pool.query(
-                  `SELECT "conditionID" FROM "ConditionOption"
-                   WHERE "groupID" = $1 AND description = $2`,
-                  [groupID, conditionID]
-                );
-
-                if (condResult.rows.length > 0) {
-                  actualConditionID = condResult.rows[0].conditionID;
-                  console.log(`✅ Found conditionID: ${actualConditionID}`);
-                } else {
-                  console.warn(`⚠️ Could not find conditionID for description: "${conditionID}" in group ${groupID}`);
-                  console.warn(`⚠️ Database query returned no results. Skipping this condition.`);
-                  continue;
-                }
-              }
-
-              console.log(`💾 Inserting condition: ${actualConditionID} for submission ${submittedApplianceID}`);
-
-              await pool.query(
-                `INSERT INTO "ConditionSelected"
-                 ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt")
-                 VALUES ($1, $2, true, 'admin', NOW())`,
-                [actualConditionID, submittedApplianceID]
+              const condResult = await pool.query(
+                `SELECT "conditionID" FROM "ConditionOption"
+                 WHERE "groupID" = $1 AND description = $2`,
+                [groupID, conditionID]
               );
 
-              console.log(`✅ Successfully inserted checklist item ${actualConditionID}`);
+              if (condResult.rows.length > 0) {
+                actualConditionID = condResult.rows[0].conditionID;
+                console.log(`✅ Found conditionID: ${actualConditionID}`);
+              } else {
+                console.warn(`⚠️ Could not find conditionID for description: "${conditionID}" in group ${groupID}`);
+                console.warn(`⚠️ Database query returned no results. Skipping this condition.`);
+                continue;
+              }
             }
+
+            console.log(`💾 Inserting condition: ${actualConditionID} for submission ${submittedApplianceID}`);
+
+            await pool.query(
+              `INSERT INTO "ConditionSelected"
+               ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt")
+               VALUES ($1, $2, true, 'admin', NOW())`,
+              [actualConditionID, submittedApplianceID]
+            );
+
+            console.log(`✅ Successfully inserted checklist item ${actualConditionID}`);
           }
         }
 
