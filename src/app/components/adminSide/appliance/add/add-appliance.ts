@@ -76,7 +76,7 @@ export class AddApplianceComponent implements OnInit {
         categoryID: this.categoryID?.value,
         brandID: this.brandID?.value,
         description: this.description?.value || null,
-        image_url: this.selectedImageFile ? this.imagePreview : ''
+        imageFile: this.selectedImageFile // Send the actual File object
       };
 
       this.applianceAdded.emit(newAppliance);

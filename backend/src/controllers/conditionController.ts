@@ -1,7 +1,18 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
+import { createClient } from '@supabase/supabase-js';
 
 console.log('🔥🔥🔥 conditionController.ts loaded! 🔥🔥🔥');
+
+// Initialize Supabase Client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY must be set in .env');
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // =====================================================
 // CONDITION GROUP MANAGEMENT
@@ -387,14 +398,41 @@ export const createConditionOption = async (req: Request, res: Response) => {
       }
     }
 
-    // Get image path if file was uploaded
-    const imagePath = imageFile ? `/uploads/conditions/${imageFile.filename}` : null;
+    // Upload image to Supabase Storage if file was uploaded
+    let imageUrl = null;
+    if (imageFile) {
+      const fileExt = imageFile.originalname.split('.').pop();
+      const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}.${fileExt}`;
+      const filePath = `conditions/${groupID}/${fileName}`;
+
+      console.log(`📸 Uploading image to Supabase: ${filePath}`);
+
+      const { error: uploadError } = await supabase.storage
+        .from('condition-images')
+        .upload(filePath, imageFile.buffer, {
+          contentType: imageFile.mimetype,
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Supabase upload error:', uploadError);
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('condition-images')
+        .getPublicUrl(filePath);
+
+      imageUrl = publicUrl;
+      console.log(`✅ Image uploaded to Supabase: ${imageUrl}`);
+    }
 
     console.log('💾 Inserting into database:', {
       groupID,
       finalCode,
       description: description || null,
-      imagePath,
+      imageUrl,
       status: status || 'ACTIVE',
       question: question || null
     });
@@ -403,7 +441,7 @@ export const createConditionOption = async (req: Request, res: Response) => {
       `INSERT INTO "ConditionOption" ("groupID", code, description, image, status, question)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING "conditionID", "groupID", code, description, image, status, question, created_at`,
-      [groupID, finalCode, description || null, imagePath, status || 'ACTIVE', question || null]
+      [groupID, finalCode, description || null, imageUrl, status || 'ACTIVE', question || null]
     );
 
     console.log('✅ Created condition option:', result.rows[0]);
@@ -428,7 +466,7 @@ export const updateConditionOption = async (req: Request, res: Response) => {
 
     // Get current option to preserve existing image if no new one is uploaded
     const currentOption = await pool.query(
-      'SELECT image FROM "ConditionOption" WHERE "conditionID" = $1',
+      'SELECT image, "groupID" FROM "ConditionOption" WHERE "conditionID" = $1',
       [id]
     );
 
@@ -436,30 +474,57 @@ export const updateConditionOption = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Condition option not found' });
     }
 
-    // Determine final image path
-    let finalImagePath;
+    // Determine final image URL
+    let finalImageUrl;
     if (imageFile) {
-      // New file uploaded
-      finalImagePath = `/uploads/conditions/${imageFile.filename}`;
+      // New file uploaded - upload to Supabase
+      const fileExt = imageFile.originalname.split('.').pop();
+      const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}.${fileExt}`;
+
+      // Get groupID from current option
+      const groupID = currentOption.rows[0].groupID || 'default';
+      const filePath = `conditions/${groupID}/${fileName}`;
+
+      console.log(`📸 Uploading updated image to Supabase: ${filePath}`);
+
+      const { error: uploadError } = await supabase.storage
+        .from('condition-images')
+        .upload(filePath, imageFile.buffer, {
+          contentType: imageFile.mimetype,
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Supabase upload error:', uploadError);
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('condition-images')
+        .getPublicUrl(filePath);
+
+      finalImageUrl = publicUrl;
+      console.log(`✅ Image uploaded to Supabase: ${finalImageUrl}`);
     } else if (removeImage === 'true') {
       // Explicitly remove image
-      finalImagePath = null;
+      finalImageUrl = null;
     } else if (imageUrl) {
       // Keep existing URL
-      finalImagePath = imageUrl;
+      finalImageUrl = imageUrl;
     } else {
       // Keep current image from database
-      finalImagePath = currentOption.rows[0].image;
+      finalImageUrl = currentOption.rows[0].image;
     }
 
-    console.log('💾 Final image path:', finalImagePath);
+    console.log('💾 Final image URL:', finalImageUrl);
 
     const result = await pool.query(
       `UPDATE "ConditionOption"
        SET description = $1, image = $2, status = $3, question = $4
        WHERE "conditionID" = $5
        RETURNING "conditionID", "groupID", code, description, image, status, question, created_at`,
-      [description || null, finalImagePath, status || 'ACTIVE', question || null, id]
+      [description || null, finalImageUrl, status || 'ACTIVE', question || null, id]
     );
 
     console.log('✅ Updated condition option:', result.rows[0]);
