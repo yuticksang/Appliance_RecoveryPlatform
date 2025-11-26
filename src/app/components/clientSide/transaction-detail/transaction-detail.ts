@@ -57,9 +57,14 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     contactNumber: '',
     address: '',
     city: '',
-    state: ''
+    state: '',
+    pickupDate: '',
+    pickupTimeSlot: ''
   };
 
+
+
+  // Kar Yan
   // Before review - seller's original submission
   beforeReview = {
     estimatedPrice: 0,
@@ -67,9 +72,14 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     model: '',
     category: '',
     score: 0,
-    note: ''
+    note: '',
+    // karyan - add neww two line
+    selectedIssue: [] as string[],
+    dynamicAnswers: [] as Array<{ sectionName: string; question: string; type: string; answer: string | string[] }>
   };
 
+
+  // Kar Yan
   // After review - admin's assessment
   afterReview = {
     estimatedPrice: 0,
@@ -77,7 +87,10 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     model: '',
     category: '',
     score: 0,
-    note: ''
+    note: '',
+    // karyan - add neww two line
+    selectedIssue: [] as string[],
+    dynamicAnswers: [] as Array<{ sectionName: string; question: string; type: string; answer: string | string[] }>
   };
 
   // For non-awaiting status, use single appliance info
@@ -89,6 +102,10 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     category: string;
     score: number;
     note: string;
+    // karyan - add neww two line
+    selectedIssue: string[];
+    dynamicAnswers: Array<{ sectionName: string; question: string; type: string; answer: string | string[] }>;
+    
   } = {
     estimatedPrice: 0,
     brand: '',
@@ -96,7 +113,10 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     modelName: '',
     category: '',
     score: 0,
-    note: ''
+    note: '',
+    // karyan - add neww two line
+    selectedIssue: [],
+    dynamicAnswers: []
   };
 
   // Dynamic condition groups from backend (e.g., "Functional Status", "Appearance Status", "Checklist")
@@ -315,12 +335,14 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
 
         // Load REAL customer info from database
         this.customerInfo = {
-          name: data.sellerName || 'Unknown',
+          name: data.addressName || 'Unknown',
           email: data.sellerEmail || 'N/A',
-          contactNumber: data.sellerPhone || 'N/A',
+          contactNumber: data.addressPhone || 'N/A',
           address: data.pickupAddress || 'N/A',
           city: data.city || 'N/A',
-          state: data.state || 'N/A'
+          state: data.state || 'N/A',
+          pickupDate: data.pickupDate || 'Not scheduled',
+          pickupTimeSlot: data.pickupTimeSlot || 'Not scheduled'
         };
 
         // Load seller-submitted photos from backend (not the catalog image)
@@ -354,6 +376,19 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     // Load dynamic condition groups from backend
     this.conditionGroups = data.conditionGroups || {};
 
+
+
+    // Kar Yan
+
+    const selectedIssues = data.selectedIssues || [];
+
+    // Get dynamic answers from API response
+    const dynamicAnswers = data.dynamicAnswers || [];
+
+
+    // Kar Yan End
+
+
     // If awaiting confirmation, show before/after review comparison
     if (this.isAwaitingConfirmation) {
       // Before review - original seller submission
@@ -363,7 +398,10 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         model: data.model,
         category: data.category,
         score: this.calculateScoreFromGroups(this.conditionGroups),
-        note: data.note || ''
+        note: data.note || '',
+        // Kar Yan - add new two line
+        selectedIssue: selectedIssues,
+        dynamicAnswers: dynamicAnswers
       };
 
       // After review - admin's assessment (revised price & condition)
@@ -373,7 +411,10 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         model: data.model,
         category: data.category,
         score: this.calculateScoreFromGroups(this.conditionGroups),
-        note: data.note || ''
+        note: data.note || '',
+        // Kar Yan - add new two line
+        selectedIssue: selectedIssues,
+        dynamicAnswers: dynamicAnswers
       };
     } else {
       // For other statuses, use current appliance info
@@ -384,7 +425,10 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         modelName: data.modelName,
         category: data.category,
         score: this.calculateScoreFromGroups(this.conditionGroups),
-        note: data.note || ''
+        note: data.note || '',
+        // Kar Yan - add new two line
+        selectedIssue: selectedIssues,
+        dynamicAnswers: dynamicAnswers
       };
     }
   }

@@ -216,6 +216,16 @@
             <p class="info-value">{{ customerInfo.state }}</p>
           </div>
         </div>
+
+        <div class="info-section">
+          <h3 class="section-title">PICKUP DATE</h3>
+          <p class="info-value">{{ customerInfo.pickupDate }}</p>
+        </div>
+
+        <div class="info-section">
+          <h3 class="section-title">PICKUP TIME SLOT</h3>
+          <p class="info-value">{{ customerInfo.pickupTimeSlot }}</p>
+        </div>
       </div>
 
       <!-- Right Column - Appliance Information -->
@@ -350,6 +360,31 @@
               </ul>
             </div>
           </div>
+
+
+          <!-- Kar Yan -->
+          <div class="details-grid">
+
+            <div class="detail-item" *ngFor="let qa of applianceInfo.dynamicAnswers">
+              <ng-container *ngIf="qa.type !== 'checkbox'">
+                <h4 class="detail-label">{{ qa.sectionName | uppercase }}</h4>
+                <p class="detail-value">{{ qa.answer }}</p>
+              </ng-container>
+            </div>
+            <div class="detail-item" *ngFor="let qa of applianceInfo.dynamicAnswers">
+              <ng-container *ngIf="qa.type === 'checkbox' && qa.answer && $any(qa.answer).length > 0">
+                <h4 class="idea-label">{{ qa.sectionName | uppercase }}</h4>
+                <ul class="idea-list">
+                  <li *ngFor="let option of $any(qa.answer)" class="idea-item">
+                    <span class="check-icon">✓</span> {{ option }}
+                  </li>
+                </ul>
+              </ng-container>
+            </div>
+            
+          </div>
+
+          <!-- Kar Yan End -->
 
           <!-- Note - only show if seller provided a note -->
           <div class="note-section" *ngIf="applianceInfo.note">

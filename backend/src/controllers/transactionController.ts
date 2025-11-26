@@ -151,12 +151,15 @@ export const getTransactionById = async (req: Request, res: Response) => {
         a."applianceID" as "modelId",
         COALESCE(a."modelName", 'N/A') as "modelName",
         COALESCE(a.image_url, '') as "imageUrl",
-        pa."receiverName" as "addressName",
-        pa."phoneNum" as "addressPhone",
-        pa.state,
-        pa.city,
-        pa."zipCode",
-        pa."pickupAddress"
+        p."addressID" as "addressId",
+        COALESCE(p."snapshotReceiverName", 'N/A') as "addressName",
+        COALESCE(p."snapshotPhoneNum", 'N/A') as "addressPhone",
+        COALESCE(p."snapshotState", 'N/A') as state,
+        COALESCE(p."snapshotCity", 'N/A') as city,
+        COALESCE(p."snapshotZipCode", 'N/A') as "zipCode",
+        COALESCE(p."snapshotAddress", 'N/A') as "pickupAddress",
+        TO_CHAR(p."pickupDate", 'YYYY-MM-DD') as "pickupDate",
+        p."pickupTimeSlot"
       FROM "Transaction" t
       INNER JOIN "SubmittedAppliance" sa ON t."submittedApplianceID" = sa."submittedApplianceID"
       LEFT JOIN users u ON t."sellerID" = u.seller_id
@@ -164,7 +167,7 @@ export const getTransactionById = async (req: Request, res: Response) => {
       LEFT JOIN "Appliance" a ON sa."applianceID" = a."applianceID"
       LEFT JOIN "Brand" b ON a."brandID" = b."brandID"
       LEFT JOIN "Category" c ON a."categoryID" = c."categoryID"
-      LEFT JOIN "PickupAddress" pa ON sa."addressID" = pa."addressID"
+      LEFT JOIN "Pickup" p ON sa."submittedApplianceID" = p."submittedApplianceID"
       WHERE t."transactionID" = $1`,
       [id]
     );
@@ -190,6 +193,56 @@ export const getTransactionById = async (req: Request, res: Response) => {
     );
 
     console.log('📋 Raw conditions from DB:', conditionsResult.rows);
+
+    
+
+    // Kar Yan
+
+    // Add selected issues to the response (for backward compatibility)
+    transaction.selectedIssues = conditionsResult.rows.map(row => row.description || row.code);
+
+    // NEW: Fetch DYNAMIC question-answer pairs
+    const questionAnswersResult = await pool.query(
+      `SELECT
+        cg."groupID",
+        cg."criteriaName" as "sectionName",
+        cg."question_title" as question,
+        cg."question_type" as type,
+        json_agg(
+          json_build_object(
+            'id', co."conditionID",
+            'description', co.description
+          )
+        ) as "selectedOptions"
+       FROM "ConditionSelected" cs
+       JOIN "ConditionOption" co ON cs."conditionID" = co."conditionID"
+       JOIN "ConditionGroup" cg ON co."groupID" = cg."groupID"
+       WHERE cs."submittedApplianceID" = $1 AND cs."isChecked" = true
+       GROUP BY cg."groupID", cg."criteriaName", cg."question_title", cg."question_type"
+       ORDER BY cg."display_order" ASC`,
+      [transaction.submittedApplianceID]
+    );
+
+    // Format dynamic answers for frontend
+    transaction.dynamicAnswers = questionAnswersResult.rows.map(row => ({
+      groupID: row.groupID,
+      sectionName: row.sectionName,
+      question: row.question,
+      type: row.type,
+      // For checkbox: return array of descriptions
+      // For radio/image: return single description string
+      answer: row.type === 'checkbox'
+        ? row.selectedOptions.map((opt: any) => opt.description)
+        : row.selectedOptions[0]?.description || 'N/A'
+    }));
+
+
+
+
+
+
+
+    
 
     // Fetch all condition groups to identify textarea and file_upload types
     const conditionGroupsResult = await pool.query(
