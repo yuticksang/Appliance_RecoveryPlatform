@@ -122,6 +122,10 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   // Dynamic condition groups from backend (e.g., "Functional Status", "Appearance Status", "Checklist")
   conditionGroups: { [key: string]: string[] } = {};
 
+  // Kar Yan
+  // Metadata for condition groups (to map groupID -> sectionName)
+  conditionGroupsMetadata: any[] = [];
+
   // Check if transaction needs review comparison
   get isAwaitingConfirmation(): boolean {
     return this.transaction?.transactionStatus === 'Awaiting Confirmation';
@@ -374,11 +378,47 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
 
   loadRealDetails(data: any): void {
     // Load dynamic condition groups from backend
-    this.conditionGroups = data.conditionGroups || {};
-
-
+    console.log('🔍 DEBUG: Raw conditionGroups from backend:', data.conditionGroups);
 
     // Kar Yan
+
+    // Fetch condition groups metadata to get the mapping of groupID -> sectionName
+    this.transactionService.getActiveConditionGroupsWithOptions().subscribe({
+      next: (metadata) => {
+        this.conditionGroupsMetadata = metadata;
+        console.log('📋 Condition groups metadata:', metadata);
+
+        // Transform backend data from groupID keys to sectionName keys
+        const rawGroups = data.conditionGroups || {};
+        this.conditionGroups = {};
+
+        for (const groupID in rawGroups) {
+          if (rawGroups.hasOwnProperty(groupID)) {
+            // Find the section name for this groupID
+            const group = metadata.find((g: any) => g.groupID === groupID);
+            const sectionName = group ? group.sectionName : groupID; // Fallback to groupID if not found
+
+            const value = rawGroups[groupID];
+            // Convert string to array, or keep array as-is
+            this.conditionGroups[sectionName] = Array.isArray(value) ? value : [value];
+          }
+        }
+
+        console.log('✅ Processed conditionGroups with section names:', this.conditionGroups);
+      },
+      error: (error) => {
+        console.error('❌ Error loading condition groups metadata:', error);
+        // Fallback: use raw groupIDs as keys
+        const rawGroups = data.conditionGroups || {};
+        this.conditionGroups = {};
+        for (const key in rawGroups) {
+          if (rawGroups.hasOwnProperty(key)) {
+            const value = rawGroups[key];
+            this.conditionGroups[key] = Array.isArray(value) ? value : [value];
+          }
+        }
+      }
+    });
 
     const selectedIssues = data.selectedIssues || [];
 
