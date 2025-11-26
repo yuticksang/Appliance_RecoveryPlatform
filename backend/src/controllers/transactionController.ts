@@ -196,7 +196,6 @@ export const getTransactionById = async (req: Request, res: Response) => {
 
     
 
-    // Kar Yan
 
     // Add selected issues to the response (for backward compatibility)
     transaction.selectedIssues = conditionsResult.rows.map(row => row.description || row.code);
@@ -239,10 +238,6 @@ export const getTransactionById = async (req: Request, res: Response) => {
 
 
 
-
-
-
-    
 
     // Fetch all condition groups to identify textarea and file_upload types
     const conditionGroupsResult = await pool.query(
@@ -962,6 +957,96 @@ export const updateSubmissionDetails = async (req: Request, res: Response) => {
     console.error('❌ Error updating submission details:', error);
     res.status(500).json({
       message: 'Failed to update submission details',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+/**
+ * Update customer information (seller can edit when item status is Awaiting Pick Up)
+ * Allows seller to update receiver name, phone, address, city, state, zip code, pickup date, and time slot
+ */
+export const updateCustomerInfo = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const {
+      snapshotReceiverName,
+      snapshotPhoneNum,
+      snapshotAddress,
+      snapshotCity,
+      snapshotState,
+      snapshotZipCode,
+      pickupDate,
+      pickupTimeSlot
+    } = req.body;
+
+    console.log('📝 Updating customer info for transaction:', id);
+    console.log('Payload:', req.body);
+
+    // Get the submittedApplianceID and check item status
+    const txnResult = await pool.query(
+      `SELECT sa."submittedApplianceID", i."itemStatus"
+       FROM "Transaction" t
+       INNER JOIN "SubmittedAppliance" sa ON t."submittedApplianceID" = sa."submittedApplianceID"
+       LEFT JOIN "ItemStatus" i ON t."transactionID" = i."transactionID"
+       WHERE t."transactionID" = $1`,
+      [id]
+    );
+
+    if (txnResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
+
+    const { submittedApplianceID, itemStatus } = txnResult.rows[0];
+
+    // Only allow editing if item status is "Awaiting Pick Up"
+    if (itemStatus !== 'Awaiting Pick Up') {
+      return res.status(403).json({
+        message: 'Cannot edit customer information. Item is not in "Awaiting Pick Up" status.'
+      });
+    }
+
+    // Update pickup information in the Pickup table
+    await pool.query(
+      `UPDATE "Pickup"
+       SET "snapshotReceiverName" = COALESCE($1, "snapshotReceiverName"),
+           "snapshotPhoneNum" = COALESCE($2, "snapshotPhoneNum"),
+           "snapshotAddress" = COALESCE($3, "snapshotAddress"),
+           "snapshotCity" = COALESCE($4, "snapshotCity"),
+           "snapshotState" = COALESCE($5, "snapshotState"),
+           "snapshotZipCode" = COALESCE($6, "snapshotZipCode"),
+           "pickupDate" = COALESCE($7, "pickupDate"),
+           "pickupTimeSlot" = COALESCE($8, "pickupTimeSlot")
+       WHERE "submittedApplianceID" = $9`,
+      [
+        snapshotReceiverName,
+        snapshotPhoneNum,
+        snapshotAddress,
+        snapshotCity,
+        snapshotState,
+        snapshotZipCode,
+        pickupDate,
+        pickupTimeSlot,
+        submittedApplianceID
+      ]
+    );
+
+    console.log('✅ Customer information updated successfully');
+
+    // Mark transaction as updated
+    await pool.query(
+      `UPDATE "Transaction" SET "updatedAt" = NOW() WHERE "transactionID" = $1`,
+      [id]
+    );
+
+    res.json({
+      message: 'Customer information updated successfully',
+      transactionID: id
+    });
+  } catch (error) {
+    console.error('❌ Error updating customer information:', error);
+    res.status(500).json({
+      message: 'Failed to update customer information',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
   }

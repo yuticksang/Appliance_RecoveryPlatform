@@ -186,9 +186,47 @@
         </div>
 
         <!-- Seller Information -->
+        <!-- Edit Button (only show when Awaiting Pick Up and not in edit mode) -->
+        <div *ngIf="isAwaitingPickUp && !isEditMode" class="edit-button-container">
+          <button class="btn-edit" (click)="enableEditMode()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Edit Customer Information
+          </button>
+        </div>
+
+        <!-- Action Buttons (only show in edit mode) -->
+        <div *ngIf="isEditMode" class="edit-actions-container">
+          <button class="btn-cancel-edit" (click)="cancelEditMode()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            Cancel
+          </button>
+          <button class="btn-save-edit" (click)="saveCustomerInfo()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            Save Changes
+          </button>
+        </div>
+
         <div class="info-section">
           <h3 class="section-title">SELLER NAME</h3>
-          <p class="info-value">{{ customerInfo.name }}</p>
+          <p *ngIf="!isEditMode" class="info-value">{{ customerInfo.name }}</p>
+          <div *ngIf="isEditMode">
+            <input type="text"
+                   class="info-input"
+                   [class.error]="validationErrors.name"
+                   [(ngModel)]="editableCustomerInfo.name"
+                   placeholder="Enter seller name">
+            <span *ngIf="validationErrors.name" class="error-message">{{ validationErrors.name }}</span>
+          </div>
         </div>
 
         <div class="info-section">
@@ -198,33 +236,110 @@
 
         <div class="info-section">
           <h3 class="section-title">CONTACT NUMBER</h3>
-          <p class="info-value">{{ customerInfo.contactNumber }}</p>
+          <p *ngIf="!isEditMode" class="info-value">{{ customerInfo.contactNumber }}</p>
+          <div *ngIf="isEditMode">
+            <input type="text"
+                   class="info-input"
+                   [class.error]="validationErrors.contactNumber"
+                   [(ngModel)]="editableCustomerInfo.contactNumber"
+                   placeholder="e.g., 012-3456789">
+            <span *ngIf="validationErrors.contactNumber" class="error-message">{{ validationErrors.contactNumber }}</span>
+          </div>
         </div>
 
         <div class="info-section">
           <h3 class="section-title">ADDRESS</h3>
-          <p class="info-value">{{ customerInfo.address }}</p>
+          <p *ngIf="!isEditMode" class="info-value">{{ customerInfo.address }}</p>
+          <div *ngIf="isEditMode">
+            <textarea class="info-textarea"
+                      [class.error]="validationErrors.address"
+                      [(ngModel)]="editableCustomerInfo.address"
+                      placeholder="Enter address"
+                      rows="2"></textarea>
+            <span *ngIf="validationErrors.address" class="error-message">{{ validationErrors.address }}</span>
+          </div>
         </div>
 
         <div class="info-section-row">
           <div class="info-section">
-            <h3 class="section-title">CITY</h3>
-            <p class="info-value">{{ customerInfo.city }}</p>
+            <h3 class="section-title">STATE</h3>
+            <p *ngIf="!isEditMode" class="info-value">{{ customerInfo.state }}</p>
+            <div *ngIf="isEditMode">
+              <select class="info-select"
+                      [class.error]="validationErrors.state"
+                      [(ngModel)]="editableCustomerInfo.state"
+                      (change)="onStateChange()">
+                <option value="">Select State</option>
+                <option *ngFor="let state of malaysianStates" [value]="state">{{ state }}</option>
+              </select>
+              <span *ngIf="validationErrors.state" class="error-message">{{ validationErrors.state }}</span>
+            </div>
           </div>
           <div class="info-section">
-            <h3 class="section-title">STATE</h3>
-            <p class="info-value">{{ customerInfo.state }}</p>
+            <h3 class="section-title">CITY</h3>
+            <p *ngIf="!isEditMode" class="info-value">{{ customerInfo.city }}</p>
+            <div *ngIf="isEditMode">
+              <select class="info-select"
+                      [class.error]="validationErrors.city"
+                      [(ngModel)]="editableCustomerInfo.city"
+                      [disabled]="!editableCustomerInfo.state || availableCities.length === 0">
+                <option value="">Select City</option>
+                <option *ngFor="let city of availableCities" [value]="city">{{ city }}</option>
+              </select>
+              <span *ngIf="validationErrors.city" class="error-message">{{ validationErrors.city }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-section">
+          <h3 class="section-title">ZIP CODE</h3>
+          <p *ngIf="!isEditMode" class="info-value">{{ customerInfo.zipCode }}</p>
+          <div *ngIf="isEditMode">
+            <input type="text"
+                   class="info-input"
+                   [class.error]="validationErrors.zipCode"
+                   [(ngModel)]="editableCustomerInfo.zipCode"
+                   placeholder="e.g., 50000"
+                   maxlength="5">
+            <span *ngIf="validationErrors.zipCode" class="error-message">{{ validationErrors.zipCode }}</span>
           </div>
         </div>
 
         <div class="info-section">
           <h3 class="section-title">PICKUP DATE</h3>
-          <p class="info-value">{{ customerInfo.pickupDate }}</p>
+          <p *ngIf="!isEditMode" class="info-value">{{ customerInfo.pickupDate }}</p>
+          <div *ngIf="isEditMode">
+            <input type="date"
+                   class="info-input"
+                   [class.error]="validationErrors.pickupDate"
+                   [class.warning]="showPickupDateWarning"
+                   [(ngModel)]="editableCustomerInfo.pickupDate"
+                   (change)="onPickupDateChange()"
+                   [min]="minPickupDate">
+            <span *ngIf="validationErrors.pickupDate" class="error-message">{{ validationErrors.pickupDate }}</span>
+            <div *ngIf="showPickupDateWarning" class="warning-message">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span><strong>Warning:</strong> Changing the pickup date within 24 hours may result in a fine.</span>
+            </div>
+          </div>
         </div>
 
         <div class="info-section">
           <h3 class="section-title">PICKUP TIME SLOT</h3>
-          <p class="info-value">{{ customerInfo.pickupTimeSlot }}</p>
+          <p *ngIf="!isEditMode" class="info-value">{{ customerInfo.pickupTimeSlot }}</p>
+          <div *ngIf="isEditMode">
+            <select class="info-select"
+                    [class.error]="validationErrors.pickupTimeSlot"
+                    [(ngModel)]="editableCustomerInfo.pickupTimeSlot">
+              <option value="">Select Time Slot</option>
+              <option *ngFor="let slot of timeSlots" [value]="slot">{{ slot }}</option>
+            </select>
+            <span *ngIf="validationErrors.pickupTimeSlot" class="error-message">{{ validationErrors.pickupTimeSlot }}</span>
+          </div>
         </div>
       </div>
 
@@ -361,30 +476,6 @@
             </div>
           </div>
 
-
-          <!-- Kar Yan -->
-          <div class="details-grid">
-
-            <div class="detail-item" *ngFor="let qa of applianceInfo.dynamicAnswers">
-              <ng-container *ngIf="qa.type !== 'checkbox'">
-                <h4 class="detail-label">{{ qa.sectionName | uppercase }}</h4>
-                <p class="detail-value">{{ qa.answer }}</p>
-              </ng-container>
-            </div>
-            <div class="detail-item" *ngFor="let qa of applianceInfo.dynamicAnswers">
-              <ng-container *ngIf="qa.type === 'checkbox' && qa.answer && $any(qa.answer).length > 0">
-                <h4 class="idea-label">{{ qa.sectionName | uppercase }}</h4>
-                <ul class="idea-list">
-                  <li *ngFor="let option of $any(qa.answer)" class="idea-item">
-                    <span class="check-icon">✓</span> {{ option }}
-                  </li>
-                </ul>
-              </ng-container>
-            </div>
-            
-          </div>
-
-          <!-- Kar Yan End -->
 
           <!-- Note - only show if seller provided a note -->
           <div class="note-section" *ngIf="applianceInfo.note">

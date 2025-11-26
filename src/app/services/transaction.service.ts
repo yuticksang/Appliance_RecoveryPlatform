@@ -277,4 +277,20 @@ export class TransactionService {
         })
       );
   }
+
+  /**
+   * Update customer information for a transaction (seller can edit when item is Awaiting Pick Up)
+   */
+  updateCustomerInfo(transactionId: string | number, updateData: any): Observable<any> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.put<any>(`${this.apiUrl}/transactions/${transactionId}/customer-info`, updateData, { headers })
+      .pipe(
+        catchError(error => {
+          console.error('Error updating customer info:', error);
+          throw error;
+        })
+      );
+  }
 }

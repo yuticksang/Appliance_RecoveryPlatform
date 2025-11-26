@@ -113,8 +113,9 @@ export class RecoverySlipComponent implements OnInit {
       date: data.submittedDate ? new Date(data.submittedDate).toLocaleDateString() : 'N/A',
       receiptNo: data.id || 'N/A', // Use transaction ID as receipt number
       seller: {
-        name: data.sellerName || 'N/A',
-        phone: data.sellerPhone || data.addressPhone || 'N/A',
+        // Use Pickup table snapshot data (addressName/addressPhone from snapshotReceiverName/snapshotPhoneNum)
+        name: data.addressName || data.sellerName || 'N/A',
+        phone: data.addressPhone || data.sellerPhone || 'N/A',
         address: formattedAddress
       },
       appliance: {
