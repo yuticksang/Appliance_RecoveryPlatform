@@ -2,28 +2,26 @@
 <main class="admins-page">
   <div class="admins-container">
     <div class="page-head">
-      <h1 class="page-title">Scoring Configuration (Washing Machine)</h1>
-      <div class="breadcrumb">Appliances / Scoring Configuration / <span> Washing Machine</span></div>
+      <h1 class="page-title">Scoring Configuration ({{selectedCategoryName()}})</h1>
+      <div class="breadcrumb">Appliances / Scoring Configuration / <span> {{selectedCategoryName()}}</span></div>
     </div>
     
 
-    <!-- Loading state 
-    // <div *ngIf="loading()" class="loading">Loading admins...</div>
-    -->
-    <!-- Error state 
-    // <div *ngIf="error()" class="error-message">{{ error() }}</div>
-    -->
-    <!-- table -->
+   
+    <div *ngIf="isLoading()" class="loading">Loading admins...</div>
+    
+    
+    <div *ngIf="error()" class="error-message">{{ error() }}</div>
+    
+  
 
     <div class="toolbar">
       <div class="toolbar-left">
       </div>
       <div class="toolbar-right">
-        <select class="appliance-dropdown">
-          <option value="">Washing Machine</option>
-          <option value="refrigerator">Refrigerator</option>
-          <option value="dryer">Dryer</option>
-          <option value="dishwasher">Dishwasher</option>
+        <select class="appliance-dropdown" [ngModel]="selectedCategoryID()" (ngModelChange)="onCategoryChange($event)">
+          <option *ngFor="let category of categories()" [value]="category.categoryID">{{ category.categoryName }}</option>
+          
         </select>
         <div class="search">
           <input type="text" [ngModel]="search()" (ngModelChange)="resetOnSearch($event)" placeholder="Search...">
@@ -31,10 +29,10 @@
       </div>
     </div>
 
-    <div class="table-card">
+    <div *ngFor="let group of filteredRows()" class="table-card">
         <div class="info-box">
           <div class="info-left">
-            <span class="info-label">Functional Status</span>
+            <span class="info-label">{{group.criteriaName}}</span>
           </div>
           <div class="info-right">
           
@@ -65,14 +63,14 @@
           </thead>
 
           <tbody>
-            <tr *ngFor="let r of pageSlice(); let i = index">
-              <td class="narrow">{{ (currentPage()-1) * itemsPerPage() + i + 1 }}</td>
-              <td>{{ r.id }}</td>
-              <td>{{ r.image }}</td>
-              <td>{{ r.condition }}</td>
-              <td>{{ r.score }}</td>
+            <tr *ngFor="let condition of getPageSlice(group); let i = index">
+              <td class="narrow">{{ (getCurrentPage(group.groupID)-1) * itemsPerPage() + i + 1 }}</td>
+              <td>{{ condition.code }}</td>
+              <td>{{ condition.image }}</td>
+              <td>{{ condition.description }}</td>
+              <td>{{ condition.scoreValue }}</td>
               <td class="actions">
-                <button class="icon" title="Edit" (click)="openEditModal(r)">
+                <button class="icon" title="Edit" (click)="openEditModal(condition, group)">
                   <img src="assets/icons/edit.png" alt="Edit" class="action-icon">
                 </button>
               </td>
@@ -82,11 +80,11 @@
 
       </div>
       <div class="pager">
-        <button class="page-btn" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1">‹</button>
+        <button class="page-btn" (click)="goToPage(group.groupID, getCurrentPage(group.groupID) - 1)" [disabled]="getCurrentPage(group.groupID) === 1">‹</button>
 
-        <button class="page-btn" *ngFor="let page of pageNumbers()" (click)="goToPage(page)" [class.active]="page === currentPage()">{{ page }}</button>
+        <button class="page-btn" *ngFor="let page of getPageNumbers(group)" (click)="goToPage(group.groupID, page)" [class.active]="page === getCurrentPage(group.groupID)">{{ page }}</button>
 
-        <button class="page-btn" (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === totalPages()">›</button>
+        <button class="page-btn" (click)="goToPage(group.groupID, getCurrentPage(group.groupID) + 1)" [disabled]="getCurrentPage(group.groupID) === getTotalPages(group)">›</button>
 
         <div class="page-size">
           <select [ngModel]="itemsPerPage()" (ngModelChange)="setPageSize($event)">
@@ -97,145 +95,16 @@
       </div>
     </div>
    
-      
-
-    <div class="table-card">
-        <div class="info-box">
-          <div class="info-left">
-            <span class="info-label">Functional Status</span>
-          </div>
-          <div class="info-right">
-          
-            <button class="icon-btn menu-btn">⋮</button>
-          </div>
-        </div>
-
-      <div class="table-wrap">
-        
-        <table class="grid">
-          <thead>
-            <tr>
-              <th class="narrow">#</th>
-              <th class="sortable col-id">
-                ID <i class="ri-filter-line"></i>
-              </th>
-              <th class="col-image">
-                Image 
-              </th>
-              <th class="sortable col-condition">
-                Condition 
-              </th>
-              <th class="sortable col-score-value">
-                Score Value <i class="ri-filter-line"></i>
-              </th>
-              <th class="actions">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr *ngFor="let r of pageSlice(); let i = index">
-              <td class="narrow">{{ (currentPage()-1) * itemsPerPage() + i + 1 }}</td>
-              <td>{{ r.id }}</td>
-              <td>{{ r.image }}</td>
-              <td>{{ r.condition }}</td>
-              <td>{{ r.score }}</td>
-              <td class="actions">
-                <button class="icon" title="Edit" (click)="openEditModal(r)">
-                  <img src="assets/icons/edit.png" alt="Edit" class="action-icon">
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-               
-      </div>
-      <div class="pager">
-        <button class="page-btn" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1">‹</button>
-
-        <button class="page-btn" *ngFor="let page of pageNumbers()" (click)="goToPage(page)" [class.active]="page === currentPage()">{{ page }}</button>
-
-        <button class="page-btn" (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === totalPages()">›</button>
-
-        <div class="page-size">
-          <select [ngModel]="itemsPerPage()" (ngModelChange)="setPageSize($event)">
-            <option *ngFor="let option of itemsPerPageOptions" [value]="option">{{ option }}</option>
-          </select>
-          <span>/Page</span>
-        </div>
-      </div>
-    </div>
-   
-    <div class="table-card">
-        <div class="info-box">
-          <div class="info-left">
-            <span class="info-label">Functional Status</span>
-          </div>
-          <div class="info-right">
-          
-            <button class="icon-btn menu-btn">⋮</button>
-          </div>
-        </div>
-
-      <div class="table-wrap">
-        
-        <table class="grid">
-          <thead>
-            <tr>
-              <th class="narrow">#</th>
-              <th class="sortable col-id">
-                ID <i class="ri-filter-line"></i>
-              </th>
-              <th class="col-image">
-                Image 
-              </th>
-              <th class="sortable col-condition">
-                Condition 
-              </th>
-              <th class="sortable col-score-value">
-                Score Value <i class="ri-filter-line"></i>
-              </th>
-              <th class="actions">Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr *ngFor="let r of pageSlice(); let i = index">
-              <td class="narrow">{{ (currentPage()-1) * itemsPerPage() + i + 1 }}</td>
-              <td>{{ r.id }}</td>
-              <td>{{ r.image }}</td>
-              <td>{{ r.condition }}</td>
-              <td>{{ r.score }}</td>
-              <td class="actions">
-                <button class="icon" title="Edit" (click)="openEditModal(r)">
-                  <img src="assets/icons/edit.png" alt="Edit" class="action-icon">
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-               
-      </div>
-      <div class="pager">
-        <button class="page-btn" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1">‹</button>
-
-        <button class="page-btn" *ngFor="let page of pageNumbers()" (click)="goToPage(page)" [class.active]="page === currentPage()">{{ page }}</button>
-
-        <button class="page-btn" (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === totalPages()">›</button>
-
-        <div class="page-size">
-          <select [ngModel]="itemsPerPage()" (ngModelChange)="setPageSize($event)">
-            <option *ngFor="let option of itemsPerPageOptions" [value]="option">{{ option }}</option>
-          </select>
-          <span>/Page</span>
-        </div>
-      </div>
-    </div>
-   
-    
   </div>
 </main>
 
-@if (showEditModal() && selectedRow()){
-<app-edit-score (close)="closeEditModal()"></app-edit-score>
+@if (showEditModal() && selectedRow() && selectedConditionGroup()){
+<app-edit-score 
+  [condition]="selectedRow()!"
+  [conditionGroup]="selectedConditionGroup()!"
+  [categoryName]="selectedCategoryName()"
+  (close)="closeEditModal()"
+  (save)="saveScore($event)">
+</app-edit-score>
 }
 

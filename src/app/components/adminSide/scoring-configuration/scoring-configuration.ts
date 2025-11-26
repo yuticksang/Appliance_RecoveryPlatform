@@ -2,13 +2,9 @@ import { Component, computed, signal, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EditScore } from './edit-score/edit-score';
+import { Condition, ConditionGroup, Category, ScoringConfigurationService } from './scoring-configuration.service';
 
-interface ScoringRow{
-  id: String;
-  image: String;
-  condition: String;
-  score: number;
-}
+
 
 type SortKey = 'adminId' | 'score' ;
 type SortDir = 'asc' | 'desc';
@@ -19,90 +15,229 @@ type SortDir = 'asc' | 'desc';
   templateUrl: './scoring-configuration.html',
   styleUrl: './scoring-configuration.scss',
 })
-export class ScoringConfiguration {
+export class ScoringConfiguration implements OnInit {
 
-  rows = signal<ScoringRow[]>([
-    { id: 'F001', image:'', condition: 'Excellent', score: 100 },
-    { id: 'F002', image:'', condition: 'Good', score: 80 },
-    { id: 'F003', image:'', condition: 'Fair', score: 60 },
-    { id: 'F004', image:'', condition: 'Poor', score: 40 }
-  ]);
+  private scoringConfigService = inject(ScoringConfigurationService);
+
+  // Data signals
+  rows = signal<ConditionGroup[]>([]);
+  categories = signal<Category[]>([]);
+  isLoading = signal<boolean>(false);
+  error = signal<string | null>(null);
+
+  //categotyID selected
+  selectedCategoryID = signal<string>('');
+
+  // Pagination & sorting 
   itemsPerPageOptions = [3, 5, 10, 20];
   itemsPerPage = signal<number>(3);
-  currentPage = signal<number>(1);
+  currentPage = signal<{[groupID: string]: number}>({});
 
   sortKey = signal<SortKey>('adminId');
   sortDir = signal<SortDir>('asc');
-
   search = signal<string>('');
 
   showEditModal = signal<boolean>(false);
-  selectedRow = signal<ScoringRow | null>(null);
+  selectedRow = signal<Condition | null>(null);
+  selectedConditionGroup = signal<ConditionGroup | null>(null);
+
+  selectedCategoryName = computed(() => {
+    const categoryID = this.selectedCategoryID();
+    const category = this.categories().find(c => c.categoryID === categoryID);
+    return category ? category.categoryName : 'Unknown';
+  })
 
   filteredRows = computed(() => {
 
     const q = this.search().trim().toLowerCase();
-
-    const list = this.rows().filter(r =>
-      !q ||
-      r.id.toLowerCase().includes(q) ||
-      r.image.toLowerCase().includes(q) ||
-      r.condition.toLowerCase().includes(q) ||
-      r.score.toString().toLowerCase().includes(q)
-    );
-
+    const groups = this.rows();
     const key = this.sortKey();
     const dir = this.sortDir();
 
-    list.sort((a: any, b: any) => {
-      const av = (a[key] ?? '').toString().toLowerCase();
-      const bv = (b[key] ?? '').toString().toLowerCase();
-    if (av < bv) return dir === 'asc' ? -1 : 1;
-    if (av > bv) return dir === 'asc' ? 1 : -1;
-    return 0;
-    });
+    return groups.map(group =>{
+      let filteredConditions = group.conditions.filter(r =>
+        !q ||
+        r.code.toLowerCase().includes(q) ||
+        r.description.toLowerCase().includes(q) ||
+        r.scoreValue.toString().toLowerCase().includes(q) ||
+        group.criteriaName.toLowerCase().includes(q)
+      );
 
-    return list;
+      filteredConditions.sort((a: any, b: any) => {
+        const av = (a[key] ?? '').toString().toLowerCase();
+        const bv = (b[key] ?? '').toString().toLowerCase();
+        if (av < bv) return dir === 'asc' ? -1 : 1;
+        if (av > bv) return dir === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      return {
+        ...group,
+        conditions: filteredConditions
+      };
+    }).filter(group => group.conditions.length > 0 || !q);
+   
   });
 
-  totalPages = computed(() => 
-    Math.max(1, Math.ceil(this.filteredRows().length / this.itemsPerPage()))
-  );
 
-  pageNumbers = computed(() => 
-    Array.from({ length: this.totalPages()}, (_, i) => i + 1)
-  );
+  ngOnInit() {
+   
+    this.loadCategories();
 
-  pageSlice = computed(() => {
-    const start = (this.currentPage() - 1) * this.itemsPerPage();
-
-    //extract elements from index start to (but not including) end, (10, 20) = get item at 10-19
-    return this.filteredRows().slice(start, start + this.itemsPerPage()); 
-  });
-
-  goToPage(page: number) {
-    if(page < 1 || page > this.totalPages()) return;
-    this.currentPage.set(page);
   }
 
-  resetOnSearch(v: string) {
+  loadCategories(): void {
+    this.scoringConfigService.getCategories()
+      .subscribe({
+        next: (response) =>{
+          if(response.success){
+              this.categories.set(response.data);
+              if (response.data.length > 0 && !this.selectedCategoryID()) {
+                this.selectedCategoryID.set(response.data[0].categoryID);
+              }
+
+              this.loadConditionGroup();
+
+              }else{
+                this.error.set(response.message || 'Failed to load categories');
+              }
+                this.isLoading.set(false);
+              },
+              error: (err) => {
+                console.error('Error loading categories:', err);      
+              }
+
+            });
+
+  }
+
+  loadConditionGroup(): void {
+    this.isLoading.set(true);
+    this.error.set(null);
+
+    const categoryID = this.selectedCategoryID();
+    console.log('Loading condition groups for categoryID:', categoryID);
+
+    this.scoringConfigService.getConditionGroupByCategory(categoryID)
+      .subscribe({
+        next: (response) =>{
+          if(response.success){
+            this.rows.set(response.data);
+
+            const page : {[groupID: string]: number} = {};
+            (response.data).forEach((g: ConditionGroup) => {
+              page[g.groupID] = 1;
+            });
+            this.currentPage.set(page);
+          
+          }else{
+            this.error.set(response.message || 'Failed to load data');
+          }
+          this.isLoading.set(false);
+        },
+        error: (err) => {
+          console.error('Error loading criteria:', err);
+          this.error.set('Error loading data: ' + err.message);
+          this.isLoading.set(false);
+        }
+
+      });
+    
+      
+  }
+
+  saveScore(event: {categoryID: string, conditionID: string, newScoreValue: number}): void {
+    this.isLoading.set(true);
+
+    this.scoringConfigService.updateConditionScore(event.categoryID, event.conditionID, event.newScoreValue)
+      .subscribe({
+       next: () => {
+          this.loadConditionGroup(); // Reload the list
+          //const message = updatedAdmin.password ? 'Admin and password updated successfully' : 'Admin updated successfully';
+          //this.alertService.success(message);
+
+          this.closeEditModal();
+        },
+        error: (err) => {
+          console.error('Update admin error:', err);
+          //this.alertService.error('Failed to update admin: ' + (err.error?.message || 'Unknown error'));
+        }
+        });
+  }
+
+  getTotalPages(group: ConditionGroup): number{
+    return Math.max(1, Math.ceil(group.conditions.length / this.itemsPerPage()));
+  }
+   
+
+  getPageNumbers(group: ConditionGroup) {
+    return Array.from({ length: this.getTotalPages(group)}, (_, i) => i + 1);
+  }
+
+  getPageSlice(group: ConditionGroup): Condition[] {
+    const currentPage = this.currentPage()[group.groupID] || 1;
+    const start = (currentPage -1) * this.itemsPerPage();
+    return group.conditions.slice(start, start + this.itemsPerPage());
+  }
+  
+  
+  goToPage(groupID: string, page: number): void {
+    const group = this.filteredRows().find(g => g.groupID === groupID);
+    if (!group) return;
+
+    const totalPages = this.getTotalPages(group);
+    if(page < 1 || page > totalPages) return;
+
+    this.currentPage.update(pages => ({
+      ...pages,
+      [groupID]: page
+    }));
+
+  }
+
+  getCurrentPage(groupID: string) : number {
+    return this.currentPage()[groupID] || 1;
+  }
+
+  resetOnSearch(v: string): void {
     this.search.set(v);
-    this.currentPage.set(1);
+    const pages: {[groupID: string]: number} = {};
+    this.filteredRows().forEach(g => {
+      pages[g.groupID] = 1;
+    })
+    this.currentPage.set(pages);
+  }
+
+  onCategoryChange(categoryID: string): void{
+    this.selectedCategoryID.set(categoryID);
+    this.loadConditionGroup();
+    this.search.set('');
+
   }
 
   setPageSize(n: number) {
     this.itemsPerPage.set(n);
-    this.currentPage.set(1);
+    const pages: {[groupID: string]: number} = {};
+    this.filteredRows().forEach(g => {
+      pages[g.groupID] = 1;
+    })
+    this.currentPage.set(pages);
   }
 
-  openEditModal(row: ScoringRow) {
+  openEditModal(row: Condition, group: ConditionGroup) {
     this.selectedRow.set(row);
+    this.selectedConditionGroup.set(group);
     this.showEditModal.set(true);
   }
 
   closeEditModal() {
     this.selectedRow.set(null);
+    this.selectedConditionGroup.set(null);
     this.showEditModal.set(false);
+  }
+
+  refresh(): void {
+    this.loadConditionGroup();
   }
 
 }

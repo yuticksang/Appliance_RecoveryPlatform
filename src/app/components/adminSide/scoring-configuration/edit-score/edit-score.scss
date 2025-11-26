@@ -114,6 +114,35 @@ $Space: 'Space Grotesk', sans-serif;
   }
 }
 
+.readonly-input {
+  background-color: #c7c6c6;
+  cursor: not-allowed;
+  color: #000000;
+  border-color: #3f3f3f;
+  
+  &:focus {
+    outline: none;
+    border-color: #ddd;
+    box-shadow: none;
+  }
+}
+
+.invalid-input {
+  border-color: #e74c3c !important;
+  background-color: #fff5f5;
+  
+  &:focus {
+    outline: none;
+    border-color: #e74c3c !important;
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+  }
+}
+
+.required {
+  color: #e74c3c;
+  font-weight: bold;
+}
+
 .error-message {
   color: #dc3545;
   font-size: 12px;
