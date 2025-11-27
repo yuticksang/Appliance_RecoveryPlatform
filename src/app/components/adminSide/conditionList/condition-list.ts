@@ -311,6 +311,12 @@ export class ConditionListComponent implements OnInit {
     return group?.question_type || null;
   }
 
+  getSelectedGroupData(): ConditionGroup | null {
+    const groupId = this.selectedGroupForAdd();
+    if (!groupId) return null;
+    return this.conditionGroups().find(g => g.groupID === groupId) || null;
+  }
+
   toggleStatus(option: ConditionOption) {
     this.confirmTarget.set(option);
     this.confirmAction.set('delete');

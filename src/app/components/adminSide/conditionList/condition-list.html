@@ -193,10 +193,9 @@
 }
 
 <!-- Add Condition Option Modal -->
-@if (showAddOptionModal() && selectedGroupForAdd()) {
+@if (showAddOptionModal() && getSelectedGroupData()) {
 <app-add-condition-option
-  [groupID]="selectedGroupForAdd()!"
-  [criteriaCodePrefix]="getSelectedGroupPrefix()"
+  [groupData]="getSelectedGroupData()!"
   (close)="onCloseAddOptionModal()"
   (optionAdded)="onOptionAdded($event)">
 </app-add-condition-option>

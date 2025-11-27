@@ -449,33 +449,17 @@ export const createAppliance = async (req: Request, res: Response) => {
 export const updateAppliance = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { categoryID, brandID, modelCode, modelName, description, imageUrl, removeImage } = req.body;
+    const { modelCode, modelName, categoryID, brandID, description, removeImage } = req.body;
     const imageFile = (req as any).file;
+    
+    console.log('🔄 Update appliance request:', { 
+      id, modelCode, modelName, categoryID, brandID, 
+      hasFile: !!imageFile, removeImage 
+    });
 
-    console.log('📝 Update appliance request:', { id, categoryID, brandID, modelCode, modelName, hasFile: !!imageFile, removeImage });
-    console.log('📝 Image file details:', imageFile ? {
-      fieldname: imageFile.fieldname,
-      originalname: imageFile.originalname,
-      mimetype: imageFile.mimetype,
-      size: imageFile.size,
-      hasBuffer: !!imageFile.buffer,
-      bufferLength: imageFile.buffer?.length
-    } : 'No file');
-    console.log('📝 Request body keys:', Object.keys(req.body));
-
-    // Check if model code is taken by another appliance
-    const existing = await pool.query(
-      'SELECT "applianceID" FROM "Appliance" WHERE "modelCode" = $1 AND "applianceID" != $2',
-      [modelCode, id]
-    );
-
-    if (existing.rows.length > 0) {
-      return res.status(400).json({ message: 'Model code already exists' });
-    }
-
-    // Get current appliance to check existing image
+    // Get current appliance data
     const currentAppliance = await pool.query(
-      'SELECT image_url FROM "Appliance" WHERE "applianceID" = $1',
+      'SELECT "modelCode", image_url FROM "Appliance" WHERE "applianceID" = $1',
       [id]
     );
 
@@ -483,13 +467,30 @@ export const updateAppliance = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Appliance not found' });
     }
 
-    // Determine final image URL
-    let finalImageUrl;
+    const currentData = currentAppliance.rows[0];
+    
+    // Check if model code already exists (exclude current appliance)
+    if (modelCode && modelCode !== currentData.modelCode) {
+      const existing = await pool.query(
+        'SELECT "applianceID" FROM "Appliance" WHERE "modelCode" = $1 AND "applianceID" != $2',
+        [modelCode, id]
+      );
+
+      if (existing.rows.length > 0) {
+        return res.status(400).json({ message: 'Model code already exists' });
+      }
+    }
+    
+    let imageUrl = currentData.image_url; // Keep existing by default
+    
+    // Handle image update using Supabase (same as createAppliance)
     if (imageFile) {
-      // New file uploaded - upload to Supabase
+      console.log('📤 New image file uploaded, saving to Supabase...');
+      
+      // Upload new image to Supabase Storage
       const fileExt = imageFile.originalname.split('.').pop();
       const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}.${fileExt}`;
-      const filePath = `appliances/${modelCode}/${fileName}`;
+      const filePath = `appliances/${modelCode || currentData.modelCode}/${fileName}`;
 
       console.log(`📸 Uploading updated appliance image to Supabase: ${filePath}`);
 
@@ -502,7 +503,7 @@ export const updateAppliance = async (req: Request, res: Response) => {
 
       if (uploadError) {
         console.error('Supabase upload error:', uploadError);
-        throw uploadError;
+        return res.status(500).json({ message: 'Failed to upload image' });
       }
 
       // Get public URL
@@ -510,40 +511,45 @@ export const updateAppliance = async (req: Request, res: Response) => {
         .from('appliance-images')
         .getPublicUrl(filePath);
 
-      finalImageUrl = publicUrl;
-      console.log(`✅ Appliance image uploaded to Supabase: ${finalImageUrl}`);
+      imageUrl = publicUrl;
+      console.log(`✅ Updated appliance image uploaded to Supabase: ${imageUrl}`);
+      
+      // TODO: Consider deleting old image from Supabase if needed
+      
     } else if (removeImage === 'true') {
-      // Explicitly remove image
-      finalImageUrl = null;
-    } else if (imageUrl) {
-      // Keep existing URL
-      finalImageUrl = imageUrl;
-    } else {
-      // Keep current image from database
-      finalImageUrl = currentAppliance.rows[0].image_url;
+      // Remove image explicitly
+      imageUrl = null;
+      console.log('🗑️ Image marked for removal');
+      
+      // TODO: Consider deleting image from Supabase if needed
     }
-
+    // If neither new file nor remove flag, keep existing image
+    
     const result = await pool.query(
-      `UPDATE "Appliance"
-       SET "categoryID" = $1, "brandID" = $2, "modelCode" = $3, "modelName" = $4, description = $5, image_url = $6
-       WHERE "applianceID" = $7
+      `UPDATE "Appliance" 
+       SET "modelCode" = $1, "modelName" = $2, "categoryID" = $3, 
+           "brandID" = $4, "description" = $5, "image_url" = $6
+       WHERE "applianceID" = $7 
        RETURNING *`,
-      [categoryID, brandID, modelCode, modelName, description || null, finalImageUrl, id]
+      [
+        modelCode || currentData.modelCode,
+        modelName, 
+        categoryID, 
+        brandID, 
+        description || null, 
+        imageUrl, 
+        id
+      ]
     );
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: 'Appliance not found' });
-    }
-
-    console.log('✅ Appliance updated:', result.rows[0]);
+    
+    console.log('✅ Appliance updated in database:', result.rows[0]);
     res.json({
       message: 'Appliance updated successfully',
       appliance: result.rows[0]
     });
+    
   } catch (error) {
-    console.error('Update appliance error:', error);
-    // Write error to file for debugging
-    require('fs').appendFileSync('D:/EasyRecovery/backend/debug.log', `\n${new Date().toISOString()} - Update appliance error: ${error}\n${error instanceof Error ? error.stack : ''}\n`);
+    console.error('❌ Update appliance error:', error);
     res.status(500).json({ message: 'Failed to update appliance' });
   }
 };

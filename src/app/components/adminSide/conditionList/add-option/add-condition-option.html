@@ -6,10 +6,6 @@
     </div>
 
     <form [formGroup]="addOptionForm" (ngSubmit)="onSubmit()">
-      <div class="info-box">
-        <i class="ri-information-line"></i>
-        <span>The condition code will be auto-generated based on the group prefix (e.g., F001, F002, etc.)</span>
-      </div>
 
       <div class="form-group">
         <label for="description">Condition Description <span class="required">*</span></label>
@@ -18,12 +14,25 @@
           [class.error]="description?.invalid && description?.touched">
 
         <div *ngIf="description?.invalid && description?.touched" class="error-message">
-          <small *ngIf="description?.errors?.['required']">Description is required</small>
+          <small>Description is required</small>
         </div>
       </div>
 
-      <div class="form-group">
-        <label for="image">Upload Image</label>
+      <!-- Question Field - Only show for checkbox type -->
+      <div class="form-group" *ngIf="showQuestionField">
+        <label for="question">Question <span class="required">*</span></label>
+        <textarea id="question" formControlName="question" placeholder="Enter question text" rows="3"
+          [class.error]="question?.invalid && question?.touched"></textarea>
+        <small class="hint">Question text for this checklist item</small>
+
+        <div *ngIf="question?.invalid && question?.touched" class="error-message">
+          <small>Question is required</small>
+        </div>
+      </div>
+
+      <!-- Image Upload - Only show for image type -->
+      <div class="form-group" *ngIf="showImageUpload">
+        <label for="image">Upload Image <span class="required">*</span></label>
 
         <!-- Image Preview -->
         <div *ngIf="imagePreviewUrl" class="image-preview">
@@ -33,37 +42,40 @@
           </button>
         </div>
 
-        <input id="image" type="file" accept="image/*" (change)="onFileSelect($event)">
-        <small class="hint">Optional: Upload an image representing this condition</small>
+        <input id="image" type="file" accept="image/*" (change)="onFileSelect($event)"
+          [class.error]="!selectedFile && image?.touched">
+
+        <small class="hint">Upload an image representing this condition (Required)</small>
+
         <div *ngIf="selectedFileName" class="file-name">
           <i class="ri-file-image-line"></i> {{ selectedFileName }}
         </div>
+
+        <div *ngIf="!selectedFile && image?.touched" class="error-message">
+          <small>Image is required</small>
+        </div>
       </div>
 
-      <div class="form-group" *ngIf="isChecklistType">
-        <label for="question">Question</label>
-        <textarea id="question" formControlName="question" placeholder="Enter question text"
-          rows="3"></textarea>
-        <small class="hint">Question text for checklist item</small>
-      </div>
-
+      <!-- Categories - Always Required -->
       <div class="form-group">
-        <label>Applicable Categories</label>
+        <label>Applicable Categories <span class="required">*</span></label>
         <div class="categories-grid">
           <label class="category-checkbox" *ngFor="let category of categories">
-            <input
-              type="checkbox"
-              [checked]="isCategorySelected(category.categoryID)"
+            <input type="checkbox" [checked]="isCategorySelected(category.categoryID)"
               (change)="toggleCategory(category.categoryID)">
             <span>{{ category.categoryName }}</span>
           </label>
         </div>
-        <small class="hint">Select which appliance categories this condition applies to</small>
+        <small class="hint">Select which appliance categories this condition applies to (Required)</small>
+
+        <div *ngIf="!hasSelectedCategories && addOptionForm.touched" class="error-message">
+          <small>At least one category must be selected</small>
+        </div>
       </div>
 
       <div class="form-actions">
         <button type="button" class="btn-secondary" (click)="onClose()">Cancel</button>
-        <button type="submit" class="btn-success" [disabled]="addOptionForm.invalid">
+        <button type="submit" class="btn-success" [disabled]="!isFormValid()">
           Add Condition
         </button>
       </div>
