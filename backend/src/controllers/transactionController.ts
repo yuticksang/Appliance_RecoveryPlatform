@@ -186,7 +186,7 @@ export const getTransactionById = async (req: Request, res: Response) => {
               COALESCE(cs."selectedBy", 'seller') as "selectedBy"
        FROM "ConditionSelected" cs
        LEFT JOIN "ConditionOption" co ON cs."conditionID" = co."conditionID"
-       LEFT JOIN "ConditionGroup" cg ON co."groupID" = cg."groupID" OR cs."conditionID" = cg."groupID"
+       LEFT JOIN "ConditionGroup" cg ON COALESCE(co."groupID", cs."groupID") = cg."groupID"
        WHERE cs."submittedApplianceID" = $1 AND cs."isChecked" = true
        ORDER BY cg."display_order", cs."selectedAt"`,
       [transaction.submittedApplianceID]
@@ -327,12 +327,25 @@ export const getTransactionById = async (req: Request, res: Response) => {
 
     // Fetch photos for this submission
     const photosResult = await pool.query(
-      `SELECT "photoURL" FROM "Photo" WHERE "submittedApplianceID" = $1 ORDER BY "photoID"`,
+      `SELECT "photoURL", "remark", "uploadDate" FROM "Photo"
+       WHERE "submittedApplianceID" = $1
+       ORDER BY "uploadDate", "photoID"`,
       [transaction.submittedApplianceID]
     );
 
-    // Add photos array to the response
-    transaction.photos = photosResult.rows.map(row => row.photoURL);
+    // Separate photos by who uploaded them (seller vs admin)
+    const sellerPhotos = photosResult.rows
+      .filter(row => !row.remark || row.remark !== 'admin')
+      .map(row => row.photoURL);
+
+    const adminPhotos = photosResult.rows
+      .filter(row => row.remark === 'admin')
+      .map(row => row.photoURL);
+
+    // Add photos arrays to the response
+    transaction.photos = sellerPhotos; // Backward compatibility
+    transaction.sellerPhotos = sellerPhotos;
+    transaction.adminPhotos = adminPhotos;
 
     console.log(`✅ Found transaction ${id}:`, transaction);
     console.log(`📋 Selected issues:`, transaction.selectedIssues);
@@ -477,7 +490,8 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
         sa."submissionDate" as "submittedDate",
         sa."initialOfferPrice" as "estimatedPrice",
         sa."finalOfferPrice" as "finalPrice",
-        sa.note,
+        sa."initialNote",
+        sa."finalNote",
         t."transactionStatus",
         t."updatedAt",
         i."itemStatus",
@@ -520,17 +534,14 @@ export const updateTransaction = async (req: Request, res: Response) => {
       model,
       category,
       modelName,
-      initialFunctionalStatus,
-      initialPhysicalCondition,
-      note,
-      // New: dynamic condition selections from admin
-      // Format: { [groupID]: conditionID | conditionID[] }
+      // All admin's dynamic answers (radio, checkbox, dropdown, image, textarea, file_upload)
+      // Format: { [groupID]: conditionID | conditionID[] | textValue | base64Array }
       adminConditions,
       // Photo uploads from admin (base64 data URLs)
       photos
     } = req.body;
 
-    console.log('📝 Updating transaction with full data:', { id, transactionStatus, itemStatus, finalPrice, note, hasPhotos: !!photos, photoCount: photos?.length });
+    console.log('📝 Updating transaction with full data:', { id, transactionStatus, itemStatus, finalPrice, adminConditions, hasPhotos: !!photos, photoCount: photos?.length });
 
     // Get the submittedApplianceID for this transaction
     const txnResult = await pool.query(
@@ -544,13 +555,12 @@ export const updateTransaction = async (req: Request, res: Response) => {
 
     const submittedApplianceID = txnResult.rows[0].submittedApplianceID;
 
-    // Update SubmittedAppliance table (keep for backward compatibility)
+    // Update SubmittedAppliance table (only final offer price)
     await pool.query(
       `UPDATE "SubmittedAppliance"
-       SET "finalOfferPrice" = COALESCE($1, "finalOfferPrice"),
-           note = COALESCE($2, note)
-       WHERE "submittedApplianceID" = $3`,
-      [finalPrice, note, submittedApplianceID]
+       SET "finalOfferPrice" = COALESCE($1, "finalOfferPrice")
+       WHERE "submittedApplianceID" = $2`,
+      [finalPrice, submittedApplianceID]
     );
 
     // Update Transaction status if provided
@@ -583,16 +593,15 @@ export const updateTransaction = async (req: Request, res: Response) => {
     }
 
     // ─────────────────────────────────────────────────────────
-    // SAVE ADMIN CONDITION SELECTIONS TO ConditionSelected
+    // SAVE ADMIN DYNAMIC ANSWERS TO ConditionSelected
     // selectedBy = 'admin' for admin review
-    // Only update if adminConditions is explicitly provided and has entries
-    // Filter out textarea and file_upload types as they're not stored in ConditionSelected
+    // Handles ALL types: radio, checkbox, dropdown, image, textarea, file_upload
     // ─────────────────────────────────────────────────────────
     if (adminConditions && typeof adminConditions === 'object' && Object.keys(adminConditions).length > 0) {
-      console.log('📋 Saving admin conditions:', adminConditions);
+      console.log('📋 Saving admin dynamic answers:', adminConditions);
 
       try {
-        // Fetch condition groups to identify textarea and file_upload types
+        // Fetch condition groups to identify question types
         const groupTypesResult = await pool.query(
           `SELECT "groupID", question_type FROM "ConditionGroup"`
         );
@@ -604,152 +613,101 @@ export const updateTransaction = async (req: Request, res: Response) => {
 
         console.log('📋 Group types:', groupTypes);
 
-        // Separate regular conditions from textarea/file_upload types
-        const regularConditions: { [key: string]: string | string[] } = {};
-        const textareaConditions: { [key: string]: string } = {};
-        const fileUploadConditions: { [key: string]: string[] } = {};
-
-        for (const [groupID, value] of Object.entries(adminConditions)) {
-          const questionType = groupTypes[groupID];
-
-          if (questionType === 'textarea') {
-            // Textarea: store as text value
-            textareaConditions[groupID] = value as string;
-            console.log(`📝 Found textarea condition for group ${groupID}`);
-          } else if (questionType === 'file_upload') {
-            // File upload: store as array of base64 strings
-            fileUploadConditions[groupID] = Array.isArray(value) ? value : [value];
-            console.log(`📸 Found file_upload condition for group ${groupID}`);
-          } else {
-            // Regular conditions (radio, checkbox, dropdown, image)
-            regularConditions[groupID] = value as string | string[];
-          }
-        }
-
-        console.log('📋 Regular conditions:', regularConditions);
-        console.log('📝 Textarea conditions:', textareaConditions);
-        console.log('📸 File upload conditions:', fileUploadConditions);
-
-        // First, delete ALL existing admin selections for this submission
+        // First, delete ALL existing admin answers for this submission
         await pool.query(
           `DELETE FROM "ConditionSelected"
            WHERE "submittedApplianceID" = $1 AND "selectedBy" = 'admin'`,
           [submittedApplianceID]
         );
 
-        console.log('✅ Deleted existing admin conditions');
+        console.log('✅ Deleted existing admin answers');
 
-        // Insert regular conditions (radio, checkbox, dropdown, image)
-        if (Object.keys(regularConditions).length > 0) {
-          for (const [groupID, value] of Object.entries(regularConditions)) {
-            console.log(`📋 Processing group ${groupID} with value:`, value);
+        // Process each group answer
+        for (const [groupID, value] of Object.entries(adminConditions)) {
+          const questionType = groupTypes[groupID];
+          console.log(`📋 Processing group ${groupID} (type: ${questionType}) with value:`, value);
 
-            if (!value) {
-              console.log(`⚠️ Skipping empty value for group ${groupID}`);
-              continue; // Skip empty values
-            }
+          if (!value) {
+            console.log(`⚠️ Skipping empty value for group ${groupID}`);
+            continue;
+          }
 
-            // Handle array (checkbox) or string (radio/dropdown/image)
+          // Handle based on question type
+          if (questionType === 'textarea') {
+            // Save text value
+            console.log(`📝 Saving textarea answer (${(value as string).length} chars)`);
+            await pool.query(
+              `INSERT INTO "ConditionSelected"
+               ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue")
+               VALUES (NULL, $1, true, 'admin', NOW(), $2, $3)`,
+              [submittedApplianceID, groupID, value]
+            );
+          } else if (questionType === 'file_upload') {
+            // File upload handled through Photo table (see below)
+            console.log(`📸 File upload for group ${groupID} - handled via Photo table`);
+          } else if (questionType === 'checkbox') {
+            // Array of conditionIDs
             const conditionIDs = Array.isArray(value) ? value : [value];
+            console.log(`☑️ Saving ${conditionIDs.length} checkbox items`);
 
             for (const conditionID of conditionIDs) {
-              console.log(`📋 Processing conditionID/description: "${conditionID}" (type: ${typeof conditionID})`);
+              if (!conditionID || (typeof conditionID === 'string' && conditionID.trim() === '')) continue;
 
-              if (!conditionID || (typeof conditionID === 'string' && conditionID.trim() === '')) {
-                console.log(`⚠️ Skipping empty conditionID for group ${groupID}`);
-                continue;
-              }
-
-              // If conditionID is a description, we need to find the actual conditionID
-              // Check if it looks like a condition ID (starts with CO) or is a description
               let actualConditionID = conditionID;
 
+              // Look up conditionID if it's a description
               if (typeof conditionID !== 'string' || !conditionID.startsWith('CO')) {
-                // It's a description, find the conditionID
-                console.log(`🔍 Looking up conditionID for description "${conditionID}" in group ${groupID}`);
-
                 const condResult = await pool.query(
                   `SELECT "conditionID" FROM "ConditionOption"
                    WHERE "groupID" = $1 AND description = $2`,
                   [groupID, conditionID]
                 );
-
                 if (condResult.rows.length > 0) {
                   actualConditionID = condResult.rows[0].conditionID;
-                  console.log(`✅ Found conditionID: ${actualConditionID}`);
                 } else {
-                  console.warn(`⚠️ Could not find conditionID for description: "${conditionID}" in group ${groupID}`);
-                  console.warn(`⚠️ Database query returned no results. Skipping this condition.`);
+                  console.warn(`⚠️ Condition not found: "${conditionID}" in group ${groupID}`);
                   continue;
                 }
               }
 
-              console.log(`💾 Inserting condition: ${actualConditionID} for submission ${submittedApplianceID}`);
-
               await pool.query(
                 `INSERT INTO "ConditionSelected"
-                 ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt")
-                 VALUES ($1, $2, true, 'admin', NOW())`,
-                [actualConditionID, submittedApplianceID]
+                 ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID")
+                 VALUES ($1, $2, true, 'admin', NOW(), $3)`,
+                [actualConditionID, submittedApplianceID, groupID]
               );
-
-              console.log(`✅ Successfully inserted condition ${actualConditionID}`);
             }
-          }
+          } else {
+            // radio, dropdown, image - single conditionID
+            console.log(`🔘 Saving ${questionType} answer: ${value}`);
 
-          console.log('✅ Regular admin conditions saved successfully');
-        }
+            let actualConditionID = value;
 
-        // Insert textarea conditions (notes, descriptions, etc.)
-        if (Object.keys(textareaConditions).length > 0) {
-          for (const [groupID, textValue] of Object.entries(textareaConditions)) {
-            if (!textValue || textValue.trim() === '') {
-              console.log(`⚠️ Skipping empty textarea for group ${groupID}`);
-              continue;
+            // Look up conditionID if it's a description
+            if (typeof value !== 'string' || !value.startsWith('CO')) {
+              const condResult = await pool.query(
+                `SELECT "conditionID" FROM "ConditionOption"
+                 WHERE "groupID" = $1 AND description = $2`,
+                [groupID, value]
+              );
+              if (condResult.rows.length > 0) {
+                actualConditionID = condResult.rows[0].conditionID;
+              } else {
+                console.warn(`⚠️ Condition not found: "${value}" in group ${groupID}`);
+                continue;
+              }
             }
-
-            console.log(`📝 Inserting textarea condition for group ${groupID}`);
-
-            // For textarea groups (like Additional Notes), there are no options in ConditionOption
-            // We use NULL for conditionID and store the groupID separately
-            // This allows us to identify which group this entry belongs to
-            await pool.query(
-              `INSERT INTO "ConditionSelected"
-               ("conditionID", "groupID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "textValue")
-               VALUES (NULL, $1, $2, true, 'admin', NOW(), $3)`,
-              [groupID, submittedApplianceID, textValue]
-            );
-
-            console.log(`✅ Successfully inserted textarea condition for group ${groupID}`);
-          }
-        }
-
-        // Insert file_upload conditions (photos, documents, etc.)
-        if (Object.keys(fileUploadConditions).length > 0) {
-          for (const [groupID, files] of Object.entries(fileUploadConditions)) {
-            if (!files || files.length === 0) {
-              console.log(`⚠️ Skipping empty file upload for group ${groupID}`);
-              continue;
-            }
-
-            console.log(`📸 Inserting file_upload condition for group ${groupID} (${files.length} files)`);
-
-            // For file_upload, store each file as a JSON array in textValue
-            // We use NULL for conditionID and store the groupID separately
-            const filesJson = JSON.stringify(files);
 
             await pool.query(
               `INSERT INTO "ConditionSelected"
-               ("conditionID", "groupID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "textValue")
-               VALUES (NULL, $1, $2, true, 'admin', NOW(), $3)`,
-              [groupID, submittedApplianceID, filesJson]
+               ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID")
+               VALUES ($1, $2, true, 'admin', NOW(), $3)`,
+              [actualConditionID, submittedApplianceID, groupID]
             );
-
-            console.log(`✅ Successfully inserted file_upload condition for group ${groupID}`);
           }
         }
 
-        console.log('✅ All admin conditions saved successfully');
+        console.log('✅ All admin dynamic answers saved successfully');
       } catch (conditionError) {
         console.error('❌ Error saving admin conditions:', conditionError);
         console.error('❌ Error details:', {
@@ -757,35 +715,34 @@ export const updateTransaction = async (req: Request, res: Response) => {
           stack: conditionError instanceof Error ? conditionError.stack : undefined,
           adminConditions
         });
-        throw conditionError; // Re-throw to be caught by outer catch block
+        throw conditionError;
       }
     }
 
     // ─────────────────────────────────────────────────────────
     // SAVE ADMIN PHOTOS TO Photo TABLE
-    // photos is an array of { photoURL: string } where photoURL can be:
-    // - Base64 data URL (new upload)
-    // - Existing URL from database (no change needed)
+    // photos is an array of { photoURL: string, remark?: string, groupID?: string }
+    // remark: 'admin' to distinguish from seller photos
     // Only update if photos array is explicitly provided
     // ─────────────────────────────────────────────────────────
     if (photos && Array.isArray(photos) && photos.length > 0) {
       console.log('📷 Processing photos:', photos.length, 'photos');
 
       try {
-        // Delete existing photos for this submission
+        // Delete only existing ADMIN photos for this submission (keep seller photos)
         await pool.query(
-          `DELETE FROM "Photo" WHERE "submittedApplianceID" = $1`,
+          `DELETE FROM "Photo" WHERE "submittedApplianceID" = $1 AND "remark" = 'admin'`,
           [submittedApplianceID]
         );
 
-        console.log('✅ Deleted existing photos');
+        console.log('✅ Deleted existing admin photos');
 
-        // Insert new photos (filter out empty ones)
+        // Insert new admin photos with remark='admin' to distinguish from seller photos
         for (const photo of photos) {
           if (photo && photo.photoURL && photo.photoURL.trim() !== '') {
             await pool.query(
-              `INSERT INTO "Photo" ("submittedApplianceID", "photoURL", "uploadedAt")
-               VALUES ($1, $2, NOW())`,
+              `INSERT INTO "Photo" ("submittedApplianceID", "photoURL", "remark", "uploadDate")
+               VALUES ($1, $2, 'admin', NOW())`,
               [submittedApplianceID, photo.photoURL]
             );
           }
@@ -793,7 +750,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
 
         console.log('✅ Admin photos saved successfully');
       } catch (photoError) {
-        console.error('❌ Error saving admin photos:', photoError);
+        console.error('❌ Error saving photos:', photoError);
         console.error('❌ Photo error details:', {
           message: photoError instanceof Error ? photoError.message : 'Unknown error',
           photosCount: photos.length

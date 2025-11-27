@@ -18,6 +18,7 @@ export const routes: Routes = [
       { path: 'register', canActivate: [guestGuard], loadComponent: () => import('./components/clientSide/register/auth-register').then(m => m.AuthRegisterComponent) },
       { path: 'forgot-password', canActivate: [guestGuard], loadComponent: () => import('./components/clientSide/forgot/forgot').then(m => m.ForgotPasswordComponent) },
       { path: 'reset-password/:token', canActivate: [guestGuard], loadComponent: () => import('./components/clientSide/reset/reset').then(m => m.ResetPasswordComponent) },
+      { path: 'verify-email/:token', canActivate: [guestGuard], loadComponent: () => import('./components/clientSide/verify-email/verify-email').then(m => m.VerifyEmailComponent) },
       { path: '', redirectTo: 'home', pathMatch: 'full' },
       { path: 'questionnaire', canActivate: [sellerGuard], loadComponent: () => import('./components/clientSide/questionnaires/questionnaires').then(m => m.QuestionnairesComponent) },
       { path: 'recovery-slip/:id', canActivate: [sellerGuard], loadComponent: () => import('./components/clientSide/recovery-slip/recovery-slip').then(m => m.RecoverySlipComponent) },
@@ -87,6 +88,10 @@ export const routes: Routes = [
           {
             path: 'condition',
             loadComponent: () => import('./components/adminSide/conditionList/condition-list').then(m => m.ConditionListComponent)
+          },
+          {
+            path: 'markdown-list',
+            loadComponent: () => import('./components/adminSide/markdownList/markdown-list').then(m => m.MarkdownListComponent)
           }
         ]
       },
@@ -177,7 +182,7 @@ export const routes: Routes = [
           },
           {
             path: 'condition-markdown',
-            loadComponent: () => import('./components/buyerSide/dashboard/buyer-dashboard').then(m => m.BuyerDashboardComponent) // Placeholder for Condition & Markdown
+            loadComponent: () => import('./components/buyerSide/markdownList/buyer-markdown-list').then(m => m.BuyerMarkdownListComponent)
           }
         ]
       },

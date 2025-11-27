@@ -123,7 +123,7 @@ export const sendVerificationEmail = async (
     <body>
       <div class="email-container">
         <div class="email-header">
-          <h1>📧 Verify Your Email</h1>
+          <h1>Verify Your Email</h1>
         </div>
         <div class="email-body">
           <h2>Hi ${name},</h2>
@@ -274,7 +274,7 @@ export const sendPasswordResetEmail = async (
     <body>
       <div class="email-container">
         <div class="email-header">
-          <h1>🔒 Reset Your Password</h1>
+          <h1>Reset Your Password</h1>
         </div>
         <div class="email-body">
           <h2>Hi ${name},</h2>
@@ -291,7 +291,7 @@ export const sendPasswordResetEmail = async (
           <div class="alternative-link">${resetUrl}</div>
 
           <div class="warning-box">
-            <p><strong>⚠️ Important:</strong> If you didn't request a password reset, please ignore this email. Your password will remain unchanged.</p>
+            <p><strong>Important:</strong> If you didn't request a password reset, please ignore this email. Your password will remain unchanged.</p>
           </div>
         </div>
         <div class="email-footer">

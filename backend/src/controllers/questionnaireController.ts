@@ -112,23 +112,13 @@ export const getConditionGroups = async (req: AuthRequest, res: Response) => {
                   'id', co."conditionID",
                   'code', co.code,
                   'description', co.description,
-                  'image',
-                    CASE
-                      WHEN co.image IS NOT NULL AND co.image != ''
-                      THEN 'http://localhost:3000' || co.image
-                      ELSE NULL
-                    END
+                  'image', co.image
                 )
                 ORDER BY jsonb_build_object(
                   'id', co."conditionID",
                   'code', co.code,
                   'description', co.description,
-                  'image',
-                    CASE
-                      WHEN co.image IS NOT NULL AND co.image != ''
-                      THEN 'http://localhost:3000' || co.image
-                      ELSE NULL
-                    END
+                  'image', co.image
                 )
               ) FILTER (WHERE co."conditionID" IS NOT NULL),
               '[]'
@@ -262,21 +252,12 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
     // EXTRACT SPECIFIC FIELDS FROM DYNAMIC ANSWERS
     // ─────────────────────────────────────────────────────────
 
-    // Strategy: Match by groupID directly (most reliable)
-    // CG001 = Functional Status
-    // CG002 = Physical Condition
-    const functionalAnswer = questionAnswers.find(qa => qa.groupID === 'CG001');
-    const physicalAnswer = questionAnswers.find(qa => qa.groupID === 'CG002');
-    const notesAnswer = questionAnswers.find(qa => qa.type === 'textarea');
-
-    console.log('🔍 Functional Answer:', functionalAnswer);
-    console.log('🔍 Physical Answer:', physicalAnswer);
-    console.log('🔍 Notes Answer:', notesAnswer);
-
     // Generate SAxxx ID
     const submittedApplianceID = await generateSubmittedApplianceID(client);
+    
+    const notesAnswer = questionAnswers.find(qa => qa.type === 'textarea');
 
-    // Insert into SubmittedAppliance
+    // Insert into SubmittedAppliance (only basic info, all questions go to ConditionSelected)
     const subRes = await client.query(
       `INSERT INTO "SubmittedAppliance" (
         "submittedApplianceID", "sellerID", "applianceID", "addressID",
@@ -296,41 +277,55 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
     const finalId = subRes.rows[0].submittedApplianceID;
 
     // ─────────────────────────────────────────────────────────
-    // SAVE ALL ANSWERS TO ConditionSelected (for ALL types)
+    // SAVE ALL DYNAMIC ANSWERS TO ConditionSelected
+    // selectedBy = 'seller' for initial submission
+    // Supports: radio, checkbox, dropdown, image, textarea, file_upload
     // ─────────────────────────────────────────────────────────
     let savedCount = 0;
     for (const qa of questionAnswers) {
       console.log(`🔄 Processing question: groupID=${qa.groupID}, type=${qa.type}, answer=`, qa.answer);
 
-      // For radio/image: single conditionID
-      if ((qa.type === 'radio' || qa.type === 'image') && qa.answer) {
-        console.log(`  → Saving radio/image answer: ${qa.answer}`);
+      // For radio/image/dropdown: single conditionID
+      if ((qa.type === 'radio' || qa.type === 'image' || qa.type === 'dropdown') && qa.answer) {
+        console.log(`  → Saving ${qa.type} answer: ${qa.answer}`);
         await client.query(
           `INSERT INTO "ConditionSelected"
-          ("conditionID", "submittedApplianceID", "isChecked", "created_at")
-          VALUES ($1, $2, true, NOW())`,
-          [qa.answer, finalId]
+          ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID")
+          VALUES ($1, $2, true, 'seller', NOW(), $3)`,
+          [qa.answer, finalId, qa.groupID]
         );
         savedCount++;
       }
 
       // For checkbox: array of conditionIDs
       if (qa.type === 'checkbox' && Array.isArray(qa.answer)) {
-        console.log(`  → Saving ${qa.answer.length} checkbox answers`);
+        console.log(`  → Saving ${qa.answer.length} checkbox items`);
         for (const conditionID of qa.answer) {
           await client.query(
             `INSERT INTO "ConditionSelected"
-            ("conditionID", "submittedApplianceID", "isChecked", "created_at")
-            VALUES ($1, $2, true, NOW())`,
-            [conditionID, finalId]
+            ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID")
+            VALUES ($1, $2, true, 'seller', NOW(), $3)`,
+            [conditionID, finalId, qa.groupID]
           );
           savedCount++;
         }
       }
 
-      // Textarea is saved to note field, not ConditionSelected
-      if (qa.type === 'textarea') {
-        console.log(`  → Textarea saved to note field (not ConditionSelected)`);
+      // For textarea: save text value
+      if (qa.type === 'textarea' && qa.answer) {
+        console.log(`  → Saving textarea answer (${qa.answer.length} chars)`);
+        await client.query(
+          `INSERT INTO "ConditionSelected"
+          ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue")
+          VALUES (NULL, $1, true, 'seller', NOW(), $2, $3)`,
+          [finalId, qa.groupID, qa.answer]
+        );
+        savedCount++;
+      }
+
+      // For file_upload: photos are saved to Photo table (handled below)
+      if (qa.type === 'file_upload') {
+        console.log(`  → File upload - will be saved to Photo table with groupID`);
       }
     }
 
@@ -389,7 +384,6 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
         addr.zipCode
       ]
     );
-
 
     // Create Transaction record
     await client.query(

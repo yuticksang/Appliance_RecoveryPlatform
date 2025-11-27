@@ -1,0 +1,134 @@
+<main class="buyer-page">
+  <div class="buyer-container">
+    <div class="page-head">
+      <h1 class="page-title">Condition & Markdown List</h1>
+      <div class="breadcrumb">Dashboard / <span>Markdown List</span></div>
+    </div>
+
+    <!-- toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <button class="clear-btn" (click)="clearFilters()">Clear Filters</button>
+        <button class="save-btn" (click)="saveMarkdowns()" [disabled]="saving()">
+          {{ saving() ? 'Saving...' : 'Save Markdowns' }}
+        </button>
+      </div>
+      <div class="toolbar-right">
+        <!-- Category Filter -->
+        <div class="select-wrapper">
+          <select class="category-select" [value]="selectedCategoryFilter()" (change)="onCategoryFilterChange($any($event.target).value)">
+            <option value="all">All Categories</option>
+            <option *ngFor="let category of categories()" [value]="category.categoryName">
+              {{ category.categoryName }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Search -->
+        <div class="search">
+          <input type="text" placeholder="Search..." [value]="search()"
+            (input)="onSearchInput($any($event.target).value)" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div *ngIf="loading()" class="loading">Loading conditions...</div>
+
+    <!-- Error state -->
+    <div *ngIf="error()" class="error-message">{{ error() }}</div>
+
+    <!-- Condition Groups -->
+    <div class="condition-groups" *ngIf="!loading() && !error()">
+      <div *ngFor="let groupData of groupedOptions()" class="condition-group">
+        <div class="group-header">
+          <h2 class="group-title">{{ groupData.group.criteriaName }}</h2>
+          <span class="group-subtitle">{{ groupData.group.question_title || '' }}</span>
+        </div>
+
+        <div class="table-wrap">
+          <table class="grid">
+            <thead>
+              <tr>
+                <th class="narrow">#</th>
+                <th class="sortable" (click)="onSort(groupData.group.groupID, 'code')">
+                  Code <span class="sort-icon">{{ getSortIcon(groupData.group.groupID, 'code') }}</span>
+                </th>
+                <th *ngIf="groupData.group.question_type === 'image_selection'" class="narrow">Image</th>
+                <th class="sortable" (click)="onSort(groupData.group.groupID, 'description')">
+                  Description <span class="sort-icon">{{ getSortIcon(groupData.group.groupID, 'description') }}</span>
+                </th>
+                <th class="sortable" (click)="onSort(groupData.group.groupID, 'categoryNames')">
+                  Category <span class="sort-icon">{{ getSortIcon(groupData.group.groupID, 'categoryNames') }}</span>
+                </th>
+                <th class="sortable" (click)="onSort(groupData.group.groupID, 'markdownPercentage')">
+                  Markdown (%) <span class="sort-icon">{{ getSortIcon(groupData.group.groupID, 'markdownPercentage') }}</span>
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let option of getPagedOptions(groupData.group.groupID); let i = index">
+                <td class="narrow">{{ getRowNumber(groupData.group.groupID, i) }}</td>
+                <td>{{ option.code }}</td>
+                <td *ngIf="groupData.group.question_type === 'image_selection'" class="narrow">
+                  <img *ngIf="option.image" [src]="getImageUrl(option.image)" alt="{{ option.description }}"
+                    class="option-thumbnail" />
+                  <span *ngIf="!option.image">---</span>
+                </td>
+                <td>{{ option.description || '---' }}</td>
+                <td>{{ option.categoryNames || '---' }}</td>
+                <td class="markdown-cell">
+                  <input
+                    type="number"
+                    class="markdown-input"
+                    [value]="getMarkdownValue(option.conditionID) ?? ''"
+                    (input)="onMarkdownChange(option.conditionID, $any($event.target).value)"
+                    placeholder="0"
+                    min="0"
+                    max="100"
+                    step="0.1"
+                  />
+                  <span class="percent-sign">%</span>
+                </td>
+              </tr>
+              <tr *ngIf="getPagedOptions(groupData.group.groupID).length === 0">
+                <td [attr.colspan]="groupData.group.question_type === 'image_selection' ? 6 : 5" class="no-data">
+                  No conditions found
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pager -->
+        <div class="pager">
+          <button class="page-btn" (click)="goToPage(groupData.group.groupID, getCurrentPage(groupData.group.groupID) - 1)"
+            [disabled]="getCurrentPage(groupData.group.groupID) === 1">‹</button>
+
+          <button *ngFor="let pageNum of getPageNumbers(groupData.group.groupID)"
+            class="page-btn"
+            [class.active]="pageNum === getCurrentPage(groupData.group.groupID)"
+            (click)="goToPage(groupData.group.groupID, pageNum)">
+            {{ pageNum }}
+          </button>
+
+          <button class="page-btn" (click)="goToPage(groupData.group.groupID, getCurrentPage(groupData.group.groupID) + 1)"
+            [disabled]="getCurrentPage(groupData.group.groupID) === getTotalPages(groupData.group.groupID)">›</button>
+
+          <div class="page-size">
+            <select [ngModel]="itemsPerPage()" (ngModelChange)="setPageSize($event)">
+              <option *ngFor="let n of itemsPerPageOptions" [value]="n">{{ n }}</option>
+            </select>
+            <span>/Page</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div *ngIf="groupedOptions().length === 0" class="empty-state">
+        <p>No condition groups found</p>
+      </div>
+    </div>
+  </div>
+</main>

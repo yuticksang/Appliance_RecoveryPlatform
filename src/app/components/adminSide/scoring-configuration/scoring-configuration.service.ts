@@ -1,0 +1,57 @@
+import { Injectable, inject } from "@angular/core";
+import { HttpClient } from "@angular/common/http";
+import { Observable } from "rxjs";
+
+export interface Condition {
+    conditionID: string;
+    code: string;
+    image: string | null;
+    description: string;
+    scoreValue: number;
+}
+
+export interface ConditionGroup {
+    groupID: string;
+    criteriaName: string;
+    weightPercentage: number;
+    categoryID: string;
+    conditions: Condition[];
+}
+
+export interface Category {
+    categoryID: string;
+    categoryName: string;
+}
+
+export interface ApiResponse {
+    success: boolean;
+    data: any;
+    message?: string;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class ScoringConfigurationService {
+    private http = inject(HttpClient);
+    private baseUrl = 'http://localhost:3000/api';
+
+    getConditionGroupByCategory(categoryID: string): Observable<ApiResponse>{
+        return this.http.get<ApiResponse>(`${this.baseUrl}/scoring-config/${categoryID}`);
+    }
+
+
+    getCategories(): Observable<ApiResponse>{
+        return this.http.get<ApiResponse>(`${this.baseUrl}/scoring-config/categories`);
+    }
+
+    updateConditionScore(categoryID: string, conditionID: string, newScoreValue: number): Observable<ApiResponse>{
+        return this.http.put<ApiResponse>(`${this.baseUrl}/scoring-config/${categoryID}/${conditionID}`, { newScoreValue });
+    }
+
+
+   
+    
+
+
+}

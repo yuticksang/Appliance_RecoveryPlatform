@@ -162,7 +162,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     model: '',
     category: '',
     score: 0,
-    note: '',
+    note: ''
   };
 
 
@@ -193,11 +193,17 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     modelName: '',
     category: '',
     score: 0,
-    note: '',
+    note: ''
   };
 
   // Dynamic condition groups from backend (e.g., "Functional Status", "Appearance Status", "Checklist")
-  conditionGroups: { [key: string]: string[] } = {};
+  conditionGroups: { [key: string]: string | string[] } = {};
+
+  // Mapping of groupID to display name (e.g., {"CG001": "Functional Status", "CG002": "Appearance Status"})
+  conditionGroupNames: { [key: string]: string } = {};
+
+  // Expose Array to template for Array.isArray() check
+  Array = Array;
 
 
   // Check if transaction needs review comparison
@@ -413,14 +419,14 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
           submittedDate: new Date(data.submittedDate),
           estimatedPrice: data.estimatedPrice,
           finalPrice: data.finalPrice,
-          note: data.note
+          note: data.finalNote || data.initialNote || data.note // Show final note if reviewed, otherwise initial
         };
 
         // Load REAL customer info from database
         this.customerInfo = {
-          name: data.addressName || 'Unknown',
+          name: data.sellerName || 'Unknown',
           email: data.sellerEmail || 'N/A',
-          contactNumber: data.addressPhone || 'N/A',
+          contactNumber: data.sellerPhone || 'N/A',
           address: data.pickupAddress || 'N/A',
           city: data.city || 'N/A',
           state: data.state || 'N/A',
@@ -469,8 +475,11 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   loadRealDetails(data: any): void {
     // Load dynamic condition groups from backend
     this.conditionGroups = data.conditionGroups || {};
+    this.conditionGroupNames = data.conditionGroupNames || {};
 
 
+    console.log('🔍 Loaded conditionGroups:', this.conditionGroups);
+    console.log('🔍 Loaded conditionGroupNames:', this.conditionGroupNames);
 
     // If awaiting confirmation, show before/after review comparison
     if (this.isAwaitingConfirmation) {
@@ -480,8 +489,8 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         brand: data.brand,
         model: data.model,
         category: data.category,
-        score: this.calculateScoreFromGroups(this.conditionGroups),
-        note: data.note || ''
+        score: 0, // TODO: Will be fetched from other team's API
+        note: data.initialNote || data.note || '' // Seller's original note
       };
 
       // After review - admin's assessment (revised price & condition)
@@ -490,8 +499,8 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         brand: data.brand,
         model: data.model,
         category: data.category,
-        score: this.calculateScoreFromGroups(this.conditionGroups),
-        note: data.note || ''
+        score: 0, // TODO: Will be fetched from other team's API
+        note: data.finalNote || '' // Admin's review note
       };
     } else {
       // For other statuses, use current appliance info
@@ -501,8 +510,8 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         model: data.model,
         modelName: data.modelName,
         category: data.category,
-        score: this.calculateScoreFromGroups(this.conditionGroups),
-        note: data.note || ''
+        score: 0, // TODO: Will be fetched from other team's API
+        note: data.finalNote || data.initialNote || data.note || '' // Show final note if available, otherwise initial
       };
     }
   }
@@ -517,33 +526,11 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     return Object.keys(this.conditionGroups).length > 0;
   }
 
-  // Helper function to calculate score based on dynamic condition groups
-  private calculateScoreFromGroups(groups: { [key: string]: string[] }): number {
-    let score = 0;
-    const allConditions = Object.values(groups).flat();
-
-    // Score based on common condition keywords
-    allConditions.forEach(condition => {
-      const lowerCondition = condition.toLowerCase();
-
-      // Functional status scoring
-      if (lowerCondition.includes('fully functioning') || lowerCondition.includes('working')) {
-        score += 30;
-      } else if (lowerCondition.includes('partially')) {
-        score += 15;
-      }
-
-      // Physical condition scoring
-      if (lowerCondition.includes('new') || lowerCondition.includes('excellent')) {
-        score += 30;
-      } else if (lowerCondition.includes('good') || lowerCondition.includes('minor')) {
-        score += 20;
-      } else if (lowerCondition.includes('fair')) {
-        score += 10;
-      }
-    });
-
-    return Math.min(score, 100); // Cap at 100
+  // Helper to get display name for a groupID (e.g., "CG001" -> "Functional Status")
+  getGroupDisplayName(groupId: string): string {
+    const displayName = this.conditionGroupNames[groupId] || groupId;
+    console.log(`🔍 getGroupDisplayName(${groupId}) = ${displayName}`);
+    return displayName;
   }
 
   goBack(): void {
@@ -551,17 +538,13 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   }
 
   viewRecoverySlip(): void {
-    this.router.navigate(['/recovery-slip', this.transactionId], {
-      state: { fromTransactionId: this.transactionId }
-    });
+    // TODO: Navigate to recovery slip page or open PDF
     console.log('View recovery slip for transaction:', this.transactionId);
   }
 
   viewPackagingInstruction(): void {
-    this.router.navigate(['/packaging-instruction'], {
-      state: { fromTransactionId: this.transactionId }
-    });
-    console.log('View packaging instruction for transaction:', this.transactionId);
+    // TODO: Navigate to packaging instruction page or open PDF
+    console.log('View packaging instruction');
   }
   // Step 1: Show accept confirmation modal
   acceptOffer(): void {

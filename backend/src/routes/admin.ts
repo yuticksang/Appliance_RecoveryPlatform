@@ -78,11 +78,11 @@ router.get('/brands', getAllBrands);
 // Get all appliances
 router.get('/appliances', getAllAppliances);
 
-// Create new appliance
-router.post('/appliances', createAppliance);
+// Create new appliance (with image upload)
+router.post('/appliances', optionalUpload, createAppliance);
 
-// Update appliance
-router.put('/appliances/:id', updateAppliance);
+// Update appliance (with image upload)
+router.put('/appliances/:id', optionalUpload, updateAppliance);
 
 // Update appliance status
 router.put('/appliances/:id/status', updateApplianceStatus);
