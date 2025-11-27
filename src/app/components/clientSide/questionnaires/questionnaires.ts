@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, ChangeDetectorRef, OnInit, inject, signal, computed } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { QuestionnaireService, Category,  SimpleItem } from '../../../services/questionnaire.service';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../services/auth.service';
@@ -45,7 +46,8 @@ export class QuestionnairesComponent implements OnInit{
   private fb = inject(FormBuilder);
   private alertService = inject(AlertService);
   private cdr = inject(ChangeDetectorRef);
-  
+  private route = inject(ActivatedRoute);
+
   currentUser = this.auth.currentUser;
 
   // Step tracking
@@ -307,6 +309,22 @@ export class QuestionnairesComponent implements OnInit{
   ngOnInit() {
     console.log('User:', this.currentUser());
     this.loadCategories(); // load actual types from backend
+
+    // Check if categoryId is passed from home page
+    this.route.queryParams.subscribe(params => {
+      if (params['categoryId']) {
+        this.applianceTypeId = params['categoryId'];
+        console.log('Pre-selected category from home:', this.applianceTypeId);
+
+        // Auto-load brands for this category
+        this.onCategoryChange();
+
+        // Skip to step 2 (brand & model selection)
+        this.currentStep = 2;
+        this.maxStepReached = 2;
+        this.cdr.markForCheck();
+      }
+    });
 
     // ALWAYS load condition groups on init
     this.loadConditionGroups();

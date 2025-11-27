@@ -8,6 +8,7 @@ import { AuthService } from './auth.service';
 export interface Category {
   id: number | string;
   name: string;
+  image?: string | null;
 }
 
 export interface SimpleItem {
