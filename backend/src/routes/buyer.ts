@@ -6,6 +6,15 @@ import {
   toggleBuyerApplianceStatus,
   deleteBuyerAppliance
 } from '../controllers/buyerController';
+import {
+  getBuyerConditionGroups,
+  getBuyerConditionOptions,
+  getBuyerCategories,
+  getBuyerMarkdowns,
+  saveBuyerMarkdowns,
+  updateSingleBuyerMarkdown,
+  deleteBuyerMarkdown
+} from '../controllers/buyerMarkdownController';
 import { verifyToken } from '../middleware/authMiddleware';
 
 console.log('📍📍📍 buyer routes loaded! 📍📍📍');
@@ -30,5 +39,30 @@ router.put('/appliances/:applianceID/status', verifyToken, toggleBuyerApplianceS
 
 // Delete an appliance from buyer's list
 router.delete('/appliances/:applianceID', verifyToken, deleteBuyerAppliance);
+
+// =====================================================
+// BUYER MARKDOWN ROUTES
+// =====================================================
+
+// Get all active condition groups (filtered for radio, checkbox, image_selection)
+router.get('/condition-groups', verifyToken, getBuyerConditionGroups);
+
+// Get all active condition options (filtered for radio, checkbox, image_selection)
+router.get('/condition-options', verifyToken, getBuyerConditionOptions);
+
+// Get all active categories
+router.get('/categories', verifyToken, getBuyerCategories);
+
+// Get buyer's markdowns
+router.get('/markdowns', verifyToken, getBuyerMarkdowns);
+
+// Save/update buyer's markdowns (bulk)
+router.post('/markdowns', verifyToken, saveBuyerMarkdowns);
+
+// Update a single markdown
+router.put('/markdowns/:conditionId', verifyToken, updateSingleBuyerMarkdown);
+
+// Delete a single markdown
+router.delete('/markdowns/:conditionId', verifyToken, deleteBuyerMarkdown);
 
 export default router;

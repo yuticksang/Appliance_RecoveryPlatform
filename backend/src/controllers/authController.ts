@@ -152,11 +152,39 @@ export const login = async (req: Request, res: Response) => {
 
     // Check if email is verified (only for sellers with email/password login)
     if (user.user_type === 'seller' && !user.email_verified && user.can_change_password) {
-      console.log('❌ Email not verified');
+      console.log('❌ Email not verified, resending verification email...');
+
+      // Delete any existing verification tokens for this user
+      await pool.query(
+        `DELETE FROM auth_tokens
+         WHERE "userID" = $1 AND token_type = 'email_verification'`,
+        [user.userID]
+      );
+
+      // Generate new verification token
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+
+      // Store new token
+      await pool.query(
+        `INSERT INTO auth_tokens (token, "userID", token_type, expires_at)
+         VALUES ($1, $2, 'email_verification', NOW() + INTERVAL '24 hours')`,
+        [verificationToken, user.userID]
+      );
+
+      // Resend verification email
+      try {
+        await sendVerificationEmail(user.email, user.name, verificationToken);
+        console.log(`✅ Verification email resent to: ${user.email}`);
+      } catch (emailError) {
+        console.error('❌ Failed to resend verification email:', emailError);
+        console.log(`Verification link (for testing): ${process.env.FRONTEND_URL || 'http://localhost:4200'}/verify-email/${verificationToken}`);
+      }
+
       return res.status(401).json({
-        message: 'Please verify your email before logging in. Check your inbox for the verification link.',
+        message: 'Please verify your email before logging in. We have sent a new verification link to your email.',
         emailNotVerified: true,
-        email: user.email
+        email: user.email,
+        emailResent: true
       });
     }
 
