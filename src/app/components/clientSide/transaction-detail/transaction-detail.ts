@@ -424,9 +424,9 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
 
         // Load REAL customer info from database
         this.customerInfo = {
-          name: data.sellerName || 'Unknown',
+          name: data.addressName || 'Unknown',
           email: data.sellerEmail || 'N/A',
-          contactNumber: data.sellerPhone || 'N/A',
+          contactNumber: data.addressPhone  || 'N/A',
           address: data.pickupAddress || 'N/A',
           city: data.city || 'N/A',
           state: data.state || 'N/A',
@@ -538,13 +538,17 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   }
 
   viewRecoverySlip(): void {
-    // TODO: Navigate to recovery slip page or open PDF
+    this.router.navigate(['/recovery-slip', this.transactionId], {
+      state: { fromTransactionId: this.transactionId }
+    });
     console.log('View recovery slip for transaction:', this.transactionId);
   }
 
   viewPackagingInstruction(): void {
-    // TODO: Navigate to packaging instruction page or open PDF
-    console.log('View packaging instruction');
+    this.router.navigate(['/packaging-instruction'], {
+      state: { fromTransactionId: this.transactionId }
+    });
+    console.log('View packaging instruction for transaction:', this.transactionId);
   }
   // Step 1: Show accept confirmation modal
   acceptOffer(): void {

@@ -255,22 +255,21 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
     // Generate SAxxx ID
     const submittedApplianceID = await generateSubmittedApplianceID(client);
     
-    const notesAnswer = questionAnswers.find(qa => qa.type === 'textarea');
+    // const notesAnswer = questionAnswers.find(qa => qa.type === 'textarea');
 
     // Insert into SubmittedAppliance (only basic info, all questions go to ConditionSelected)
     const subRes = await client.query(
       `INSERT INTO "SubmittedAppliance" (
         "submittedApplianceID", "sellerID", "applianceID", "addressID",
-        "initialOfferPrice", "initialNote"
-      ) VALUES ($1, $2, $3, $4, $5, $6)
+        "initialOfferPrice"
+      ) VALUES ($1, $2, $3, $4, $5)
       RETURNING "submittedApplianceID"`,
       [
         submittedApplianceID,
         sellerId,
         modelId,
         addressId,
-        parseFloat(valuationWorth) || 0,
-        notesAnswer?.answer || null
+        parseFloat(valuationWorth) || 0
       ]
     );
 
