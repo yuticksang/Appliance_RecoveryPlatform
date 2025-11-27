@@ -75,7 +75,7 @@ export class QuestionnairesComponent implements OnInit{
   selectedAnswers = signal<Record<string, any>>({}); // groupID → answer
   group!: ConditionGroup;  // ← even better, with type
 
-
+  isCalculating = signal<boolean>(false);
 
   // Step 3 - Condition Questionnaires
   notes: string = '';
@@ -90,6 +90,7 @@ export class QuestionnairesComponent implements OnInit{
   valuationScore: number = 0;
   valuationLabel: string = '';
   valuationWorth: number = 0;
+  calculatedScores: any;
 
   // Step 5 - Pickup
 /* ────── ADDRESS SIGNALS ────── */
@@ -271,38 +272,7 @@ export class QuestionnairesComponent implements OnInit{
     return URL.createObjectURL(file);
   }
 
-  calculateValuation() {
-    let score = 0;
-
-    // Functional Status (CG001)
-    const funcDesc = this.getFunctionalStatus();
-    if (funcDesc?.includes('Fully')) score += 40;
-    else if (funcDesc?.includes('Partially')) score += 25;
-    else if (funcDesc) score += 10;
-
-    // Physical Condition (CG002)
-    const physDesc = this.getPhysicalCondition();
-    if (physDesc?.includes('Like New')) score += 30;
-    else if (physDesc?.includes('Minor')) score += 25;
-    else if (physDesc?.includes('Missing')) score += 15;
-    else if (physDesc?.includes('Heavily')) score += 10;
-    else if (physDesc?.includes('Rust')) score += 5;
-
-    // Issues
-    const issueCount = this.getSelectedIssueDescriptions().length;
-    if (issueCount === 0 || this.getSelectedIssueDescriptions().includes('None of the above')) {
-      score += 30;
-    } else {
-      score += Math.max(0, 30 - issueCount * 5);
-    }
-
-    this.valuationScore = Math.min(score, 100);
-    this.valuationLabel = this.valuationScore >= 85 ? 'Excellent' 
-      : this.valuationScore >= 70 ? 'Good'
-      : this.valuationScore >= 50 ? 'Fair' : 'Poor';
-    this.valuationWorth = Math.round((this.valuationScore / 100) * 1500);
-  }
-
+  
 
   ngOnInit() {
     console.log('User:', this.currentUser());
@@ -437,7 +407,7 @@ export class QuestionnairesComponent implements OnInit{
 
   onAnswerChange() {
     this.cdr.markForCheck();
-    this.calculateValuation(); // if needed
+    
   }
 
   selectImageOption(groupId: string, optionId: string) {
@@ -740,6 +710,30 @@ export class QuestionnairesComponent implements OnInit{
     this.closeAddressModal();
   }
 
+  getValuationPayload() {
+    const modelId = String(this.selectedModelId);
+    const answers = this.selectedAnswers();
+    const groups = this.conditionGroups();
+    const conditionIds: string[] = [];
+
+    groups.forEach(group =>{
+      const val = answers[group.groupID];
+
+      if (!val) return;
+
+      if (group.type === 'radio' || group.type === 'image') {
+        conditionIds.push(String(val));
+      }else if (group.type === 'checkbox' && Array.isArray(val)){
+        conditionIds.push(...val);
+      }
+    })
+
+    return{
+      modelId,
+      conditionIds
+    };
+  }
+
   nextStep() {
     // Step 1 validation
     if (this.currentStep === 1 && !this.applianceTypeId) {
@@ -774,7 +768,50 @@ export class QuestionnairesComponent implements OnInit{
       // FILE UPLOAD IS 100% OPTIONAL — NO CHECK HERE
       // User can skip even if file_upload group exists
 
-      this.calculateValuation();
+      this.isCalculating.set(true);
+
+      const payload = this.getValuationPayload();
+
+      this.questionnaireService.calculateValuation(payload).subscribe({
+        next: (res) => {
+
+          this.isCalculating.set(false);
+          
+          if(!res){
+            this.alertService.error('Valuation calculation returned no data.');
+            return;
+          }
+
+          if (res.scoreLabel) {
+            this.valuationWorth = res.valuationWorth || 0;
+             this.valuationScore = res.scoreLabel.totalScore;
+             this.valuationLabel = res.scoreLabel.classification;
+             this.calculatedScores = res.scoreLabel;
+          } else {
+             // Fallback if data is missing
+             this.valuationScore = 0;
+             this.valuationLabel = 'Unknown';
+             this.calculatedScores = null;
+          }
+
+          this.currentStep++;
+          if (this.currentStep > this.maxStepReached) {
+            this.maxStepReached = this.currentStep;
+          }
+          this.cdr.markForCheck(); // Update UI
+        
+        },
+        error: (err) => {
+          console.error('Valuation calculation failed:', err);
+          this.alertService.error('Failed to calculate valuation. Please try again.');
+          this.isCalculating.set(false);
+          this.cdr.markForCheck();
+        }
+
+
+      });
+
+      return;
     }
 
     if (this.currentStep === 5) {

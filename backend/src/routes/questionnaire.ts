@@ -6,6 +6,7 @@ import {
   submitQuestionnaire,
   getConditionGroups
 } from '../controllers/questionnaireController';
+import {calculateValuation} from '../controllers/calculateValuationController';
 // import { getAddresses, createAddress, updateAddress, deleteAddress, setDefaultAddress } from '../controllers/profileController';
 import { verifyToken } from '../middleware/authMiddleware';
 import multer from 'multer';
@@ -42,6 +43,9 @@ router.get('/condition-groups/:categoryId', verifyToken, getConditionGroups);
 // router.put('/addresses/:userId/:addressId', verifyToken, updateAddress);
 // router.delete('/addresses/:userId/:addressId', verifyToken, deleteAddress);
 // router.patch('/addresses/:userId/:addressId/default', verifyToken, setDefaultAddress);
+
+// Valuation Route
+router.post('/calculate-valuation', verifyToken, calculateValuation);
 
 // === SUBMIT ROUTE: Multer + Auth + Controller ===
 router.post(

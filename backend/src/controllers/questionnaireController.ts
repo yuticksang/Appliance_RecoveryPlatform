@@ -100,6 +100,7 @@ export const getConditionGroups = async (req: AuthRequest, res: Response) => {
     }
 
     const result = await pool.query(`
+          
           SELECT
             cg."groupID",
             cg."criteriaName" AS "sectionName",
@@ -114,19 +115,28 @@ export const getConditionGroups = async (req: AuthRequest, res: Response) => {
                   'description', co.description,
                   'image',
                     CASE
-                      WHEN co.image IS NOT NULL AND co.image != ''
-                      THEN 'http://localhost:3000' || co.image
+                      WHEN co.image IS NOT NULL AND co.image != '' THEN
+                        CASE 
+                           -- FIX: If image is already a full URL (Supabase), use it directly
+                           WHEN co.image LIKE 'http%' THEN co.image
+                           -- FIX: Otherwise, prepend localhost (for local uploads)
+                           ELSE 'http://localhost:3000' || co.image
+                        END
                       ELSE NULL
                     END
                 )
                 ORDER BY jsonb_build_object(
+                  -- Repeat the same logic in the ORDER BY clause if you are ordering by object
                   'id', co."conditionID",
                   'code', co.code,
                   'description', co.description,
                   'image',
                     CASE
-                      WHEN co.image IS NOT NULL AND co.image != ''
-                      THEN 'http://localhost:3000' || co.image
+                      WHEN co.image IS NOT NULL AND co.image != '' THEN
+                        CASE 
+                           WHEN co.image LIKE 'http%' THEN co.image
+                           ELSE 'http://localhost:3000' || co.image
+                        END
                       ELSE NULL
                     END
                 )

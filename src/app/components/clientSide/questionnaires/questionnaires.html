@@ -174,8 +174,8 @@
     <!-- NAVIGATION BUTTONS — MOVED OUTSIDE LOOP → NEVER COVERED BY FILE INPUT -->
     <!-- Navigation -->
     <div class="btn-row">
-      <button (click)="prevStep(); $event.stopPropagation()">Back</button>
-      <button (click)="nextStep(); $event.stopPropagation()">Next</button>
+      <button (click)="prevStep(); $event.stopPropagation()" [disabled]="isCalculating()">Back</button>
+      <button (click)="nextStep(); $event.stopPropagation()" [disabled]="isCalculating()" [class.loading-btn]="isCalculating()">Next</button>
     </div>
   </div>
 
