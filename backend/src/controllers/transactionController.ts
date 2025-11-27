@@ -48,14 +48,10 @@ export const getTransactionsBySeller = async (req: Request, res: Response) => {
         u.name as "sellerName",
         sa."submittedApplianceID",
         sa."submissionDate" as "submittedDate",
-        sa."initialFunctionalStatus",
-        sa."initialAppearanceStatus",
-        sa."finalFunctionalStatus",
-        sa."finalAppearanceStatus",
         sa."initialOfferPrice" as "estimatedPrice",
         sa."finalOfferPrice" as "finalPrice",
-        sa."initialNote",
-        sa."finalNote",
+        sa."initialNote" as "initialNote",
+        sa."finalNote" as "finalNote",
         t."transactionStatus",
         t."createdAt",
         t."updatedAt",
@@ -101,14 +97,10 @@ export const getAllTransactions = async (req: Request, res: Response) => {
         u.name as "sellerName",
         sa."submittedApplianceID",
         sa."submissionDate" as "submittedDate",
-        sa."initialFunctionalStatus",
-        sa."initialAppearanceStatus",
-        sa."finalFunctionalStatus",
-        sa."finalAppearanceStatus",
         sa."initialOfferPrice" as "estimatedPrice",
         sa."finalOfferPrice" as "finalPrice",
-        sa."initialNote",
-        sa."finalNote",
+        sa."initialNote" as "initialNote",
+        sa."finalNote" as "finalNote",
         t."transactionStatus",
         t."createdAt",
         t."updatedAt",
@@ -162,8 +154,14 @@ export const getTransactionById = async (req: Request, res: Response) => {
         COALESCE(u.phone, '') as "sellerPhone",
         sa."submittedApplianceID",
         sa."submissionDate" as "submittedDate",
+        COALESCE(sa."initialFunctionalStatus", 'N/A') as "initialFunctionalStatus",
+        COALESCE(sa."initialAppearanceStatus", 'N/A') as "initialAppearanceStatus",
+        sa."finalFunctionalStatus",
+        sa."finalAppearanceStatus",
         COALESCE(sa."initialOfferPrice", 0) as "estimatedPrice",
         sa."finalOfferPrice" as "finalPrice",
+        COALESCE(sa."initialNote", '') as "initialNote",
+        COALESCE(sa."finalNote", '') as "finalNote",
         t."transactionStatus",
         t."createdAt",
         t."updatedAt",
@@ -221,6 +219,51 @@ export const getTransactionById = async (req: Request, res: Response) => {
     );
 
     console.log('📋 Raw conditions from DB:', conditionsResult.rows);
+
+    
+
+
+    // Add selected issues to the response (for backward compatibility)
+    transaction.selectedIssues = conditionsResult.rows.map(row => row.description || row.code);
+
+    // NEW: Fetch DYNAMIC question-answer pairs
+    const questionAnswersResult = await pool.query(
+      `SELECT
+        cg."groupID",
+        cg."criteriaName" as "sectionName",
+        cg."question_title" as question,
+        cg."question_type" as type,
+        json_agg(
+          json_build_object(
+            'id', co."conditionID",
+            'description', co.description
+          )
+        ) as "selectedOptions"
+       FROM "ConditionSelected" cs
+       JOIN "ConditionOption" co ON cs."conditionID" = co."conditionID"
+       JOIN "ConditionGroup" cg ON co."groupID" = cg."groupID"
+       WHERE cs."submittedApplianceID" = $1 AND cs."isChecked" = true
+       GROUP BY cg."groupID", cg."criteriaName", cg."question_title", cg."question_type"
+       ORDER BY cg."display_order" ASC`,
+      [transaction.submittedApplianceID]
+    );
+
+    // Format dynamic answers for frontend
+    transaction.dynamicAnswers = questionAnswersResult.rows.map(row => ({
+      groupID: row.groupID,
+      sectionName: row.sectionName,
+      question: row.question,
+      type: row.type,
+      // For checkbox: return array of descriptions
+      // For radio/image: return single description string
+      answer: row.type === 'checkbox'
+        ? row.selectedOptions.map((opt: any) => opt.description)
+        : row.selectedOptions[0]?.description || 'N/A'
+    }));
+
+
+
+
 
     // Fetch all condition groups to identify textarea and file_upload types
     const conditionGroupsResult = await pool.query(
@@ -296,21 +339,9 @@ export const getTransactionById = async (req: Request, res: Response) => {
     console.log('📋 Seller conditions:', sellerConditions);
     console.log('📋 Admin conditions:', adminConditions);
 
-    // Create a mapping of groupID to criteriaName for frontend display
-    // Use ALL condition groups, not just ones with answers
-    const groupNames: { [key: string]: string } = {};
-    conditionGroupsResult.rows.forEach(row => {
-      if (row.groupID && row.criteriaName) {
-        groupNames[row.groupID] = row.criteriaName;
-      }
-    });
-
-    console.log('📋 Group names mapping:', groupNames);
-
     // Add both to response
     transaction.sellerConditions = sellerConditions;  // Before (what seller filled)
     transaction.adminConditions = adminConditions;    // After (what admin reviewed)
-    transaction.conditionGroupNames = groupNames;     // Mapping of groupID to display name
 
     // Keep conditionGroups for backward compatibility (show seller's original by default)
     transaction.conditionGroups = sellerConditions;
@@ -320,42 +351,7 @@ export const getTransactionById = async (req: Request, res: Response) => {
       .filter(row => row.selectedBy !== 'admin')
       .map(row => row.description || row.code);
 
-    // NEW: Fetch DYNAMIC question-answer pairs
-    const questionAnswersResult = await pool.query(
-      `SELECT
-        cg."groupID",
-        cg."criteriaName" as "sectionName",
-        cg."question_title" as question,
-        cg."question_type" as type,
-        json_agg(
-          json_build_object(
-            'id', co."conditionID",
-            'description', co.description
-          )
-        ) as "selectedOptions"
-       FROM "ConditionSelected" cs
-       JOIN "ConditionOption" co ON cs."conditionID" = co."conditionID"
-       JOIN "ConditionGroup" cg ON co."groupID" = cg."groupID"
-       WHERE cs."submittedApplianceID" = $1 AND cs."isChecked" = true
-       GROUP BY cg."groupID", cg."criteriaName", cg."question_title", cg."question_type"
-       ORDER BY cg."display_order" ASC`,
-      [transaction.submittedApplianceID]
-    );
-
-    // Format dynamic answers for frontend
-    transaction.dynamicAnswers = questionAnswersResult.rows.map(row => ({
-      groupID: row.groupID,
-      sectionName: row.sectionName,
-      question: row.question,
-      type: row.type,
-      // For checkbox: return array of descriptions
-      // For radio/image: return single description string
-      answer: row.type === 'checkbox'
-        ? row.selectedOptions.map((opt: any) => opt.description)
-        : row.selectedOptions[0]?.description || 'N/A'
-    }));
-
-    // Fetch photos for this submission (distinguish seller vs admin by remark field)
+    // Fetch photos for this submission
     const photosResult = await pool.query(
       `SELECT "photoURL", "remark", "uploadDate" FROM "Photo"
        WHERE "submittedApplianceID" = $1
@@ -942,3 +938,240 @@ export const updateTransaction = async (req: Request, res: Response) => {
 };
 
 
+
+
+
+/**
+ * Update submission details (seller edit when Awaiting Pick Up)
+ * Allows seller to edit pickup details, appliance model, and condition answers
+ */
+export const updateSubmissionDetails = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const {
+      modelId,
+      addressId,
+      pickupDate,
+      pickupTime,
+      questionAnswers // JSON string of new answers
+    } = req.body;
+
+    console.log('📝 Updating submission details for transaction:', id);
+    console.log('Payload:', req.body);
+
+    // Get the submittedApplianceID for this transaction
+    const txnResult = await pool.query(
+      `SELECT "submittedApplianceID", "transactionStatus" FROM "Transaction" WHERE "transactionID" = $1`,
+      [id]
+    );
+
+    if (txnResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
+
+    const { submittedApplianceID, transactionStatus } = txnResult.rows[0];
+
+    // Only allow editing if status is "Awaiting Pick Up"
+    if (transactionStatus !== 'Awaiting Pick Up') {
+      return res.status(403).json({
+        message: 'Cannot edit submission. Transaction is no longer in "Awaiting Pick Up" status.'
+      });
+    }
+
+    // Update appliance model if provided
+    if (modelId) {
+      await pool.query(
+        `UPDATE "SubmittedAppliance"
+         SET "applianceID" = $1
+         WHERE "submittedApplianceID" = $2`,
+        [modelId, submittedApplianceID]
+      );
+      console.log('✅ Updated appliance model');
+    }
+
+    // Update pickup details if provided
+    if (addressId || pickupDate || pickupTime) {
+      // Get address details for snapshot
+      const addressResult = await pool.query(
+        `SELECT "receiverName", "phoneNum", "state", "city", "zipCode", "pickupAddress"
+         FROM "Address" WHERE "addressID" = $1`,
+        [addressId]
+      );
+
+      if (addressResult.rows.length > 0) {
+        const addr = addressResult.rows[0];
+        await pool.query(
+          `UPDATE "Pickup"
+           SET "addressID" = COALESCE($1, "addressID"),
+               "pickupDate" = COALESCE($2, "pickupDate"),
+               "pickupTimeSlot" = COALESCE($3, "pickupTimeSlot"),
+               "snapshotReceiverName" = COALESCE($4, "snapshotReceiverName"),
+               "snapshotPhoneNum" = COALESCE($5, "snapshotPhoneNum"),
+               "snapshotState" = COALESCE($6, "snapshotState"),
+               "snapshotCity" = COALESCE($7, "snapshotCity"),
+               "snapshotZipCode" = COALESCE($8, "snapshotZipCode"),
+               "snapshotAddress" = COALESCE($9, "snapshotAddress")
+           WHERE "submittedApplianceID" = $10`,
+          [
+            addressId,
+            pickupDate,
+            pickupTime,
+            addr.receiverName,
+            addr.phoneNum,
+            addr.state,
+            addr.city,
+            addr.zipCode,
+            addr.pickupAddress,
+            submittedApplianceID
+          ]
+        );
+        console.log('✅ Updated pickup details');
+      }
+    }
+
+    // Update condition answers if provided
+    if (questionAnswers) {
+      const answers = JSON.parse(questionAnswers);
+      console.log('📋 Updating condition answers:', answers);
+
+      // Delete existing condition selections for this submission
+      await pool.query(
+        `DELETE FROM "ConditionSelected" WHERE "submittedApplianceID" = $1`,
+        [submittedApplianceID]
+      );
+
+      // Insert new selections
+      for (const answer of answers) {
+        if (answer.type === 'checkbox' && Array.isArray(answer.answer)) {
+          // Multiple selections
+          for (const conditionId of answer.answer) {
+            await pool.query(
+              `INSERT INTO "ConditionSelected" ("submittedApplianceID", "conditionID", "isChecked")
+               VALUES ($1, $2, true)`,
+              [submittedApplianceID, conditionId]
+            );
+          }
+        } else if (answer.type === 'radio' || answer.type === 'image') {
+          // Single selection
+          if (answer.answer) {
+            await pool.query(
+              `INSERT INTO "ConditionSelected" ("submittedApplianceID", "conditionID", "isChecked")
+               VALUES ($1, $2, true)`,
+              [submittedApplianceID, answer.answer]
+            );
+          }
+        }
+      }
+      console.log('✅ Updated condition selections');
+    }
+
+    // Mark transaction as updated
+    await pool.query(
+      `UPDATE "Transaction" SET "updatedAt" = NOW() WHERE "transactionID" = $1`,
+      [id]
+    );
+
+    console.log('✅ Submission details updated successfully');
+
+    res.json({
+      message: 'Submission details updated successfully',
+      transactionID: id
+    });
+  } catch (error) {
+    console.error('❌ Error updating submission details:', error);
+    res.status(500).json({
+      message: 'Failed to update submission details',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+/**
+ * Update customer information (seller can edit when item status is Awaiting Pick Up)
+ * Allows seller to update receiver name, phone, address, city, state, zip code, pickup date, and time slot
+ */
+export const updateCustomerInfo = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const {
+      snapshotReceiverName,
+      snapshotPhoneNum,
+      snapshotAddress,
+      snapshotCity,
+      snapshotState,
+      snapshotZipCode,
+      pickupDate,
+      pickupTimeSlot
+    } = req.body;
+
+    console.log('📝 Updating customer info for transaction:', id);
+    console.log('Payload:', req.body);
+
+    // Get the submittedApplianceID and check item status
+    const txnResult = await pool.query(
+      `SELECT sa."submittedApplianceID", i."itemStatus"
+       FROM "Transaction" t
+       INNER JOIN "SubmittedAppliance" sa ON t."submittedApplianceID" = sa."submittedApplianceID"
+       LEFT JOIN "ItemStatus" i ON t."transactionID" = i."transactionID"
+       WHERE t."transactionID" = $1`,
+      [id]
+    );
+
+    if (txnResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
+
+    const { submittedApplianceID, itemStatus } = txnResult.rows[0];
+
+    // Only allow editing if item status is "Awaiting Pick Up"
+    if (itemStatus !== 'Awaiting Pick Up') {
+      return res.status(403).json({
+        message: 'Cannot edit customer information. Item is not in "Awaiting Pick Up" status.'
+      });
+    }
+
+    // Update pickup information in the Pickup table
+    await pool.query(
+      `UPDATE "Pickup"
+       SET "snapshotReceiverName" = COALESCE($1, "snapshotReceiverName"),
+           "snapshotPhoneNum" = COALESCE($2, "snapshotPhoneNum"),
+           "snapshotAddress" = COALESCE($3, "snapshotAddress"),
+           "snapshotCity" = COALESCE($4, "snapshotCity"),
+           "snapshotState" = COALESCE($5, "snapshotState"),
+           "snapshotZipCode" = COALESCE($6, "snapshotZipCode"),
+           "pickupDate" = COALESCE($7, "pickupDate"),
+           "pickupTimeSlot" = COALESCE($8, "pickupTimeSlot")
+       WHERE "submittedApplianceID" = $9`,
+      [
+        snapshotReceiverName,
+        snapshotPhoneNum,
+        snapshotAddress,
+        snapshotCity,
+        snapshotState,
+        snapshotZipCode,
+        pickupDate,
+        pickupTimeSlot,
+        submittedApplianceID
+      ]
+    );
+
+    console.log('✅ Customer information updated successfully');
+
+    // Mark transaction as updated
+    await pool.query(
+      `UPDATE "Transaction" SET "updatedAt" = NOW() WHERE "transactionID" = $1`,
+      [id]
+    );
+
+    res.json({
+      message: 'Customer information updated successfully',
+      transactionID: id
+    });
+  } catch (error) {
+    console.error('❌ Error updating customer information:', error);
+    res.status(500).json({
+      message: 'Failed to update customer information',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};

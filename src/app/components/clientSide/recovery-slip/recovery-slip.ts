@@ -94,17 +94,7 @@ export class RecoverySlipComponent implements OnInit {
   }
 
   mapTransactionToRecoveryData(data: any): void {
-    // Format date
-    const dateObj = new Date(data.createdAt || Date.now());
-    const formattedDate = dateObj.toLocaleString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZoneName: 'short'
-    });
+ 
 
     // Format address from separate fields
     const addressParts = [
@@ -120,11 +110,12 @@ export class RecoverySlipComponent implements OnInit {
 
 
     this.recoveryData = {
-      date: formattedDate,
+      date: data.submittedDate ? new Date(data.submittedDate).toLocaleDateString() : 'N/A',
       receiptNo: data.id || 'N/A', // Use transaction ID as receipt number
       seller: {
-        name: data.sellerName || 'N/A',
-        phone: data.sellerPhone || data.addressPhone || 'N/A',
+        // Use Pickup table snapshot data (addressName/addressPhone from snapshotReceiverName/snapshotPhoneNum)
+        name: data.addressName || data.sellerName || 'N/A',
+        phone: data.addressPhone || data.sellerPhone || 'N/A',
         address: formattedAddress
       },
       appliance: {

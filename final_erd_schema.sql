@@ -348,20 +348,6 @@ CREATE TABLE "Score" (
 
 CREATE INDEX idx_score_submittedApplianceID ON "Score"("submittedApplianceID");
 
--- =====================================================
--- STEP 18: Create PackagingInstruction table
--- =====================================================
-
-CREATE TABLE "PackagingInstruction" (
-    "instructionID" VARCHAR(20) PRIMARY KEY DEFAULT ('PKG' || LPAD(nextval('packaging_instruction_id_seq')::text, 3, '0')),
-    "submittedApplianceID" VARCHAR(20) NOT NULL,
-    "appliance_category" VARCHAR(255),
-    instructions TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY ("submittedApplianceID") REFERENCES "SubmittedAppliance"("submittedApplianceID") ON DELETE CASCADE
-);
-
-CREATE INDEX idx_packaging_instruction_submittedApplianceID ON "PackagingInstruction"("submittedApplianceID");
 
 -- =====================================================
 -- STEP 19: Create Review table

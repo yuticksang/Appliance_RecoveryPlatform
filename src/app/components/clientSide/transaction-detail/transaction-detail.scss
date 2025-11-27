@@ -1484,3 +1484,228 @@ $Space: 'Space Grotesk', sans-serif;
     font-size: 0.8125rem;
   }
 }
+
+/* ============================================
+   CUSTOMER INFO EDIT MODE STYLES
+   ============================================ */
+
+// Edit button container
+.edit-button-container {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(66, 153, 225, 0.3);
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4);
+    background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Edit actions container (Save/Cancel buttons)
+.edit-actions-container {
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.btn-cancel-edit,
+.btn-save-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+.btn-cancel-edit {
+  background: #e2e8f0;
+  color: #4a5568;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+  &:hover {
+    background: #cbd5e0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.btn-save-edit {
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  color: white;
+  box-shadow: 0 2px 8px rgba(72, 187, 120, 0.3);
+
+  &:hover {
+    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+  }
+}
+
+// Input fields in edit mode
+.info-input,
+.info-textarea,
+.info-select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: $Space;
+  color: #2d3748;
+  background: white;
+  transition: all 0.2s ease;
+
+  &:focus {
+    outline: none;
+    border-color: #4299e1;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+  }
+
+  &::placeholder {
+    color: #a0aec0;
+  }
+
+  // Error state
+  &.error {
+    border-color: #fc8181;
+    background-color: #fff5f5;
+
+    &:focus {
+      border-color: #e53e3e;
+      box-shadow: 0 0 0 3px rgba(229, 62, 62, 0.1);
+    }
+  }
+
+  // Disabled state
+  &:disabled {
+    background-color: #f7fafc;
+    color: #a0aec0;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+.info-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.info-select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234a5568' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.5rem;
+}
+
+// Error message styling
+.error-message {
+  display: block;
+  margin-top: 0.375rem;
+  font-size: 0.8125rem;
+  color: #e53e3e;
+  font-weight: 500;
+}
+
+// Warning message styling (for 24-hour pickup date change)
+.warning-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background-color: #fffbeb;
+  border: 1px solid #fbbf24;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  color: #92400e;
+
+  svg {
+    flex-shrink: 0;
+    margin-top: 0.125rem;
+    stroke: #f59e0b;
+  }
+
+  strong {
+    font-weight: 700;
+    color: #78350f;
+  }
+}
+
+// Warning state for inputs
+.info-input.warning,
+.info-textarea.warning,
+.info-select.warning {
+  border-color: #fbbf24;
+  background-color: #fffbeb;
+
+  &:focus {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
+  }
+}
+
+// Mobile responsiveness for edit mode
+@media (max-width: 768px) {
+  .edit-button-container {
+    justify-content: stretch;
+
+    .btn-edit {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .edit-actions-container {
+    flex-direction: column-reverse;
+    gap: 0.75rem;
+
+    .btn-cancel-edit,
+    .btn-save-edit {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}

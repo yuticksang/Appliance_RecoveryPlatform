@@ -85,6 +85,7 @@ export class QuestionnairesComponent implements OnInit{
   showImageModal = false;
 
 
+
   // Step 4 - Valuation
   valuationScore: number = 0;
   valuationLabel: string = '';

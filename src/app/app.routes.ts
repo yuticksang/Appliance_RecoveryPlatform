@@ -95,6 +95,61 @@ export const routes: Routes = [
           }
         ]
       },
+      // {
+      //   path: 'transactions',
+      //   loadComponent: () => import('./components/adminSide/transactionList/transaction-list').then(m => m.TransactionListComponent).catch(() => {
+      //     // Placeholder if not exists
+      //     return import('./components/adminSide/adminList/admin-list').then(m => m.AdminListComponent);
+      //   })
+      // },
+       {
+         path: 'appliances',
+          children: [
+           {
+             path: '',
+             loadComponent: () => import('./components/adminSide/appliance/appliance-list').then(m => m.ApplianceListComponent)
+           },
+           {
+             path: 'price-list',
+             loadComponent: () => import('./components/adminSide/priceList/price-list').then(m => m.PriceListComponent)
+           },
+            {
+              path: 'category',
+              loadComponent: () => import('./components/adminSide/categoryList/category-list').then(m => m.CategoryListComponent)
+            },
+            {
+              path: 'brand',
+              loadComponent: () => import('./components/adminSide/brandList/brand-list').then(m => m.BrandListComponent)
+            },
+          //   {
+          //     path: 'condition',
+          //     loadComponent: () => import('./components/adminSide/appliances/condition/condition').then(m => m.ConditionComponent)
+          //   },
+          //   {
+          //     path: 'markdown-list',
+          //     loadComponent: () => import('./components/adminSide/appliances/markdownList/markdown-list').then(m => m.MarkdownListComponent)
+          //   },
+            {
+              path: 'scoring',
+              loadComponent: () => import('./components/adminSide/scoring-configuration/scoring-configuration').then(m => m.ScoringConfiguration)
+            },
+            {
+              path: 'condition',
+              loadComponent: () => import('./components/adminSide/conditionList/condition-list').then(m => m.ConditionListComponent)
+            },
+            {
+              path: 'markdown-list',
+              loadComponent: () => import('./components/adminSide/markdownList/markdown-list').then(m => m.MarkdownListComponent)
+            }
+          ]
+        },
+      // {
+      //   path: 'reporting',
+      //   loadComponent: () => import('./components/adminSide/reporting/reporting').then(m => m.ReportingComponent).catch(() => {
+      //     // Placeholder if not exists
+      //     return import('./components/adminSide/adminList/admin-list').then(m => m.AdminListComponent);
+      //   })
+      // },
       {
          path: 'dashboard',
          loadComponent: () => import('./components/adminSide/dashboard/dashboard').then(m => m.Dashboard)

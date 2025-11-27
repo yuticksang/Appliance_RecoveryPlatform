@@ -112,23 +112,13 @@ export const getConditionGroups = async (req: AuthRequest, res: Response) => {
                   'id', co."conditionID",
                   'code', co.code,
                   'description', co.description,
-                  'image',
-                    CASE
-                      WHEN co.image IS NOT NULL AND co.image != ''
-                      THEN 'http://localhost:3000' || co.image
-                      ELSE NULL
-                    END
+                  'image', co.image
                 )
                 ORDER BY jsonb_build_object(
                   'id', co."conditionID",
                   'code', co.code,
                   'description', co.description,
-                  'image',
-                    CASE
-                      WHEN co.image IS NOT NULL AND co.image != ''
-                      THEN 'http://localhost:3000' || co.image
-                      ELSE NULL
-                    END
+                  'image', co.image
                 )
               ) FILTER (WHERE co."conditionID" IS NOT NULL),
               '[]'
@@ -264,6 +254,8 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
 
     // Generate SAxxx ID
     const submittedApplianceID = await generateSubmittedApplianceID(client);
+    
+    // const notesAnswer = questionAnswers.find(qa => qa.type === 'textarea');
 
     // Insert into SubmittedAppliance (only basic info, all questions go to ConditionSelected)
     const subRes = await client.query(
