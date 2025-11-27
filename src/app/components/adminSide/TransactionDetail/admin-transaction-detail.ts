@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, Observable } from 'rxjs';
 import { TransactionService } from '../../../services/transaction.service';
 import { AlertService } from '../../../services/alert.service';
@@ -9,7 +9,7 @@ import { AlertService } from '../../../services/alert.service';
 @Component({
   selector: 'app-admin-transaction-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './admin-transaction-detail.html',
   styleUrls: ['./admin-transaction-detail.scss']
 })
@@ -63,6 +63,13 @@ export class AdminTransactionDetailComponent implements OnInit {
   lightboxZoomLevel: number = 1;
   minZoom: number = 1;
   maxZoom: number = 3;
+
+  // Separate photo indices for seller and admin galleries
+  sellerPhotoIndex: number = 0;
+  adminPhotoIndex: number = 0;
+
+  // Photo view tab (seller or admin)
+  photoViewTab: 'seller' | 'admin' = 'seller';
 
   // Transaction/Item status options (these are fixed, not from condition groups)
   transactionStatuses = [
@@ -123,6 +130,12 @@ export class AdminTransactionDetailComponent implements OnInit {
         this.itemStatus = data.itemStatus;
         this.finalPrice = data.finalPrice || data.estimatedPrice || 0;
         this.note = data.finalNote || ''; // Admin's review note
+
+        // Debug: Log seller photos and conditions
+        console.log('📸 Seller photos from API:', data.sellerPhotos);
+        console.log('📸 Admin photos from API:', data.adminPhotos);
+        console.log('📋 Seller conditions from API:', data.sellerConditions);
+        console.log('📋 Admin conditions from API:', data.adminConditions);
 
         // Load seller-submitted photos from backend
         if (data.photos && data.photos.length > 0) {
@@ -328,7 +341,42 @@ export class AdminTransactionDetailComponent implements OnInit {
   }
 
   toggleEditMode(): void {
-    this.editMode.set(!this.editMode());
+    const isEnteringEditMode = !this.editMode();
+    this.editMode.set(isEnteringEditMode);
+
+    // Pre-fill form with seller's original data when entering edit mode
+    if (isEnteringEditMode) {
+      this.prefillFormWithSellerData();
+    }
+  }
+
+  /**
+   * Pre-fill the edit form with the seller's original submitted data
+   */
+  private prefillFormWithSellerData(): void {
+    const txn = this.transaction();
+    if (!txn) return;
+
+    // Pre-fill basic fields
+    this.transactionStatus = txn.transactionStatus || '';
+    this.itemStatus = txn.itemStatus || '';
+    this.finalPrice = txn.finalPrice || txn.estimatedPrice || 0;
+
+    // Pre-fill category, brand, appliance dropdowns by matching names
+    // Use the existing method that matches by name
+    this.setSelectedIdsFromTransaction(txn);
+
+    // Pre-fill dynamic condition selections from seller's original submission
+    // Use sellerConditions (what seller filled) instead of adminConditions
+    if (txn.sellerConditions && typeof txn.sellerConditions === 'object') {
+      // Clear existing selections first
+      this.selectedConditions = {};
+
+      // Copy seller's selections to the form
+      for (const [groupID, value] of Object.entries(txn.sellerConditions)) {
+        this.selectedConditions[groupID] = value as string | string[];
+      }
+    }
   }
 
   saveChanges(): void {
@@ -519,7 +567,8 @@ export class AdminTransactionDetailComponent implements OnInit {
     const sellerKeys = txn.sellerConditions ? Object.keys(txn.sellerConditions) : [];
     const adminKeys = txn.adminConditions ? Object.keys(txn.adminConditions) : [];
     const allKeys = new Set([...sellerKeys, ...adminKeys]);
-    return Array.from(allKeys);
+    // Sort alphabetically to ensure consistent display order (CG001, CG002, CG003, etc.)
+    return Array.from(allKeys).sort();
   }
 
   // Helper to check if there are any condition groups
@@ -640,10 +689,159 @@ export class AdminTransactionDetailComponent implements OnInit {
     }
   }
 
+  // Open photo lightbox with specific photo array
+  openPhotoLightbox(photoArray: string[], index: number): void {
+    this.photos = photoArray;
+    this.lightboxPhotoIndex = index;
+    this.showPhotoLightbox = true;
+  }
+
   // Open photo lightbox
   openLightbox(index: number): void {
     this.lightboxPhotoIndex = index;
     this.showPhotoLightbox = true;
+  }
+
+  // Check if checkbox arrays are different between seller and admin
+  checkboxArrayChanged(groupID: string): boolean {
+    const txn = this.transaction();
+    if (!txn) return false;
+
+    const sellerValue = txn.sellerConditions?.[groupID];
+    const adminValue = txn.adminConditions?.[groupID];
+
+    // If no admin value, it means admin confirmed seller's value (no change)
+    if (!adminValue) return false;
+
+    // Compare arrays
+    if (Array.isArray(sellerValue) && Array.isArray(adminValue)) {
+      // Check if arrays have same length and same items
+      if (sellerValue.length !== adminValue.length) return true;
+
+      // Sort and compare each item
+      const sortedSeller = [...sellerValue].sort();
+      const sortedAdmin = [...adminValue].sort();
+
+      return !sortedSeller.every((item, index) => item === sortedAdmin[index]);
+    }
+
+    return false;
+  }
+
+  // Check if a specific checkbox item was added by admin (not in seller's list)
+  isCheckboxItemAdded(groupID: string, item: string): boolean {
+    const txn = this.transaction();
+    if (!txn) return false;
+
+    const sellerValue = txn.sellerConditions?.[groupID];
+
+    // If seller didn't have this item, it means admin added it
+    if (Array.isArray(sellerValue)) {
+      return !sellerValue.includes(item);
+    }
+
+    // If seller had no value at all, everything admin adds is new
+    return true;
+  }
+
+  // Get seller photos for a file_upload group (fallback to sellerPhotos array if not in conditions)
+  getSellerPhotosForGroup(groupID: string): string[] {
+    const txn = this.transaction();
+    if (!txn) return [];
+
+    // First try to get from sellerConditions (for new submissions using condition groups)
+    const conditionPhotos = txn.sellerConditions?.[groupID];
+    if (conditionPhotos && Array.isArray(conditionPhotos) && conditionPhotos.length > 0) {
+      return conditionPhotos;
+    }
+
+    // Fallback to sellerPhotos array (for old submissions using Photo table)
+    return txn.sellerPhotos || [];
+  }
+
+  // Get admin photos for a file_upload group (fallback to adminPhotos array if not in conditions)
+  getAdminPhotosForGroup(groupID: string): string[] {
+    const txn = this.transaction();
+    if (!txn) return [];
+
+    // First try to get from adminConditions (for new submissions using condition groups)
+    const conditionPhotos = txn.adminConditions?.[groupID];
+    if (conditionPhotos && Array.isArray(conditionPhotos) && conditionPhotos.length > 0) {
+      return conditionPhotos;
+    }
+
+    // Fallback to adminPhotos array (for old submissions using Photo table)
+    return txn.adminPhotos || [];
+  }
+
+  // Navigate seller photos
+  prevSellerPhoto(event: Event): void {
+    event.stopPropagation(); // Prevent lightbox from opening
+    // Find the file_upload group to get photo count
+    const fileUploadGroup = this.conditionGroups.find(g => g.question_type === 'file_upload');
+    if (!fileUploadGroup) return;
+
+    const photos = this.getSellerPhotosForGroup(fileUploadGroup.groupID);
+    if (photos.length > 0) {
+      this.sellerPhotoIndex = this.sellerPhotoIndex > 0 ? this.sellerPhotoIndex - 1 : photos.length - 1;
+    }
+  }
+
+  nextSellerPhoto(event: Event): void {
+    event.stopPropagation(); // Prevent lightbox from opening
+    // Find the file_upload group to get photo count
+    const fileUploadGroup = this.conditionGroups.find(g => g.question_type === 'file_upload');
+    if (!fileUploadGroup) return;
+
+    const photos = this.getSellerPhotosForGroup(fileUploadGroup.groupID);
+    if (photos.length > 0) {
+      this.sellerPhotoIndex = this.sellerPhotoIndex < photos.length - 1 ? this.sellerPhotoIndex + 1 : 0;
+    }
+  }
+
+  // Navigate admin photos
+  prevAdminPhoto(event: Event): void {
+    event.stopPropagation(); // Prevent lightbox from opening
+    // Find the file_upload group to get photo count
+    const fileUploadGroup = this.conditionGroups.find(g => g.question_type === 'file_upload');
+    if (!fileUploadGroup) return;
+
+    const photos = this.getAdminPhotosForGroup(fileUploadGroup.groupID);
+    if (photos.length > 0) {
+      this.adminPhotoIndex = this.adminPhotoIndex > 0 ? this.adminPhotoIndex - 1 : photos.length - 1;
+    }
+  }
+
+  nextAdminPhoto(event: Event): void {
+    event.stopPropagation(); // Prevent lightbox from opening
+    // Find the file_upload group to get photo count
+    const fileUploadGroup = this.conditionGroups.find(g => g.question_type === 'file_upload');
+    if (!fileUploadGroup) return;
+
+    const photos = this.getAdminPhotosForGroup(fileUploadGroup.groupID);
+    if (photos.length > 0) {
+      this.adminPhotoIndex = this.adminPhotoIndex < photos.length - 1 ? this.adminPhotoIndex + 1 : 0;
+    }
+  }
+
+  // Open seller photo lightbox
+  openSellerPhotoLightbox(index: number): void {
+    const txn = this.transaction();
+    if (txn?.sellerPhotos && txn.sellerPhotos.length > 0) {
+      // Set photos to seller photos and open lightbox
+      this.photos = txn.sellerPhotos;
+      this.openLightbox(index);
+    }
+  }
+
+  // Open admin photo lightbox
+  openAdminPhotoLightbox(index: number): void {
+    const txn = this.transaction();
+    if (txn?.adminPhotos && txn.adminPhotos.length > 0) {
+      // Set photos to admin photos and open lightbox
+      this.photos = txn.adminPhotos;
+      this.openLightbox(index);
+    }
   }
 
   // Close photo lightbox

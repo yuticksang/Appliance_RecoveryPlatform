@@ -220,8 +220,8 @@
 
       <!-- Right Column - Appliance Information -->
       <div class="right-column">
-        <!-- Show Before/After Review for Awaiting Confirmation -->
-        <div *ngIf="isAwaitingConfirmation" class="review-comparison" [class.single-column]="!hasBeenReviewed">
+        <!-- Show Before/After Review for Awaiting Confirmation or when Admin has Reviewed -->
+        <div *ngIf="isAwaitingConfirmation || hasBeenReviewed" class="review-comparison" [class.single-column]="!hasBeenReviewed">
           <!-- Before Review (or "Submitted Data" if not reviewed yet) -->
           <div class="review-card">
             <h3 class="review-title">{{ hasBeenReviewed ? 'BEFORE REVIEW' : 'SUBMITTED DATA' }}</h3>
@@ -248,22 +248,25 @@
               </div>
             </div>
 
-            <!-- Dynamic Condition Groups -->
-            <div class="condition-groups-section" *ngIf="hasConditionGroups()">
-              <div *ngFor="let groupName of getConditionGroupNames()" class="condition-group">
-                <h4 class="condition-group-label">{{ getGroupDisplayName(groupName) | uppercase }}</h4>
+            <!-- Dynamic Condition Groups - Seller's Original Submission -->
+            <div class="condition-groups-section" *ngIf="getConditionGroupIds().length > 0">
+              <div *ngFor="let groupId of getConditionGroupIds()" class="condition-group">
+                <h4 class="condition-group-label">{{ getGroupDisplayName(groupId) | uppercase }}</h4>
 
                 <!-- If value is an array (checkbox) -->
-                <ul class="condition-list" *ngIf="Array.isArray(conditionGroups[groupName])">
-                  <li *ngFor="let condition of $any(conditionGroups[groupName])" class="condition-item">
+                <ul class="condition-list" *ngIf="Array.isArray(sellerConditions[groupId])">
+                  <li *ngFor="let condition of $any(sellerConditions[groupId])" class="condition-item">
                     <span class="check-icon">✓</span> {{ condition }}
                   </li>
                 </ul>
 
                 <!-- If value is a string (radio/dropdown/textarea) -->
-                <p class="condition-value" *ngIf="!Array.isArray(conditionGroups[groupName])">
-                  {{ conditionGroups[groupName] }}
+                <p class="condition-value" *ngIf="!Array.isArray(sellerConditions[groupId]) && sellerConditions[groupId]">
+                  {{ sellerConditions[groupId] }}
                 </p>
+
+                <!-- If no value submitted -->
+                <p class="condition-value empty" *ngIf="!sellerConditions[groupId]">N/A</p>
               </div>
             </div>
 
@@ -299,22 +302,35 @@
               </div>
             </div>
 
-            <!-- Dynamic Condition Groups -->
-            <div class="condition-groups-section" *ngIf="hasConditionGroups()">
-              <div *ngFor="let groupName of getConditionGroupNames()" class="condition-group">
-                <h4 class="condition-group-label">{{ getGroupDisplayName(groupName) | uppercase }}</h4>
+            <!-- Dynamic Condition Groups - Admin's Review -->
+            <div class="condition-groups-section" *ngIf="getConditionGroupIds().length > 0">
+              <div *ngFor="let groupId of getConditionGroupIds()" class="condition-group">
+                <h4 class="condition-group-label">{{ getGroupDisplayName(groupId) | uppercase }}</h4>
 
                 <!-- If value is an array (checkbox) -->
-                <ul class="condition-list" *ngIf="Array.isArray(conditionGroups[groupName])">
-                  <li *ngFor="let condition of $any(conditionGroups[groupName])" class="condition-item">
+                <ul class="condition-list" *ngIf="Array.isArray(adminConditions[groupId])">
+                  <li *ngFor="let condition of $any(adminConditions[groupId])" class="condition-item">
                     <span class="check-icon">✓</span> {{ condition }}
                   </li>
                 </ul>
 
                 <!-- If value is a string (radio/dropdown/textarea) -->
-                <p class="condition-value" *ngIf="!Array.isArray(conditionGroups[groupName])">
-                  {{ conditionGroups[groupName] }}
+                <p class="condition-value" *ngIf="!Array.isArray(adminConditions[groupId]) && adminConditions[groupId]">
+                  {{ adminConditions[groupId] }}
                 </p>
+
+                <!-- If admin didn't change, show seller's value -->
+                <ng-container *ngIf="!adminConditions[groupId]">
+                  <ul class="condition-list" *ngIf="Array.isArray(sellerConditions[groupId])">
+                    <li *ngFor="let condition of $any(sellerConditions[groupId])" class="condition-item">
+                      <span class="check-icon">✓</span> {{ condition }}
+                    </li>
+                  </ul>
+                  <p class="condition-value" *ngIf="!Array.isArray(sellerConditions[groupId]) && sellerConditions[groupId]">
+                    {{ sellerConditions[groupId] }}
+                  </p>
+                  <p class="condition-value empty" *ngIf="!sellerConditions[groupId]">N/A</p>
+                </ng-container>
               </div>
             </div>
 
@@ -325,8 +341,8 @@
           </div>
         </div>
 
-        <!-- Show Regular View for Other Statuses -->
-        <div *ngIf="!isAwaitingConfirmation" class="appliance-info-card">
+        <!-- Show Regular View for Other Statuses (only if not reviewed yet) -->
+        <div *ngIf="!isAwaitingConfirmation && !hasBeenReviewed" class="appliance-info-card">
           <!-- Estimated Price -->
           <div class="price-section">
             <span class="price-label">RM</span>

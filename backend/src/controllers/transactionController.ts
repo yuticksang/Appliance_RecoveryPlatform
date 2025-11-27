@@ -678,13 +678,51 @@ export const updateTransaction = async (req: Request, res: Response) => {
 
     const submittedApplianceID = txnResult.rows[0].submittedApplianceID;
 
-    // Update SubmittedAppliance table (only final offer price)
-    await pool.query(
-      `UPDATE "SubmittedAppliance"
-       SET "finalOfferPrice" = COALESCE($1, "finalOfferPrice")
-       WHERE "submittedApplianceID" = $2`,
-      [finalPrice, submittedApplianceID]
-    );
+    // Find the applianceID by matching category, brand, and model
+    let applianceID = null;
+    if (category && brand && model) {
+      const applianceResult = await pool.query(
+        `SELECT a."applianceID"
+         FROM "Appliance" a
+         JOIN "Category" c ON a."categoryID" = c."categoryID"
+         JOIN "Brand" b ON a."brandID" = b."brandID"
+         WHERE c."categoryName" = $1 AND b."brandName" = $2 AND a."modelCode" = $3`,
+        [category, brand, model]
+      );
+
+      if (applianceResult.rows.length > 0) {
+        applianceID = applianceResult.rows[0].applianceID;
+        console.log(`✅ Found applianceID: ${applianceID} for ${category} ${brand} ${model}`);
+      } else {
+        console.warn(`⚠️ No appliance found for ${category} ${brand} ${model}`);
+      }
+    }
+
+    // Update SubmittedAppliance table (final price and appliance details)
+    const updateFields: string[] = [];
+    const updateValues: any[] = [];
+    let paramIndex = 1;
+
+    if (finalPrice !== undefined && finalPrice !== null) {
+      updateFields.push(`"finalOfferPrice" = $${paramIndex++}`);
+      updateValues.push(finalPrice);
+    }
+
+    if (applianceID) {
+      updateFields.push(`"applianceID" = $${paramIndex++}`);
+      updateValues.push(applianceID);
+    }
+
+    if (updateFields.length > 0) {
+      updateValues.push(submittedApplianceID);
+      await pool.query(
+        `UPDATE "SubmittedAppliance"
+         SET ${updateFields.join(', ')}
+         WHERE "submittedApplianceID" = $${paramIndex}`,
+        updateValues
+      );
+      console.log(`✅ Updated SubmittedAppliance with fields: ${updateFields.join(', ')}`);
+    }
 
     // Update Transaction status if provided
     if (transactionStatus) {
