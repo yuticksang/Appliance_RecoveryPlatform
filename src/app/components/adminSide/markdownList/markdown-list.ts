@@ -352,6 +352,12 @@ export class MarkdownListComponent implements OnInit {
   }
 
   // -------- Helper methods ----------
+  shouldShowGroup(groupType: string): boolean {
+    const filter = this.selectedQuestionTypeFilter();
+    if (filter === 'all') return true;
+    return filter === groupType;
+  }
+
   statusClass(status: string): string {
     const statusUpper = status?.toUpperCase();
     if (statusUpper === 'ACTIVE') {

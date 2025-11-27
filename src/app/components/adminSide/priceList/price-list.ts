@@ -18,7 +18,7 @@ interface PriceRow {
   applianceStatus: string;
 }
 
-type SortKey = 'buyer_id' | 'buyerName' | 'categoryName' | 'brandName' | 'modelName' | 'basePrice';
+type SortKey = 'buyer_id' | 'buyerName' | 'categoryName' | 'brandName' | 'modelName' | 'basePrice' | 'applianceID';
 type SortDir = 'asc' | 'desc';
 
 @Component({
@@ -165,7 +165,7 @@ export class PriceListComponent implements OnInit {
     }
   }
 
-  resetFilters() {
+  clearFilters() {
     this.search.set('');
     this.selectedCategory.set('');
     this.selectedBrand.set('');

@@ -7,28 +7,31 @@
 
     <!-- toolbar -->
     <div class="toolbar">
+      <div class="toolbar-left">
+        <button class="clear-btn" (click)="clearFilters()">Clear Filters</button>
+      </div>
       <div class="toolbar-right">
         <!-- Category Filter -->
-        <div class="filter-dropdown">
+        <div class="select-wrapper">
           <select [ngModel]="selectedCategory()" (ngModelChange)="selectedCategory.set($event); onFilterChange()">
-            <option value="">Select a Category</option>
+            <option value="">All Categories</option>
             <option *ngFor="let cat of uniqueCategories()" [value]="cat">{{ cat }}</option>
           </select>
         </div>
 
         <!-- Brand Filter -->
-        <div class="filter-dropdown">
+        <div class="select-wrapper">
           <select [ngModel]="selectedBrand()" (ngModelChange)="selectedBrand.set($event); onFilterChange()">
-            <option value="">Select a Brand</option>
+            <option value="">All Brands</option>
             <option *ngFor="let brand of uniqueBrands()" [value]="brand">{{ brand }}</option>
           </select>
         </div>
 
         <!-- Buyer Filter -->
-        <div class="filter-dropdown">
+        <div class="select-wrapper">
           <select [ngModel]="selectedBuyer()" (ngModelChange)="selectedBuyer.set($event); onFilterChange()">
-            <option value="">Select a Buyer</option>
-            <option *ngFor="let buyer of uniqueBuyers()" [value]="buyer.id">{{ buyer.id }} - {{ buyer.name }}</option>
+            <option value="">All Buyers</option>
+            <option *ngFor="let buyer of uniqueBuyers()" [value]="buyer.id">{{ buyer.id }}</option>
           </select>
         </div>
 
@@ -53,19 +56,21 @@
           <tr>
             <th class="narrow">#</th>
             <th (click)="setSort('buyer_id')" class="sortable">
-              Buyer ID <span class="sort">{{ getSortIcon('buyer_id') }}</span>
+              Buyer ID <span class="sort-icon">{{ getSortIcon('buyer_id') }}</span>
             </th>
-            <th class="non-sortable">Appliance ID</th>
+            <th (click)="setSort('applianceID')" class="sortable">
+              Appliance ID <span class="sort-icon">{{ getSortIcon('applianceID') }}</span>
+            </th>
             <th class="non-sortable">Model Code</th>
             <th class="non-sortable">Model Name</th>
             <th (click)="setSort('categoryName')" class="sortable">
-              Category <span class="sort">{{ getSortIcon('categoryName') }}</span>
+              Category <span class="sort-icon">{{ getSortIcon('categoryName') }}</span>
             </th>
             <th (click)="setSort('brandName')" class="sortable">
-              Brand <span class="sort">{{ getSortIcon('brandName') }}</span>
+              Brand <span class="sort-icon">{{ getSortIcon('brandName') }}</span>
             </th>
             <th (click)="setSort('basePrice')" class="sortable">
-              Price <span class="sort">{{ getSortIcon('basePrice') }}</span>
+              Price <span class="sort-icon">{{ getSortIcon('basePrice') }}</span>
             </th>
           </tr>
         </thead>
