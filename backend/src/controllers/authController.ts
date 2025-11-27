@@ -288,8 +288,9 @@ export const forgotPassword = async (req: Request, res: Response) => {
     try {
       await sendPasswordResetEmail(user.email, user.name, resetToken);
       console.log(`✅ Password reset email sent to: ${user.email}`);
-    } catch (emailError) {
+    } catch (emailError: any) {
       console.error('❌ Failed to send password reset email:', emailError);
+      console.error('❌ Email error details:', emailError.message, emailError.code);
       console.log(`Reset link (for testing): ${process.env.FRONTEND_URL || 'http://localhost:4200'}/reset-password/${resetToken}`);
     }
 
