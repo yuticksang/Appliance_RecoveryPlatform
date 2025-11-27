@@ -1364,6 +1364,11 @@ $Space: 'Space Grotesk', sans-serif;
     padding: 1rem 0 0.75rem 0;
     border-bottom: 2px solid #cbd5e0;
 
+    // Single column layout when admin hasn't reviewed yet
+    &.single-column {
+      grid-template-columns: 1fr;
+    }
+
     .header-label {
       font-size: 14px;
       font-weight: 700;
@@ -1399,6 +1404,11 @@ $Space: 'Space Grotesk', sans-serif;
     grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
     padding: 0.75rem 0 1.25rem 0;
+
+    // Single column layout when admin hasn't reviewed yet
+    &.single-column {
+      grid-template-columns: 1fr;
+    }
 
     .column-content {
       padding-left: 0.25rem;  // Align with headers

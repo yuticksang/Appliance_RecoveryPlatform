@@ -1,5 +1,11 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+);
 
 console.log('🔥🔥🔥 transactionController.ts LOADED - VERSION 2 WITH CONDITION FIX 🔥🔥🔥');
 
@@ -524,6 +530,99 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
 };
 
 /**
+ * Upload admin photos to Supabase Storage and save URLs to Photo table
+ */
+export const uploadAdminPhotos = async (req: Request, res: Response) => {
+  const client = await pool.connect();
+  try {
+    const { id } = req.params; // transactionID
+
+    console.log('📸 Uploading admin photos for transaction:', id);
+    console.log('📸 Files received:', req.files);
+
+    // Get the submittedApplianceID for this transaction
+    const txnResult = await client.query(
+      `SELECT "submittedApplianceID" FROM "Transaction" WHERE "transactionID" = $1`,
+      [id]
+    );
+
+    if (txnResult.rows.length === 0) {
+      console.error('❌ Transaction not found:', id);
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
+
+    const submittedApplianceID = txnResult.rows[0].submittedApplianceID;
+    console.log('📦 Submitted Appliance ID:', submittedApplianceID);
+
+    // Upload photos to Supabase Storage
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) {
+      console.error('❌ No files received');
+      return res.status(400).json({ message: 'No photos provided' });
+    }
+
+    console.log(`📸 Processing ${files.length} files...`);
+    const uploadedUrls: string[] = [];
+
+    for (const file of files) {
+      const fileExt = file.originalname.split('.').pop();
+      const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}.${fileExt}`;
+      const filePath = `${submittedApplianceID}/${fileName}`;
+
+      console.log(`📤 Uploading file: ${fileName} (${file.size} bytes)`);
+
+      // Upload to admin-review-photos bucket
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('admin-review-photos')
+        .upload(filePath, file.buffer, {
+          contentType: file.mimetype,
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('❌ Supabase upload error:', uploadError);
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
+
+      console.log('✅ File uploaded to Supabase:', uploadData?.path);
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('admin-review-photos')
+        .getPublicUrl(filePath);
+
+      console.log('🔗 Public URL:', publicUrl);
+      uploadedUrls.push(publicUrl);
+
+      // Save to Photo table with remark='admin'
+      await client.query(
+        `INSERT INTO "Photo" ("submittedApplianceID", "photoURL", "remark", "uploadDate")
+         VALUES ($1, $2, 'admin', NOW())`,
+        [submittedApplianceID, publicUrl]
+      );
+
+      console.log('💾 Saved to Photo table');
+    }
+
+    console.log(`✅ Successfully uploaded ${uploadedUrls.length} admin photos`);
+
+    res.status(200).json({
+      message: 'Photos uploaded successfully',
+      photoUrls: uploadedUrls
+    });
+  } catch (error) {
+    console.error('❌ Error uploading admin photos:', error);
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    res.status(500).json({
+      message: 'Failed to upload photos',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  } finally {
+    client.release();
+  }
+};
+
+/**
  * Update transaction with full data (admin edit)
  * Now supports dynamic condition selections stored in ConditionSelected table
  */
@@ -647,8 +746,18 @@ export const updateTransaction = async (req: Request, res: Response) => {
               [submittedApplianceID, groupID, value]
             );
           } else if (questionType === 'file_upload') {
-            // File upload handled through Photo table (see below)
-            console.log(`📸 File upload for group ${groupID} - handled via Photo table`);
+            // Save file upload URLs as JSON array in textValue
+            const photoUrls = Array.isArray(value) ? value : [];
+            console.log(`📸 Saving ${photoUrls.length} file upload URLs for group ${groupID}`);
+
+            if (photoUrls.length > 0) {
+              await pool.query(
+                `INSERT INTO "ConditionSelected"
+                 ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue")
+                 VALUES (NULL, $1, true, 'admin', NOW(), $2, $3)`,
+                [submittedApplianceID, groupID, JSON.stringify(photoUrls)]
+              );
+            }
           } else if (questionType === 'checkbox') {
             // Array of conditionIDs
             const conditionIDs = Array.isArray(value) ? value : [value];

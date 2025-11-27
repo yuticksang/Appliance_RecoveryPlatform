@@ -529,6 +529,13 @@ $Space: 'Space Grotesk', sans-serif;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
+
+  // Single column layout when admin hasn't reviewed yet
+  &.single-column {
+    grid-template-columns: 1fr;
+    max-width: 600px; // Center the single card
+    margin: 0 auto;
+  }
 }
 
 .review-card {

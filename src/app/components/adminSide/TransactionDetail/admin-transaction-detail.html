@@ -206,8 +206,8 @@
 
             <!-- VIEW MODE: Before/After Comparison -->
             <ng-container *ngIf="!editMode()">
-              <!-- Column Headers (only once at top) -->
-              <div class="review-columns-header">
+              <!-- Column Headers (only show when admin has reviewed to show comparison) -->
+              <div class="review-columns-header" *ngIf="hasAdminConditions()">
                 <div class="header-label">BEFORE REVIEW</div>
                 <div class="header-label after">AFTER REVIEW</div>
               </div>
@@ -237,7 +237,7 @@
               <ng-container *ngFor="let group of conditionGroups">
                 <div class="inspection-item" *ngIf="group.question_type !== 'textarea' && group.question_type !== 'file_upload'">
                   <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
-                  <div class="inspection-columns">
+                  <div class="inspection-columns" [class.single-column]="!hasAdminConditions()">
                     <!-- Before (Seller's submission) -->
                     <div class="column-content">
                       <ng-container *ngIf="transaction()?.sellerConditions?.[group.groupID]; else noSellerValue">
@@ -262,8 +262,8 @@
                       </ng-template>
                     </div>
 
-                    <!-- After (Admin's review) -->
-                    <div class="column-content">
+                    <!-- After (Admin's review) - Only show if admin has reviewed -->
+                    <div class="column-content" *ngIf="hasAdminConditions()">
                       <ng-container *ngIf="transaction()?.adminConditions?.[group.groupID]; else showSellerAsConfirmed">
                         <!-- Check if array (checkbox) or string (radio/dropdown/image) -->
                         <ul class="condition-list" *ngIf="Array.isArray(transaction()?.adminConditions?.[group.groupID]); else singleAdminValue">
@@ -314,11 +314,11 @@
               <ng-container *ngFor="let group of conditionGroups">
                 <div class="inspection-item" *ngIf="group.question_type === 'textarea'">
                   <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
-                  <div class="inspection-columns">
+                  <div class="inspection-columns" [class.single-column]="!hasAdminConditions()">
                     <div class="column-content">
                       <p class="note-text">{{ transaction()?.sellerConditions?.[group.groupID] || 'N/A' }}</p>
                     </div>
-                    <div class="column-content">
+                    <div class="column-content" *ngIf="hasAdminConditions()">
                       <p class="note-text" [class.changed]="transaction()?.adminConditions?.[group.groupID] && transaction()?.adminConditions?.[group.groupID] !== transaction()?.sellerConditions?.[group.groupID]">
                         {{ transaction()?.adminConditions?.[group.groupID] || transaction()?.sellerConditions?.[group.groupID] || 'N/A' }}
                       </p>
@@ -331,7 +331,7 @@
               <ng-container *ngFor="let group of conditionGroups">
                 <div class="inspection-item" *ngIf="group.question_type === 'file_upload'">
                   <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
-                  <div class="inspection-columns">
+                  <div class="inspection-columns" [class.single-column]="!hasAdminConditions()">
                     <div class="column-content">
                       <!-- Seller's photos -->
                       <div class="photo-grid" *ngIf="transaction()?.sellerConditions?.[group.groupID]?.length; else noSellerPhotos">
@@ -341,7 +341,7 @@
                         <p class="note-text empty">No photos</p>
                       </ng-template>
                     </div>
-                    <div class="column-content">
+                    <div class="column-content" *ngIf="hasAdminConditions()">
                       <!-- Admin's photos -->
                       <div class="photo-grid" *ngIf="transaction()?.adminConditions?.[group.groupID]?.length; else noAdminPhotos">
                         <img *ngFor="let photo of transaction()?.adminConditions?.[group.groupID]" [src]="photo" alt="Admin photo" class="review-photo">

@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Observable } from 'rxjs';
 import { TransactionService } from '../../../services/transaction.service';
 import { AlertService } from '../../../services/alert.service';
 
@@ -92,7 +92,6 @@ export class AdminTransactionDetailComponent implements OnInit {
       categories: this.transactionService.getAllCategories(),
       brands: this.transactionService.getAllBrands(),
       appliances: this.transactionService.getAllAppliances(),
-      conditionGroups: this.transactionService.getActiveConditionGroupsWithOptions(),
       transaction: this.transactionService.getTransactionById(transactionId)
     }).subscribe({
       next: (result) => {
@@ -101,21 +100,10 @@ export class AdminTransactionDetailComponent implements OnInit {
         this.brands = result.brands.filter((b: any) => b.status === 'ACTIVE');
         this.appliances = result.appliances.filter((a: any) => a.status === 'ACTIVE');
         this.filteredAppliances = this.appliances;
-        this.conditionGroups = result.conditionGroups;
 
         console.log('📂 Categories loaded:', this.categories);
         console.log('🏷️ Brands loaded:', this.brands);
         console.log('📱 Appliances loaded:', this.appliances);
-        console.log('📋 Condition groups loaded:', this.conditionGroups);
-
-        // Debug: Check each group's options
-        this.conditionGroups.forEach(group => {
-          console.log(`Group "${group.criteriaName}" (${group.question_type}):`, {
-            groupID: group.groupID,
-            optionsCount: group.options?.length || 0,
-            options: group.options
-          });
-        });
 
         // Set transaction data
         const data = result.transaction;
@@ -147,10 +135,49 @@ export class AdminTransactionDetailComponent implements OnInit {
         // Now match IDs (dropdown data is already loaded)
         this.setSelectedIdsFromTransaction(data);
 
-        // Set selected conditions from transaction's conditionGroups
-        this.setSelectedConditionsFromTransaction(data);
+        // Load condition groups for this transaction's category
+        const categoryId = data.categoryId || this.selectedCategoryId;
+        if (categoryId) {
+          console.log('📋 Loading condition groups for category:', categoryId);
+          this.transactionService.getActiveConditionGroupsWithOptions(categoryId).subscribe({
+            next: (groups) => {
+              this.conditionGroups = groups;
+              console.log('📋 Condition groups loaded for category:', categoryId, groups);
 
-        this.loading.set(false);
+              // Debug: Check each group's options
+              this.conditionGroups.forEach(group => {
+                console.log(`Group "${group.criteriaName}" (${group.question_type}):`, {
+                  groupID: group.groupID,
+                  optionsCount: group.options?.length || 0,
+                  options: group.options
+                });
+              });
+
+              // Set selected conditions from transaction's conditionGroups
+              this.setSelectedConditionsFromTransaction(data);
+              this.loading.set(false);
+            },
+            error: (error) => {
+              console.error('❌ Error loading condition groups:', error);
+              this.alertService.error('Failed to load condition groups');
+              this.loading.set(false);
+            }
+          });
+        } else {
+          console.warn('⚠️ No categoryId found, loading all condition groups');
+          // Fallback: load all condition groups if no category
+          this.transactionService.getActiveConditionGroupsWithOptions().subscribe({
+            next: (groups) => {
+              this.conditionGroups = groups;
+              this.setSelectedConditionsFromTransaction(data);
+              this.loading.set(false);
+            },
+            error: (error) => {
+              console.error('❌ Error loading condition groups:', error);
+              this.loading.set(false);
+            }
+          });
+        }
       },
       error: (error) => {
         console.error('❌ Error loading data:', error);
@@ -333,44 +360,66 @@ export class AdminTransactionDetailComponent implements OnInit {
 
     console.log('📋 Admin conditions to save:', adminConditions);
 
-    // Handle file uploads - convert to base64 or prepare FormData
-    if (Object.keys(this.uploadedFiles).length > 0) {
-      console.log('📸 Processing uploaded files...');
-
-      // Convert files to base64 for each group
-      const filePromises: Promise<void>[] = [];
-
-      for (const groupID in this.uploadedFiles) {
-        const files = this.uploadedFiles[groupID];
-        if (files && files.length > 0) {
-          const filePromise = Promise.all(
-            files.map(file => this.convertFileToBase64(file))
-          ).then(base64Array => {
-            // Store base64 strings in adminConditions
-            adminConditions[groupID] = base64Array;
-            console.log(`✅ Converted ${files.length} files for group ${groupID}`);
-          });
-          filePromises.push(filePromise);
-        }
-      }
-
-      // Wait for all files to be converted
-      Promise.all(filePromises).then(() => {
-        this.sendUpdateRequest(txn, adminConditions, selectedBrand, selectedAppliance, selectedCategory);
-      }).catch(error => {
-        console.error('❌ Error converting files:', error);
-        this.alertService.error('Failed to process uploaded files');
-      });
-    } else {
-      // No files to upload, proceed directly
-      this.sendUpdateRequest(txn, adminConditions, selectedBrand, selectedAppliance, selectedCategory);
-    }
+    // Send update request (file uploads are handled in sendUpdateRequest)
+    this.sendUpdateRequest(txn, adminConditions, selectedBrand, selectedAppliance, selectedCategory);
   }
 
   // Helper method to send the update request
   private sendUpdateRequest(txn: any, adminConditions: any, selectedBrand: any, selectedAppliance: any, selectedCategory: any): void {
-    // Format photos array for backend (convert to { photoURL: string }[] format)
-    const photosArray = this.photos.map(photoURL => ({ photoURL }));
+    // First, upload admin photos to Supabase Storage if there are any
+    const uploadPromises: { groupID: string, observable: Observable<string[]> }[] = [];
+
+    if (Object.keys(this.uploadedFiles).length > 0) {
+      console.log('📸 Uploading admin photos to Supabase...');
+
+      for (const groupID in this.uploadedFiles) {
+        const files = this.uploadedFiles[groupID];
+        if (files && files.length > 0) {
+          const formData = new FormData();
+          files.forEach(file => {
+            formData.append('photos', file);
+          });
+
+          const uploadObservable = this.transactionService.uploadAdminPhotos(txn.id, formData);
+          uploadPromises.push({ groupID, observable: uploadObservable });
+        }
+      }
+    }
+
+    // Wait for all photo uploads to complete, then send the update
+    if (uploadPromises.length > 0) {
+      // Use forkJoin to wait for all uploads to complete
+      const observables = uploadPromises.map(p => p.observable);
+
+      forkJoin(observables).subscribe({
+        next: (uploadResults) => {
+          // Map uploaded URLs back to their groupIDs
+          uploadResults.forEach((urls, index) => {
+            const groupID = uploadPromises[index].groupID;
+            adminConditions[groupID] = urls;
+            console.log(`✅ Mapped ${urls.length} photos to group ${groupID}`);
+          });
+
+          console.log(`✅ Total photos uploaded: ${uploadResults.flat().length}`);
+
+          // Now send update with photo URLs in adminConditions
+          this.performUpdate(txn, adminConditions, selectedBrand, selectedAppliance, selectedCategory);
+        },
+        error: (error) => {
+          console.error('❌ Error uploading photos:', error);
+          this.alertService.error('Failed to upload photos');
+        }
+      });
+    } else {
+      // No photos to upload, just send the update
+      this.performUpdate(txn, adminConditions, selectedBrand, selectedAppliance, selectedCategory);
+    }
+  }
+
+  // Perform the actual update request
+  private performUpdate(txn: any, adminConditions: any, selectedBrand: any, selectedAppliance: any, selectedCategory: any): void {
+    // Note: Photo URLs are already in adminConditions[groupID] from the upload step
+    // No need to pass uploadedPhotoUrls separately anymore
 
     const updateData = {
       transactionStatus: this.transactionStatus,
@@ -381,19 +430,18 @@ export class AdminTransactionDetailComponent implements OnInit {
       category: selectedCategory?.categoryName || '',
       modelName: selectedAppliance?.modelName || '',
       finalNote: this.note, // Admin's review note
-      // Send admin checklist conditions
-      adminConditions: adminConditions,
-      // Send main photos array with remarks
-      photos: photosArray
+      // Send admin checklist conditions (includes photo URLs for file_upload groups)
+      adminConditions: adminConditions
     };
 
-    console.log('📤 Sending update data:', { ...updateData, photosCount: photosArray.length });
+    console.log('📤 Sending update data:', updateData);
 
     this.transactionService.updateTransaction(txn.id, updateData).subscribe({
       next: () => {
         this.alertService.success('Transaction updated successfully');
         this.editMode.set(false);
         this.uploadedFiles = {}; // Clear uploaded files
+        this.uploadedFilePreviews = {}; // Clear previews
         this.loadAllData(txn.id); // Reload to get fresh data
       },
       error: (error) => {

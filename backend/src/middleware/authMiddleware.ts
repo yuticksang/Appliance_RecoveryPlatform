@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 // Extend Express Request type to include user property
 export interface AuthRequest extends Request {
   user?: {
-    userId: number;
+    userId: string; // Changed from number to string to match JWT payload format
     email: string | null;
     username: string;
     userType: string;
@@ -29,7 +29,7 @@ export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction)
     }
 
     const decoded = jwt.verify(token, jwtSecret) as {
-      userId: number;
+      userId: string; // Changed from number to string to match JWT payload format
       email: string | null;
       username: string;
       userType: string;

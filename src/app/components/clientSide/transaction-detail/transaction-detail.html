@@ -221,10 +221,10 @@
       <!-- Right Column - Appliance Information -->
       <div class="right-column">
         <!-- Show Before/After Review for Awaiting Confirmation -->
-        <div *ngIf="isAwaitingConfirmation" class="review-comparison">
-          <!-- Before Review -->
+        <div *ngIf="isAwaitingConfirmation" class="review-comparison" [class.single-column]="!hasBeenReviewed">
+          <!-- Before Review (or "Submitted Data" if not reviewed yet) -->
           <div class="review-card">
-            <h3 class="review-title">BEFORE REVIEW</h3>
+            <h3 class="review-title">{{ hasBeenReviewed ? 'BEFORE REVIEW' : 'SUBMITTED DATA' }}</h3>
             <div class="price-section">
               <span class="price-label">RM</span>
               <span class="price-value">{{ beforeReview.estimatedPrice }}</span>
@@ -273,8 +273,8 @@
             </div>
           </div>
 
-          <!-- After Review -->
-          <div class="review-card after-review">
+          <!-- After Review (Only show if admin has reviewed) -->
+          <div *ngIf="hasBeenReviewed" class="review-card after-review">
             <h3 class="review-title after">AFTER REVIEW</h3>
             <div class="price-section after">
               <span class="price-label">RM</span>

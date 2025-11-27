@@ -298,4 +298,24 @@ export class TransactionService {
         })
       );
   }
+
+  /**
+   * Upload admin photos to Supabase Storage
+   * @param transactionId Transaction ID
+   * @param formData FormData containing photos
+   * @returns Observable<string[]> Array of uploaded photo URLs
+   */
+  uploadAdminPhotos(transactionId: string | number, formData: FormData): Observable<string[]> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.post<any>(`${this.apiUrl}/transactions/${transactionId}/photos`, formData, { headers })
+      .pipe(
+        map(response => response.photoUrls || []),
+        catchError(error => {
+          console.error('Error uploading admin photos:', error);
+          throw error;
+        })
+      );
+  }
 }

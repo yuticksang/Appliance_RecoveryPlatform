@@ -356,6 +356,9 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Check if admin has reviewed the transaction
+  hasBeenReviewed: boolean = false;
+
   loadRealDetails(data: any): void {
     // Load dynamic condition groups from backend
     this.conditionGroups = data.conditionGroups || {};
@@ -363,6 +366,10 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
 
     console.log('🔍 Loaded conditionGroups:', this.conditionGroups);
     console.log('🔍 Loaded conditionGroupNames:', this.conditionGroupNames);
+
+    // Check if admin has reviewed (finalPrice exists and is different from estimatedPrice, or finalNote exists)
+    this.hasBeenReviewed = !!(data.finalPrice || data.finalNote);
+    console.log('🔍 Has been reviewed:', this.hasBeenReviewed, '(finalPrice:', data.finalPrice, 'finalNote:', data.finalNote, ')');
 
     // If awaiting confirmation, show before/after review comparison
     if (this.isAwaitingConfirmation) {
@@ -376,15 +383,17 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         note: data.initialNote || data.note || '' // Seller's original note
       };
 
-      // After review - admin's assessment (revised price & condition)
-      this.afterReview = {
-        estimatedPrice: data.finalPrice || data.estimatedPrice || 0,
-        brand: data.brand,
-        model: data.model,
-        category: data.category,
-        score: 0, // TODO: Will be fetched from other team's API
-        note: data.finalNote || '' // Admin's review note
-      };
+      // After review - admin's assessment (only if reviewed)
+      if (this.hasBeenReviewed) {
+        this.afterReview = {
+          estimatedPrice: data.finalPrice || data.estimatedPrice || 0,
+          brand: data.brand,
+          model: data.model,
+          category: data.category,
+          score: 0, // TODO: Will be fetched from other team's API
+          note: data.finalNote || '' // Admin's review note
+        };
+      }
     } else {
       // For other statuses, use current appliance info
       this.applianceInfo = {
