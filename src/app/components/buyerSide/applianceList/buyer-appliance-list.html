@@ -13,6 +13,42 @@
         </button>
       </div>
       <div class="toolbar-right">
+        <!-- Category Filter -->
+        <div class="select-wrapper">
+          <select class="category-select" [value]="filterCategory()" (change)="onCategoryFilterChange($any($event.target).value)">
+            <option value="all">All Categories</option>
+            <option *ngFor="let category of uniqueCategories()" [value]="category">
+              {{ category }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Brand Filter -->
+        <div class="select-wrapper">
+          <select class="brand-select" [value]="filterBrand()" (change)="onBrandFilterChange($any($event.target).value)">
+            <option value="all">All Brands</option>
+            <option *ngFor="let brand of uniqueBrands()" [value]="brand">
+              {{ brand }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Price Range Filter -->
+        <div class="price-filter">
+          <input type="number"
+                 placeholder="Min Price"
+                 [value]="filterPriceMin() || ''"
+                 (input)="onPriceMinChange($any($event.target).value)"
+                 class="price-input">
+          <span class="price-separator">-</span>
+          <input type="number"
+                 placeholder="Max Price"
+                 [value]="filterPriceMax() || ''"
+                 (input)="onPriceMaxChange($any($event.target).value)"
+                 class="price-input">
+        </div>
+
+        <!-- Search -->
         <div class="search">
           <input type="text" placeholder="Search..." [value]="search()"
             (input)="onSearchInput($any($event.target).value)" />
@@ -32,9 +68,6 @@
         <thead>
           <tr>
             <th class="narrow">#</th>
-            <th (click)="onSort('applianceID')" class="sortable">
-              Appliance ID <span class="sort">{{ sortIcon('applianceID') }}</span>
-            </th>
             <th class="non-sortable">Image</th>
             <th (click)="onSort('modelCode')" class="sortable">
               Model Code <span class="sort">{{ sortIcon('modelCode') }}</span>
@@ -61,7 +94,6 @@
         <tbody>
           <tr *ngFor="let item of paginatedData(); let i = index">
             <td class="narrow">{{ getRowNumber(i) }}</td>
-            <td>{{ item.applianceID }}</td>
             <td class="image-col">
               <div class="image-cell">
                 <img [src]="getImageSrc(item.image_url)" [alt]="item.modelName" class="appliance-image">
