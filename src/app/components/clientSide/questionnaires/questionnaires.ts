@@ -94,6 +94,21 @@ export class QuestionnairesComponent implements OnInit{
   valuationWorth: number = 0;
   calculatedScores: any;
 
+  // Helper method to format number with commas and 2 decimal places
+  formatWithCommas(value: number): string {
+    return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // Helper method to get circle color based on valuation label
+  getCircleColor(): string {
+    const label = this.valuationLabel.toLowerCase();
+    if (label.includes('excellent') || label.includes('premium')) return '#10b981'; // Green
+    if (label.includes('good') || label.includes('very good')) return '#3b82f6'; // Blue
+    if (label.includes('fair') || label.includes('average')) return '#f59e0b'; // Orange
+    if (label.includes('poor') || label.includes('bad')) return '#ef4444'; // Red
+    return '#6b7280'; // Default gray
+  }
+
   // Step 5 - Pickup
 /* ────── ADDRESS SIGNALS ────── */
   addresses = signal<Address[]>([]);
@@ -511,13 +526,13 @@ export class QuestionnairesComponent implements OnInit{
   }
 
   // Backwards compatibility helpers (for existing hardcoded logic)
-  getFunctionalStatus(): string {
-    return this.getFormattedAnswer('CG001');
-  }
+  // getFunctionalStatus(): string {
+  //   return this.getFormattedAnswer('CG001');
+  // }
 
-  getPhysicalCondition(): string {
-    return this.getFormattedAnswer('CG002');
-  }
+  // getPhysicalCondition(): string {
+  //   return this.getFormattedAnswer('CG002');
+  // }
 
   getSelectedIssueDescriptions(): string[] {
     const group = this.conditionGroups().find(g => g.type === 'checkbox');

@@ -186,7 +186,7 @@
     <div class="valuation-summary">
       <div class="valuation-worth">
         <p class="worth-title">Estimated Worth</p>
-        <h3>RM {{ valuationWorth }}</h3>
+        <h3>RM {{ formatWithCommas(valuationWorth) }}</h3>
       </div>
 
       <!-- Circular Percentage -->
@@ -198,6 +198,7 @@
             cx="80"
             cy="80"
             r="70"
+            [attr.stroke]="getCircleColor()"
             [attr.stroke-dasharray]="440"
             [attr.stroke-dashoffset]="440 - (440 * valuationScore) / 100"
           ></circle>
