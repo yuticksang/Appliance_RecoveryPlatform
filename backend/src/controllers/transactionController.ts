@@ -16,8 +16,30 @@ console.log('🔥🔥🔥 transactionController.ts LOADED - VERSION 2 WITH CONDI
 export const getTransactionsBySeller = async (req: Request, res: Response) => {
   try {
     const { sellerId } = req.params;
+    const authUser = (req as any).user; // From JWT token
 
-    console.log('📦 Fetching transactions for seller ID:', sellerId);
+    // Authorization check: Sellers can only view their own transactions
+    // Admins can view any seller's transactions
+    if (authUser.userType === 'seller') {
+      // For sellers, verify they're requesting their own transactions
+      // Need to check if authUser.userId owns this seller_id
+      const userCheckResult = await pool.query(
+        `SELECT seller_id FROM users WHERE "userID" = $1 AND user_type = 'seller'`,
+        [authUser.userId]
+      );
+
+      if (userCheckResult.rows.length === 0) {
+        return res.status(403).json({ message: 'Unauthorized access' });
+      }
+
+      const userSellerId = userCheckResult.rows[0].seller_id;
+
+      if (userSellerId !== sellerId) {
+        return res.status(403).json({ message: 'You can only view your own transactions' });
+      }
+    } else if (authUser.userType !== 'admin' && authUser.userType !== 'superadmin') {
+      return res.status(403).json({ message: 'Unauthorized access' });
+    }
 
     const result = await pool.query(
       `SELECT
@@ -57,8 +79,6 @@ export const getTransactionsBySeller = async (req: Request, res: Response) => {
       ORDER BY sa."submissionDate" DESC`,
       [sellerId]
     );
-
-    console.log(`✅ Found ${result.rows.length} transactions for seller ${sellerId}`);
 
     res.json(result.rows);
   } catch (error) {
