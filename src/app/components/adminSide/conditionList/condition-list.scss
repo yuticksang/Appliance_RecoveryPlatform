@@ -270,11 +270,11 @@ $Space: 'Space Grotesk', sans-serif;
 
         &.narrow {
             width: 56px;
-            text-align: center;
+            text-align: left;
         }
 
         &.image-col {
-            text-align: center;
+            text-align: left;
         }
 
         &.actions {
@@ -308,12 +308,12 @@ $Space: 'Space Grotesk', sans-serif;
         }
 
         &.narrow {
-            text-align: center;
+            text-align: left;
             color: $muted;
         }
 
         &.image-col {
-            text-align: center;
+            text-align: left;
 
             .condition-image {
               width: 40px;

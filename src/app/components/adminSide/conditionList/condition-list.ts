@@ -306,6 +306,11 @@ export class ConditionListComponent implements OnInit {
     this.showEditOptionModal.set(true);
   }
 
+  getQuestionTypeForOption(option: ConditionOption): string | null {
+    const group = this.conditionGroups().find(g => g.groupID === option.groupID);
+    return group?.question_type || null;
+  }
+
   toggleStatus(option: ConditionOption) {
     this.confirmTarget.set(option);
     this.confirmAction.set('delete');

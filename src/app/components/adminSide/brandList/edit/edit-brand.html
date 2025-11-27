@@ -22,10 +22,24 @@
           rows="3"></textarea>
       </div>
 
+      <!-- Show changes summary -->
+      <div *ngIf="hasChanges" class="changes-summary">
+        <h4>Changes to be saved:</h4>
+        <ul>
+          <li *ngIf="brandName?.value !== originalData?.brandName">
+            Brand Name: "{{ originalData?.brandName }}" → "{{ brandName?.value }}"
+          </li>
+          <li *ngIf="(description?.value || '') !== (originalData?.description || '')">
+            Description: "{{ originalData?.description || '(none)' }}" → "{{ description?.value || '(none)' }}"
+          </li>
+        </ul>
+      </div>
+
       <div class="form-actions">
         <button type="button" class="btn-secondary" (click)="onClose()">Cancel</button>
-        <button type="submit" class="btn-success" [disabled]="editBrandForm.invalid">
-          Update Brand
+        <button type="submit" class="btn-success" [disabled]="editBrandForm.invalid || !hasChanges"
+          [title]="!hasChanges ? 'No changes to save' : editBrandForm.invalid ? 'Please fill all required fields' : 'Save changes'">
+          {{ hasChanges ? 'Save Changes' : 'No Changes' }}
         </button>
       </div>
     </form>

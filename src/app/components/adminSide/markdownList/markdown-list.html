@@ -69,7 +69,7 @@
     <!-- Markdown List Table -->
     <div class="markdown-groups" *ngIf="!loading() && !error()">
       <!-- Functional Status Group -->
-      <div class="markdown-group" *ngIf="shouldShowGroup('functional')">
+      <div class="markdown-group" *ngIf="shouldShowGroup('functional') && functionalMarkdowns().length > 0">
         <div class="group-header">
           <h2 class="group-title">Functional Status</h2>
         </div>
@@ -135,7 +135,7 @@
       </div>
 
       <!-- Appearance Status Group -->
-      <div class="markdown-group" *ngIf="shouldShowGroup('appearance')">
+      <div class="markdown-group" *ngIf="shouldShowGroup('appearance') && appearanceMarkdowns().length > 0">
         <div class="group-header">
           <h2 class="group-title">Appearance Status</h2>
         </div>
@@ -201,7 +201,7 @@
       </div>
 
       <!-- Checklist Group -->
-      <div class="markdown-group" *ngIf="shouldShowGroup('checklist')">
+      <div class="markdown-group" *ngIf="shouldShowGroup('checklist') && checklistMarkdowns().length > 0">
         <div class="group-header">
           <h2 class="group-title">Checklist</h2>
         </div>

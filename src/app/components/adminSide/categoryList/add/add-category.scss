@@ -60,6 +60,10 @@ $Space: 'Space Grotesk', sans-serif;
     margin-bottom: 6px;
     font-weight: 500;
     color: #333;
+
+    .required {
+      color: #dc3545;
+    }
   }
 
   input, select, textarea {
@@ -125,8 +129,12 @@ $Space: 'Space Grotesk', sans-serif;
     font-size: 14px;
 
     &.btn-primary {
-      background: #007bff;
+      background: #22c55e;
       color: white;
+
+      &:hover:not(:disabled) {
+        background: #16a34a;
+      }
 
       &:disabled {
         background: #ccc;

@@ -206,6 +206,7 @@
 @if (showEditOptionModal() && editingOption()) {
 <app-edit-condition-option
   [optionData]="editingOption()!"
+  [questionType]="getQuestionTypeForOption(editingOption()!)"
   (close)="onCloseEditOptionModal()"
   (optionUpdated)="onOptionUpdated($event)">
 </app-edit-condition-option>

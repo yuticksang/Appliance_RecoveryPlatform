@@ -111,6 +111,35 @@ $Space: 'Space Grotesk', sans-serif;
   margin-top: 4px;
 }
 
+.changes-summary {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 16px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+
+  h4 {
+    margin: 0 0 12px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 20px;
+    list-style-type: disc;
+
+    li {
+      margin: 6px 0;
+      font-size: 13px;
+      color: #495057;
+      line-height: 1.5;
+    }
+  }
+}
+
 .form-actions {
   display: flex;
   gap: 12px;

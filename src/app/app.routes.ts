@@ -67,7 +67,7 @@ export const routes: Routes = [
         children: [
           {
             path: '',
-            loadComponent: () => import('./components/adminSide/appliance/appliance-list').then(m => m.ApplianceListComponent)
+            loadComponent: () => import('./components/adminSide/applianceList/appliance-list').then(m => m.ApplianceListComponent)
           },
           {
             path: 'price-list',
