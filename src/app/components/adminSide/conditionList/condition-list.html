@@ -152,7 +152,9 @@
             <button class="page-btn" (click)="goToPage(item.group.groupID, getCurrentPage(item.group.groupID) - 1)"
               [disabled]="getCurrentPage(item.group.groupID) === 1">‹</button>
 
-            <button class="page-btn active">{{ getCurrentPage(item.group.groupID) }}</button>
+            <button class="page-btn" *ngFor="let p of getPageNumbers(item.group.groupID)"
+              [class.active]="p === getCurrentPage(item.group.groupID)"
+              (click)="goToPage(item.group.groupID, p)">{{ p }}</button>
 
             <button class="page-btn" (click)="goToPage(item.group.groupID, getCurrentPage(item.group.groupID) + 1)"
               [disabled]="getCurrentPage(item.group.groupID) === getTotalPages(item.group.groupID)">›</button>

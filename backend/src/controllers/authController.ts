@@ -12,6 +12,9 @@ interface JwtPayload {
   email: string | null; // Admins don't have email
   username: string;
   userType: string;
+  buyerId?: string | null;
+  sellerId?: string | null;
+  adminId?: string | null;
 }
 
 export const register = async (req: Request, res: Response) => {
@@ -218,7 +221,10 @@ export const login = async (req: Request, res: Response) => {
       userId: user.userID,
       email: user.email,
       username: user.username,
-      userType: user.user_type
+      userType: user.user_type,
+      buyerId: user.buyer_id || null,
+      sellerId: user.seller_id || null,
+      adminId: user.admin_id || null
     };
 
     const token = jwt.sign(payload, jwtSecret, { expiresIn: '24h' } as jwt.SignOptions);
@@ -673,7 +679,10 @@ export const googleLogin = async (req: Request, res: Response) => {
       userId: user.userID,
       email: user.email,
       username: user.username,
-      userType: user.user_type
+      userType: user.user_type,
+      buyerId: user.buyer_id || null,
+      sellerId: user.seller_id || null,
+      adminId: user.admin_id || null
     };
 
     const token = jwt.sign(jwtPayload, process.env.JWT_SECRET as string, {

@@ -80,8 +80,11 @@ export class AuthLoginComponent implements OnInit {
     // Disable form while loading
     this.form.disable();
 
-    // Don't clear admin session - only clear seller session
-    // This allows keeping both admin and seller logged in simultaneously
+    // Clear all auth data first to prevent cross-contamination
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_user');
+    localStorage.removeItem('buyer_token');
+    localStorage.removeItem('buyer_user');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('userProfile');

@@ -39,6 +39,7 @@ export class MarkdownListComponent implements OnInit {
 
   selectedCategoryFilter = signal<string>('all');
   selectedBuyerFilter = signal<string>('all');
+  selectedQuestionTypeFilter = signal<string>('all');
   search = signal<string>('');
   minMarkdown = signal<number | null>(null);
   maxMarkdown = signal<number | null>(null);
@@ -113,8 +114,24 @@ export class MarkdownListComponent implements OnInit {
     const search = this.search().toLowerCase();
     const selectedCategory = this.selectedCategoryFilter();
     const selectedBuyer = this.selectedBuyerFilter();
+    const selectedQuestionType = this.selectedQuestionTypeFilter();
     const min = this.minMarkdown();
     const max = this.maxMarkdown();
+
+    // Filter by question type
+    if (selectedQuestionType && selectedQuestionType !== 'all') {
+      filtered = filtered.filter(m => {
+        const code = m.conditionCode || '';
+        if (selectedQuestionType === 'functional') {
+          return code.startsWith('F');
+        } else if (selectedQuestionType === 'appearance') {
+          return code.startsWith('A');
+        } else if (selectedQuestionType === 'checklist') {
+          return code.startsWith('C');
+        }
+        return true;
+      });
+    }
 
     // Filter by category
     if (selectedCategory && selectedCategory !== 'all') {
@@ -188,7 +205,7 @@ export class MarkdownListComponent implements OnInit {
   });
 
   checklistMarkdowns = computed(() => {
-    return this.sortedMarkdowns().filter(m => m.conditionCode?.startsWith('OT'));
+    return this.sortedMarkdowns().filter(m => m.conditionCode?.startsWith('C'));
   });
 
   // Paginated versions
@@ -258,6 +275,11 @@ export class MarkdownListComponent implements OnInit {
     this.resetAllPages();
   }
 
+  onQuestionTypeFilterChange(type: string) {
+    this.selectedQuestionTypeFilter.set(type);
+    this.resetAllPages();
+  }
+
   onMinMarkdownChange(value: string) {
     const num = parseFloat(value);
     this.minMarkdown.set(isNaN(num) ? null : num);
@@ -273,6 +295,7 @@ export class MarkdownListComponent implements OnInit {
   clearFilters() {
     this.selectedCategoryFilter.set('all');
     this.selectedBuyerFilter.set('all');
+    this.selectedQuestionTypeFilter.set('all');
     this.search.set('');
     this.minMarkdown.set(null);
     this.maxMarkdown.set(null);

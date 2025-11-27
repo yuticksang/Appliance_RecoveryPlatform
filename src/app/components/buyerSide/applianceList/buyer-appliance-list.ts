@@ -172,6 +172,11 @@ export class BuyerApplianceListComponent implements OnInit {
     return Math.max(1, Math.ceil(this.filteredBuyerAppliances().length / this.itemsPerPage()));
   });
 
+  pageNumbers = computed(() => {
+    const total = this.totalPages();
+    return Array.from({ length: total }, (_, i) => i + 1);
+  });
+
   paginatedData = computed(() => {
     const data = this.filteredBuyerAppliances();
     const start = (this.currentPage() - 1) * this.itemsPerPage();

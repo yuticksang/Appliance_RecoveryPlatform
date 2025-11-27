@@ -11,6 +11,16 @@
         <button class="clear-btn" (click)="clearFilters()">Clear Filters</button>
       </div>
       <div class="toolbar-right">
+        <!-- Question Type Filter -->
+        <div class="select-wrapper">
+          <select [value]="selectedQuestionTypeFilter()" (change)="onQuestionTypeFilterChange($any($event.target).value)">
+            <option value="all">All Question Types</option>
+            <option value="functional">Functional Status</option>
+            <option value="appearance">Appearance Status</option>
+            <option value="checklist">Checklist</option>
+          </select>
+        </div>
+
         <!-- Category Filter -->
         <div class="select-wrapper">
           <select class="category-select" [value]="selectedCategoryFilter()" (change)="onCategoryFilterChange($any($event.target).value)">
@@ -94,7 +104,7 @@
                 <td>{{ markdown.conditionDescription || '---' }}</td>
                 <td>{{ markdown.categoryNames || '---' }}</td>
                 <td>{{ markdown.buyerID }}</td>
-                <td>{{ markdown.markdownPercentage }}%</td>
+                <td>{{ markdown.markdownPercentage | number:'1.0-0' }}%</td>
               </tr>
               <tr *ngIf="paginatedFunctional().length === 0">
                 <td colspan="6" class="no-data">No functional status markdowns found</td>
@@ -108,7 +118,9 @@
           <button class="page-btn" (click)="goToPage('functional', getCurrentPage('functional') - 1)"
             [disabled]="getCurrentPage('functional') === 1">‹</button>
 
-          <button class="page-btn active">{{ getCurrentPage('functional') }}</button>
+          <button class="page-btn" *ngFor="let p of pageNumbersFunctional()"
+            [class.active]="p === getCurrentPage('functional')"
+            (click)="goToPage('functional', p)">{{ p }}</button>
 
           <button class="page-btn" (click)="goToPage('functional', getCurrentPage('functional') + 1)"
             [disabled]="getCurrentPage('functional') === totalPagesFunctional()">›</button>
@@ -158,7 +170,7 @@
                 <td>{{ markdown.conditionDescription || '---' }}</td>
                 <td>{{ markdown.categoryNames || '---' }}</td>
                 <td>{{ markdown.buyerID }}</td>
-                <td>{{ markdown.markdownPercentage }}%</td>
+                <td>{{ markdown.markdownPercentage | number:'1.0-0' }}%</td>
               </tr>
               <tr *ngIf="paginatedAppearance().length === 0">
                 <td colspan="6" class="no-data">No appearance status markdowns found</td>
@@ -172,7 +184,9 @@
           <button class="page-btn" (click)="goToPage('appearance', getCurrentPage('appearance') - 1)"
             [disabled]="getCurrentPage('appearance') === 1">‹</button>
 
-          <button class="page-btn active">{{ getCurrentPage('appearance') }}</button>
+          <button class="page-btn" *ngFor="let p of pageNumbersAppearance()"
+            [class.active]="p === getCurrentPage('appearance')"
+            (click)="goToPage('appearance', p)">{{ p }}</button>
 
           <button class="page-btn" (click)="goToPage('appearance', getCurrentPage('appearance') + 1)"
             [disabled]="getCurrentPage('appearance') === totalPagesAppearance()">›</button>
@@ -222,7 +236,7 @@
                 <td>{{ markdown.conditionDescription || '---' }}</td>
                 <td>{{ markdown.categoryNames || '---' }}</td>
                 <td>{{ markdown.buyerID }}</td>
-                <td>{{ markdown.markdownPercentage }}%</td>
+                <td>{{ markdown.markdownPercentage | number:'1.0-0' }}%</td>
               </tr>
               <tr *ngIf="paginatedChecklist().length === 0">
                 <td colspan="6" class="no-data">No checklist markdowns found</td>
@@ -236,7 +250,9 @@
           <button class="page-btn" (click)="goToPage('checklist', getCurrentPage('checklist') - 1)"
             [disabled]="getCurrentPage('checklist') === 1">‹</button>
 
-          <button class="page-btn active">{{ getCurrentPage('checklist') }}</button>
+          <button class="page-btn" *ngFor="let p of pageNumbersChecklist()"
+            [class.active]="p === getCurrentPage('checklist')"
+            (click)="goToPage('checklist', p)">{{ p }}</button>
 
           <button class="page-btn" (click)="goToPage('checklist', getCurrentPage('checklist') + 1)"
             [disabled]="getCurrentPage('checklist') === totalPagesChecklist()">›</button>

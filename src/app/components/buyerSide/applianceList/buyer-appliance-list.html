@@ -98,7 +98,9 @@
       <button class="page-btn" (click)="goToPage(currentPage() - 1)"
         [disabled]="currentPage() === 1">‹</button>
 
-      <button class="page-btn active">{{ currentPage() }}</button>
+      <button class="page-btn" *ngFor="let p of pageNumbers()"
+        [class.active]="p === currentPage()"
+        (click)="goToPage(p)">{{ p }}</button>
 
       <button class="page-btn" (click)="goToPage(currentPage() + 1)"
         [disabled]="currentPage() === totalPages()">›</button>

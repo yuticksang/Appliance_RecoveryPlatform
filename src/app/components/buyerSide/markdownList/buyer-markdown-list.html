@@ -1,5 +1,5 @@
-<main class="buyer-page">
-  <div class="buyer-container">
+<main class="brand-page">
+  <div class="brand-container">
     <div class="page-head">
       <h1 class="page-title">Condition & Markdown List</h1>
       <div class="breadcrumb">Dashboard / <span>Markdown List</span></div>
@@ -7,13 +7,17 @@
 
     <!-- toolbar -->
     <div class="toolbar">
-      <div class="toolbar-left">
-        <button class="clear-btn" (click)="clearFilters()">Clear Filters</button>
-        <button class="save-btn" (click)="saveMarkdowns()" [disabled]="saving()">
-          {{ saving() ? 'Saving...' : 'Save Markdowns' }}
-        </button>
-      </div>
       <div class="toolbar-right">
+        <!-- Group Filter -->
+        <div class="select-wrapper">
+          <select class="group-select" [value]="selectedGroupFilter()" (change)="onGroupFilterChange($any($event.target).value)">
+            <option value="all">All Question Types</option>
+            <option *ngFor="let group of activeGroups()" [value]="group.groupID">
+              {{ group.criteriaName }}
+            </option>
+          </select>
+        </div>
+
         <!-- Category Filter -->
         <div class="select-wrapper">
           <select class="category-select" [value]="selectedCategoryFilter()" (change)="onCategoryFilterChange($any($event.target).value)">
@@ -38,12 +42,35 @@
     <!-- Error state -->
     <div *ngIf="error()" class="error-message">{{ error() }}</div>
 
+    <!-- Warning banner for missing markdowns -->
+    <div *ngIf="!loading() && !error() && !markdownStats().isComplete" class="warning-banner">
+      <div class="warning-icon">⚠️</div>
+      <div class="warning-content">
+        <strong>Setup Required:</strong> You have {{ markdownStats().missing }} condition(s) without markdown values.
+        <br>
+        <small>All markdowns must be set to ensure accurate pricing. Missing values will affect your price calculations.</small>
+      </div>
+      <div class="warning-progress">
+        <div class="progress-text">{{ markdownStats().percentageComplete }}% Complete</div>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="markdownStats().percentageComplete"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success banner when complete -->
+    <div *ngIf="!loading() && !error() && markdownStats().isComplete" class="success-banner">
+      <div class="success-icon">✓</div>
+      <div class="success-content">
+        <strong>Markdown Setup Complete!</strong> All {{ markdownStats().total }} condition markdowns have been configured.
+      </div>
+    </div>
+
     <!-- Condition Groups -->
     <div class="condition-groups" *ngIf="!loading() && !error()">
-      <div *ngFor="let groupData of groupedOptions()" class="condition-group">
+      <div class="condition-group" *ngFor="let groupData of groupedOptions()">
         <div class="group-header">
           <h2 class="group-title">{{ groupData.group.criteriaName }}</h2>
-          <span class="group-subtitle">{{ groupData.group.question_title || '' }}</span>
         </div>
 
         <div class="table-wrap">
@@ -54,7 +81,7 @@
                 <th class="sortable" (click)="onSort(groupData.group.groupID, 'code')">
                   Code <span class="sort-icon">{{ getSortIcon(groupData.group.groupID, 'code') }}</span>
                 </th>
-                <th *ngIf="groupData.group.question_type === 'image_selection'" class="narrow">Image</th>
+                <th *ngIf="groupData.group.question_type === 'image'" class="image-col">Image</th>
                 <th class="sortable" (click)="onSort(groupData.group.groupID, 'description')">
                   Description <span class="sort-icon">{{ getSortIcon(groupData.group.groupID, 'description') }}</span>
                 </th>
@@ -64,6 +91,7 @@
                 <th class="sortable" (click)="onSort(groupData.group.groupID, 'markdownPercentage')">
                   Markdown (%) <span class="sort-icon">{{ getSortIcon(groupData.group.groupID, 'markdownPercentage') }}</span>
                 </th>
+                <th class="actions">Actions</th>
               </tr>
             </thead>
 
@@ -71,29 +99,54 @@
               <tr *ngFor="let option of getPagedOptions(groupData.group.groupID); let i = index">
                 <td class="narrow">{{ getRowNumber(groupData.group.groupID, i) }}</td>
                 <td>{{ option.code }}</td>
-                <td *ngIf="groupData.group.question_type === 'image_selection'" class="narrow">
+                <td *ngIf="groupData.group.question_type === 'image'" class="image-col">
                   <img *ngIf="option.image" [src]="getImageUrl(option.image)" alt="{{ option.description }}"
                     class="option-thumbnail" />
                   <span *ngIf="!option.image">---</span>
                 </td>
                 <td>{{ option.description || '---' }}</td>
                 <td>{{ option.categoryNames || '---' }}</td>
-                <td class="markdown-cell">
-                  <input
-                    type="number"
-                    class="markdown-input"
-                    [value]="getMarkdownValue(option.conditionID) ?? ''"
-                    (input)="onMarkdownChange(option.conditionID, $any($event.target).value)"
-                    placeholder="0"
-                    min="0"
-                    max="100"
-                    step="0.1"
-                  />
-                  <span class="percent-sign">%</span>
+                <td>
+                  <span *ngIf="!isEditing(option.conditionID) || isNoneOption(option.conditionID)">
+                    {{ isNoneOption(option.conditionID) ? '0' : (getMarkdownValue(option.conditionID) ?? '---') }}{{ (isNoneOption(option.conditionID) || getMarkdownValue(option.conditionID) !== null) ? '%' : '' }}
+                  </span>
+                  <div *ngIf="isEditing(option.conditionID) && !isNoneOption(option.conditionID)" class="markdown-edit">
+                    <input
+                      type="number"
+                      class="markdown-input"
+                      [value]="getEditingValue(option.conditionID)"
+                      (input)="onEditingValueChange(option.conditionID, $any($event.target).value)"
+                      placeholder="0"
+                      min="0"
+                      max="100"
+                      step="1"
+                      (keydown.enter)="saveMarkdown(option.conditionID)"
+                      (keydown.escape)="cancelEdit(option.conditionID)"
+                      #markdownInput
+                    />
+                    <span class="percent-sign">%</span>
+                  </div>
+                  <span *ngIf="isNoneOption(option.conditionID)" class="locked-badge" title="This option is locked at 0%"></span>
+                </td>
+                <td class="actions">
+                  <button *ngIf="!isEditing(option.conditionID) && !isNoneOption(option.conditionID)" class="icon-btn" (click)="startEdit(option.conditionID)" title="Edit Markdown">
+                    <i class="ri-pencil-line"></i>
+                  </button>
+                  <button *ngIf="isNoneOption(option.conditionID)" class="icon-btn" disabled title="Cannot edit - Always 0%">
+                    <i class="ri-lock-line"></i>
+                  </button>
+                  <div *ngIf="isEditing(option.conditionID) && !isNoneOption(option.conditionID)" class="edit-actions">
+                    <button class="icon-btn save-btn" (click)="saveMarkdown(option.conditionID)" title="Save">
+                      <i class="ri-check-line"></i>
+                    </button>
+                    <button class="icon-btn cancel-btn" (click)="cancelEdit(option.conditionID)" title="Cancel">
+                      <i class="ri-close-line"></i>
+                    </button>
+                  </div>
                 </td>
               </tr>
               <tr *ngIf="getPagedOptions(groupData.group.groupID).length === 0">
-                <td [attr.colspan]="groupData.group.question_type === 'image_selection' ? 6 : 5" class="no-data">
+                <td [attr.colspan]="groupData.group.question_type === 'image' ? 7 : 6" class="no-data">
                   No conditions found
                 </td>
               </tr>
