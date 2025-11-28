@@ -8,7 +8,7 @@ import {
   updateTransaction,
   uploadAdminPhotos,
   updateSubmissionDetails,
-  updateCustomerInfo,
+  updateCustomerInfo
 } from '../controllers/transactionController';
 import { verifyToken } from '../middleware/authMiddleware';
 import multer from 'multer';
@@ -52,6 +52,7 @@ router.put('/:id/status', updateTransactionStatus);
 
 // Upload admin photos to Supabase Storage
 router.post('/:id/photos', upload.array('photos', 10), uploadAdminPhotos);
+
 // Update customer information (seller edit when Awaiting Pick Up)
 router.put('/:id/customer-info', updateCustomerInfo);
 

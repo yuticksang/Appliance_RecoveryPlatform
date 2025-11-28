@@ -19,10 +19,7 @@ export interface Transaction {
   submittedDate: Date;
   estimatedPrice?: number;
   finalPrice?: number;
-  initialNote?: string; // Note from seller during submission
-  finalNote?: string;   // Note from admin during review
-  // For backward compatibility
-  note?: string; // Maps to initialNote for list view
+  note?: string; // Note
 }
 
 @Injectable({
@@ -78,9 +75,7 @@ export class TransactionService {
             submittedDate: new Date(t.submittedDate || t.submissionDate || t.createdAt),
             estimatedPrice: t.estimatedPrice || t.initialOfferPrice || 0,
             finalPrice: t.finalPrice || t.finalOfferPrice,
-            initialNote: t.initialNote,
-            finalNote: t.finalNote,
-            note: t.initialNote || t.note // Backward compatibility
+            note: t.note || ''
           }));
         }),
         catchError(error => {
@@ -114,9 +109,7 @@ export class TransactionService {
             submittedDate: new Date(t.submittedDate || t.submissionDate || t.createdAt),
             estimatedPrice: t.estimatedPrice || t.initialOfferPrice || 0,
             finalPrice: t.finalPrice || t.finalOfferPrice,
-            initialNote: t.initialNote,
-            finalNote: t.finalNote,
-            note: t.initialNote || t.note // Backward compatibility
+            note: t.note || ''
           }));
         }),
         catchError(error => {
