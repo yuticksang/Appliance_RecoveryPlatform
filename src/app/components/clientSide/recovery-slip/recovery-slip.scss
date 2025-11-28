@@ -10,15 +10,25 @@
 
 
   .back-link {
-    align-self: flex-start;
+    position: absolute;
+    top: 2rem;
+    left: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     color: #475569;
     text-decoration: none;
     font-weight: 600;
-    margin-bottom: 1rem;
     font-size: 0.9rem;
+    cursor: pointer;
 
     &:hover {
+      color: #0284c7;
       text-decoration: underline;
+    }
+
+    svg {
+      flex-shrink: 0;
     }
   }
 
@@ -72,8 +82,12 @@
       background: #cde4f3;
       padding: 0.5rem 1rem;
       border-radius: 6px;
-      font-weight: 600;
-      color: #1e293b;
+      font-size: 1.3rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
     }
 
     .section-content {
@@ -82,6 +96,7 @@
       border-radius: 6px;
       padding: 1rem;
       margin-top: 0.5rem;
+      font-size: 0.9rem;
 
       p {
         margin: 0.25rem 0;

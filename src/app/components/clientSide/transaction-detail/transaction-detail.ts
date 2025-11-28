@@ -1,15 +1,17 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { filter, take } from 'rxjs/operators';
 import { TransactionService, Transaction } from '../../../services/transaction.service';
 import { AuthService } from '../../../services/auth.service';
+import { AlertService } from '../../../services/alert.service';
 
 @Component({
   selector: 'app-transaction-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './transaction-detail.html',
   styleUrls: ['./transaction-detail.scss']
 })
@@ -18,6 +20,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private transactionService = inject(TransactionService);
   private authService = inject(AuthService);
+  private alertService = inject(AlertService);
 
   transaction: Transaction | null = null;
   loading: boolean = true;
@@ -57,8 +60,100 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     contactNumber: '',
     address: '',
     city: '',
-    state: ''
+    state: '',
+    pickupDate: '',
+    pickupTimeSlot: '',
+    zipCode: ''
   };
+
+  // Edit mode state
+  isEditMode: boolean = false;
+
+  // Editable customer info (for editing)
+  editableCustomerInfo = {
+    name: '',
+    contactNumber: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    pickupDate: '',
+    pickupTimeSlot: ''
+  };
+
+  // Time slots for pickup
+  timeSlots = [
+    '10:00 AM - 12:00 PM',
+    '12:00 PM - 2:00 PM',
+    '2:00 PM - 4:00 PM',
+    '4:00 PM - 6:00 PM',
+    '6:00 PM - 8:00 PM'
+  ];
+
+  // Minimum date for pickup (original date + 2 days)
+  minPickupDate: string = '';
+
+  // Original pickup date for comparison
+  originalPickupDate: string = '';
+
+  // Warning flag for pickup date change within 24 hours
+  showPickupDateWarning: boolean = false;
+
+  // Malaysian states and cities data
+  malaysianStates = [
+    'Johor',
+    'Kedah',
+    'Kelantan',
+    'Kuala Lumpur',
+    'Labuan',
+    'Melaka',
+    'Negeri Sembilan',
+    'Pahang',
+    'Penang',
+    'Perak',
+    'Perlis',
+    'Putrajaya',
+    'Sabah',
+    'Sarawak',
+    'Selangor',
+    'Terengganu'
+  ];
+
+  malaysianCities: { [key: string]: string[] } = {
+    'Johor': ['Johor Bahru', 'Muar', 'Batu Pahat', 'Kluang', 'Segamat', 'Pontian', 'Kulai', 'Kota Tinggi', 'Mersing'],
+    'Kedah': ['Alor Setar', 'Sungai Petani', 'Kulim', 'Jitra', 'Langkawi', 'Kuala Kedah', 'Baling'],
+    'Kelantan': ['Kota Bharu', 'Kuala Krai', 'Tanah Merah', 'Pasir Mas', 'Gua Musang', 'Machang', 'Tumpat'],
+    'Kuala Lumpur': ['Kuala Lumpur'],
+    'Labuan': ['Labuan'],
+    'Melaka': ['Melaka City', 'Alor Gajah', 'Jasin', 'Masjid Tanah'],
+    'Negeri Sembilan': ['Seremban', 'Port Dickson', 'Nilai', 'Bahau', 'Tampin', 'Kuala Pilah', 'Rembau'],
+    'Pahang': ['Kuantan', 'Temerloh', 'Bentong', 'Raub', 'Jerantut', 'Pekan', 'Kuala Lipis', 'Cameron Highlands'],
+    'Penang': ['George Town', 'Butterworth', 'Bukit Mertajam', 'Nibong Tebal', 'Permatang Pauh', 'Bayan Lepas'],
+    'Perak': ['Ipoh', 'Taiping', 'Teluk Intan', 'Sitiawan', 'Kuala Kangsar', 'Batu Gajah', 'Lumut', 'Kampar', 'Tapah'],
+    'Perlis': ['Kangar', 'Arau', 'Kuala Perlis'],
+    'Putrajaya': ['Putrajaya'],
+    'Sabah': ['Kota Kinabalu', 'Sandakan', 'Tawau', 'Lahad Datu', 'Keningau', 'Semporna', 'Kudat', 'Beaufort'],
+    'Sarawak': ['Kuching', 'Miri', 'Sibu', 'Bintulu', 'Limbang', 'Sarikei', 'Kapit', 'Sri Aman'],
+    'Selangor': ['Shah Alam', 'Petaling Jaya', 'Subang Jaya', 'Klang', 'Ampang', 'Kajang', 'Selayang', 'Rawang', 'Sepang', 'Puchong', 'Seri Kembangan', 'Bangi', 'Cyberjaya'],
+    'Terengganu': ['Kuala Terengganu', 'Kemaman', 'Dungun', 'Marang', 'Jerteh', 'Kuala Berang']
+  };
+
+  // Available cities based on selected state
+  availableCities: string[] = [];
+
+  // Validation errors
+  validationErrors = {
+    name: '',
+    contactNumber: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    pickupDate: '',
+    pickupTimeSlot: ''
+  };
+
+
 
   // Before review - seller's original submission
   beforeReview = {
@@ -70,6 +165,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     note: ''
   };
 
+
   // After review - admin's assessment
   afterReview = {
     estimatedPrice: 0,
@@ -77,7 +173,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     model: '',
     category: '',
     score: 0,
-    note: ''
+    note: '',
   };
 
   // For non-awaiting status, use single appliance info
@@ -89,6 +185,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     category: string;
     score: number;
     note: string;
+    
   } = {
     estimatedPrice: 0,
     brand: '',
@@ -108,6 +205,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   // Expose Array to template for Array.isArray() check
   Array = Array;
 
+
   // Check if transaction needs review comparison
   get isAwaitingConfirmation(): boolean {
     return this.transaction?.transactionStatus === 'Awaiting Confirmation';
@@ -116,6 +214,11 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   // Check if transaction is in Pending Payment status (Case 5)
   get isPendingPayment(): boolean {
     return this.transaction?.transactionStatus === 'Pending Payment';
+  }
+
+  // Check if item is in Awaiting Pick Up status (editable)
+  get isAwaitingPickUp(): boolean {
+    return this.transaction?.itemStatus === 'Awaiting Pick Up';
   }
 
   // Get the currently selected photo
@@ -321,13 +424,26 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
 
         // Load REAL customer info from database
         this.customerInfo = {
-          name: data.sellerName || 'Unknown',
+          name: data.addressName || 'Unknown',
           email: data.sellerEmail || 'N/A',
-          contactNumber: data.sellerPhone || 'N/A',
+          contactNumber: data.addressPhone  || 'N/A',
           address: data.pickupAddress || 'N/A',
           city: data.city || 'N/A',
-          state: data.state || 'N/A'
+          state: data.state || 'N/A',
+          zipCode: data.zipCode || 'N/A',
+          pickupDate: data.pickupDate || 'Not scheduled',
+          pickupTimeSlot: data.pickupTimeSlot || 'Not scheduled'
         };
+
+        // Calculate minimum pickup date (original date + 2 days)
+        if (data.pickupDate && data.pickupDate !== 'Not scheduled') {
+          // Store original pickup date for comparison
+          this.originalPickupDate = data.pickupDate;
+
+          const originalDate = new Date(data.pickupDate);
+          originalDate.setDate(originalDate.getDate() + 2);
+          this.minPickupDate = originalDate.toISOString().split('T')[0];
+        }
 
         // Load seller-submitted photos from backend (not the catalog image)
         if (data.photos && data.photos.length > 0) {
@@ -360,6 +476,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     // Load dynamic condition groups from backend
     this.conditionGroups = data.conditionGroups || {};
     this.conditionGroupNames = data.conditionGroupNames || {};
+
 
     console.log('🔍 Loaded conditionGroups:', this.conditionGroups);
     console.log('🔍 Loaded conditionGroupNames:', this.conditionGroupNames);
@@ -421,15 +538,18 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   }
 
   viewRecoverySlip(): void {
-    // TODO: Navigate to recovery slip page or open PDF
+    this.router.navigate(['/recovery-slip', this.transactionId], {
+      state: { fromTransactionId: this.transactionId }
+    });
     console.log('View recovery slip for transaction:', this.transactionId);
   }
 
   viewPackagingInstruction(): void {
-    // TODO: Navigate to packaging instruction page or open PDF
-    console.log('View packaging instruction');
+    this.router.navigate(['/packaging-instruction'], {
+      state: { fromTransactionId: this.transactionId }
+    });
+    console.log('View packaging instruction for transaction:', this.transactionId);
   }
-
   // Step 1: Show accept confirmation modal
   acceptOffer(): void {
     if (!this.transaction) return;
@@ -613,5 +733,246 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
       'Awaiting Return': 'item-awaiting-return'
     };
     return statusMap[status] || '';
+  }
+
+  // ========== CUSTOMER INFO EDIT MODE ==========
+
+  // Enable edit mode
+  enableEditMode(): void {
+    // Copy current customer info to editable fields
+    this.editableCustomerInfo = {
+      name: this.customerInfo.name,
+      contactNumber: this.customerInfo.contactNumber,
+      address: this.customerInfo.address,
+      city: this.customerInfo.city,
+      state: this.customerInfo.state,
+      zipCode: this.customerInfo.zipCode,
+      pickupDate: this.customerInfo.pickupDate !== 'Not scheduled'
+        ? new Date(this.customerInfo.pickupDate).toISOString().split('T')[0]
+        : '',
+      pickupTimeSlot: this.customerInfo.pickupTimeSlot !== 'Not scheduled'
+        ? this.customerInfo.pickupTimeSlot
+        : this.timeSlots[0]
+    };
+
+    // Populate cities based on current state
+    if (this.editableCustomerInfo.state) {
+      this.availableCities = this.malaysianCities[this.editableCustomerInfo.state] || [];
+    }
+
+    // Reset validation errors and warnings
+    this.resetValidationErrors();
+    this.showPickupDateWarning = false;
+
+    this.isEditMode = true;
+  }
+
+  // Cancel edit mode
+  cancelEditMode(): void {
+    this.isEditMode = false;
+    this.resetValidationErrors();
+  }
+
+  // Handle state change - update available cities
+  onStateChange(): void {
+    const selectedState = this.editableCustomerInfo.state;
+    this.availableCities = this.malaysianCities[selectedState] || [];
+
+    // Reset city if it's not in the new state's cities
+    if (!this.availableCities.includes(this.editableCustomerInfo.city)) {
+      this.editableCustomerInfo.city = '';
+    }
+
+    // Clear city validation error
+    this.validationErrors.city = '';
+  }
+
+  // Handle pickup date change - check for 24-hour warning
+  onPickupDateChange(): void {
+    this.checkPickupDateWarning();
+  }
+
+  // Check if pickup date change is within 24 hours of original date
+  checkPickupDateWarning(): void {
+    if (!this.editableCustomerInfo.pickupDate || !this.originalPickupDate) {
+      this.showPickupDateWarning = false;
+      return;
+    }
+
+    const now = new Date();
+    const originalDate = new Date(this.originalPickupDate);
+    const timeDifference = originalDate.getTime() - now.getTime();
+    const hoursDifference = timeDifference / (1000 * 60 * 60);
+
+    // Show warning if the original pickup date is within 24 hours from now
+    // AND the user is trying to change the date
+    const isDateChanged = this.editableCustomerInfo.pickupDate !== this.originalPickupDate;
+    this.showPickupDateWarning = hoursDifference <= 24 && hoursDifference > 0 && isDateChanged;
+  }
+
+  // Reset validation errors
+  resetValidationErrors(): void {
+    this.validationErrors = {
+      name: '',
+      contactNumber: '',
+      address: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      pickupDate: '',
+      pickupTimeSlot: ''
+    };
+  }
+
+  // Validate phone number (Malaysian format: 01X-XXXXXXX or 01X-XXXXXXXX)
+  validatePhoneNumber(phone: string): boolean {
+    // Remove spaces and hyphens for validation
+    const cleanPhone = phone.replace(/[\s-]/g, '');
+
+    // Malaysian mobile: 01X-XXXXXXX or 01X-XXXXXXXX (10-11 digits)
+    const mobilePattern = /^01[0-9]{8,9}$/;
+
+    // Malaysian landline: 0X-XXXXXXX (9-10 digits)
+    const landlinePattern = /^0[2-9][0-9]{7,8}$/;
+
+    return mobilePattern.test(cleanPhone) || landlinePattern.test(cleanPhone);
+  }
+
+  // Validate zip code (Malaysian postcode: 5 digits)
+  validateZipCode(zipCode: string): boolean {
+    const zipPattern = /^[0-9]{5}$/;
+    return zipPattern.test(zipCode);
+  }
+
+  // Validate all fields
+  validateCustomerInfo(): boolean {
+    let isValid = true;
+    this.resetValidationErrors();
+
+    // Validate name
+    if (!this.editableCustomerInfo.name || this.editableCustomerInfo.name.trim() === '') {
+      this.validationErrors.name = 'Receiver name is required';
+      isValid = false;
+    }
+
+    // Validate contact number
+    if (!this.editableCustomerInfo.contactNumber || this.editableCustomerInfo.contactNumber.trim() === '') {
+      this.validationErrors.contactNumber = 'Contact number is required';
+      isValid = false;
+    } else if (!this.validatePhoneNumber(this.editableCustomerInfo.contactNumber)) {
+      this.validationErrors.contactNumber = 'Invalid phone number format (e.g., 012-3456789 or 03-12345678)';
+      isValid = false;
+    }
+
+    // Validate address
+    if (!this.editableCustomerInfo.address || this.editableCustomerInfo.address.trim() === '') {
+      this.validationErrors.address = 'Address is required';
+      isValid = false;
+    }
+
+    // Validate state
+    if (!this.editableCustomerInfo.state || this.editableCustomerInfo.state.trim() === '') {
+      this.validationErrors.state = 'State is required';
+      isValid = false;
+    }
+
+    // Validate city
+    if (!this.editableCustomerInfo.city || this.editableCustomerInfo.city.trim() === '') {
+      this.validationErrors.city = 'City is required';
+      isValid = false;
+    }
+
+    // Validate zip code
+    if (!this.editableCustomerInfo.zipCode || this.editableCustomerInfo.zipCode.trim() === '') {
+      this.validationErrors.zipCode = 'Zip code is required';
+      isValid = false;
+    } else if (!this.validateZipCode(this.editableCustomerInfo.zipCode)) {
+      this.validationErrors.zipCode = 'Invalid zip code (must be 5 digits)';
+      isValid = false;
+    }
+
+    // Validate pickup date
+    if (!this.editableCustomerInfo.pickupDate || this.editableCustomerInfo.pickupDate.trim() === '') {
+      this.validationErrors.pickupDate = 'Pickup date is required';
+      isValid = false;
+    }
+
+    // Validate pickup time slot
+    if (!this.editableCustomerInfo.pickupTimeSlot || this.editableCustomerInfo.pickupTimeSlot.trim() === '') {
+      this.validationErrors.pickupTimeSlot = 'Pickup time slot is required';
+      isValid = false;
+    }
+
+    return isValid;
+  }
+
+  // Save customer info changes
+  saveCustomerInfo(): void {
+    if (!this.transaction) return;
+
+    // Validate all fields before saving
+    if (!this.validateCustomerInfo()) {
+      this.alertService.error('Please fix the validation errors before saving.');
+      return;
+    }
+
+    this.loading = true;
+
+    // Prepare update data
+    const updateData = {
+      snapshotReceiverName: this.editableCustomerInfo.name,
+      snapshotPhoneNum: this.editableCustomerInfo.contactNumber,
+      snapshotAddress: this.editableCustomerInfo.address,
+      snapshotCity: this.editableCustomerInfo.city,
+      snapshotState: this.editableCustomerInfo.state,
+      snapshotZipCode: this.editableCustomerInfo.zipCode,
+      pickupDate: this.editableCustomerInfo.pickupDate,
+      pickupTimeSlot: this.editableCustomerInfo.pickupTimeSlot
+    };
+
+    console.log('💾 Saving customer info:', updateData);
+
+    // Call API to update customer information
+    this.transactionService.updateCustomerInfo(this.transactionId, updateData).subscribe({
+      next: (updatedTransaction) => {
+        console.log('✅ Customer info updated successfully:', updatedTransaction);
+
+        // Update local customer info with new values
+        this.customerInfo = {
+          name: this.editableCustomerInfo.name,
+          email: this.customerInfo.email, // email is not editable
+          contactNumber: this.editableCustomerInfo.contactNumber,
+          address: this.editableCustomerInfo.address,
+          city: this.editableCustomerInfo.city,
+          state: this.editableCustomerInfo.state,
+          zipCode: this.editableCustomerInfo.zipCode,
+          pickupDate: this.editableCustomerInfo.pickupDate,
+          pickupTimeSlot: this.editableCustomerInfo.pickupTimeSlot
+        };
+
+        // Recalculate minimum pickup date
+        if (this.editableCustomerInfo.pickupDate) {
+          const originalDate = new Date(this.editableCustomerInfo.pickupDate);
+          originalDate.setDate(originalDate.getDate() + 2);
+          this.minPickupDate = originalDate.toISOString().split('T')[0];
+        }
+
+        this.loading = false;
+        this.isEditMode = false;
+        this.alertService.success('Customer information updated successfully!');
+      },
+      error: (error) => {
+        console.error('❌ Error updating customer info:', error);
+        console.error('Error details:', {
+          status: error.status,
+          statusText: error.statusText,
+          message: error.message,
+          error: error.error
+        });
+        this.loading = false;
+        const errorMessage = error.error?.message || error.message || 'Unknown error';
+        this.alertService.error(`Failed to update customer information: ${errorMessage}\n\nPlease check console for details.`);
+      }
+    });
   }
 }

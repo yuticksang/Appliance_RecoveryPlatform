@@ -17,16 +17,26 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Get all categories
+// Get all categories with images
 export const getCategories = async (req: AuthRequest, res: Response) => {
   try {
     const result = await pool.query(
-      `SELECT "categoryID" as id, "categoryName" as name 
-       FROM "Category" 
-       WHERE "status" = 'ACTIVE'
-       ORDER BY "categoryID" ASC`
+      `SELECT
+        c."categoryID" as id,
+        c."categoryName" as name,
+        (
+          SELECT a.image_url
+          FROM "Appliance" a
+          WHERE a."categoryID" = c."categoryID"
+          AND a.image_url IS NOT NULL
+          AND a.image_url != ''
+          LIMIT 1
+        ) as image
+       FROM "Category" c
+       WHERE c."status" = 'ACTIVE'
+       ORDER BY c."categoryID" ASC`
     );
-    
+
     res.json(result.rows);
   } catch (error) {
     console.error('Get categories error:', error);
@@ -100,6 +110,7 @@ export const getConditionGroups = async (req: AuthRequest, res: Response) => {
     }
 
     const result = await pool.query(`
+          
           SELECT
             cg."groupID",
             cg."criteriaName" AS "sectionName",
@@ -114,19 +125,28 @@ export const getConditionGroups = async (req: AuthRequest, res: Response) => {
                   'description', co.description,
                   'image',
                     CASE
-                      WHEN co.image IS NOT NULL AND co.image != ''
-                      THEN 'http://localhost:3000' || co.image
+                      WHEN co.image IS NOT NULL AND co.image != '' THEN
+                        CASE 
+                           -- FIX: If image is already a full URL (Supabase), use it directly
+                           WHEN co.image LIKE 'http%' THEN co.image
+                           -- FIX: Otherwise, prepend localhost (for local uploads)
+                           ELSE 'http://localhost:3000' || co.image
+                        END
                       ELSE NULL
                     END
                 )
                 ORDER BY jsonb_build_object(
+                  -- Repeat the same logic in the ORDER BY clause if you are ordering by object
                   'id', co."conditionID",
                   'code', co.code,
                   'description', co.description,
                   'image',
                     CASE
-                      WHEN co.image IS NOT NULL AND co.image != ''
-                      THEN 'http://localhost:3000' || co.image
+                      WHEN co.image IS NOT NULL AND co.image != '' THEN
+                        CASE 
+                           WHEN co.image LIKE 'http%' THEN co.image
+                           ELSE 'http://localhost:3000' || co.image
+                        END
                       ELSE NULL
                     END
                 )
@@ -264,6 +284,8 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
 
     // Generate SAxxx ID
     const submittedApplianceID = await generateSubmittedApplianceID(client);
+    
+    // const notesAnswer = questionAnswers.find(qa => qa.type === 'textarea');
 
     // Insert into SubmittedAppliance (only basic info, all questions go to ConditionSelected)
     const subRes = await client.query(

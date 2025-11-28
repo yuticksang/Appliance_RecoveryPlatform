@@ -1,6 +1,8 @@
 import { Injectable, inject } from "@angular/core";
 import { HttpClient } from "@angular/common/http";
 import { Observable } from "rxjs";
+import { ConfigService } from "../../../services/config.service";
+
 
 export interface Condition {
     conditionID: string;
@@ -34,7 +36,8 @@ export interface ApiResponse {
 })
 export class ScoringConfigurationService {
     private http = inject(HttpClient);
-    private baseUrl = 'http://localhost:3000/api';
+    private configService = inject(ConfigService);
+    private baseUrl = this.configService.apiBaseUrl;
 
     getConditionGroupByCategory(categoryID: string): Observable<ApiResponse>{
         return this.http.get<ApiResponse>(`${this.baseUrl}/scoring-config/${categoryID}`);

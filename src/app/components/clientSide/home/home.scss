@@ -98,11 +98,27 @@ $line: #e5e7eb;
         color: $ink-1;
     }
 
-    .cards {
+    .carousel-wrapper {
+        position: relative;
         padding: 50px 0 0;
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .cards-container {
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-behavior: smooth;
+        -ms-overflow-style: none;  /* Hide scrollbar for IE and Edge */
+        scrollbar-width: none;  /* Hide scrollbar for Firefox */
+
+        &::-webkit-scrollbar {
+            display: none;  /* Hide scrollbar for Chrome, Safari and Opera */
+        }
+    }
+
+    .cards {
+        display: flex;
         gap: 18px;
+        padding-bottom: 10px;
     }
 
     .card {
@@ -110,6 +126,16 @@ $line: #e5e7eb;
         border-radius: 14px;
         overflow: hidden;
         background: #fff;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        flex: 0 0 calc(25% - 13.5px); /* 4 cards visible at once */
+        min-width: 250px;
+
+        &:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            border-color: $blue-2;
+        }
 
         img {
             width: 100%;
@@ -138,6 +164,68 @@ $line: #e5e7eb;
             color: $blue-2;
             border-radius: 999px;
         }
+    }
+
+    .scroll-btn {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background: #fff;
+        border: 2px solid $line;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+        transition: all 0.3s ease;
+        color: $ink-2;
+        opacity: 0;
+        pointer-events: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+
+        &.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        &:hover:not(:disabled) {
+            background: $blue-2;
+            border-color: $blue-2;
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+        }
+
+        &:disabled {
+            opacity: 0;
+            cursor: not-allowed;
+        }
+
+        &.scroll-btn-left {
+            left: -24px;
+        }
+
+        &.scroll-btn-right {
+            right: -24px;
+        }
+
+        svg {
+            width: 24px;
+            height: 24px;
+        }
+    }
+
+    .loading-message,
+    .error-message {
+        text-align: center;
+        padding: 50px 20px;
+        color: $ink-3;
+    }
+
+    .error-message {
+        color: #dc2626;
     }
 }
 
@@ -218,8 +306,9 @@ $line: #e5e7eb;
 
 /* responsive */
 @media (max-width: 1024px) {
-    .cards {
-        grid-template-columns: repeat(2, 1fr);
+    .catalog .card {
+        flex: 0 0 calc(50% - 9px); /* 2 cards visible at once on tablet */
+        min-width: 200px;
     }
 
     .features-grid {
@@ -229,6 +318,16 @@ $line: #e5e7eb;
     .promo-card {
         grid-template-columns: 1fr;
     }
+
+    .catalog .scroll-btn {
+        &.scroll-btn-left {
+            left: 0;
+        }
+
+        &.scroll-btn-right {
+            right: 0;
+        }
+    }
 }
 
 @media (max-width: 640px) {
@@ -236,7 +335,22 @@ $line: #e5e7eb;
         grid-template-columns: 1fr;
     }
 
-    .cards {
-        grid-template-columns: 1fr;
+    .catalog .card {
+        flex: 0 0 calc(100% - 40px); /* 1 card visible at once on mobile */
+        min-width: 280px;
+    }
+
+    .catalog h2 {
+        font-size: 28px;
+    }
+
+    .catalog .scroll-btn {
+        width: 40px;
+        height: 40px;
+
+        svg {
+            width: 20px;
+            height: 20px;
+        }
     }
 }

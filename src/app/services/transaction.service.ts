@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { delay, map, catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
 
 export interface Transaction {
   id: string; // Transaction ID is always varchar in database (e.g., "TXN001")
@@ -30,6 +31,7 @@ export interface Transaction {
 export class TransactionService {
   private http = inject(HttpClient);
   private apiUrl = environment.apiUrl + '/api';
+  private auth = inject(AuthService);
 
   constructor() {}
 
@@ -58,7 +60,7 @@ export class TransactionService {
     const token = this.getAuthToken();
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
-    return this.http.get<Transaction[]>(`${this.apiUrl}/transactions/seller/${sellerId}`, { headers })
+    return this.http.get<Transaction[]>(`${this.apiUrl}/transactions/seller/${sellerId}`, { headers: this.auth.getAuthHeaders() })
       .pipe(
         map((transactions: any[]) => {
           // Transform backend data to frontend Transaction interface
@@ -163,7 +165,7 @@ export class TransactionService {
     const token = this.getAuthToken();
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
-    return this.http.get<any>(`${this.apiUrl}/transactions/${transactionId}`, { headers })
+    return this.http.get<any>(`${this.apiUrl}/transactions/${transactionId}`, { headers: this.auth.getAuthHeaders()})
       .pipe(
         catchError(error => {
           console.error('Error fetching transaction by ID:', error);
@@ -295,6 +297,22 @@ export class TransactionService {
         catchError(error => {
           console.error('Error fetching condition groups:', error);
           return of([]);
+        })
+      );
+  }
+
+  /**
+   * Update customer information for a transaction (seller can edit when item is Awaiting Pick Up)
+   */
+  updateCustomerInfo(transactionId: string | number, updateData: any): Observable<any> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.put<any>(`${this.apiUrl}/transactions/${transactionId}/customer-info`, updateData, { headers: this.auth.getAuthHeaders() })
+      .pipe(
+        catchError(error => {
+          console.error('Error updating customer info:', error);
+          throw error;
         })
       );
   }
