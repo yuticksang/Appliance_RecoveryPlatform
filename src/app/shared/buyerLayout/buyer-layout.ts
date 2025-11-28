@@ -2,11 +2,12 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../auth/auth-service';
+import { AlertComponent } from '../alert/alert.component';
 
 @Component({
   selector: 'app-buyer-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, AlertComponent],
   templateUrl: './buyer-layout.html',
   styleUrls: ['./buyer-layout.scss']
 })

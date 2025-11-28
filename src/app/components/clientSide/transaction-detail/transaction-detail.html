@@ -79,9 +79,25 @@
 
       <div class="title-status-row">
         <h1 class="page-title">APPLIANCE INFORMATION</h1>
-        <span class="status-badge" [ngClass]="getStatusClass(transaction.transactionStatus)">
-          {{ transaction.transactionStatus }}
-        </span>
+        <div class="status-badges">
+          <span class="status-badge" [ngClass]="getStatusClass(transaction.transactionStatus)">
+            {{ transaction.transactionStatus }}
+          </span>
+          <span class="status-badge item-status" [ngClass]="getItemStatusClass(transaction.itemStatus)">
+            {{ transaction.itemStatus }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Submitted Date Info -->
+      <div class="submitted-date-info">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <span>Submitted on {{ transaction.submittedDate | date:'dd MMM yyyy, h:mm a' }}</span>
       </div>
 
       <!-- Document Actions as Cards -->
@@ -132,9 +148,16 @@
         <div class="photos-gallery-section">
           <!-- Show photos if available -->
           <ng-container *ngIf="hasPhotos; else noPhotos">
-            <!-- Main Photo -->
-            <div class="main-photo-container">
-              <img [src]="selectedPhoto" [alt]="transaction.modelName" class="main-photo">
+            <!-- Main Photo (clickable to enlarge) -->
+            <div class="main-photo-container" (click)="openLightbox(selectedPhotoIndex)">
+              <img [src]="selectedPhoto" [alt]="transaction.modelName" class="main-photo clickable">
+              <div class="photo-zoom-hint">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"/>
+                  <path d="M21 21l-4.35-4.35"/>
+                  <path d="M11 8v6M8 11h6"/>
+                </svg>
+              </div>
             </div>
 
             <!-- Thumbnails (only show if multiple photos) -->
@@ -163,9 +186,47 @@
         </div>
 
         <!-- Seller Information -->
+        <!-- Edit Button (only show when Awaiting Pick Up and not in edit mode) -->
+        <div *ngIf="isAwaitingPickUp && !isEditMode" class="edit-button-container">
+          <button class="btn-edit" (click)="enableEditMode()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Edit Customer Information
+          </button>
+        </div>
+
+        <!-- Action Buttons (only show in edit mode) -->
+        <div *ngIf="isEditMode" class="edit-actions-container">
+          <button class="btn-cancel-edit" (click)="cancelEditMode()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            Cancel
+          </button>
+          <button class="btn-save-edit" (click)="saveCustomerInfo()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            Save Changes
+          </button>
+        </div>
+
         <div class="info-section">
           <h3 class="section-title">SELLER NAME</h3>
-          <p class="info-value">{{ customerInfo.name }}</p>
+          <p *ngIf="!isEditMode" class="info-value">{{ customerInfo.name }}</p>
+          <div *ngIf="isEditMode">
+            <input type="text"
+                   class="info-input"
+                   [class.error]="validationErrors.name"
+                   [(ngModel)]="editableCustomerInfo.name"
+                   placeholder="Enter seller name">
+            <span *ngIf="validationErrors.name" class="error-message">{{ validationErrors.name }}</span>
+          </div>
         </div>
 
         <div class="info-section">
@@ -175,33 +236,110 @@
 
         <div class="info-section">
           <h3 class="section-title">CONTACT NUMBER</h3>
-          <p class="info-value">{{ customerInfo.contactNumber }}</p>
+          <p *ngIf="!isEditMode" class="info-value">{{ customerInfo.contactNumber }}</p>
+          <div *ngIf="isEditMode">
+            <input type="text"
+                   class="info-input"
+                   [class.error]="validationErrors.contactNumber"
+                   [(ngModel)]="editableCustomerInfo.contactNumber"
+                   placeholder="e.g., 012-3456789">
+            <span *ngIf="validationErrors.contactNumber" class="error-message">{{ validationErrors.contactNumber }}</span>
+          </div>
         </div>
 
         <div class="info-section">
           <h3 class="section-title">ADDRESS</h3>
-          <p class="info-value">{{ customerInfo.address }}</p>
+          <p *ngIf="!isEditMode" class="info-value">{{ customerInfo.address }}</p>
+          <div *ngIf="isEditMode">
+            <textarea class="info-textarea"
+                      [class.error]="validationErrors.address"
+                      [(ngModel)]="editableCustomerInfo.address"
+                      placeholder="Enter address"
+                      rows="2"></textarea>
+            <span *ngIf="validationErrors.address" class="error-message">{{ validationErrors.address }}</span>
+          </div>
         </div>
 
         <div class="info-section-row">
           <div class="info-section">
-            <h3 class="section-title">CITY</h3>
-            <p class="info-value">{{ customerInfo.city }}</p>
+            <h3 class="section-title">STATE</h3>
+            <p *ngIf="!isEditMode" class="info-value">{{ customerInfo.state }}</p>
+            <div *ngIf="isEditMode">
+              <select class="info-select"
+                      [class.error]="validationErrors.state"
+                      [(ngModel)]="editableCustomerInfo.state"
+                      (change)="onStateChange()">
+                <option value="">Select State</option>
+                <option *ngFor="let state of malaysianStates" [value]="state">{{ state }}</option>
+              </select>
+              <span *ngIf="validationErrors.state" class="error-message">{{ validationErrors.state }}</span>
+            </div>
           </div>
           <div class="info-section">
-            <h3 class="section-title">STATE</h3>
-            <p class="info-value">{{ customerInfo.state }}</p>
+            <h3 class="section-title">CITY</h3>
+            <p *ngIf="!isEditMode" class="info-value">{{ customerInfo.city }}</p>
+            <div *ngIf="isEditMode">
+              <select class="info-select"
+                      [class.error]="validationErrors.city"
+                      [(ngModel)]="editableCustomerInfo.city"
+                      [disabled]="!editableCustomerInfo.state || availableCities.length === 0">
+                <option value="">Select City</option>
+                <option *ngFor="let city of availableCities" [value]="city">{{ city }}</option>
+              </select>
+              <span *ngIf="validationErrors.city" class="error-message">{{ validationErrors.city }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-section">
+          <h3 class="section-title">ZIP CODE</h3>
+          <p *ngIf="!isEditMode" class="info-value">{{ customerInfo.zipCode }}</p>
+          <div *ngIf="isEditMode">
+            <input type="text"
+                   class="info-input"
+                   [class.error]="validationErrors.zipCode"
+                   [(ngModel)]="editableCustomerInfo.zipCode"
+                   placeholder="e.g., 50000"
+                   maxlength="5">
+            <span *ngIf="validationErrors.zipCode" class="error-message">{{ validationErrors.zipCode }}</span>
           </div>
         </div>
 
         <div class="info-section">
           <h3 class="section-title">PICKUP DATE</h3>
-          <p class="info-value">{{ customerInfo.pickupDate }}</p>
+          <p *ngIf="!isEditMode" class="info-value">{{ customerInfo.pickupDate }}</p>
+          <div *ngIf="isEditMode">
+            <input type="date"
+                   class="info-input"
+                   [class.error]="validationErrors.pickupDate"
+                   [class.warning]="showPickupDateWarning"
+                   [(ngModel)]="editableCustomerInfo.pickupDate"
+                   (change)="onPickupDateChange()"
+                   [min]="minPickupDate">
+            <span *ngIf="validationErrors.pickupDate" class="error-message">{{ validationErrors.pickupDate }}</span>
+            <div *ngIf="showPickupDateWarning" class="warning-message">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+              <span><strong>Warning:</strong> Changing the pickup date within 24 hours may result in a fine.</span>
+            </div>
+          </div>
         </div>
 
         <div class="info-section">
           <h3 class="section-title">PICKUP TIME SLOT</h3>
-          <p class="info-value">{{ customerInfo.pickupTimeSlot }}</p>
+          <p *ngIf="!isEditMode" class="info-value">{{ customerInfo.pickupTimeSlot }}</p>
+          <div *ngIf="isEditMode">
+            <select class="info-select"
+                    [class.error]="validationErrors.pickupTimeSlot"
+                    [(ngModel)]="editableCustomerInfo.pickupTimeSlot">
+              <option value="">Select Time Slot</option>
+              <option *ngFor="let slot of timeSlots" [value]="slot">{{ slot }}</option>
+            </select>
+            <span *ngIf="validationErrors.pickupTimeSlot" class="error-message">{{ validationErrors.pickupTimeSlot }}</span>
+          </div>
         </div>
       </div>
 
@@ -229,32 +367,34 @@
                 <h4 class="detail-label">CATEGORY</h4>
                 <p class="detail-value">{{ beforeReview.category }}</p>
               </div>
-              <!-- DYNAMIC QUESTION ANSWERS (non-checkbox types: radio, image, textarea) -->
-              <div class="detail-item" *ngFor="let qa of beforeReview.dynamicAnswers">
-                <ng-container *ngIf="qa.type !== 'checkbox'">
-                  <h4 class="detail-label">{{ qa.sectionName | uppercase }}</h4>
-                  <p class="detail-value">{{ qa.answer }}</p>
-                </ng-container>
-              </div>
               <div class="detail-item">
                 <h4 class="detail-label">SCORE</h4>
                 <p class="detail-value">{{ beforeReview.score }}</p>
               </div>
             </div>
-            <div class="note-section">
-              <h4 class="note-label">NOTE</h4>
-              <p class="note-value">{{ beforeReview.note }}</p>
-            </div>
-            <!-- DYNAMIC CHECKBOX QUESTIONS (displayed like Selected Issue) -->
-            <div class="idea-section" *ngFor="let qa of beforeReview.dynamicAnswers">
-              <ng-container *ngIf="qa.type === 'checkbox' && qa.answer && $any(qa.answer).length > 0">
-                <h4 class="idea-label">{{ qa.sectionName | uppercase }}</h4>
-                <ul class="idea-list">
-                  <li *ngFor="let option of $any(qa.answer)" class="idea-item">
-                    <span class="check-icon">✓</span> {{ option }}
+
+            <!-- Dynamic Condition Groups -->
+            <div class="condition-groups-section" *ngIf="hasConditionGroups()">
+              <div *ngFor="let groupName of getConditionGroupNames()" class="condition-group">
+                <h4 class="condition-group-label">{{ getGroupDisplayName(groupName) | uppercase }}</h4>
+
+                <!-- If value is an array (checkbox) -->
+                <ul class="condition-list" *ngIf="Array.isArray(conditionGroups[groupName])">
+                  <li *ngFor="let condition of $any(conditionGroups[groupName])" class="condition-item">
+                    <span class="check-icon">✓</span> {{ condition }}
                   </li>
                 </ul>
-              </ng-container>
+
+                <!-- If value is a string (radio/dropdown/textarea) -->
+                <p class="condition-value" *ngIf="!Array.isArray(conditionGroups[groupName])">
+                  {{ conditionGroups[groupName] }}
+                </p>
+              </div>
+            </div>
+
+            <div class="note-section" *ngIf="beforeReview.note">
+              <h4 class="note-label">NOTE</h4>
+              <p class="note-value">{{ beforeReview.note }}</p>
             </div>
           </div>
 
@@ -278,32 +418,34 @@
                 <h4 class="detail-label">CATEGORY</h4>
                 <p class="detail-value">{{ afterReview.category }}</p>
               </div>
-              <!-- DYNAMIC QUESTION ANSWERS (non-checkbox types: radio, image, textarea) -->
-              <div class="detail-item" *ngFor="let qa of afterReview.dynamicAnswers">
-                <ng-container *ngIf="qa.type !== 'checkbox'">
-                  <h4 class="detail-label">{{ qa.sectionName | uppercase }}</h4>
-                  <p class="detail-value">{{ qa.answer }}</p>
-                </ng-container>
-              </div>
               <div class="detail-item">
                 <h4 class="detail-label">SCORE</h4>
                 <p class="detail-value">{{ afterReview.score }}</p>
               </div>
             </div>
-            <div class="note-section">
-              <h4 class="note-label">NOTE</h4>
-              <p class="note-value">{{ afterReview.note }}</p>
-            </div>
-            <!-- DYNAMIC CHECKBOX QUESTIONS (displayed like Selected Issue) -->
-            <div class="idea-section" *ngFor="let qa of afterReview.dynamicAnswers">
-              <ng-container *ngIf="qa.type === 'checkbox' && qa.answer && $any(qa.answer).length > 0">
-                <h4 class="idea-label">{{ qa.sectionName | uppercase }}</h4>
-                <ul class="idea-list">
-                  <li *ngFor="let option of $any(qa.answer)" class="idea-item">
-                    <span class="check-icon">✓</span> {{ option }}
+
+            <!-- Dynamic Condition Groups -->
+            <div class="condition-groups-section" *ngIf="hasConditionGroups()">
+              <div *ngFor="let groupName of getConditionGroupNames()" class="condition-group">
+                <h4 class="condition-group-label">{{ getGroupDisplayName(groupName) | uppercase }}</h4>
+
+                <!-- If value is an array (checkbox) -->
+                <ul class="condition-list" *ngIf="Array.isArray(conditionGroups[groupName])">
+                  <li *ngFor="let condition of $any(conditionGroups[groupName])" class="condition-item">
+                    <span class="check-icon">✓</span> {{ condition }}
                   </li>
                 </ul>
-              </ng-container>
+
+                <!-- If value is a string (radio/dropdown/textarea) -->
+                <p class="condition-value" *ngIf="!Array.isArray(conditionGroups[groupName])">
+                  {{ conditionGroups[groupName] }}
+                </p>
+              </div>
+            </div>
+
+            <div class="note-section" *ngIf="afterReview.note">
+              <h4 class="note-label">NOTE</h4>
+              <p class="note-value">{{ afterReview.note }}</p>
             </div>
           </div>
         </div>
@@ -320,45 +462,45 @@
           <div class="details-grid">
             <div class="detail-item">
               <h4 class="detail-label">BRAND</h4>
-              <p class="detail-value">{{ applianceInfo.brand }}</p>
+              <p class="detail-value">{{ applianceInfo.brand || 'N/A' }}</p>
             </div>
             <div class="detail-item">
               <h4 class="detail-label">MODEL</h4>
-              <p class="detail-value">{{ applianceInfo.model }}</p>
+              <p class="detail-value">{{ applianceInfo.model || 'N/A' }}</p>
             </div>
             <div class="detail-item">
               <h4 class="detail-label">CATEGORY</h4>
-              <p class="detail-value">{{ applianceInfo.category }}</p>
-            </div>
-            <!-- DYNAMIC QUESTION ANSWERS (non-checkbox types: radio, image, textarea) -->
-            <div class="detail-item" *ngFor="let qa of applianceInfo.dynamicAnswers">
-              <ng-container *ngIf="qa.type !== 'checkbox'">
-                <h4 class="detail-label">{{ qa.sectionName | uppercase }}</h4>
-                <p class="detail-value">{{ qa.answer }}</p>
-              </ng-container>
+              <p class="detail-value">{{ applianceInfo.category || 'N/A' }}</p>
             </div>
             <div class="detail-item">
-              <h4 class="detail-label">SCORE</h4>
-              <p class="detail-value">{{ applianceInfo.score }}</p>
+              <h4 class="detail-label">MODEL NAME</h4>
+              <p class="detail-value">{{ applianceInfo.modelName || 'N/A' }}</p>
             </div>
           </div>
 
-          <!-- Note -->
-          <div class="note-section">
-            <h4 class="note-label">NOTE</h4>
-            <p class="note-value">{{ applianceInfo.note }}</p>
-          </div>
+          <!-- Dynamic Condition Groups - Shows all seller-submitted conditions -->
+          <div class="condition-groups-section" *ngIf="hasConditionGroups()">
+            <div *ngFor="let groupName of getConditionGroupNames()" class="condition-group">
+              <h4 class="condition-group-label">{{ getGroupDisplayName(groupName) | uppercase }}</h4>
 
-          <!-- DYNAMIC CHECKBOX QUESTIONS (displayed like Selected Issue) -->
-          <div class="idea-section" *ngFor="let qa of applianceInfo.dynamicAnswers">
-            <ng-container *ngIf="qa.type === 'checkbox' && qa.answer && $any(qa.answer).length > 0">
-              <h4 class="idea-label">{{ qa.sectionName | uppercase }}</h4>
-              <ul class="idea-list">
-                <li *ngFor="let option of $any(qa.answer)" class="idea-item">
-                  <span class="check-icon">✓</span> {{ option }}
+              <!-- If value is an array (checkbox) -->
+              <ul class="condition-list" *ngIf="Array.isArray(conditionGroups[groupName])">
+                <li *ngFor="let condition of $any(conditionGroups[groupName])" class="condition-item">
+                  <span class="check-icon">✓</span> {{ condition }}
                 </li>
               </ul>
-            </ng-container>
+
+              <!-- If value is a string (radio/dropdown/textarea) -->
+              <p class="condition-value" *ngIf="!Array.isArray(conditionGroups[groupName])">
+                {{ conditionGroups[groupName] }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Note - only show if seller provided a note -->
+          <div class="note-section" *ngIf="applianceInfo.note">
+            <h4 class="note-label">NOTE</h4>
+            <p class="note-value">{{ applianceInfo.note }}</p>
           </div>
         </div>
       </div>
@@ -461,6 +603,72 @@
       </p>
       <div class="modal-actions">
         <button class="btn-modal-primary reject" (click)="closeCancelSuccess()">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Photo Lightbox Modal -->
+  <div *ngIf="showPhotoLightbox" class="lightbox-overlay" (click)="closeLightbox()">
+    <div class="lightbox-content" (click)="$event.stopPropagation()">
+      <!-- Close button -->
+      <button class="lightbox-close" (click)="closeLightbox()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+
+      <!-- Zoom controls -->
+      <div class="lightbox-zoom-controls">
+        <button class="zoom-btn" (click)="zoomOut()" [disabled]="lightboxZoomLevel <= minZoom" title="Zoom Out">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+            <path d="M8 11h6"/>
+          </svg>
+        </button>
+        <span class="zoom-level">{{ (lightboxZoomLevel * 100).toFixed(0) }}%</span>
+        <button class="zoom-btn" (click)="zoomIn()" [disabled]="lightboxZoomLevel >= maxZoom" title="Zoom In">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="M21 21l-4.35-4.35"/>
+            <path d="M11 8v6M8 11h6"/>
+          </svg>
+        </button>
+        <button class="zoom-btn reset-btn" (click)="resetZoom()" *ngIf="lightboxZoomLevel !== 1" title="Reset Zoom">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Previous button -->
+      <button *ngIf="hasMultiplePhotos" class="lightbox-nav lightbox-prev" (click)="prevLightboxPhoto()">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+      </button>
+
+      <!-- Main enlarged photo with zoom -->
+      <div class="lightbox-photo-wrapper" [class.zoomed]="lightboxZoomLevel > 1">
+        <img
+          [src]="photos[lightboxPhotoIndex]"
+          [alt]="'Photo ' + (lightboxPhotoIndex + 1)"
+          class="lightbox-photo"
+          [style.transform]="'scale(' + lightboxZoomLevel + ')'"
+        >
+      </div>
+
+      <!-- Next button -->
+      <button *ngIf="hasMultiplePhotos" class="lightbox-nav lightbox-next" (click)="nextLightboxPhoto()">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
+
+      <!-- Photo counter -->
+      <div *ngIf="hasMultiplePhotos" class="lightbox-counter">
+        {{ lightboxPhotoIndex + 1 }} / {{ photos.length }}
       </div>
     </div>
   </div>

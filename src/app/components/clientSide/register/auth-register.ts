@@ -178,7 +178,7 @@ export class AuthRegisterComponent implements OnInit {
       .subscribe({
         next: (res) => {
           console.log('Registration response:', res);
-          this.alertService.success('Registration successful! You can now log in with your credentials.');
+          this.alertService.success('Registration successful! Verify your email before logging in.');
           this.router.navigate(['/login']);
           this.loading = false;
         },

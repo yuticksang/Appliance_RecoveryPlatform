@@ -17,16 +17,26 @@ if (!supabaseUrl || !supabaseKey) {
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Get all categories
+// Get all categories with images
 export const getCategories = async (req: AuthRequest, res: Response) => {
   try {
     const result = await pool.query(
-      `SELECT "categoryID" as id, "categoryName" as name 
-       FROM "Category" 
-       WHERE "status" = 'ACTIVE'
-       ORDER BY "categoryID" ASC`
+      `SELECT
+        c."categoryID" as id,
+        c."categoryName" as name,
+        (
+          SELECT a.image_url
+          FROM "Appliance" a
+          WHERE a."categoryID" = c."categoryID"
+          AND a.image_url IS NOT NULL
+          AND a.image_url != ''
+          LIMIT 1
+        ) as image
+       FROM "Category" c
+       WHERE c."status" = 'ACTIVE'
+       ORDER BY c."categoryID" ASC`
     );
-    
+
     res.json(result.rows);
   } catch (error) {
     console.error('Get categories error:', error);
@@ -272,78 +282,79 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
     // EXTRACT SPECIFIC FIELDS FROM DYNAMIC ANSWERS
     // ─────────────────────────────────────────────────────────
 
-    // Strategy: Match by groupID directly (most reliable)
-    // CG001 = Functional Status
-    // CG002 = Physical Condition
-    const functionalAnswer = questionAnswers.find(qa => qa.groupID === 'CG001');
-    const physicalAnswer = questionAnswers.find(qa => qa.groupID === 'CG002');
-    const notesAnswer = questionAnswers.find(qa => qa.type === 'textarea');
-
-    console.log('🔍 Functional Answer:', functionalAnswer);
-    console.log('🔍 Physical Answer:', physicalAnswer);
-    console.log('🔍 Notes Answer:', notesAnswer);
-
     // Generate SAxxx ID
     const submittedApplianceID = await generateSubmittedApplianceID(client);
+    
+    // const notesAnswer = questionAnswers.find(qa => qa.type === 'textarea');
 
-    // Insert into SubmittedAppliance
+    // Insert into SubmittedAppliance (only basic info, all questions go to ConditionSelected)
     const subRes = await client.query(
       `INSERT INTO "SubmittedAppliance" (
         "submittedApplianceID", "sellerID", "applianceID", "addressID",
-        "initialFunctionalStatus", "initialPhysicalCondition",
-        "initialOfferPrice", "note"
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        "initialOfferPrice"
+      ) VALUES ($1, $2, $3, $4, $5)
       RETURNING "submittedApplianceID"`,
       [
         submittedApplianceID,
         sellerId,
         modelId,
         addressId,
-        functionalAnswer?.answerText || 'Not Specified',
-        physicalAnswer?.answerText || 'Not Specified',
-        parseFloat(valuationWorth) || 0,
-        notesAnswer?.answer || null
+        parseFloat(valuationWorth) || 0
       ]
     );
 
     const finalId = subRes.rows[0].submittedApplianceID;
 
     // ─────────────────────────────────────────────────────────
-    // SAVE ALL ANSWERS TO ConditionSelected (for ALL types)
+    // SAVE ALL DYNAMIC ANSWERS TO ConditionSelected
+    // selectedBy = 'seller' for initial submission
+    // Supports: radio, checkbox, dropdown, image, textarea, file_upload
     // ─────────────────────────────────────────────────────────
     let savedCount = 0;
     for (const qa of questionAnswers) {
       console.log(`🔄 Processing question: groupID=${qa.groupID}, type=${qa.type}, answer=`, qa.answer);
 
-      // For radio/image: single conditionID
-      if ((qa.type === 'radio' || qa.type === 'image') && qa.answer) {
-        console.log(`  → Saving radio/image answer: ${qa.answer}`);
+      // For radio/image/dropdown: single conditionID
+      if ((qa.type === 'radio' || qa.type === 'image' || qa.type === 'dropdown') && qa.answer) {
+        console.log(`  → Saving ${qa.type} answer: ${qa.answer}`);
         await client.query(
           `INSERT INTO "ConditionSelected"
-          ("conditionID", "submittedApplianceID", "isChecked", "created_at")
-          VALUES ($1, $2, true, NOW())`,
-          [qa.answer, finalId]
+          ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID")
+          VALUES ($1, $2, true, 'seller', NOW(), $3)`,
+          [qa.answer, finalId, qa.groupID]
         );
         savedCount++;
       }
 
       // For checkbox: array of conditionIDs
       if (qa.type === 'checkbox' && Array.isArray(qa.answer)) {
-        console.log(`  → Saving ${qa.answer.length} checkbox answers`);
+        console.log(`  → Saving ${qa.answer.length} checkbox items`);
         for (const conditionID of qa.answer) {
           await client.query(
             `INSERT INTO "ConditionSelected"
-            ("conditionID", "submittedApplianceID", "isChecked", "created_at")
-            VALUES ($1, $2, true, NOW())`,
-            [conditionID, finalId]
+            ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID")
+            VALUES ($1, $2, true, 'seller', NOW(), $3)`,
+            [conditionID, finalId, qa.groupID]
           );
           savedCount++;
         }
       }
 
-      // Textarea is saved to note field, not ConditionSelected
-      if (qa.type === 'textarea') {
-        console.log(`  → Textarea saved to note field (not ConditionSelected)`);
+      // For textarea: save text value
+      if (qa.type === 'textarea' && qa.answer) {
+        console.log(`  → Saving textarea answer (${qa.answer.length} chars)`);
+        await client.query(
+          `INSERT INTO "ConditionSelected"
+          ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue")
+          VALUES (NULL, $1, true, 'seller', NOW(), $2, $3)`,
+          [finalId, qa.groupID, qa.answer]
+        );
+        savedCount++;
+      }
+
+      // For file_upload: photos are saved to Photo table (handled below)
+      if (qa.type === 'file_upload') {
+        console.log(`  → File upload - will be saved to Photo table with groupID`);
       }
     }
 
@@ -361,22 +372,47 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       throw new Error('Please select pickup date and time');
     }
 
-    // Insert Pickup Table
+    // Fetch current address details to snapshot them
+    const addressSnapshot = await client.query(
+      `SELECT "receiverName", "phoneNum", "pickupAddress", city, state, "zipCode"
+       FROM "PickupAddress"
+       WHERE "addressID" = $1`,
+      [addressId]
+    );
+
+    if (addressSnapshot.rows.length === 0) {
+      throw new Error('Selected pickup address not found');
+    }
+
+    const addr = addressSnapshot.rows[0];
+
+    // Insert Pickup Table with snapshot data
     await client.query(
       `INSERT INTO "Pickup" (
-        "submittedApplianceID", 
-        "addressID", 
-        "pickupDate", 
-        "pickupTimeSlot"
-      ) VALUES ($1, $2, $3, $4)`,
+        "submittedApplianceID",
+        "addressID",
+        "pickupDate",
+        "pickupTimeSlot",
+        "snapshotReceiverName",
+        "snapshotPhoneNum",
+        "snapshotAddress",
+        "snapshotCity",
+        "snapshotState",
+        "snapshotZipCode"
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [
         finalId,
         addressId,
-        pickupDate,      // Format: YYYY-MM-DD
-        pickupTime       // Format: "14:00-16:00" or whatever you send
+        pickupDate,
+        pickupTime,
+        addr.receiverName,
+        addr.phoneNum,
+        addr.pickupAddress,
+        addr.city,
+        addr.state,
+        addr.zipCode
       ]
     );
-
 
     // Create Transaction record
     await client.query(

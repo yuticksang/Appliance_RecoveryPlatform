@@ -22,6 +22,7 @@ import {
 } from '../controllers/adminController';
 import {
   getAllConditionGroups,
+  getActiveConditionGroupsWithOptions,
   createConditionGroup,
   updateConditionGroup,
   updateConditionGroupStatus,
@@ -31,7 +32,9 @@ import {
   updateConditionOption,
   deleteConditionOption,
   getConditionCategories,
-  updateConditionCategories
+  updateConditionCategories,
+  updateDisplayOrders,
+  getAllBuyerMarkdowns
 } from '../controllers/conditionController';
 import { optionalUpload } from '../middleware/upload';
 
@@ -75,11 +78,11 @@ router.get('/brands', getAllBrands);
 // Get all appliances
 router.get('/appliances', getAllAppliances);
 
-// Create new appliance
-router.post('/appliances', createAppliance);
+// Create new appliance (with image upload)
+router.post('/appliances', optionalUpload, createAppliance);
 
-// Update appliance
-router.put('/appliances/:id', updateAppliance);
+// Update appliance (with image upload)
+router.put('/appliances/:id', optionalUpload, updateAppliance);
 
 // Update appliance status
 router.put('/appliances/:id/status', updateApplianceStatus);
@@ -124,6 +127,9 @@ router.get('/buyer-prices', getAllBuyerPrices);
 // Get all condition groups
 router.get('/condition-groups', getAllConditionGroups);
 
+// Get active condition groups with active options (for admin edit dropdowns)
+router.get('/condition-groups/active-with-options', getActiveConditionGroupsWithOptions);
+
 // Create new condition group
 router.post('/condition-groups', createConditionGroup);
 
@@ -161,5 +167,15 @@ router.get('/condition-options/:conditionId/categories', getConditionCategories)
 
 // Update categories for a condition
 router.put('/condition-options/:conditionId/categories', updateConditionCategories);
+
+// Add this route
+router.put('/categories/:categoryId/display-orders', updateDisplayOrders);
+
+// =====================================================
+// BUYER MARKDOWN ROUTES
+// =====================================================
+
+// Get all buyer markdowns
+router.get('/buyer-markdowns', getAllBuyerMarkdowns);
 
 export default router;

@@ -89,9 +89,9 @@ export class BuyerLoginComponent implements OnInit {
           // Show success message
           this.alertService.success('Login successful! Welcome back.');
 
-          // Navigate to buyer home page
-          console.log('Navigating to buyer home...');
-          this.router.navigate(['/home']).then(
+          // Navigate to buyer dashboard
+          console.log('Navigating to buyer dashboard...');
+          this.router.navigate(['/buyer/dashboard']).then(
             success => console.log('Navigation success:', success),
             error => console.error('Navigation error:', error)
           );

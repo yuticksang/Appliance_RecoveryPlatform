@@ -3,6 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { delay, map, catchError } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
+import { AuthService } from './auth.service';
 
 export interface Transaction {
   id: string; // Transaction ID is always varchar in database (e.g., "TXN001")
@@ -18,7 +19,10 @@ export interface Transaction {
   submittedDate: Date;
   estimatedPrice?: number;
   finalPrice?: number;
-  note?: string;
+  initialNote?: string; // Note from seller during submission
+  finalNote?: string;   // Note from admin during review
+  // For backward compatibility
+  note?: string; // Maps to initialNote for list view
 }
 
 @Injectable({
@@ -27,6 +31,7 @@ export interface Transaction {
 export class TransactionService {
   private http = inject(HttpClient);
   private apiUrl = environment.apiUrl + '/api';
+  private auth = inject(AuthService);
 
   constructor() {}
 
@@ -34,9 +39,17 @@ export class TransactionService {
    * Get the authentication token (supports both seller and admin tokens)
    */
   private getAuthToken(): string | null {
-    // Check for seller/buyer token first, then admin token
-    // This ensures seller-specific requests use the seller's token when available
-    return localStorage.getItem('token') || localStorage.getItem('admin_token');
+    // Check for admin token first if admin is logged in
+    const adminUser = localStorage.getItem('admin_user');
+    const adminToken = localStorage.getItem('admin_token');
+    const sellerToken = localStorage.getItem('token');
+
+    // If admin is logged in, use admin token
+    if (adminUser && adminToken) {
+      return adminToken;
+    }
+    // Otherwise use seller/buyer token
+    return sellerToken;
   }
 
   /**
@@ -47,7 +60,7 @@ export class TransactionService {
     const token = this.getAuthToken();
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
-    return this.http.get<Transaction[]>(`${this.apiUrl}/transactions/seller/${sellerId}`, { headers })
+    return this.http.get<Transaction[]>(`${this.apiUrl}/transactions/seller/${sellerId}`, { headers: this.auth.getAuthHeaders() })
       .pipe(
         map((transactions: any[]) => {
           // Transform backend data to frontend Transaction interface
@@ -65,7 +78,9 @@ export class TransactionService {
             submittedDate: new Date(t.submittedDate || t.submissionDate || t.createdAt),
             estimatedPrice: t.estimatedPrice || t.initialOfferPrice || 0,
             finalPrice: t.finalPrice || t.finalOfferPrice,
-            note: t.note
+            initialNote: t.initialNote,
+            finalNote: t.finalNote,
+            note: t.initialNote || t.note // Backward compatibility
           }));
         }),
         catchError(error => {
@@ -99,7 +114,9 @@ export class TransactionService {
             submittedDate: new Date(t.submittedDate || t.submissionDate || t.createdAt),
             estimatedPrice: t.estimatedPrice || t.initialOfferPrice || 0,
             finalPrice: t.finalPrice || t.finalOfferPrice,
-            note: t.note
+            initialNote: t.initialNote,
+            finalNote: t.finalNote,
+            note: t.initialNote || t.note // Backward compatibility
           }));
         }),
         catchError(error => {
@@ -148,7 +165,7 @@ export class TransactionService {
     const token = this.getAuthToken();
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
-    return this.http.get<any>(`${this.apiUrl}/transactions/${transactionId}`, { headers })
+    return this.http.get<any>(`${this.apiUrl}/transactions/${transactionId}`, { headers: this.auth.getAuthHeaders()})
       .pipe(
         catchError(error => {
           console.error('Error fetching transaction by ID:', error);
@@ -214,4 +231,89 @@ export class TransactionService {
       );
   }
 
+  /**
+   * Get all categories (for admin dropdown)
+   */
+  getAllCategories(): Observable<any[]> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.get<any[]>(`${this.apiUrl}/admin/categories`, { headers })
+      .pipe(
+        catchError(error => {
+          console.error('Error fetching categories:', error);
+          return of([]);
+        })
+      );
+  }
+
+  /**
+   * Get all brands (for admin dropdown)
+   */
+  getAllBrands(): Observable<any[]> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.get<any[]>(`${this.apiUrl}/admin/brands`, { headers })
+      .pipe(
+        catchError(error => {
+          console.error('Error fetching brands:', error);
+          return of([]);
+        })
+      );
+  }
+
+  /**
+   * Get all appliances (for admin dropdown)
+   */
+  getAllAppliances(): Observable<any[]> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.get<any[]>(`${this.apiUrl}/admin/appliances`, { headers })
+      .pipe(
+        catchError(error => {
+          console.error('Error fetching appliances:', error);
+          return of([]);
+        })
+      );
+  }
+
+  /**
+   * Get active condition groups with their active options (for admin edit dropdowns)
+   * @param categoryId Optional category ID to filter options by category
+   */
+  getActiveConditionGroupsWithOptions(categoryId?: string | number): Observable<any[]> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    let url = `${this.apiUrl}/admin/condition-groups/active-with-options`;
+    if (categoryId) {
+      url += `?categoryId=${categoryId}`;
+    }
+
+    return this.http.get<any[]>(url, { headers })
+      .pipe(
+        catchError(error => {
+          console.error('Error fetching condition groups:', error);
+          return of([]);
+        })
+      );
+  }
+
+  /**
+   * Update customer information for a transaction (seller can edit when item is Awaiting Pick Up)
+   */
+  updateCustomerInfo(transactionId: string | number, updateData: any): Observable<any> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.put<any>(`${this.apiUrl}/transactions/${transactionId}/customer-info`, updateData, { headers: this.auth.getAuthHeaders() })
+      .pipe(
+        catchError(error => {
+          console.error('Error updating customer info:', error);
+          throw error;
+        })
+      );
+  }
 }

@@ -222,6 +222,10 @@ CREATE TABLE "ConditionGroup" (
     "groupID" VARCHAR(20) PRIMARY KEY DEFAULT ('CG' || LPAD(nextval('condition_group_id_seq')::text, 3, '0')),
     "criteriaName" VARCHAR(255) NOT NULL,
     "criteriaCodePrefix" VARCHAR(10),
+    question_title TEXT,
+    question_type VARCHAR(50),
+    display_order INTEGER,
+    status VARCHAR(50) DEFAULT 'ACTIVE',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -233,8 +237,9 @@ CREATE TABLE "ConditionOption" (
     "conditionID" VARCHAR(20) PRIMARY KEY DEFAULT ('CO' || LPAD(nextval('condition_option_id_seq')::text, 3, '0')),
     "groupID" VARCHAR(20),
     code VARCHAR(50),
+    description TEXT,
     image TEXT,
-    status VARCHAR(50),
+    status VARCHAR(50) DEFAULT 'ACTIVE',
     question TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY ("groupID") REFERENCES "ConditionGroup"("groupID") ON DELETE SET NULL
@@ -343,20 +348,6 @@ CREATE TABLE "Score" (
 
 CREATE INDEX idx_score_submittedApplianceID ON "Score"("submittedApplianceID");
 
--- =====================================================
--- STEP 18: Create PackagingInstruction table
--- =====================================================
-
-CREATE TABLE "PackagingInstruction" (
-    "instructionID" VARCHAR(20) PRIMARY KEY DEFAULT ('PKG' || LPAD(nextval('packaging_instruction_id_seq')::text, 3, '0')),
-    "submittedApplianceID" VARCHAR(20) NOT NULL,
-    "appliance_category" VARCHAR(255),
-    instructions TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY ("submittedApplianceID") REFERENCES "SubmittedAppliance"("submittedApplianceID") ON DELETE CASCADE
-);
-
-CREATE INDEX idx_packaging_instruction_submittedApplianceID ON "PackagingInstruction"("submittedApplianceID");
 
 -- =====================================================
 -- STEP 19: Create Review table
@@ -467,6 +458,12 @@ CREATE TABLE "Pickup" (
     "addressID" VARCHAR(20),
     "pickupDate" DATE,
     "pickupTimeSlot" VARCHAR(50),
+    "snapshotReceiverName" VARCHAR(255),
+    "snapshotPhoneNum" VARCHAR(50),
+    "snapshotAddress" TEXT,
+    "snapshotCity" VARCHAR(100),
+    "snapshotState" VARCHAR(100),
+    "snapshotZipCode" VARCHAR(20),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY ("submittedApplianceID") REFERENCES "SubmittedAppliance"("submittedApplianceID") ON DELETE CASCADE,
     FOREIGN KEY ("addressID") REFERENCES "PickupAddress"("addressID") ON DELETE SET NULL

@@ -1,7 +1,18 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
+import { createClient } from '@supabase/supabase-js';
 
 console.log('🔥🔥🔥 conditionController.ts loaded! 🔥🔥🔥');
+
+// Initialize Supabase Client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY must be set in .env');
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 // =====================================================
 // CONDITION GROUP MANAGEMENT
@@ -9,43 +20,179 @@ console.log('🔥🔥🔥 conditionController.ts loaded! 🔥🔥🔥');
 
 export const getAllConditionGroups = async (req: Request, res: Response) => {
   try {
-    const result = await pool.query(
-      `SELECT "groupID", "criteriaName", "criteriaCodePrefix", created_at, status
-       FROM "ConditionGroup"
-       ORDER BY created_at ASC`
-    );
+    const result = await pool.query(`
+      SELECT
+        cg."groupID",
+        cg."criteriaName",
+        cg."criteriaCodePrefix",
+        cg."question_title",
+        cg."question_type",
+        cg."display_order",
+        cg."status",
+        cg."created_at",
+        COALESCE(
+          JSON_AGG(
+            CASE WHEN ccg."categoryID" IS NOT NULL THEN
+              JSON_BUILD_OBJECT(
+                'categoryID', ccg."categoryID",
+                'weightPercentage', ccg."weightPercentage"
+              )
+            END
+          ) FILTER (WHERE ccg."categoryID" IS NOT NULL),
+          '[]'::json
+        ) as categories
+      FROM "ConditionGroup" cg
+      LEFT JOIN "Category_ConditionGroup" ccg ON cg."groupID" = ccg."groupID"
+      GROUP BY cg."groupID", cg."criteriaName", cg."criteriaCodePrefix",
+               cg."question_title", cg."question_type", cg."display_order", cg."status", cg."created_at"
+      ORDER BY COALESCE(cg."display_order", 999999) ASC, cg."created_at" ASC
+    `);
 
-    console.log('📂 Fetched condition groups:', result.rows.length);
+    console.log('📂 Fetched condition groups with categories:', result.rows.length);
     res.json(result.rows);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get all condition groups error:', error);
-    res.status(500).json({ message: 'Failed to fetch condition groups' });
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({
+      message: 'Failed to fetch condition groups',
+      error: error.message,
+      details: error.detail
+    });
+  }
+};
+
+// Get active condition groups with their active options (for admin edit dropdowns)
+// Optional categoryId query param to filter options by category
+export const getActiveConditionGroupsWithOptions = async (req: Request, res: Response) => {
+  try {
+    const { categoryId } = req.query;
+    console.log('📋 Getting condition groups, categoryId:', categoryId);
+
+    // Get all active condition groups
+    // Note: Category filtering for groups is done via Category_ConditionGroup table
+    // But we'll show all groups and filter options by category instead
+    const groupsQuery = `
+      SELECT
+        cg."groupID",
+        cg."criteriaName",
+        cg."question_title",
+        cg."question_type",
+        cg."display_order"
+      FROM "ConditionGroup" cg
+      WHERE cg."status" = 'ACTIVE'
+      ORDER BY COALESCE(cg."display_order", 999999) ASC
+    `;
+
+    const groupsResult = await pool.query(groupsQuery);
+    console.log('📂 Found groups:', groupsResult.rows.length);
+
+    // Get all active options for active groups (optionally filtered by category)
+    let optionsQuery = `
+      SELECT
+        co."conditionID",
+        co."groupID",
+        co.code,
+        co.description
+      FROM "ConditionOption" co
+      INNER JOIN "ConditionGroup" cg ON co."groupID" = cg."groupID"
+      WHERE co."status" = 'ACTIVE' AND cg."status" = 'ACTIVE'
+      ORDER BY co.created_at ASC
+    `;
+
+    let optionsResult;
+    if (categoryId) {
+      // Filter options by category using Category_Condition junction table
+      optionsQuery = `
+        SELECT
+          co."conditionID",
+          co."groupID",
+          co.code,
+          co.description
+        FROM "ConditionOption" co
+        INNER JOIN "ConditionGroup" cg ON co."groupID" = cg."groupID"
+        LEFT JOIN "Category_Condition" cc ON co."conditionID" = cc."conditionID"
+        WHERE co."status" = 'ACTIVE' AND cg."status" = 'ACTIVE'
+        AND (cc."categoryID" = $1 OR cc."categoryID" IS NULL OR NOT EXISTS (
+          SELECT 1 FROM "Category_Condition" WHERE "conditionID" = co."conditionID"
+        ))
+        ORDER BY co.created_at ASC
+      `;
+      optionsResult = await pool.query(optionsQuery, [categoryId]);
+    } else {
+      optionsResult = await pool.query(optionsQuery);
+    }
+    console.log('📂 Found options:', optionsResult.rows.length);
+
+    // Group options by groupID
+    const groupsWithOptions = groupsResult.rows.map(group => ({
+      ...group,
+      options: optionsResult.rows.filter(opt => opt.groupID === group.groupID)
+    }));
+
+    console.log('📂 Fetched active condition groups with options:', groupsWithOptions.length, categoryId ? `for category ${categoryId}` : '');
+    res.json(groupsWithOptions);
+  } catch (error: any) {
+    console.error('Get active condition groups with options error:', error);
+    console.error('Error details:', error.message, error.stack);
+    res.status(500).json({
+      message: 'Failed to fetch condition groups with options',
+      error: error.message
+    });
   }
 };
 
 export const createConditionGroup = async (req: Request, res: Response) => {
   try {
-    const { criteriaName, criteriaCodePrefix } = req.body;
+    const { criteriaName, criteriaCodePrefix, question_title, question_type } = req.body;
 
     if (!criteriaName) {
       return res.status(400).json({ message: 'Criteria name is required' });
     }
 
+    if (!criteriaCodePrefix) {
+      return res.status(400).json({ message: 'Code prefix is required' });
+    }
+
+    if (!question_title) {
+      return res.status(400).json({ message: 'Question title is required' });
+    }
+
+    if (!question_type) {
+      return res.status(400).json({ message: 'Question type is required' });
+    }
+
     // Check if criteria name already exists
-    const existing = await pool.query(
+    const existingName = await pool.query(
       'SELECT "groupID" FROM "ConditionGroup" WHERE "criteriaName" = $1',
       [criteriaName]
     );
 
-    if (existing.rows.length > 0) {
+    if (existingName.rows.length > 0) {
       return res.status(400).json({ message: 'Criteria name already exists' });
     }
 
+    // Check if code prefix already exists
+    const existingPrefix = await pool.query(
+      'SELECT "groupID" FROM "ConditionGroup" WHERE "criteriaCodePrefix" = $1',
+      [criteriaCodePrefix]
+    );
+
+    if (existingPrefix.rows.length > 0) {
+      return res.status(400).json({ message: 'Code prefix already exists. Please use a unique prefix.' });
+    }
+
+    // Get the next display_order (max + 1)
+    const maxOrderResult = await pool.query(
+      'SELECT COALESCE(MAX("display_order"), 0) as max_order FROM "ConditionGroup"'
+    );
+    const nextOrder = maxOrderResult.rows[0].max_order + 1;
+
     const result = await pool.query(
-      `INSERT INTO "ConditionGroup" ("criteriaName", "criteriaCodePrefix", status)
-       VALUES ($1, $2, 'ACTIVE')
-       RETURNING "groupID", "criteriaName", "criteriaCodePrefix", created_at, status`,
-      [criteriaName, criteriaCodePrefix || null]
+      `INSERT INTO "ConditionGroup" ("criteriaName", "criteriaCodePrefix", "question_title", "question_type", "display_order", status)
+       VALUES ($1, $2, $3, $4, $5, 'ACTIVE')
+       RETURNING "groupID", "criteriaName", "criteriaCodePrefix", "question_title", "question_type", "display_order", created_at, status`,
+      [criteriaName, criteriaCodePrefix, question_title, question_type, nextOrder]
     );
 
     console.log('✅ Created condition group:', result.rows[0]);
@@ -59,7 +206,7 @@ export const createConditionGroup = async (req: Request, res: Response) => {
 export const updateConditionGroup = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { criteriaName, criteriaCodePrefix } = req.body;
+    const { criteriaName, criteriaCodePrefix, question_title, question_type, status, display_order } = req.body;
 
     if (!criteriaName) {
       return res.status(400).json({ message: 'Criteria name is required' });
@@ -75,12 +222,29 @@ export const updateConditionGroup = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Criteria name already exists' });
     }
 
+    // If display_order is being updated, check if it conflicts with another group
+    if (display_order !== undefined) {
+      const orderConflict = await pool.query(
+        'SELECT "groupID" FROM "ConditionGroup" WHERE "display_order" = $1 AND "groupID" != $2',
+        [display_order, id]
+      );
+
+      if (orderConflict.rows.length > 0) {
+        return res.status(400).json({ message: 'Display order already exists. Please use a unique order number.' });
+      }
+    }
+
     const result = await pool.query(
       `UPDATE "ConditionGroup"
-       SET "criteriaName" = $1, "criteriaCodePrefix" = $2
-       WHERE "groupID" = $3
-       RETURNING "groupID", "criteriaName", "criteriaCodePrefix", created_at, status`,
-      [criteriaName, criteriaCodePrefix || null, id]
+       SET "criteriaName" = $1,
+           "criteriaCodePrefix" = $2,
+           "question_title" = $3,
+           "question_type" = $4,
+           "status" = $5,
+           "display_order" = COALESCE($6, "display_order")
+       WHERE "groupID" = $7
+       RETURNING "groupID", "criteriaName", "criteriaCodePrefix", "question_title", "question_type", "display_order", "status", "created_at"`,
+      [criteriaName, criteriaCodePrefix || null, question_title || null, question_type || null, status || 'ACTIVE', display_order, id]
     );
 
     if (result.rows.length === 0) {
@@ -136,7 +300,7 @@ export const getAllConditionOptions = async (req: Request, res: Response) => {
               STRING_AGG(c."categoryName", ', ' ORDER BY c."categoryName") as categories
        FROM "ConditionOption" co
        LEFT JOIN "ConditionGroup" cg ON co."groupID" = cg."groupID"
-       LEFT JOIN "ConditionCategory" cc ON co."conditionID" = cc."conditionID"
+       LEFT JOIN "Category_Condition" cc ON co."conditionID" = cc."conditionID"
        LEFT JOIN "Category" c ON cc."categoryID" = c."categoryID"
        GROUP BY co."conditionID", co."groupID", co.code, co.description, co.image, co.status, co.question, co.created_at,
                 cg."criteriaName", cg."criteriaCodePrefix", cg.created_at
@@ -145,9 +309,10 @@ export const getAllConditionOptions = async (req: Request, res: Response) => {
 
     console.log('📂 Fetched condition options:', result.rows.length);
     res.json(result.rows);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Get all condition options error:', error);
-    res.status(500).json({ message: 'Failed to fetch condition options' });
+    console.error('Error details:', error.message);
+    res.status(500).json({ message: 'Failed to fetch condition options', error: error.message });
   }
 };
 
@@ -159,7 +324,7 @@ export const getConditionOptionsByGroup = async (req: Request, res: Response) =>
       `SELECT co."conditionID", co."groupID", co.code, co.description, co.image, co.status, co.question, co.created_at,
               STRING_AGG(c."categoryName", ', ' ORDER BY c."categoryName") as categories
        FROM "ConditionOption" co
-       LEFT JOIN "ConditionCategory" cc ON co."conditionID" = cc."conditionID"
+       LEFT JOIN "Category_Condition" cc ON co."conditionID" = cc."conditionID"
        LEFT JOIN "Category" c ON cc."categoryID" = c."categoryID"
        WHERE co."groupID" = $1
        GROUP BY co."conditionID"
@@ -214,30 +379,60 @@ export const createConditionOption = async (req: Request, res: Response) => {
 
     // Auto-generate code based on prefix
     if (prefix) {
+      // Get the highest numeric code for this group
       const lastCodeQuery = await pool.query(
         `SELECT code FROM "ConditionOption"
-         WHERE "groupID" = $1 AND code LIKE $2
-         ORDER BY code DESC LIMIT 1`,
-        [groupID, `${prefix}%`]
+         WHERE "groupID" = $1 AND code ~ $2
+         ORDER BY CAST(SUBSTRING(code FROM '[0-9]+') AS INTEGER) DESC LIMIT 1`,
+        [groupID, `^${prefix}[0-9]+$`]
       );
 
       if (lastCodeQuery.rows.length > 0) {
         const lastCode = lastCodeQuery.rows[0].code;
         const lastNumber = parseInt(lastCode.replace(prefix, '')) || 0;
         finalCode = prefix + String(lastNumber + 1).padStart(3, '0');
+        console.log(`🔢 Last code: ${lastCode}, Next code: ${finalCode}`);
       } else {
         finalCode = prefix + '001';
+        console.log(`🔢 No existing codes, starting with: ${finalCode}`);
       }
     }
 
-    // Get image path if file was uploaded
-    const imagePath = imageFile ? `/uploads/conditions/${imageFile.filename}` : null;
+    // Upload image to Supabase Storage if file was uploaded
+    let imageUrl = null;
+    if (imageFile) {
+      const fileExt = imageFile.originalname.split('.').pop();
+      const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}.${fileExt}`;
+      const filePath = `conditions/${groupID}/${fileName}`;
+
+      console.log(`📸 Uploading image to Supabase: ${filePath}`);
+
+      const { error: uploadError } = await supabase.storage
+        .from('condition-images')
+        .upload(filePath, imageFile.buffer, {
+          contentType: imageFile.mimetype,
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Supabase upload error:', uploadError);
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('condition-images')
+        .getPublicUrl(filePath);
+
+      imageUrl = publicUrl;
+      console.log(`✅ Image uploaded to Supabase: ${imageUrl}`);
+    }
 
     console.log('💾 Inserting into database:', {
       groupID,
       finalCode,
       description: description || null,
-      imagePath,
+      imageUrl,
       status: status || 'ACTIVE',
       question: question || null
     });
@@ -246,7 +441,7 @@ export const createConditionOption = async (req: Request, res: Response) => {
       `INSERT INTO "ConditionOption" ("groupID", code, description, image, status, question)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING "conditionID", "groupID", code, description, image, status, question, created_at`,
-      [groupID, finalCode, description || null, imagePath, status || 'ACTIVE', question || null]
+      [groupID, finalCode, description || null, imageUrl, status || 'ACTIVE', question || null]
     );
 
     console.log('✅ Created condition option:', result.rows[0]);
@@ -271,7 +466,7 @@ export const updateConditionOption = async (req: Request, res: Response) => {
 
     // Get current option to preserve existing image if no new one is uploaded
     const currentOption = await pool.query(
-      'SELECT image FROM "ConditionOption" WHERE "conditionID" = $1',
+      'SELECT image, "groupID" FROM "ConditionOption" WHERE "conditionID" = $1',
       [id]
     );
 
@@ -279,30 +474,57 @@ export const updateConditionOption = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Condition option not found' });
     }
 
-    // Determine final image path
-    let finalImagePath;
+    // Determine final image URL
+    let finalImageUrl;
     if (imageFile) {
-      // New file uploaded
-      finalImagePath = `/uploads/conditions/${imageFile.filename}`;
+      // New file uploaded - upload to Supabase
+      const fileExt = imageFile.originalname.split('.').pop();
+      const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}.${fileExt}`;
+
+      // Get groupID from current option
+      const groupID = currentOption.rows[0].groupID || 'default';
+      const filePath = `conditions/${groupID}/${fileName}`;
+
+      console.log(`📸 Uploading updated image to Supabase: ${filePath}`);
+
+      const { error: uploadError } = await supabase.storage
+        .from('condition-images')
+        .upload(filePath, imageFile.buffer, {
+          contentType: imageFile.mimetype,
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Supabase upload error:', uploadError);
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('condition-images')
+        .getPublicUrl(filePath);
+
+      finalImageUrl = publicUrl;
+      console.log(`✅ Image uploaded to Supabase: ${finalImageUrl}`);
     } else if (removeImage === 'true') {
       // Explicitly remove image
-      finalImagePath = null;
+      finalImageUrl = null;
     } else if (imageUrl) {
       // Keep existing URL
-      finalImagePath = imageUrl;
+      finalImageUrl = imageUrl;
     } else {
       // Keep current image from database
-      finalImagePath = currentOption.rows[0].image;
+      finalImageUrl = currentOption.rows[0].image;
     }
 
-    console.log('💾 Final image path:', finalImagePath);
+    console.log('💾 Final image URL:', finalImageUrl);
 
     const result = await pool.query(
       `UPDATE "ConditionOption"
        SET description = $1, image = $2, status = $3, question = $4
        WHERE "conditionID" = $5
        RETURNING "conditionID", "groupID", code, description, image, status, question, created_at`,
-      [description || null, finalImagePath, status || 'ACTIVE', question || null, id]
+      [description || null, finalImageUrl, status || 'ACTIVE', question || null, id]
     );
 
     console.log('✅ Updated condition option:', result.rows[0]);
@@ -343,8 +565,8 @@ export const getConditionCategories = async (req: Request, res: Response) => {
     const { conditionId } = req.params;
 
     const result = await pool.query(
-      `SELECT cc."categoryID", c."categoryName"
-       FROM "ConditionCategory" cc
+      `SELECT cc."categoryID", c."categoryName", cc."scoreValue"
+       FROM "Category_Condition" cc
        LEFT JOIN "Category" c ON cc."categoryID" = c."categoryID"
        WHERE cc."conditionID" = $1`,
       [conditionId]
@@ -364,7 +586,7 @@ export const updateConditionCategories = async (req: Request, res: Response) => 
 
     // Delete existing categories for this condition
     await pool.query(
-      'DELETE FROM "ConditionCategory" WHERE "conditionID" = $1',
+      'DELETE FROM "Category_Condition" WHERE "conditionID" = $1',
       [conditionId]
     );
 
@@ -372,7 +594,7 @@ export const updateConditionCategories = async (req: Request, res: Response) => 
     if (categoryIDs && categoryIDs.length > 0) {
       const values = categoryIDs.map((catId: string) => `('${conditionId}', '${catId}')`).join(',');
       await pool.query(
-        `INSERT INTO "ConditionCategory" ("conditionID", "categoryID") VALUES ${values}`
+        `INSERT INTO "Category_Condition" ("conditionID", "categoryID") VALUES ${values}`
       );
     }
 
@@ -381,5 +603,156 @@ export const updateConditionCategories = async (req: Request, res: Response) => 
   } catch (error) {
     console.error('Update condition categories error:', error);
     res.status(500).json({ message: 'Failed to update categories' });
+  }
+};
+
+// =====================================================
+// DISPLAY ORDER MANAGEMENT
+// =====================================================
+
+export const updateDisplayOrders = async (req: Request, res: Response) => {
+  try {
+    const { categoryId } = req.params;
+    const { orders } = req.body; // Array of { groupID, display_order }
+
+    if (!orders || !Array.isArray(orders)) {
+      return res.status(400).json({ message: 'Orders array is required' });
+    }
+
+    await pool.query('BEGIN');
+
+    for (const order of orders) {
+      await pool.query(`
+        UPDATE "Category_ConditionGroup"
+        SET "display_order" = $1
+        WHERE "categoryID" = $2 AND "groupID" = $3
+      `, [order.display_order, categoryId, order.groupID]);
+    }
+
+    await pool.query('COMMIT');
+
+    console.log('✅ Updated display orders for category:', categoryId);
+    res.json({ message: 'Display orders updated successfully' });
+  } catch (error) {
+    await pool.query('ROLLBACK');
+    console.error('Error updating display orders:', error);
+    res.status(500).json({ message: 'Failed to update display orders' });
+  }
+};
+
+// =====================================================
+// BUYER MARKDOWN MANAGEMENT
+// =====================================================
+
+export const getAllBuyerMarkdowns = async (req: Request, res: Response) => {
+  try {
+    const {
+      categoryName,
+      buyerID,
+      minMarkdown,
+      maxMarkdown,
+      search,
+      sortField = 'conditionCode',
+      sortDirection = 'asc'
+    } = req.query;
+
+    let whereConditions: string[] = [];
+    let queryParams: any[] = [];
+    let paramCount = 0;
+
+    // Build WHERE conditions based on filters
+    if (categoryName && categoryName !== 'all') {
+      paramCount++;
+      whereConditions.push(`EXISTS (
+        SELECT 1 FROM "Category_Condition" cc2
+        LEFT JOIN "Category" c2 ON cc2."categoryID" = c2."categoryID"
+        WHERE cc2."conditionID" = co."conditionID"
+        AND c2."categoryName" = $${paramCount}
+      )`);
+      queryParams.push(categoryName);
+    }
+
+    if (buyerID && buyerID !== 'all') {
+      paramCount++;
+      whereConditions.push(`bm."buyerID" = $${paramCount}`);
+      queryParams.push(buyerID);
+    }
+
+    if (minMarkdown) {
+      paramCount++;
+      whereConditions.push(`bm."markdownPercentage" >= $${paramCount}`);
+      queryParams.push(parseFloat(minMarkdown as string));
+    }
+
+    if (maxMarkdown) {
+      paramCount++;
+      whereConditions.push(`bm."markdownPercentage" <= $${paramCount}`);
+      queryParams.push(parseFloat(maxMarkdown as string));
+    }
+
+    if (search) {
+      paramCount++;
+      whereConditions.push(`(
+        co.code ILIKE $${paramCount} OR
+        co.description ILIKE $${paramCount} OR
+        u.username ILIKE $${paramCount} OR
+        bm."buyerID" ILIKE $${paramCount}
+      )`);
+      queryParams.push(`%${search}%`);
+    }
+
+    const whereClause = whereConditions.length > 0
+      ? 'WHERE ' + whereConditions.join(' AND ')
+      : '';
+
+    // Validate sort field to prevent SQL injection
+    const validSortFields = ['conditionCode', 'conditionDescription', 'buyerID', 'markdownPercentage', 'categoryNames'];
+    const safeSortField = validSortFields.includes(sortField as string) ? sortField : 'conditionCode';
+    const safeSortDirection = sortDirection === 'desc' ? 'DESC' : 'ASC';
+
+    // Map frontend field names to database column names
+    const fieldMap: Record<string, string> = {
+      'conditionCode': 'co.code',
+      'conditionDescription': 'co.description',
+      'buyerID': 'bm."buyerID"',
+      'markdownPercentage': 'bm."markdownPercentage"',
+      'categoryNames': 'categoryNames'
+    };
+
+    const dbSortField = fieldMap[safeSortField as string] || 'co.code';
+
+    const query = `
+      SELECT
+        bm."buyerID",
+        u.username as "buyerName",
+        bm."conditionID",
+        co.code as "conditionCode",
+        co.description as "conditionDescription",
+        bm."markdownPercentage",
+        (
+          SELECT STRING_AGG(DISTINCT c2."categoryName", ', ' ORDER BY c2."categoryName")
+          FROM "Category_Condition" cc2
+          LEFT JOIN "Category" c2 ON cc2."categoryID" = c2."categoryID"
+          WHERE cc2."conditionID" = co."conditionID"
+        ) as "categoryNames"
+      FROM "BuyerMarkdown" bm
+      LEFT JOIN users u ON bm."buyerID" = u."userID"
+      LEFT JOIN "ConditionOption" co ON bm."conditionID" = co."conditionID"
+      ${whereClause}
+      ORDER BY ${dbSortField} ${safeSortDirection}, bm."buyerID" ASC
+    `;
+
+    const result = await pool.query(query, queryParams);
+
+    console.log('📂 Fetched buyer markdowns:', result.rows.length);
+    res.json(result.rows);
+  } catch (error: any) {
+    console.error('Get buyer markdowns error:', error);
+    console.error('Error message:', error.message);
+    console.error('Error detail:', error.detail);
+    res.status(500).json({
+      message: 'Failed to fetch buyer markdowns',
+      error: error.message
+    });
   }
 };

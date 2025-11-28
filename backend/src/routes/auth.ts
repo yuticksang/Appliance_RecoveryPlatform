@@ -1,5 +1,16 @@
 import express, { Router } from 'express';
-import { login, register, forgotPassword, resetPassword, verifyEmail, validateToken, getProfile, updateProfile, googleLogin } from '../controllers/authController';
+import {
+  login,
+  register,
+  forgotPassword,
+  resetPassword,
+  verifyEmail,
+  validateToken,
+  getProfile,
+  updateProfile,
+  googleLogin,
+  resendVerificationEmail
+} from '../controllers/authController';
 import { verifyToken as verifyTokenMiddleware } from '../middleware/authMiddleware';
 
 const router = express.Router();
@@ -10,6 +21,7 @@ router.post('/login', login);
 router.post('/google', googleLogin);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password', resetPassword);
+router.post('/resend-verification', resendVerificationEmail);
 router.get('/verify-email/:token', verifyEmail);
 router.get('/validate', verifyTokenMiddleware, validateToken);
 router.get('/profile/:id', verifyTokenMiddleware, getProfile);

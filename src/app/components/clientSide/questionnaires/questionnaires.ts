@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, ChangeDetectorRef, OnInit, inject, signal, computed } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { QuestionnaireService, Category,  SimpleItem } from '../../../services/questionnaire.service';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../services/auth.service';
@@ -45,7 +46,8 @@ export class QuestionnairesComponent implements OnInit{
   private fb = inject(FormBuilder);
   private alertService = inject(AlertService);
   private cdr = inject(ChangeDetectorRef);
-  
+  private route = inject(ActivatedRoute);
+
   currentUser = this.auth.currentUser;
 
   // Step tracking
@@ -91,6 +93,21 @@ export class QuestionnairesComponent implements OnInit{
   valuationLabel: string = '';
   valuationWorth: number = 0;
   calculatedScores: any;
+
+  // Helper method to format number with commas and 2 decimal places
+  formatWithCommas(value: number): string {
+    return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // Helper method to get circle color based on valuation label
+  getCircleColor(): string {
+    const label = this.valuationLabel.toLowerCase();
+    if (label.includes('excellent') || label.includes('premium')) return '#10b981'; // Green
+    if (label.includes('good') || label.includes('very good')) return '#3b82f6'; // Blue
+    if (label.includes('fair') || label.includes('average')) return '#f59e0b'; // Orange
+    if (label.includes('poor') || label.includes('bad')) return '#ef4444'; // Red
+    return '#6b7280'; // Default gray
+  }
 
   // Step 5 - Pickup
 /* ────── ADDRESS SIGNALS ────── */
@@ -277,6 +294,22 @@ export class QuestionnairesComponent implements OnInit{
   ngOnInit() {
     console.log('User:', this.currentUser());
     this.loadCategories(); // load actual types from backend
+
+    // Check if categoryId is passed from home page
+    this.route.queryParams.subscribe(params => {
+      if (params['categoryId']) {
+        this.applianceTypeId = params['categoryId'];
+        console.log('Pre-selected category from home:', this.applianceTypeId);
+
+        // Auto-load brands for this category
+        this.onCategoryChange();
+
+        // Skip to step 2 (brand & model selection)
+        this.currentStep = 2;
+        this.maxStepReached = 2;
+        this.cdr.markForCheck();
+      }
+    });
 
     // ALWAYS load condition groups on init
     this.loadConditionGroups();
@@ -493,13 +526,13 @@ export class QuestionnairesComponent implements OnInit{
   }
 
   // Backwards compatibility helpers (for existing hardcoded logic)
-  getFunctionalStatus(): string {
-    return this.getFormattedAnswer('CG001');
-  }
+  // getFunctionalStatus(): string {
+  //   return this.getFormattedAnswer('CG001');
+  // }
 
-  getPhysicalCondition(): string {
-    return this.getFormattedAnswer('CG002');
-  }
+  // getPhysicalCondition(): string {
+  //   return this.getFormattedAnswer('CG002');
+  // }
 
   getSelectedIssueDescriptions(): string[] {
     const group = this.conditionGroups().find(g => g.type === 'checkbox');

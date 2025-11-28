@@ -1,8 +1,19 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import pool from '../config/database';
+import { createClient } from '@supabase/supabase-js';
 
 console.log('🔥🔥🔥 adminController.ts loaded! 🔥🔥🔥');
+
+// Initialize Supabase Client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY must be set in .env');
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
@@ -344,6 +355,7 @@ export const getAllAppliances = async (req: Request, res: Response) => {
         a."modelCode",
         a."modelName",
         a.description,
+        a.image_url,
         a.status,
         a.created_at,
         c."categoryName",
@@ -366,6 +378,9 @@ export const getAllAppliances = async (req: Request, res: Response) => {
 export const createAppliance = async (req: Request, res: Response) => {
   try {
     const { categoryID, brandID, modelCode, modelName, description } = req.body;
+    const imageFile = (req as any).file;
+
+    console.log('📝 Create appliance request:', { categoryID, brandID, modelCode, modelName, hasFile: !!imageFile });
 
     // Validate required fields
     if (!categoryID || !brandID || !modelCode || !modelName) {
@@ -382,11 +397,41 @@ export const createAppliance = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Model code already exists' });
     }
 
+    // Upload image to Supabase Storage if file was uploaded
+    let imageUrl = null;
+    if (imageFile) {
+      const fileExt = imageFile.originalname.split('.').pop();
+      const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}.${fileExt}`;
+      const filePath = `appliances/${modelCode}/${fileName}`;
+
+      console.log(`📸 Uploading appliance image to Supabase: ${filePath}`);
+
+      const { error: uploadError } = await supabase.storage
+        .from('appliance-images')
+        .upload(filePath, imageFile.buffer, {
+          contentType: imageFile.mimetype,
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Supabase upload error:', uploadError);
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('appliance-images')
+        .getPublicUrl(filePath);
+
+      imageUrl = publicUrl;
+      console.log(`✅ Appliance image uploaded to Supabase: ${imageUrl}`);
+    }
+
     const result = await pool.query(
-      `INSERT INTO "Appliance" ("categoryID", "brandID", "modelCode", "modelName", description)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO "Appliance" ("categoryID", "brandID", "modelCode", "modelName", description, image_url)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [categoryID, brandID, modelCode, modelName, description || null]
+      [categoryID, brandID, modelCode, modelName, description || null, imageUrl]
     );
 
     console.log('✅ Appliance created:', result.rows[0]);
@@ -404,7 +449,19 @@ export const createAppliance = async (req: Request, res: Response) => {
 export const updateAppliance = async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    const { categoryID, brandID, modelCode, modelName, description } = req.body;
+    const { categoryID, brandID, modelCode, modelName, description, imageUrl, removeImage } = req.body;
+    const imageFile = (req as any).file;
+
+    console.log('📝 Update appliance request:', { id, categoryID, brandID, modelCode, modelName, hasFile: !!imageFile, removeImage });
+    console.log('📝 Image file details:', imageFile ? {
+      fieldname: imageFile.fieldname,
+      originalname: imageFile.originalname,
+      mimetype: imageFile.mimetype,
+      size: imageFile.size,
+      hasBuffer: !!imageFile.buffer,
+      bufferLength: imageFile.buffer?.length
+    } : 'No file');
+    console.log('📝 Request body keys:', Object.keys(req.body));
 
     // Check if model code is taken by another appliance
     const existing = await pool.query(
@@ -416,12 +473,62 @@ export const updateAppliance = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Model code already exists' });
     }
 
+    // Get current appliance to check existing image
+    const currentAppliance = await pool.query(
+      'SELECT image_url FROM "Appliance" WHERE "applianceID" = $1',
+      [id]
+    );
+
+    if (currentAppliance.rows.length === 0) {
+      return res.status(404).json({ message: 'Appliance not found' });
+    }
+
+    // Determine final image URL
+    let finalImageUrl;
+    if (imageFile) {
+      // New file uploaded - upload to Supabase
+      const fileExt = imageFile.originalname.split('.').pop();
+      const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}.${fileExt}`;
+      const filePath = `appliances/${modelCode}/${fileName}`;
+
+      console.log(`📸 Uploading updated appliance image to Supabase: ${filePath}`);
+
+      const { error: uploadError } = await supabase.storage
+        .from('appliance-images')
+        .upload(filePath, imageFile.buffer, {
+          contentType: imageFile.mimetype,
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Supabase upload error:', uploadError);
+        throw uploadError;
+      }
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('appliance-images')
+        .getPublicUrl(filePath);
+
+      finalImageUrl = publicUrl;
+      console.log(`✅ Appliance image uploaded to Supabase: ${finalImageUrl}`);
+    } else if (removeImage === 'true') {
+      // Explicitly remove image
+      finalImageUrl = null;
+    } else if (imageUrl) {
+      // Keep existing URL
+      finalImageUrl = imageUrl;
+    } else {
+      // Keep current image from database
+      finalImageUrl = currentAppliance.rows[0].image_url;
+    }
+
     const result = await pool.query(
       `UPDATE "Appliance"
-       SET "categoryID" = $1, "brandID" = $2, "modelCode" = $3, "modelName" = $4, description = $5
-       WHERE "applianceID" = $6
+       SET "categoryID" = $1, "brandID" = $2, "modelCode" = $3, "modelName" = $4, description = $5, image_url = $6
+       WHERE "applianceID" = $7
        RETURNING *`,
-      [categoryID, brandID, modelCode, modelName, description || null, id]
+      [categoryID, brandID, modelCode, modelName, description || null, finalImageUrl, id]
     );
 
     if (result.rows.length === 0) {
@@ -435,6 +542,8 @@ export const updateAppliance = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Update appliance error:', error);
+    // Write error to file for debugging
+    require('fs').appendFileSync('D:/EasyRecovery/backend/debug.log', `\n${new Date().toISOString()} - Update appliance error: ${error}\n${error instanceof Error ? error.stack : ''}\n`);
     res.status(500).json({ message: 'Failed to update appliance' });
   }
 };
@@ -735,7 +844,7 @@ export const getAllBuyerPrices = async (req: Request, res: Response) => {
         b."brandName",
         a.status as "applianceStatus"
       FROM "BuyerAppliance" ba
-      LEFT JOIN users u ON ba."buyerID" = u."userID"
+      LEFT JOIN users u ON ba."buyerID" = u.buyer_id
       LEFT JOIN "Appliance" a ON ba."applianceID" = a."applianceID"
       LEFT JOIN "Category" c ON a."categoryID" = c."categoryID"
       LEFT JOIN "Brand" b ON a."brandID" = b."brandID"

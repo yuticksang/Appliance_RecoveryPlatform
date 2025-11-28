@@ -1,15 +1,17 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { filter, take } from 'rxjs/operators';
 import { TransactionService, Transaction } from '../../../services/transaction.service';
 import { AuthService } from '../../../services/auth.service';
+import { AlertService } from '../../../services/alert.service';
 
 @Component({
   selector: 'app-transaction-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './transaction-detail.html',
   styleUrls: ['./transaction-detail.scss']
 })
@@ -18,6 +20,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private transactionService = inject(TransactionService);
   private authService = inject(AuthService);
+  private alertService = inject(AlertService);
 
   transaction: Transaction | null = null;
   loading: boolean = true;
@@ -43,6 +46,13 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   showCancelConfirmModal: boolean = false;
   showCancelSuccessModal: boolean = false;
 
+  // Photo lightbox modal
+  showPhotoLightbox: boolean = false;
+  lightboxPhotoIndex: number = 0;
+  lightboxZoomLevel: number = 1;
+  minZoom: number = 1;
+  maxZoom: number = 3;
+
   // Customer info
   customerInfo = {
     name: '',
@@ -52,8 +62,98 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     city: '',
     state: '',
     pickupDate: '',
+    pickupTimeSlot: '',
+    zipCode: ''
+  };
+
+  // Edit mode state
+  isEditMode: boolean = false;
+
+  // Editable customer info (for editing)
+  editableCustomerInfo = {
+    name: '',
+    contactNumber: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    pickupDate: '',
     pickupTimeSlot: ''
   };
+
+  // Time slots for pickup
+  timeSlots = [
+    '10:00 AM - 12:00 PM',
+    '12:00 PM - 2:00 PM',
+    '2:00 PM - 4:00 PM',
+    '4:00 PM - 6:00 PM',
+    '6:00 PM - 8:00 PM'
+  ];
+
+  // Minimum date for pickup (original date + 2 days)
+  minPickupDate: string = '';
+
+  // Original pickup date for comparison
+  originalPickupDate: string = '';
+
+  // Warning flag for pickup date change within 24 hours
+  showPickupDateWarning: boolean = false;
+
+  // Malaysian states and cities data
+  malaysianStates = [
+    'Johor',
+    'Kedah',
+    'Kelantan',
+    'Kuala Lumpur',
+    'Labuan',
+    'Melaka',
+    'Negeri Sembilan',
+    'Pahang',
+    'Penang',
+    'Perak',
+    'Perlis',
+    'Putrajaya',
+    'Sabah',
+    'Sarawak',
+    'Selangor',
+    'Terengganu'
+  ];
+
+  malaysianCities: { [key: string]: string[] } = {
+    'Johor': ['Johor Bahru', 'Muar', 'Batu Pahat', 'Kluang', 'Segamat', 'Pontian', 'Kulai', 'Kota Tinggi', 'Mersing'],
+    'Kedah': ['Alor Setar', 'Sungai Petani', 'Kulim', 'Jitra', 'Langkawi', 'Kuala Kedah', 'Baling'],
+    'Kelantan': ['Kota Bharu', 'Kuala Krai', 'Tanah Merah', 'Pasir Mas', 'Gua Musang', 'Machang', 'Tumpat'],
+    'Kuala Lumpur': ['Kuala Lumpur'],
+    'Labuan': ['Labuan'],
+    'Melaka': ['Melaka City', 'Alor Gajah', 'Jasin', 'Masjid Tanah'],
+    'Negeri Sembilan': ['Seremban', 'Port Dickson', 'Nilai', 'Bahau', 'Tampin', 'Kuala Pilah', 'Rembau'],
+    'Pahang': ['Kuantan', 'Temerloh', 'Bentong', 'Raub', 'Jerantut', 'Pekan', 'Kuala Lipis', 'Cameron Highlands'],
+    'Penang': ['George Town', 'Butterworth', 'Bukit Mertajam', 'Nibong Tebal', 'Permatang Pauh', 'Bayan Lepas'],
+    'Perak': ['Ipoh', 'Taiping', 'Teluk Intan', 'Sitiawan', 'Kuala Kangsar', 'Batu Gajah', 'Lumut', 'Kampar', 'Tapah'],
+    'Perlis': ['Kangar', 'Arau', 'Kuala Perlis'],
+    'Putrajaya': ['Putrajaya'],
+    'Sabah': ['Kota Kinabalu', 'Sandakan', 'Tawau', 'Lahad Datu', 'Keningau', 'Semporna', 'Kudat', 'Beaufort'],
+    'Sarawak': ['Kuching', 'Miri', 'Sibu', 'Bintulu', 'Limbang', 'Sarikei', 'Kapit', 'Sri Aman'],
+    'Selangor': ['Shah Alam', 'Petaling Jaya', 'Subang Jaya', 'Klang', 'Ampang', 'Kajang', 'Selayang', 'Rawang', 'Sepang', 'Puchong', 'Seri Kembangan', 'Bangi', 'Cyberjaya'],
+    'Terengganu': ['Kuala Terengganu', 'Kemaman', 'Dungun', 'Marang', 'Jerteh', 'Kuala Berang']
+  };
+
+  // Available cities based on selected state
+  availableCities: string[] = [];
+
+  // Validation errors
+  validationErrors = {
+    name: '',
+    contactNumber: '',
+    address: '',
+    city: '',
+    state: '',
+    zipCode: '',
+    pickupDate: '',
+    pickupTimeSlot: ''
+  };
+
+
 
   // Before review - seller's original submission
   beforeReview = {
@@ -61,13 +161,10 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     brand: '',
     model: '',
     category: '',
-    functionalStatus: '',
-    condition: '',
     score: 0,
-    note: '',
-    selectedIssue: [] as string[],
-    dynamicAnswers: [] as Array<{ sectionName: string; question: string; type: string; answer: string | string[] }>
+    note: ''
   };
+
 
   // After review - admin's assessment
   afterReview = {
@@ -75,27 +172,39 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     brand: '',
     model: '',
     category: '',
-    functionalStatus: '',
-    condition: '',
     score: 0,
     note: '',
-    selectedIssue: [] as string[],
-    dynamicAnswers: [] as Array<{ sectionName: string; question: string; type: string; answer: string | string[] }>
   };
 
   // For non-awaiting status, use single appliance info
-  applianceInfo = {
+  applianceInfo: {
+    estimatedPrice: number;
+    brand: string;
+    model: string;
+    modelName: string;
+    category: string;
+    score: number;
+    note: string;
+    
+  } = {
     estimatedPrice: 0,
     brand: '',
     model: '',
+    modelName: '',
     category: '',
-    functionalStatus: '',
-    condition: '',
     score: 0,
-    note: '',
-    selectedIssue: [] as string[],
-    dynamicAnswers: [] as Array<{ sectionName: string; question: string; type: string; answer: string | string[] }>
+    note: ''
   };
+
+  // Dynamic condition groups from backend (e.g., "Functional Status", "Appearance Status", "Checklist")
+  conditionGroups: { [key: string]: string | string[] } = {};
+
+  // Mapping of groupID to display name (e.g., {"CG001": "Functional Status", "CG002": "Appearance Status"})
+  conditionGroupNames: { [key: string]: string } = {};
+
+  // Expose Array to template for Array.isArray() check
+  Array = Array;
+
 
   // Check if transaction needs review comparison
   get isAwaitingConfirmation(): boolean {
@@ -105,6 +214,11 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   // Check if transaction is in Pending Payment status (Case 5)
   get isPendingPayment(): boolean {
     return this.transaction?.transactionStatus === 'Pending Payment';
+  }
+
+  // Check if item is in Awaiting Pick Up status (editable)
+  get isAwaitingPickUp(): boolean {
+    return this.transaction?.itemStatus === 'Awaiting Pick Up';
   }
 
   // Get the currently selected photo
@@ -132,54 +246,95 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     }
   }
 
+  // Open photo lightbox
+  openLightbox(index: number): void {
+    this.lightboxPhotoIndex = index;
+    this.showPhotoLightbox = true;
+  }
+
+  // Close photo lightbox
+  closeLightbox(): void {
+    this.showPhotoLightbox = false;
+    this.lightboxZoomLevel = 1; // Reset zoom when closing
+  }
+
+  // Zoom in photo
+  zoomIn(): void {
+    if (this.lightboxZoomLevel < this.maxZoom) {
+      this.lightboxZoomLevel = Math.min(this.lightboxZoomLevel + 0.5, this.maxZoom);
+    }
+  }
+
+  // Zoom out photo
+  zoomOut(): void {
+    if (this.lightboxZoomLevel > this.minZoom) {
+      this.lightboxZoomLevel = Math.max(this.lightboxZoomLevel - 0.5, this.minZoom);
+    }
+  }
+
+  // Reset zoom
+  resetZoom(): void {
+    this.lightboxZoomLevel = 1;
+  }
+
+  // Navigate to previous photo in lightbox
+  prevLightboxPhoto(): void {
+    this.lightboxZoomLevel = 1; // Reset zoom when changing photos
+    if (this.lightboxPhotoIndex > 0) {
+      this.lightboxPhotoIndex--;
+    } else {
+      this.lightboxPhotoIndex = this.photos.length - 1;
+    }
+  }
+
+  // Navigate to next photo in lightbox
+  nextLightboxPhoto(): void {
+    this.lightboxZoomLevel = 1; // Reset zoom when changing photos
+    if (this.lightboxPhotoIndex < this.photos.length - 1) {
+      this.lightboxPhotoIndex++;
+    } else {
+      this.lightboxPhotoIndex = 0;
+    }
+  }
+
   ngOnInit(): void {
     // Get transaction ID from route
     this.route.params.subscribe(params => {
       // Support both string IDs (e.g., "TXN-123") and numeric IDs
       this.transactionId = params['id'];
-      console.log('📌 Transaction ID from route:', this.transactionId);
+      console.log('📍 Transaction detail component initialized with ID:', this.transactionId);
 
       // Wait for auth to be ready before loading transaction details
       this.authSubscription = this.authService.currentUser$
         .pipe(
           filter(user => {
-            console.log('🔍 Current user in filter:', user);
-            if (!user) {
-              console.warn('⚠️ User is null, waiting for authentication...');
-              return false;
+            console.log('🔐 Auth filter checking user:', user);
+            // Allow seller users to access transaction details
+            if (user !== null && user.userType === 'seller') {
+              return true;
             }
-            if (user.userType !== 'seller') {
-              console.error('❌ User type mismatch. Expected: "seller", Got:', user.userType);
-              console.error('User object:', user);
-              return false;
+            // If user is logged in but not as seller, redirect
+            if (user !== null && user.userType !== 'seller') {
+              console.warn('⚠️ User is not a seller, userType:', user.userType);
             }
-            return true;
+            return false;
           }),
           take(1) // Only take the first emission, then auto-unsubscribe
         )
-        .subscribe({
-          next: (user) => {
-            // TypeScript guard: double-check user is not null
-            if (!user) {
-              console.error('❌ User is null after filter');
-              this.router.navigate(['/transactions']);
-              return;
-            }
+        .subscribe((user) => {
+          // TypeScript guard: double-check user is not null
+          if (!user) {
+            console.error('❌ User is null after filter');
+            this.router.navigate(['/transactions']);
+            return;
+          }
 
-            console.log('✅ Authenticated user:', user);
-            const sellerId = user.sellerId;
-            if (sellerId) {
-              console.log('✅ Seller ID found:', sellerId);
-              this.loadTransactionDetail(sellerId);
-            } else {
-              console.error('❌ No seller ID found in user object');
-              console.error('User object:', user);
-              this.router.navigate(['/transactions']);
-            }
-          },
-          error: (error) => {
-            console.error('❌ Error in auth subscription:', error);
-            this.loading = false;
+          console.log('✅ User authenticated as seller:', user);
+          const sellerId = user.sellerId;
+          if (sellerId) {
+            this.loadTransactionDetail(sellerId);
+          } else {
+            console.error('❌ No seller ID found in user object');
             this.router.navigate(['/transactions']);
           }
         });
@@ -237,13 +392,17 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
       next: (data) => {
         console.log('✅ Transaction data loaded:', data);
         console.log('🔍 Comparing sellerIds - Data:', data.sellerId, 'Current:', sellerId);
+        console.log('🔍 Type check - Data sellerId type:', typeof data.sellerId, 'Current sellerId type:', typeof sellerId);
 
         // Verify this transaction belongs to the current seller
-        if (data.sellerId !== sellerId) {
+        // Use String() to ensure consistent comparison (handle number vs string)
+        if (String(data.sellerId) !== String(sellerId)) {
           console.error('❌ Unauthorized access to transaction. Expected:', sellerId, 'Got:', data.sellerId);
           this.router.navigate(['/transactions']);
           return;
         }
+
+        console.log('✅ Seller ID verified, loading transaction details...');
 
         // Map backend data to transaction object
         this.transaction = {
@@ -260,19 +419,31 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
           submittedDate: new Date(data.submittedDate),
           estimatedPrice: data.estimatedPrice,
           finalPrice: data.finalPrice,
-          note: data.note
+          note: data.finalNote || data.initialNote || data.note // Show final note if reviewed, otherwise initial
         };
 
+        // Load REAL customer info from database
         this.customerInfo = {
           name: data.addressName || 'Unknown',
           email: data.sellerEmail || 'N/A',
-          contactNumber: data.addressPhone || 'N/A',
+          contactNumber: data.addressPhone  || 'N/A',
           address: data.pickupAddress || 'N/A',
           city: data.city || 'N/A',
           state: data.state || 'N/A',
+          zipCode: data.zipCode || 'N/A',
           pickupDate: data.pickupDate || 'Not scheduled',
           pickupTimeSlot: data.pickupTimeSlot || 'Not scheduled'
         };
+
+        // Calculate minimum pickup date (original date + 2 days)
+        if (data.pickupDate && data.pickupDate !== 'Not scheduled') {
+          // Store original pickup date for comparison
+          this.originalPickupDate = data.pickupDate;
+
+          const originalDate = new Date(data.pickupDate);
+          originalDate.setDate(originalDate.getDate() + 2);
+          this.minPickupDate = originalDate.toISOString().split('T')[0];
+        }
 
         // Load seller-submitted photos from backend (not the catalog image)
         if (data.photos && data.photos.length > 0) {
@@ -302,11 +473,13 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   }
 
   loadRealDetails(data: any): void {
-    // Get selected issues from API response
-    const selectedIssues = data.selectedIssues || [];
+    // Load dynamic condition groups from backend
+    this.conditionGroups = data.conditionGroups || {};
+    this.conditionGroupNames = data.conditionGroupNames || {};
 
-    // Get dynamic answers from API response
-    const dynamicAnswers = data.dynamicAnswers || [];
+
+    console.log('🔍 Loaded conditionGroups:', this.conditionGroups);
+    console.log('🔍 Loaded conditionGroupNames:', this.conditionGroupNames);
 
     // If awaiting confirmation, show before/after review comparison
     if (this.isAwaitingConfirmation) {
@@ -316,12 +489,8 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         brand: data.brand,
         model: data.model,
         category: data.category,
-        functionalStatus: data.initialFunctionalStatus || 'N/A',
-        condition: data.initialPhysicalCondition || 'N/A',
-        score: this.calculateScore(data.initialFunctionalStatus, data.initialPhysicalCondition),
-        note: data.note || 'No notes',
-        selectedIssue: selectedIssues,
-        dynamicAnswers: dynamicAnswers
+        score: 0, // TODO: Will be fetched from other team's API
+        note: data.initialNote || data.note || '' // Seller's original note
       };
 
       // After review - admin's assessment (revised price & condition)
@@ -330,12 +499,8 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         brand: data.brand,
         model: data.model,
         category: data.category,
-        functionalStatus: data.finalFunctionalStatus || data.initialFunctionalStatus || 'N/A',
-        condition: data.finalPhysicalCondition || data.initialPhysicalCondition || 'N/A',
-        score: this.calculateScore(data.finalFunctionalStatus, data.finalPhysicalCondition),
-        note: data.note || 'No notes',
-        selectedIssue: selectedIssues,
-        dynamicAnswers: dynamicAnswers
+        score: 0, // TODO: Will be fetched from other team's API
+        note: data.finalNote || '' // Admin's review note
       };
     } else {
       // For other statuses, use current appliance info
@@ -343,41 +508,29 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         estimatedPrice: data.finalPrice || data.estimatedPrice || 0,
         brand: data.brand,
         model: data.model,
+        modelName: data.modelName,
         category: data.category,
-        functionalStatus: data.finalFunctionalStatus || data.initialFunctionalStatus || 'N/A',
-        condition: data.finalPhysicalCondition || data.initialPhysicalCondition || 'N/A',
-        score: this.calculateScore(
-          data.finalFunctionalStatus || data.initialFunctionalStatus,
-          data.finalPhysicalCondition || data.initialPhysicalCondition
-        ),
-        note: data.note || 'No notes',
-        selectedIssue: selectedIssues,
-        dynamicAnswers: dynamicAnswers
+        score: 0, // TODO: Will be fetched from other team's API
+        note: data.finalNote || data.initialNote || data.note || '' // Show final note if available, otherwise initial
       };
     }
   }
 
-  // Helper function to calculate score based on condition
-  private calculateScore(functionalStatus: string, physicalCondition: string): number {
-    let score = 0;
+  // Helper to get condition group names for iteration in template
+  getConditionGroupNames(): string[] {
+    return Object.keys(this.conditionGroups);
+  }
 
-    // Functional status scoring
-    if (functionalStatus?.includes('Working') || functionalStatus?.includes('Functioning')) {
-      score += 50;
-    } else if (functionalStatus?.includes('Minor')) {
-      score += 30;
-    }
+  // Helper to check if there are any condition groups
+  hasConditionGroups(): boolean {
+    return Object.keys(this.conditionGroups).length > 0;
+  }
 
-    // Physical condition scoring
-    if (physicalCondition?.includes('Excellent') || physicalCondition?.includes('New')) {
-      score += 50;
-    } else if (physicalCondition?.includes('Good')) {
-      score += 40;
-    } else if (physicalCondition?.includes('Fair')) {
-      score += 30;
-    }
-
-    return score;
+  // Helper to get display name for a groupID (e.g., "CG001" -> "Functional Status")
+  getGroupDisplayName(groupId: string): string {
+    const displayName = this.conditionGroupNames[groupId] || groupId;
+    console.log(`🔍 getGroupDisplayName(${groupId}) = ${displayName}`);
+    return displayName;
   }
 
   goBack(): void {
@@ -397,7 +550,6 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     });
     console.log('View packaging instruction for transaction:', this.transactionId);
   }
-
   // Step 1: Show accept confirmation modal
   acceptOffer(): void {
     if (!this.transaction) return;
@@ -568,5 +720,259 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
       'Picked Up': 'status-picked-up'
     };
     return statusMap[status] || '';
+  }
+
+  getItemStatusClass(status: string): string {
+    const statusMap: { [key: string]: string } = {
+      'Picked Up': 'item-picked-up',
+      'Returned': 'item-returned',
+      'Awaiting Pick Up': 'item-awaiting',
+      'Awaiting Picked Up': 'item-awaiting',
+      'Pending Further Action': 'item-pending',
+      'Unresponded': 'item-unresponded',
+      'Awaiting Return': 'item-awaiting-return'
+    };
+    return statusMap[status] || '';
+  }
+
+  // ========== CUSTOMER INFO EDIT MODE ==========
+
+  // Enable edit mode
+  enableEditMode(): void {
+    // Copy current customer info to editable fields
+    this.editableCustomerInfo = {
+      name: this.customerInfo.name,
+      contactNumber: this.customerInfo.contactNumber,
+      address: this.customerInfo.address,
+      city: this.customerInfo.city,
+      state: this.customerInfo.state,
+      zipCode: this.customerInfo.zipCode,
+      pickupDate: this.customerInfo.pickupDate !== 'Not scheduled'
+        ? new Date(this.customerInfo.pickupDate).toISOString().split('T')[0]
+        : '',
+      pickupTimeSlot: this.customerInfo.pickupTimeSlot !== 'Not scheduled'
+        ? this.customerInfo.pickupTimeSlot
+        : this.timeSlots[0]
+    };
+
+    // Populate cities based on current state
+    if (this.editableCustomerInfo.state) {
+      this.availableCities = this.malaysianCities[this.editableCustomerInfo.state] || [];
+    }
+
+    // Reset validation errors and warnings
+    this.resetValidationErrors();
+    this.showPickupDateWarning = false;
+
+    this.isEditMode = true;
+  }
+
+  // Cancel edit mode
+  cancelEditMode(): void {
+    this.isEditMode = false;
+    this.resetValidationErrors();
+  }
+
+  // Handle state change - update available cities
+  onStateChange(): void {
+    const selectedState = this.editableCustomerInfo.state;
+    this.availableCities = this.malaysianCities[selectedState] || [];
+
+    // Reset city if it's not in the new state's cities
+    if (!this.availableCities.includes(this.editableCustomerInfo.city)) {
+      this.editableCustomerInfo.city = '';
+    }
+
+    // Clear city validation error
+    this.validationErrors.city = '';
+  }
+
+  // Handle pickup date change - check for 24-hour warning
+  onPickupDateChange(): void {
+    this.checkPickupDateWarning();
+  }
+
+  // Check if pickup date change is within 24 hours of original date
+  checkPickupDateWarning(): void {
+    if (!this.editableCustomerInfo.pickupDate || !this.originalPickupDate) {
+      this.showPickupDateWarning = false;
+      return;
+    }
+
+    const now = new Date();
+    const originalDate = new Date(this.originalPickupDate);
+    const timeDifference = originalDate.getTime() - now.getTime();
+    const hoursDifference = timeDifference / (1000 * 60 * 60);
+
+    // Show warning if the original pickup date is within 24 hours from now
+    // AND the user is trying to change the date
+    const isDateChanged = this.editableCustomerInfo.pickupDate !== this.originalPickupDate;
+    this.showPickupDateWarning = hoursDifference <= 24 && hoursDifference > 0 && isDateChanged;
+  }
+
+  // Reset validation errors
+  resetValidationErrors(): void {
+    this.validationErrors = {
+      name: '',
+      contactNumber: '',
+      address: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      pickupDate: '',
+      pickupTimeSlot: ''
+    };
+  }
+
+  // Validate phone number (Malaysian format: 01X-XXXXXXX or 01X-XXXXXXXX)
+  validatePhoneNumber(phone: string): boolean {
+    // Remove spaces and hyphens for validation
+    const cleanPhone = phone.replace(/[\s-]/g, '');
+
+    // Malaysian mobile: 01X-XXXXXXX or 01X-XXXXXXXX (10-11 digits)
+    const mobilePattern = /^01[0-9]{8,9}$/;
+
+    // Malaysian landline: 0X-XXXXXXX (9-10 digits)
+    const landlinePattern = /^0[2-9][0-9]{7,8}$/;
+
+    return mobilePattern.test(cleanPhone) || landlinePattern.test(cleanPhone);
+  }
+
+  // Validate zip code (Malaysian postcode: 5 digits)
+  validateZipCode(zipCode: string): boolean {
+    const zipPattern = /^[0-9]{5}$/;
+    return zipPattern.test(zipCode);
+  }
+
+  // Validate all fields
+  validateCustomerInfo(): boolean {
+    let isValid = true;
+    this.resetValidationErrors();
+
+    // Validate name
+    if (!this.editableCustomerInfo.name || this.editableCustomerInfo.name.trim() === '') {
+      this.validationErrors.name = 'Receiver name is required';
+      isValid = false;
+    }
+
+    // Validate contact number
+    if (!this.editableCustomerInfo.contactNumber || this.editableCustomerInfo.contactNumber.trim() === '') {
+      this.validationErrors.contactNumber = 'Contact number is required';
+      isValid = false;
+    } else if (!this.validatePhoneNumber(this.editableCustomerInfo.contactNumber)) {
+      this.validationErrors.contactNumber = 'Invalid phone number format (e.g., 012-3456789 or 03-12345678)';
+      isValid = false;
+    }
+
+    // Validate address
+    if (!this.editableCustomerInfo.address || this.editableCustomerInfo.address.trim() === '') {
+      this.validationErrors.address = 'Address is required';
+      isValid = false;
+    }
+
+    // Validate state
+    if (!this.editableCustomerInfo.state || this.editableCustomerInfo.state.trim() === '') {
+      this.validationErrors.state = 'State is required';
+      isValid = false;
+    }
+
+    // Validate city
+    if (!this.editableCustomerInfo.city || this.editableCustomerInfo.city.trim() === '') {
+      this.validationErrors.city = 'City is required';
+      isValid = false;
+    }
+
+    // Validate zip code
+    if (!this.editableCustomerInfo.zipCode || this.editableCustomerInfo.zipCode.trim() === '') {
+      this.validationErrors.zipCode = 'Zip code is required';
+      isValid = false;
+    } else if (!this.validateZipCode(this.editableCustomerInfo.zipCode)) {
+      this.validationErrors.zipCode = 'Invalid zip code (must be 5 digits)';
+      isValid = false;
+    }
+
+    // Validate pickup date
+    if (!this.editableCustomerInfo.pickupDate || this.editableCustomerInfo.pickupDate.trim() === '') {
+      this.validationErrors.pickupDate = 'Pickup date is required';
+      isValid = false;
+    }
+
+    // Validate pickup time slot
+    if (!this.editableCustomerInfo.pickupTimeSlot || this.editableCustomerInfo.pickupTimeSlot.trim() === '') {
+      this.validationErrors.pickupTimeSlot = 'Pickup time slot is required';
+      isValid = false;
+    }
+
+    return isValid;
+  }
+
+  // Save customer info changes
+  saveCustomerInfo(): void {
+    if (!this.transaction) return;
+
+    // Validate all fields before saving
+    if (!this.validateCustomerInfo()) {
+      this.alertService.error('Please fix the validation errors before saving.');
+      return;
+    }
+
+    this.loading = true;
+
+    // Prepare update data
+    const updateData = {
+      snapshotReceiverName: this.editableCustomerInfo.name,
+      snapshotPhoneNum: this.editableCustomerInfo.contactNumber,
+      snapshotAddress: this.editableCustomerInfo.address,
+      snapshotCity: this.editableCustomerInfo.city,
+      snapshotState: this.editableCustomerInfo.state,
+      snapshotZipCode: this.editableCustomerInfo.zipCode,
+      pickupDate: this.editableCustomerInfo.pickupDate,
+      pickupTimeSlot: this.editableCustomerInfo.pickupTimeSlot
+    };
+
+    console.log('💾 Saving customer info:', updateData);
+
+    // Call API to update customer information
+    this.transactionService.updateCustomerInfo(this.transactionId, updateData).subscribe({
+      next: (updatedTransaction) => {
+        console.log('✅ Customer info updated successfully:', updatedTransaction);
+
+        // Update local customer info with new values
+        this.customerInfo = {
+          name: this.editableCustomerInfo.name,
+          email: this.customerInfo.email, // email is not editable
+          contactNumber: this.editableCustomerInfo.contactNumber,
+          address: this.editableCustomerInfo.address,
+          city: this.editableCustomerInfo.city,
+          state: this.editableCustomerInfo.state,
+          zipCode: this.editableCustomerInfo.zipCode,
+          pickupDate: this.editableCustomerInfo.pickupDate,
+          pickupTimeSlot: this.editableCustomerInfo.pickupTimeSlot
+        };
+
+        // Recalculate minimum pickup date
+        if (this.editableCustomerInfo.pickupDate) {
+          const originalDate = new Date(this.editableCustomerInfo.pickupDate);
+          originalDate.setDate(originalDate.getDate() + 2);
+          this.minPickupDate = originalDate.toISOString().split('T')[0];
+        }
+
+        this.loading = false;
+        this.isEditMode = false;
+        this.alertService.success('Customer information updated successfully!');
+      },
+      error: (error) => {
+        console.error('❌ Error updating customer info:', error);
+        console.error('Error details:', {
+          status: error.status,
+          statusText: error.statusText,
+          message: error.message,
+          error: error.error
+        });
+        this.loading = false;
+        const errorMessage = error.error?.message || error.message || 'Unknown error';
+        this.alertService.error(`Failed to update customer information: ${errorMessage}\n\nPlease check console for details.`);
+      }
+    });
   }
 }

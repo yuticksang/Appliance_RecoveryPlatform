@@ -124,7 +124,14 @@ export class AuthLoginComponent implements OnInit {
         error: (err) => {
           // Show alert for login errors
           const errorMessage = err.error?.message || 'Login failed. Please check your credentials.';
-          this.alertService.error(errorMessage);
+
+          // Check if it's an email verification issue
+          if (err.error?.emailNotVerified && err.error?.emailResent) {
+            this.alertService.info(errorMessage);
+          } else {
+            this.alertService.error(errorMessage);
+          }
+
           this.loading = false;
           this.form.enable(); // Re-enable form
           console.error('Login error:', err);

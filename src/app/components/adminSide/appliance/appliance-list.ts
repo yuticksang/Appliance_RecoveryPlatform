@@ -301,16 +301,21 @@ export class ApplianceListComponent implements OnInit {
   }
 
   onApplianceAdded(newAppliance: any) {
-    const applianceData = {
-      categoryID: newAppliance.categoryID,
-      brandID: newAppliance.brandID,
-      modelCode: newAppliance.modelCode,
-      modelName: newAppliance.modelName,
-      description: newAppliance.description || '',
-      image_url: newAppliance.image_url || ''
-    };
+    // Create FormData to send file and other data
+    const formData = new FormData();
+    formData.append('categoryID', newAppliance.categoryID);
+    formData.append('brandID', newAppliance.brandID);
+    formData.append('modelCode', newAppliance.modelCode);
+    formData.append('modelName', newAppliance.modelName);
+    formData.append('description', newAppliance.description || '');
 
-    this.http.post(`${this.apiUrl}/admin/appliances`, applianceData)
+    // Add image file if selected
+    if (newAppliance.imageFile) {
+      formData.append('image', newAppliance.imageFile);
+      console.log('📸 Uploading new appliance image:', newAppliance.imageFile.name);
+    }
+
+    this.http.post(`${this.apiUrl}/admin/appliances`, formData)
       .subscribe({
         next: () => {
           this.loadAppliances();
@@ -324,16 +329,23 @@ export class ApplianceListComponent implements OnInit {
   }
 
   onApplianceUpdated(updatedAppliance: any) {
-    const updateData = {
-      categoryID: updatedAppliance.categoryID,
-      brandID: updatedAppliance.brandID,
-      modelCode: updatedAppliance.modelCode,
-      modelName: updatedAppliance.modelName,
-      description: updatedAppliance.description || '',
-      image_url: updatedAppliance.image_url || ''
-    };
+    // Create FormData to send file and other data
+    const formData = new FormData();
+    formData.append('categoryID', updatedAppliance.categoryID);
+    formData.append('brandID', updatedAppliance.brandID);
+    formData.append('modelCode', updatedAppliance.modelCode);
+    formData.append('modelName', updatedAppliance.modelName);
+    formData.append('description', updatedAppliance.description || '');
 
-    this.http.put(`${this.apiUrl}/admin/appliances/${updatedAppliance.applianceID}`, updateData)
+    // Add image file if selected, otherwise keep existing URL
+    if (updatedAppliance.imageFile) {
+      formData.append('image', updatedAppliance.imageFile);
+      console.log('📸 Uploading new image file:', updatedAppliance.imageFile.name);
+    } else if (updatedAppliance.imageUrl) {
+      formData.append('imageUrl', updatedAppliance.imageUrl);
+    }
+
+    this.http.put(`${this.apiUrl}/admin/appliances/${updatedAppliance.applianceID}`, formData)
       .subscribe({
         next: () => {
           this.loadAppliances();

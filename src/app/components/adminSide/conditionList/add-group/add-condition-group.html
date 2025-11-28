@@ -17,10 +17,41 @@
       </div>
 
       <div class="form-group">
-        <label for="criteriaCodePrefix">Code Prefix</label>
+        <label for="criteriaCodePrefix">Code Prefix <span class="required">*</span></label>
         <input id="criteriaCodePrefix" type="text" formControlName="criteriaCodePrefix" placeholder="e.g., F, A, OT (max 10 characters)"
-          maxlength="10">
-        <small class="hint">Optional: A short code prefix for conditions in this group</small>
+          maxlength="10" [class.error]="criteriaCodePrefix?.invalid && criteriaCodePrefix?.touched">
+
+        <div *ngIf="criteriaCodePrefix?.invalid && criteriaCodePrefix?.touched" class="error-message">
+          <small *ngIf="criteriaCodePrefix?.errors?.['required']">Code prefix is required</small>
+          <small *ngIf="criteriaCodePrefix?.errors?.['maxlength']">Code prefix must be 10 characters or less</small>
+        </div>
+        <small class="hint">A short code prefix for conditions in this group</small>
+      </div>
+
+      <div class="form-group">
+        <label for="question_title">Question Title <span class="required">*</span></label>
+        <input id="question_title" type="text" formControlName="question_title" placeholder="e.g., Is the appliance currently working?"
+          [class.error]="question_title?.invalid && question_title?.touched">
+
+        <div *ngIf="question_title?.invalid && question_title?.touched" class="error-message">
+          <small *ngIf="question_title?.errors?.['required']">Question title is required</small>
+        </div>
+        <small class="hint">This question will be displayed in the questionnaire for this condition group</small>
+      </div>
+
+      <div class="form-group">
+        <label for="question_type">Question Type <span class="required">*</span></label>
+        <select id="question_type" formControlName="question_type"
+          [class.error]="question_type?.invalid && question_type?.touched">
+          <option *ngFor="let type of questionTypes" [value]="type.value">
+            {{ type.label }}
+          </option>
+        </select>
+
+        <div *ngIf="question_type?.invalid && question_type?.touched" class="error-message">
+          <small *ngIf="question_type?.errors?.['required']">Question type is required</small>
+        </div>
+        <small class="hint">Select how users will answer this question</small>
       </div>
 
       <div class="form-actions">

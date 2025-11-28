@@ -9,6 +9,7 @@ import cron from 'node-cron';
 import authRoutes from './routes/auth';
 import adminRoutes from './routes/admin';
 import profileRoutes from './routes/profile';
+import buyerRoutes from './routes/buyer';
 import scoringConfigRoutes from './routes/scoringConfig';
 import transactionRoutes from './routes/transaction';
 import cronRoutes from './routes/cron';
@@ -100,8 +101,9 @@ app.use(helmet({
 }));
 app.use(cors());
 app.use(morgan('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Increase payload limit for photo uploads (50MB)
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Serve uploaded files statically (must be before API routes)
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
@@ -109,6 +111,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/buyer', buyerRoutes);
 app.use('/api', profileRoutes);
 app.use('/api/scoring-config', scoringConfigRoutes);
 app.use('/api', questionnaireRouter); 
