@@ -108,10 +108,6 @@ export class AdminTransactionDetailComponent implements OnInit {
         this.appliances = result.appliances.filter((a: any) => a.status === 'ACTIVE');
         this.filteredAppliances = this.appliances;
 
-        console.log('📂 Categories loaded:', this.categories);
-        console.log('🏷️ Brands loaded:', this.brands);
-        console.log('📱 Appliances loaded:', this.appliances);
-
         // Set transaction data
         const data = result.transaction;
         console.log('📦 Transaction detail loaded:', data);
@@ -129,13 +125,7 @@ export class AdminTransactionDetailComponent implements OnInit {
         this.transactionStatus = data.transactionStatus;
         this.itemStatus = data.itemStatus;
         this.finalPrice = data.finalPrice || data.estimatedPrice || 0;
-        this.note = data.note || ''; // Note
-
-        // Debug: Log seller photos and conditions
-        console.log('📸 Seller photos from API:', data.sellerPhotos);
-        console.log('📸 Admin photos from API:', data.adminPhotos);
-        console.log('📋 Seller conditions from API:', data.sellerConditions);
-        console.log('📋 Admin conditions from API:', data.adminConditions);
+        this.note = data.note || '';
 
         // Load seller-submitted photos from backend
         if (data.photos && data.photos.length > 0) {
@@ -145,54 +135,75 @@ export class AdminTransactionDetailComponent implements OnInit {
           this.photos = [];
         }
 
-        // Now match IDs (dropdown data is already loaded)
+        // Match IDs from transaction data
         this.setSelectedIdsFromTransaction(data);
 
-        // Load condition groups for this transaction's category
+        // Load condition groups that existed at submission time (from backend)
+        // Use the groups returned by getTransactionById (already filtered by submission time)
         const categoryId = data.categoryId || this.selectedCategoryId;
-        if (categoryId) {
-          console.log('📋 Loading condition groups for category:', categoryId);
-          this.transactionService.getActiveConditionGroupsWithOptions(categoryId).subscribe({
-            next: (groups) => {
-              // Backend already returns groups ordered by display_order
-              this.conditionGroups = groups;
-              console.log('📋 Condition groups loaded for category:', categoryId, groups);
+        
+        // Fetch full group details with options for the groups that existed at submission
+        this.transactionService.getActiveConditionGroupsWithOptions(categoryId).subscribe({
+          next: (allGroups) => {
+            const groupIDsAtSubmission = Object.keys(data.conditionGroupNames || {});
+            
+            // Find which groups are inactive (not in allGroups)
+            const inactiveGroupIds = groupIDsAtSubmission.filter(groupID => 
+              !allGroups.find(g => g.groupID === groupID)
+            );
 
-              // Debug: Check each group's options
-              this.conditionGroups.forEach(group => {
-                console.log(`Group "${group.criteriaName}" (${group.question_type}):`, {
-                  groupID: group.groupID,
-                  optionsCount: group.options?.length || 0,
-                  options: group.options
-                });
+            // If there are inactive groups, fetch their options
+            if (inactiveGroupIds.length > 0) {
+              this.transactionService.getConditionOptionsByGroupIds(inactiveGroupIds).subscribe({
+                next: (inactiveOptions: { [key: string]: any[] }) => {
+                  // Build condition groups array with both active and inactive groups
+                  this.conditionGroups = groupIDsAtSubmission.map(groupID => {
+                    const group = allGroups.find(g => g.groupID === groupID);
+                    
+                    if (group) {
+                      return group; // Active group with full options
+                    } else {
+                      // Inactive group - use options from backend
+                      return {
+                        groupID: groupID,
+                        criteriaName: data.conditionGroupNames[groupID],
+                        question_type: data.conditionGroupTypes?.[groupID] || 'radio',
+                        display_order: data.conditionGroupOrder?.[groupID] ?? 999999,
+                        options: inactiveOptions[groupID] || []
+                      };
+                    }
+                  }).sort((a, b) => {
+                    const orderA = a.display_order ?? 999999;
+                    const orderB = b.display_order ?? 999999;
+                    return orderA - orderB;
+                  });
+
+                  console.log('📋 Condition groups loaded (with inactive options):', this.conditionGroups);
+                  this.setSelectedConditionsFromTransaction(data);
+                  this.loading.set(false);
+                }
+              });
+            } else {
+              // No inactive groups, just use active groups
+              this.conditionGroups = groupIDsAtSubmission.map(groupID => {
+                return allGroups.find(g => g.groupID === groupID)!;
+              }).filter(g => g).sort((a, b) => {
+                const orderA = a.display_order ?? 999999;
+                const orderB = b.display_order ?? 999999;
+                return orderA - orderB;
               });
 
-              // Set selected conditions from transaction's conditionGroups
+              console.log('📋 Condition groups loaded:', this.conditionGroups);
               this.setSelectedConditionsFromTransaction(data);
               this.loading.set(false);
-            },
-            error: (error) => {
-              console.error('❌ Error loading condition groups:', error);
-              this.alertService.error('Failed to load condition groups');
-              this.loading.set(false);
             }
-          });
-        } else {
-          console.warn('⚠️ No categoryId found, loading all condition groups');
-          // Fallback: load all condition groups if no category
-          this.transactionService.getActiveConditionGroupsWithOptions().subscribe({
-            next: (groups) => {
-              // Backend already returns groups ordered by display_order
-              this.conditionGroups = groups;
-              this.setSelectedConditionsFromTransaction(data);
-              this.loading.set(false);
-            },
-            error: (error) => {
-              console.error('❌ Error loading condition groups:', error);
-              this.loading.set(false);
-            }
-          });
-        }
+          },
+          error: (error) => {
+            console.error('❌ Error loading condition groups:', error);
+            this.alertService.error('Failed to load condition groups');
+            this.loading.set(false);
+          }
+        });
       },
       error: (error) => {
         console.error('❌ Error loading data:', error);
@@ -278,6 +289,8 @@ export class AdminTransactionDetailComponent implements OnInit {
     }
     return '';
   }
+
+  
 
   // Check if transaction is under review or awaiting pick up (hasn't been reviewed yet)
   isUnderReviewOrAwaitingPickup(): boolean {
@@ -669,26 +682,27 @@ export class AdminTransactionDetailComponent implements OnInit {
   // This prevents newly added groups from appearing in old transactions
   getConditionGroupsWithData(): any[] {
     const txn = this.transaction();
-    if (!txn) return [];
+    if (!txn || !txn.conditionGroupNames) return [];
 
-    return this.conditionGroups.filter(group => {
-      // Include if seller submitted data for this group
-      if (txn.sellerConditions?.[group.groupID]) {
-        return true;
+    // Backend already filtered groups by submission time, so just map them
+    return Object.keys(txn.conditionGroupNames).map(groupID => {
+      // Find the full group definition from this.conditionGroups
+      const group = this.conditionGroups.find(g => g.groupID === groupID);
+      if (!group) {
+        // If not found in conditionGroups (because it's now inactive), create a minimal object
+        return {
+          groupID: groupID,
+          criteriaName: txn.conditionGroupNames[groupID],
+          question_type: txn.conditionGroupTypes?.[groupID] || 'radio',
+          options: []
+        };
       }
-      // Include if it's a file_upload group and there are seller photos
-      if (group.question_type === 'file_upload' && txn.sellerPhotos && txn.sellerPhotos.length > 0) {
-        return true;
-      }
-      // Include if admin submitted data for this group (for after review view)
-      if (txn.adminConditions?.[group.groupID]) {
-        return true;
-      }
-      // Include if it's a file_upload group and there are admin photos
-      if (group.question_type === 'file_upload' && txn.adminPhotos && txn.adminPhotos.length > 0) {
-        return true;
-      }
-      return false;
+      return group;
+    }).sort((a, b) => {
+      // Sort by display_order from backend
+      const orderA = txn.conditionGroupOrder?.[a.groupID] ?? 999999;
+      const orderB = txn.conditionGroupOrder?.[b.groupID] ?? 999999;
+      return orderA - orderB;
     });
   }
 
@@ -923,4 +937,44 @@ export class AdminTransactionDetailComponent implements OnInit {
       reader.readAsDataURL(file);
     });
   }
+
+  /**
+   * Get options for an inactive group from backend transaction data
+   * This reconstructs the options that were available when the transaction was submitted
+   */
+  private getOptionsFromBackendData(groupID: string, data: any): any[] {
+    const options: any[] = [];
+
+    // Check seller conditions for this group
+    const sellerValue = data.sellerConditions?.[groupID];
+    const adminValue = data.adminConditions?.[groupID];
+
+    // Combine both seller and admin values to get all possible options
+    const allValues = new Set<string>();
+
+    if (typeof sellerValue === 'string' && sellerValue) {
+      allValues.add(sellerValue);
+    } else if (Array.isArray(sellerValue)) {
+      sellerValue.forEach((v: string) => allValues.add(v));
+    }
+
+    if (typeof adminValue === 'string' && adminValue) {
+      allValues.add(adminValue);
+    } else if (Array.isArray(adminValue)) {
+      adminValue.forEach((v: string) => allValues.add(v));
+    }
+
+    // Create option objects from the values
+    Array.from(allValues).forEach(value => {
+      options.push({
+        conditionID: `${groupID}_${value}`, // Generate a temporary ID
+        description: value,
+        question: value,
+        code: value
+      });
+    });
+
+    return options;
+  }
+  
 }

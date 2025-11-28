@@ -291,6 +291,25 @@ export class TransactionService {
   }
 
   /**
+   * Get condition options by group IDs
+   * @param groupIds Array of group IDs
+   * @returns Observable with options grouped by groupID
+   */
+  getConditionOptionsByGroupIds(groupIds: string[]): Observable<{ [key: string]: any[] }> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    const groupIdsParam = groupIds.join(',');
+    return this.http.get<{ [key: string]: any[] }>(`${this.apiUrl}/transactions/condition-options-by-groups?groupIds=${groupIdsParam}`, { headers })
+      .pipe(
+        catchError(error => {
+          console.error('Error fetching condition options by group IDs:', error);
+          return of({});
+        })
+      );
+  }
+
+  /**
    * Upload admin photos to Supabase Storage
    * @param transactionId Transaction ID
    * @param formData FormData containing photos

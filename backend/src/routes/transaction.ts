@@ -8,7 +8,8 @@ import {
   updateTransaction,
   updateSubmissionDetails,
   updateCustomerInfo,
-  uploadAdminPhotos
+  uploadAdminPhotos,
+  getConditionOptionsByGroupIds
 } from '../controllers/transactionController';
 import { verifyToken } from '../middleware/authMiddleware';
 import multer from 'multer';
@@ -41,6 +42,9 @@ router.get('/seller/:sellerId', getTransactionsBySeller);
 // Get all transactions (admin)
 router.get('/', getAllTransactions);
 
+// Get condition options by group IDs
+router.get('/condition-options-by-groups', verifyToken, getConditionOptionsByGroupIds);
+
 // Get single transaction by ID
 router.get('/:id', getTransactionById);
 
@@ -59,7 +63,9 @@ router.put('/:id/customer-info', updateCustomerInfo);
 // Update submission details (seller edit when Awaiting Pick Up)
 router.put('/:id/submission', updateSubmissionDetails);
 
+
 // Update transaction (full edit - admin)
 router.put('/:id', updateTransaction);
+
 
 export default router;
