@@ -126,6 +126,10 @@ export class BuyerApplianceListComponent implements OnInit {
       filtered = filtered.filter(a => a.brandID === brandId);
     }
 
+    // Exclude appliances that buyer has already added
+    const addedApplianceIds = new Set(this.buyerAppliances().map(ba => ba.applianceID));
+    filtered = filtered.filter(a => !addedApplianceIds.has(a.applianceID));
+
     return filtered;
   });
 
@@ -149,6 +153,33 @@ export class BuyerApplianceListComponent implements OnInit {
       .map(a => a.brandName)
       .filter((name): name is string => !!name);
     return [...new Set(brands)].sort();
+  });
+
+  // Calculate available appliances count
+  availableAppliancesCount = computed(() => {
+    const totalAppliances = this.appliances().length;
+    const addedAppliances = this.buyerAppliances().length;
+    return totalAppliances - addedAppliances;
+  });
+
+  // Get completion percentage
+  completionPercentage = computed(() => {
+    const totalAppliances = this.appliances().length;
+    const addedAppliances = this.buyerAppliances().length;
+
+    if (totalAppliances === 0) return 0;
+    return Math.round((addedAppliances / totalAppliances) * 100);
+  });
+
+  // Check if setup is complete
+  isSetupComplete = computed(() => {
+    return this.availableAppliancesCount() === 0;
+  });
+
+  // Get all available appliances for Add modal (excluding already added)
+  availableAppliancesForAdd = computed(() => {
+    const addedApplianceIds = new Set(this.buyerAppliances().map(ba => ba.applianceID));
+    return this.appliances().filter(a => !addedApplianceIds.has(a.applianceID));
   });
 
   // Filtered and paginated data
@@ -355,6 +386,11 @@ export class BuyerApplianceListComponent implements OnInit {
     this.selectedBrand.set('');
     this.selectedAppliance.set('');
     this.basePrice.set(null);
+  }
+
+  selectApplianceForAdd(applianceID: string) {
+    this.selectedAppliance.set(applianceID);
+    this.basePrice.set(null); // Reset price when selecting different appliance
   }
 
   onCategoryChange(categoryId: string) {

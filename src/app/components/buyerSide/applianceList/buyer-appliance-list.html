@@ -10,6 +10,7 @@
       <div class="toolbar-left">
         <button class="add-btn" (click)="openAddModal()">
           <i class="ri-add-line"></i> ADD APPLIANCE
+          <span class="badge-counter" *ngIf="availableAppliancesCount() > 0">{{ availableAppliancesCount() }}</span>
         </button>
       </div>
       <div class="toolbar-right">
@@ -156,53 +157,38 @@
     </div>
 
     <div class="modal-body">
-      <!-- Category and Brand Row -->
-      <div class="form-row">
-        <div class="form-group">
-          <label>Category</label>
-          <select class="form-control" [value]="selectedCategory()"
-            (change)="onCategoryChange($any($event.target).value)">
-            <option value="">Select Category</option>
-            <option *ngFor="let cat of categories()" [value]="cat.categoryID">
-              {{ cat.categoryName }}
-            </option>
-          </select>
+      <!-- Available Appliances List -->
+      <div class="appliance-list">
+        <div class="appliance-item"
+             *ngFor="let appliance of availableAppliancesForAdd()"
+             [class.selected]="selectedAppliance() === appliance.applianceID"
+             (click)="selectApplianceForAdd(appliance.applianceID)">
+          <div class="appliance-info">
+            <div class="appliance-code">{{ appliance.modelCode }}</div>
+            <div class="appliance-name">{{ appliance.modelName }}</div>
+            <div class="appliance-meta">
+              <span class="category">{{ appliance.categoryName }}</span>
+              <span class="separator">•</span>
+              <span class="brand">{{ appliance.brandName }}</span>
+            </div>
+          </div>
+          <div class="appliance-action" *ngIf="selectedAppliance() === appliance.applianceID">
+            <i class="ri-check-line"></i>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label>Brand</label>
-          <select class="form-control" [value]="selectedBrand()"
-            (change)="onBrandChange($any($event.target).value)"
-            [disabled]="!selectedCategory() || filteredBrands().length === 0">
-            <option value="">Select Brand</option>
-            <option *ngFor="let brand of filteredBrands()" [value]="brand.brandID">
-              {{ brand.brandName }}
-            </option>
-          </select>
+        <div *ngIf="availableAppliancesForAdd().length === 0" class="no-appliances">
+          No appliances available to add
         </div>
       </div>
 
-      <!-- Appliance Selection -->
-      <div class="form-group">
-        <label>Appliance</label>
-        <select class="form-control" [value]="selectedAppliance()"
-          (change)="selectedAppliance.set($any($event.target).value)"
-          [disabled]="!selectedBrand() || filteredAppliances().length === 0">
-          <option value="">Select Appliance</option>
-          <option *ngFor="let appliance of filteredAppliances()" [value]="appliance.applianceID">
-            {{ appliance.modelCode }} - {{ appliance.modelName }}
-          </option>
-        </select>
-      </div>
-
-      <!-- Base Price -->
-      <div class="form-group">
+      <!-- Base Price Input -->
+      <div class="form-group" *ngIf="selectedAppliance()">
         <label>Base Price (RM)</label>
         <input type="number" class="form-control" placeholder="Enter base price"
           [value]="basePrice() ?? ''"
           (input)="basePrice.set(+$any($event.target).value)"
-          min="0" step="0.01"
-          [disabled]="!selectedAppliance()">
+          min="0" step="0.01" autofocus>
       </div>
     </div>
 
