@@ -214,6 +214,19 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   // Admin's review photos
   adminPhotos: string[] = [];
 
+  // Mapping of groupID to display_order (e.g., {"CG001": 1, "CG002": 2})
+  conditionGroupOrder: { [key: string]: number } = {};
+
+  // Mapping of groupID to question_type (e.g., {"CG001": "radio", "CG004": "file_upload"})
+  conditionGroupTypes: { [key: string]: string } = {};
+
+  // Photo view tab (seller or admin)
+  photoViewTab: 'seller' | 'admin' = 'seller';
+
+  // Separate photo indices for seller and admin galleries
+  sellerPhotoIndex: number = 0;
+  adminPhotoIndex: number = 0;
+
   // Expose Array to template for Array.isArray() check
   Array = Array;
 
@@ -260,6 +273,14 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
 
   // Open photo lightbox
   openLightbox(index: number): void {
+    // Find the file_upload group to get the correct photos array
+    const fileUploadGroupId = this.getConditionGroupIds().find(groupId => this.isFileUploadGroup(groupId));
+
+    if (fileUploadGroupId) {
+      // Use photos from the file_upload condition group
+      this.photos = this.getSellerPhotosForGroup(fileUploadGroupId);
+    }
+
     this.lightboxPhotoIndex = index;
     this.showPhotoLightbox = true;
   }
@@ -431,7 +452,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
           submittedDate: new Date(data.submittedDate),
           estimatedPrice: data.estimatedPrice,
           finalPrice: data.finalPrice,
-          note: data.finalNote || data.initialNote || data.note // Show final note if reviewed, otherwise initial
+          note: data.note || '' // Note from backend
         };
 
         // Load REAL customer info from database
@@ -491,6 +512,8 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     // Load dynamic condition groups from backend
     this.conditionGroups = data.conditionGroups || {};
     this.conditionGroupNames = data.conditionGroupNames || {};
+    this.conditionGroupOrder = data.conditionGroupOrder || {};
+    this.conditionGroupTypes = data.conditionGroupTypes || {};
 
     // Load seller's and admin's conditions
     this.sellerConditions = data.sellerConditions || {};
@@ -506,7 +529,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     console.log('🔍 Loaded adminConditions:', this.adminConditions);
 
     // Check if admin has reviewed (adminConditions exist or finalPrice exists)
-    this.hasBeenReviewed = !!(Object.keys(this.adminConditions).length > 0 || data.finalPrice || data.finalNote);
+    this.hasBeenReviewed = !!(Object.keys(this.adminConditions).length > 0 || data.finalPrice);
     console.log('🔍 Has been reviewed:', this.hasBeenReviewed, '(adminConditions:', Object.keys(this.adminConditions).length, 'finalPrice:', data.finalPrice, ')');
 
     // If awaiting confirmation or has been reviewed, show before/after review comparison
@@ -518,7 +541,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         model: data.model,
         category: data.category,
         score: 0, // TODO: Will be fetched from other team's API
-        note: data.initialNote || data.note || '' // Seller's original note
+        note: data.note || '' // Seller's note
       };
 
       // After review - admin's assessment (only if reviewed)
@@ -529,7 +552,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
           model: data.model,
           category: data.category,
           score: 0, // TODO: Will be fetched from other team's API
-          note: data.finalNote || '' // Admin's review note
+          note: data.note || '' // Note
         };
       }
     } else {
@@ -541,7 +564,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         modelName: data.modelName,
         category: data.category,
         score: 0, // TODO: Will be fetched from other team's API
-        note: data.finalNote || data.initialNote || data.note || '' // Show final note if available, otherwise initial
+        note: data.note || '' // Note
       };
     }
   }
@@ -567,11 +590,16 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     return Object.keys(this.adminConditions).length > 0;
   }
 
-  // Get list of condition group IDs for iteration
+  // Get list of condition group IDs for iteration, sorted by display_order from database
+  // Backend already filters to only return groups that were active at submission time
   getConditionGroupIds(): string[] {
-    // Get all unique group IDs from conditionGroups definition
-    // Sort alphabetically to ensure consistent display order (CG001, CG002, CG003, etc.)
-    return Object.keys(this.conditionGroupNames).sort();
+    // Get all group IDs from conditionGroupNames (backend filtered)
+    // Sort by display_order
+    return Object.keys(this.conditionGroupNames).sort((a, b) => {
+      const orderA = this.conditionGroupOrder[a] ?? 999999;
+      const orderB = this.conditionGroupOrder[b] ?? 999999;
+      return orderA - orderB;
+    });
   }
 
   goBack(): void {
@@ -1015,5 +1043,76 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         this.alertService.error(`Failed to update customer information: ${errorMessage}\n\nPlease check console for details.`);
       }
     });
+  }
+
+  // ========== DYNAMIC GROUP ORDERING METHODS ==========
+
+  // Check if a group is file_upload type based on question_type from database
+  isFileUploadGroup(groupID: string): boolean {
+    // Check the question_type from the database
+    return this.conditionGroupTypes[groupID] === 'file_upload';
+  }
+
+  // Helper methods for photo upload groups - always from Photo table
+  getSellerPhotosForGroup(groupID: string): string[] {
+    // Photos are stored in the Photo table, not in ConditionSelected
+    // Return seller photos from the Photo table (remark != 'admin')
+    return this.sellerPhotos || [];
+  }
+
+  getAdminPhotosForGroup(groupID: string): string[] {
+    // Photos are stored in the Photo table, not in ConditionSelected
+    // Return admin photos from the Photo table (remark = 'admin')
+    return this.adminPhotos || [];
+  }
+
+  // Photo navigation for seller photos
+  prevSellerPhoto(event: Event): void {
+    event.stopPropagation();
+    if (this.sellerPhotoIndex > 0) {
+      this.sellerPhotoIndex--;
+    }
+  }
+
+  nextSellerPhoto(event: Event): void {
+    event.stopPropagation();
+    const currentGroup = this.getCurrentPhotoGroup();
+    if (currentGroup) {
+      const photos = this.getSellerPhotosForGroup(currentGroup);
+      if (this.sellerPhotoIndex < photos.length - 1) {
+        this.sellerPhotoIndex++;
+      }
+    }
+  }
+
+  // Photo navigation for admin photos
+  prevAdminPhoto(event: Event): void {
+    event.stopPropagation();
+    if (this.adminPhotoIndex > 0) {
+      this.adminPhotoIndex--;
+    }
+  }
+
+  nextAdminPhoto(event: Event): void {
+    event.stopPropagation();
+    const currentGroup = this.getCurrentPhotoGroup();
+    if (currentGroup) {
+      const photos = this.getAdminPhotosForGroup(currentGroup);
+      if (this.adminPhotoIndex < photos.length - 1) {
+        this.adminPhotoIndex++;
+      }
+    }
+  }
+
+  // Helper to get current photo group (assumes only one file_upload group)
+  private getCurrentPhotoGroup(): string | null {
+    for (const groupId of this.getConditionGroupIds()) {
+      const sellerValue = this.sellerConditions[groupId];
+      const adminValue = this.adminConditions[groupId];
+      if (Array.isArray(sellerValue) || Array.isArray(adminValue)) {
+        return groupId;
+      }
+    }
+    return null;
   }
 }

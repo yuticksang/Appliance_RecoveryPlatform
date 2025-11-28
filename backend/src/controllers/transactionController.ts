@@ -7,6 +7,8 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 );
 
+console.log('🔥🔥🔥 transactionController.ts LOADED');
+
 /**
  * Get all transactions for a specific seller
  * Joins SubmittedAppliance, Transaction, ItemStatus, and Appliance tables
@@ -62,7 +64,7 @@ export const getTransactionsBySeller = async (req: Request, res: Response) => {
         a.image_url as "imageUrl"
       FROM "Transaction" t
       INNER JOIN "SubmittedAppliance" sa ON t."submittedApplianceID" = sa."submittedApplianceID"
-      INNER JOIN users u ON t."sellerID" = u.seller_id
+      LEFT JOIN users u ON t."sellerID" = u.seller_id
       LEFT JOIN "ItemStatus" i ON t."transactionID" = i."transactionID"
       LEFT JOIN "Appliance" a ON sa."applianceID" = a."applianceID"
       LEFT JOIN "Brand" b ON a."brandID" = b."brandID"
@@ -93,8 +95,6 @@ export const getAllTransactions = async (_req: Request, res: Response) => {
         sa."submissionDate" as "submittedDate",
         sa."initialOfferPrice" as "estimatedPrice",
         sa."finalOfferPrice" as "finalPrice",
-        sa."initialNote" as "initialNote",
-        sa."finalNote" as "finalNote",
         t."transactionStatus",
         t."createdAt",
         t."updatedAt",
@@ -109,7 +109,7 @@ export const getAllTransactions = async (_req: Request, res: Response) => {
         a.image_url as "imageUrl"
       FROM "Transaction" t
       INNER JOIN "SubmittedAppliance" sa ON t."submittedApplianceID" = sa."submittedApplianceID"
-      INNER JOIN users u ON t."sellerID" = u.seller_id
+      LEFT JOIN users u ON t."sellerID" = u.seller_id
       LEFT JOIN "ItemStatus" i ON t."transactionID" = i."transactionID"
       LEFT JOIN "Appliance" a ON sa."applianceID" = a."applianceID"
       LEFT JOIN "Brand" b ON a."brandID" = b."brandID"
@@ -239,12 +239,34 @@ export const getTransactionById = async (req: Request, res: Response) => {
 
 
 
-    // Fetch all condition groups to identify textarea and file_upload types
+    // Fetch all condition groups for this specific category that were active at submission time
+    // This ensures old transactions only show groups that existed when they were submitted
     const conditionGroupsResult = await pool.query(
-      `SELECT "groupID", "criteriaName", question_type FROM "ConditionGroup"`
+      `SELECT DISTINCT cg."groupID", cg."criteriaName", cg.question_type, cg.display_order
+       FROM "ConditionGroup" cg
+       LEFT JOIN "ConditionOption" co ON cg."groupID" = co."groupID"
+       LEFT JOIN "ConditionSelected" cs ON co."conditionID" = cs."conditionID"
+       WHERE (cs."submittedApplianceID" = $1 OR cg.question_type = 'textarea' OR cg.question_type = 'file_upload')
+       AND (cg."categoryID" = $2 OR cg."categoryID" IS NULL)
+       ORDER BY COALESCE(cg.display_order, 999999) ASC`,
+      [transaction.submittedApplianceID, transaction.categoryID]
     );
 
-    console.log('📋 Condition groups:', conditionGroupsResult.rows);
+    console.log('📋 Condition groups for this transaction:', conditionGroupsResult.rows);
+
+    // Create conditionGroupNames mapping with display_order and question_type
+    const conditionGroupNames: Record<string, string> = {};
+    const conditionGroupOrder: Record<string, number> = {};
+    const conditionGroupTypes: Record<string, string> = {};
+    conditionGroupsResult.rows.forEach(row => {
+      conditionGroupNames[row.groupID] = row.criteriaName;
+      conditionGroupOrder[row.groupID] = row.display_order ?? 999999;
+      conditionGroupTypes[row.groupID] = row.question_type;
+    });
+
+    console.log('📋 Condition group names mapping:', conditionGroupNames);
+    console.log('📋 Condition group order mapping:', conditionGroupOrder);
+    console.log('📋 Condition group types mapping:', conditionGroupTypes);
 
     // Group conditions by groupID and selectedBy (seller vs admin)
     // Using groupID instead of criteriaName for better mapping
@@ -346,6 +368,15 @@ export const getTransactionById = async (req: Request, res: Response) => {
     transaction.photos = sellerPhotos; // Backward compatibility
     transaction.sellerPhotos = sellerPhotos;
     transaction.adminPhotos = adminPhotos;
+
+    // Include conditionGroupNames, conditionGroupOrder, and conditionGroupTypes in the response
+    transaction.conditionGroupNames = conditionGroupNames;
+    transaction.conditionGroupOrder = conditionGroupOrder;
+    transaction.conditionGroupTypes = conditionGroupTypes;
+
+    console.log(`✅ Found transaction ${id}:`, transaction);
+    console.log(`📋 Selected issues:`, transaction.selectedIssues);
+    console.log(`📷 Photos:`, transaction.photos);
 
     // Disable caching to ensure fresh data is always returned
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -481,8 +512,6 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
         sa."submissionDate" as "submittedDate",
         sa."initialOfferPrice" as "estimatedPrice",
         sa."finalOfferPrice" as "finalPrice",
-        sa."initialNote",
-        sa."finalNote",
         t."transactionStatus",
         t."updatedAt",
         i."itemStatus",
@@ -770,62 +799,88 @@ export const updateTransaction = async (req: Request, res: Response) => {
               );
             }
           } else if (questionType === 'checkbox') {
-            // Array of conditionIDs
+            // Array of conditionIDs or descriptions
             const conditionIDs = Array.isArray(value) ? value : [value];
 
             for (const conditionID of conditionIDs) {
               if (!conditionID || (typeof conditionID === 'string' && conditionID.trim() === '')) continue;
 
               let actualConditionID = conditionID;
+              let descriptionText = conditionID; // Default to the value itself
 
-              // Look up conditionID if it's a description
+              // Look up conditionID and description
               if (typeof conditionID !== 'string' || !conditionID.startsWith('CO')) {
+                // Value is a description, look up the conditionID
                 const condResult = await pool.query(
-                  `SELECT "conditionID" FROM "ConditionOption"
+                  `SELECT "conditionID", description FROM "ConditionOption"
                    WHERE "groupID" = $1 AND description = $2`,
                   [groupID, conditionID]
                 );
                 if (condResult.rows.length > 0) {
                   actualConditionID = condResult.rows[0].conditionID;
+                  descriptionText = condResult.rows[0].description;
                 } else {
                   console.warn(`⚠️ Condition not found: "${conditionID}" in group ${groupID}`);
                   continue;
                 }
+              } else {
+                // Value is a conditionID, fetch the description
+                const condResult = await pool.query(
+                  `SELECT description FROM "ConditionOption" WHERE "conditionID" = $1`,
+                  [actualConditionID]
+                );
+                if (condResult.rows.length > 0) {
+                  descriptionText = condResult.rows[0].description;
+                }
               }
 
+              // Store both conditionID and description text in textValue for easy reference
               await pool.query(
                 `INSERT INTO "ConditionSelected"
-                 ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID")
-                 VALUES ($1, $2, true, 'admin', NOW(), $3)`,
-                [actualConditionID, submittedApplianceID, groupID]
+                 ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue")
+                 VALUES ($1, $2, true, 'admin', NOW(), $3, $4)`,
+                [actualConditionID, submittedApplianceID, groupID, descriptionText]
               );
             }
           } else {
-            // radio, dropdown, image - single conditionID
+            // radio, dropdown, image - single conditionID or description
             console.log(`🔘 Saving ${questionType} answer: ${value}`);
 
             let actualConditionID = value;
+            let descriptionText = value; // Default to the value itself
 
-            // Look up conditionID if it's a description
+            // Look up conditionID and description
             if (typeof value !== 'string' || !value.startsWith('CO')) {
+              // Value is a description, look up the conditionID
               const condResult = await pool.query(
-                `SELECT "conditionID" FROM "ConditionOption"
+                `SELECT "conditionID", description FROM "ConditionOption"
                  WHERE "groupID" = $1 AND description = $2`,
                 [groupID, value]
               );
               if (condResult.rows.length > 0) {
                 actualConditionID = condResult.rows[0].conditionID;
+                descriptionText = condResult.rows[0].description;
               } else {
                 console.warn(`⚠️ Condition not found: "${value}" in group ${groupID}`);
                 continue;
               }
+            } else {
+              // Value is a conditionID, fetch the description
+              const condResult = await pool.query(
+                `SELECT description FROM "ConditionOption" WHERE "conditionID" = $1`,
+                [actualConditionID]
+              );
+              if (condResult.rows.length > 0) {
+                descriptionText = condResult.rows[0].description;
+              }
             }
 
+            // Store both conditionID and description text in textValue for easy reference
             await pool.query(
               `INSERT INTO "ConditionSelected"
-               ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID")
-               VALUES ($1, $2, true, 'admin', NOW(), $3)`,
-              [actualConditionID, submittedApplianceID, groupID]
+               ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue")
+               VALUES ($1, $2, true, 'admin', NOW(), $3, $4)`,
+              [actualConditionID, submittedApplianceID, groupID, descriptionText]
             );
           }
         }

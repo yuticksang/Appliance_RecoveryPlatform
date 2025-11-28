@@ -308,11 +308,19 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       // For radio/image/dropdown: single conditionID
       if ((qa.type === 'radio' || qa.type === 'image' || qa.type === 'dropdown') && qa.answer) {
         console.log(`  → Saving ${qa.type} answer: ${qa.answer}`);
+
+        // Fetch the description for this conditionID
+        const descResult = await client.query(
+          `SELECT description FROM "ConditionOption" WHERE "conditionID" = $1`,
+          [qa.answer]
+        );
+        const descriptionText = descResult.rows.length > 0 ? descResult.rows[0].description : '';
+
         await client.query(
           `INSERT INTO "ConditionSelected"
-          ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID")
-          VALUES ($1, $2, true, 'seller', NOW(), $3)`,
-          [qa.answer, finalId, qa.groupID]
+          ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue")
+          VALUES ($1, $2, true, 'seller', NOW(), $3, $4)`,
+          [qa.answer, finalId, qa.groupID, descriptionText]
         );
         savedCount++;
       }
@@ -321,11 +329,18 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       if (qa.type === 'checkbox' && Array.isArray(qa.answer)) {
         console.log(`  → Saving ${qa.answer.length} checkbox items`);
         for (const conditionID of qa.answer) {
+          // Fetch the description for this conditionID
+          const descResult = await client.query(
+            `SELECT description FROM "ConditionOption" WHERE "conditionID" = $1`,
+            [conditionID]
+          );
+          const descriptionText = descResult.rows.length > 0 ? descResult.rows[0].description : '';
+
           await client.query(
             `INSERT INTO "ConditionSelected"
-            ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID")
-            VALUES ($1, $2, true, 'seller', NOW(), $3)`,
-            [conditionID, finalId, qa.groupID]
+            ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue")
+            VALUES ($1, $2, true, 'seller', NOW(), $3, $4)`,
+            [conditionID, finalId, qa.groupID, descriptionText]
           );
           savedCount++;
         }

@@ -129,7 +129,7 @@ export class AdminTransactionDetailComponent implements OnInit {
         this.transactionStatus = data.transactionStatus;
         this.itemStatus = data.itemStatus;
         this.finalPrice = data.finalPrice || data.estimatedPrice || 0;
-        this.note = data.finalNote || ''; // Admin's review note
+        this.note = data.note || ''; // Note
 
         // Debug: Log seller photos and conditions
         console.log('📸 Seller photos from API:', data.sellerPhotos);
@@ -154,6 +154,7 @@ export class AdminTransactionDetailComponent implements OnInit {
           console.log('📋 Loading condition groups for category:', categoryId);
           this.transactionService.getActiveConditionGroupsWithOptions(categoryId).subscribe({
             next: (groups) => {
+              // Backend already returns groups ordered by display_order
               this.conditionGroups = groups;
               console.log('📋 Condition groups loaded for category:', categoryId, groups);
 
@@ -181,6 +182,7 @@ export class AdminTransactionDetailComponent implements OnInit {
           // Fallback: load all condition groups if no category
           this.transactionService.getActiveConditionGroupsWithOptions().subscribe({
             next: (groups) => {
+              // Backend already returns groups ordered by display_order
               this.conditionGroups = groups;
               this.setSelectedConditionsFromTransaction(data);
               this.loading.set(false);
@@ -213,6 +215,7 @@ export class AdminTransactionDetailComponent implements OnInit {
     if (this.selectedCategoryId) {
       this.transactionService.getActiveConditionGroupsWithOptions(this.selectedCategoryId).subscribe({
         next: (groups) => {
+          // Backend already returns groups ordered by display_order
           this.conditionGroups = groups;
           console.log('📋 Condition groups reloaded for category:', this.selectedCategoryId, groups);
           // Reset selected conditions for checkbox types
@@ -477,7 +480,7 @@ export class AdminTransactionDetailComponent implements OnInit {
       model: selectedAppliance?.modelCode || '',
       category: selectedCategory?.categoryName || '',
       modelName: selectedAppliance?.modelName || '',
-      finalNote: this.note, // Admin's review note
+      note: this.note, // Note
       // Send admin checklist conditions (includes photo URLs for file_upload groups)
       adminConditions: adminConditions
     };
@@ -506,7 +509,7 @@ export class AdminTransactionDetailComponent implements OnInit {
       this.transactionStatus = txn.transactionStatus;
       this.itemStatus = txn.itemStatus;
       this.finalPrice = txn.finalPrice || txn.estimatedPrice;
-      this.note = (txn as any).finalNote || txn.note || ''; // Admin's review note
+      this.note = txn.note || ''; // Note
       // Reset selected IDs
       this.setSelectedIdsFromTransaction(txn);
       // Reset selected conditions
@@ -662,6 +665,33 @@ export class AdminTransactionDetailComponent implements OnInit {
     return this.conditionGroups.some(g => g.question_type === 'file_upload');
   }
 
+  // Get condition groups that have actual submitted data (for view mode only)
+  // This prevents newly added groups from appearing in old transactions
+  getConditionGroupsWithData(): any[] {
+    const txn = this.transaction();
+    if (!txn) return [];
+
+    return this.conditionGroups.filter(group => {
+      // Include if seller submitted data for this group
+      if (txn.sellerConditions?.[group.groupID]) {
+        return true;
+      }
+      // Include if it's a file_upload group and there are seller photos
+      if (group.question_type === 'file_upload' && txn.sellerPhotos && txn.sellerPhotos.length > 0) {
+        return true;
+      }
+      // Include if admin submitted data for this group (for after review view)
+      if (txn.adminConditions?.[group.groupID]) {
+        return true;
+      }
+      // Include if it's a file_upload group and there are admin photos
+      if (group.question_type === 'file_upload' && txn.adminPhotos && txn.adminPhotos.length > 0) {
+        return true;
+      }
+      return false;
+    });
+  }
+
   // ========== PHOTO GALLERY METHODS ==========
 
   // Check if there are multiple photos
@@ -744,33 +774,23 @@ export class AdminTransactionDetailComponent implements OnInit {
     return true;
   }
 
-  // Get seller photos for a file_upload group (fallback to sellerPhotos array if not in conditions)
+  // Get seller photos for a file_upload group - always from Photo table
   getSellerPhotosForGroup(groupID: string): string[] {
     const txn = this.transaction();
     if (!txn) return [];
 
-    // First try to get from sellerConditions (for new submissions using condition groups)
-    const conditionPhotos = txn.sellerConditions?.[groupID];
-    if (conditionPhotos && Array.isArray(conditionPhotos) && conditionPhotos.length > 0) {
-      return conditionPhotos;
-    }
-
-    // Fallback to sellerPhotos array (for old submissions using Photo table)
+    // Photos are stored in the Photo table, not in ConditionSelected
+    // Return seller photos from the Photo table (remark != 'admin')
     return txn.sellerPhotos || [];
   }
 
-  // Get admin photos for a file_upload group (fallback to adminPhotos array if not in conditions)
+  // Get admin photos for a file_upload group - always from Photo table
   getAdminPhotosForGroup(groupID: string): string[] {
     const txn = this.transaction();
     if (!txn) return [];
 
-    // First try to get from adminConditions (for new submissions using condition groups)
-    const conditionPhotos = txn.adminConditions?.[groupID];
-    if (conditionPhotos && Array.isArray(conditionPhotos) && conditionPhotos.length > 0) {
-      return conditionPhotos;
-    }
-
-    // Fallback to adminPhotos array (for old submissions using Photo table)
+    // Photos are stored in the Photo table, not in ConditionSelected
+    // Return admin photos from the Photo table (remark = 'admin')
     return txn.adminPhotos || [];
   }
 

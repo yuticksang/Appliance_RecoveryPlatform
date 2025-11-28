@@ -198,8 +198,9 @@
                 </div>
               </div> -->
 
-              <!-- Condition Groups Comparison (radio, dropdown, checkbox, image types - NOT textarea/file_upload) -->
-              <ng-container *ngFor="let group of conditionGroups">
+              <!-- All Condition Groups in display_order (only show groups with submitted data) -->
+              <ng-container *ngFor="let group of getConditionGroupsWithData()">
+                <!-- Radio, dropdown, checkbox, image types -->
                 <div class="inspection-item" *ngIf="group.question_type !== 'textarea' && group.question_type !== 'file_upload'">
                   <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
                   <div class="inspection-columns" [class.single-column]="!hasAdminConditions()">
@@ -273,10 +274,8 @@
                     </div>
                   </div>
                 </div>
-              </ng-container>
 
-              <!-- Textarea type groups (Notes) - Before/After Comparison -->
-              <ng-container *ngFor="let group of conditionGroups">
+                <!-- Textarea type groups (Notes) -->
                 <div class="inspection-item" *ngIf="group.question_type === 'textarea'">
                   <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
                   <div class="inspection-columns" [class.single-column]="!hasAdminConditions()">
@@ -290,10 +289,8 @@
                     </div>
                   </div>
                 </div>
-              </ng-container>
 
-              <!-- File upload type groups (Photos) - Two Column Tabs with Single Photo Display -->
-              <ng-container *ngFor="let group of conditionGroups">
+                <!-- File upload type groups (Photos) -->
                 <div class="inspection-item full-width-photo-section" *ngIf="group.question_type === 'file_upload'">
                   <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
 
@@ -418,13 +415,10 @@
                 </div>
               </div> -->
 
-              <!-- Dynamic Condition Groups -->
+              <!-- All Dynamic Condition Groups in display_order -->
               <ng-container *ngFor="let group of conditionGroups">
-                <!-- Skip file_upload and textarea types here -->
-                <ng-container *ngIf="group.question_type !== 'file_upload' && group.question_type !== 'textarea'">
-
-                  <!-- Radio/Dropdown/Image type (single selection) -->
-                  <div class="inspection-item-edit" *ngIf="group.question_type === 'radio' || group.question_type === 'dropdown' || group.question_type === 'image'">
+                <!-- Radio/Dropdown/Image type (single selection) -->
+                <div class="inspection-item-edit" *ngIf="group.question_type === 'radio' || group.question_type === 'dropdown' || group.question_type === 'image'">
                     <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
                     <select class="edit-select" [(ngModel)]="selectedConditions[group.groupID]">
                       <option value="">Select {{ group.criteriaName }}</option>
@@ -447,20 +441,14 @@
                     </div>
                   </div>
 
-                </ng-container>
-              </ng-container>
-
-              <!-- Textarea type condition groups (e.g., Notes) -->
-              <ng-container *ngFor="let group of conditionGroups">
+                <!-- Textarea type condition groups (e.g., Notes) -->
                 <div class="inspection-item-edit full-width" *ngIf="group.question_type === 'textarea'">
                   <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
                   <textarea class="edit-textarea" [(ngModel)]="selectedConditions[group.groupID]"
                             rows="3" [placeholder]="'Enter ' + group.criteriaName.toLowerCase() + '...'"></textarea>
                 </div>
-              </ng-container>
 
-              <!-- File Upload type condition groups -->
-              <ng-container *ngFor="let group of conditionGroups">
+                <!-- File Upload type condition groups -->
                 <div class="inspection-item-edit full-width" *ngIf="group.question_type === 'file_upload'">
                   <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
                   <div class="file-upload-container">

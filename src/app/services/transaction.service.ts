@@ -19,10 +19,7 @@ export interface Transaction {
   submittedDate: Date;
   estimatedPrice?: number;
   finalPrice?: number;
-  initialNote?: string; // Note from seller during submission
-  finalNote?: string;   // Note from admin during review
-  // For backward compatibility
-  note?: string; // Maps to initialNote for list view
+  note?: string; // Note
 }
 
 @Injectable({
@@ -78,9 +75,7 @@ export class TransactionService {
             submittedDate: new Date(t.submittedDate || t.submissionDate || t.createdAt),
             estimatedPrice: t.estimatedPrice || t.initialOfferPrice || 0,
             finalPrice: t.finalPrice || t.finalOfferPrice,
-            initialNote: t.initialNote,
-            finalNote: t.finalNote,
-            note: t.initialNote || t.note // Backward compatibility
+            note: t.note || ''
           }));
         }),
         catchError(error => {
@@ -114,9 +109,7 @@ export class TransactionService {
             submittedDate: new Date(t.submittedDate || t.submissionDate || t.createdAt),
             estimatedPrice: t.estimatedPrice || t.initialOfferPrice || 0,
             finalPrice: t.finalPrice || t.finalOfferPrice,
-            initialNote: t.initialNote,
-            finalNote: t.finalNote,
-            note: t.initialNote || t.note // Backward compatibility
+            note: t.note || ''
           }));
         }),
         catchError(error => {
@@ -302,22 +295,6 @@ export class TransactionService {
   }
 
   /**
-   * Update customer information for a transaction (seller can edit when item is Awaiting Pick Up)
-   */
-  updateCustomerInfo(transactionId: string | number, updateData: any): Observable<any> {
-    const token = this.getAuthToken();
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-
-    return this.http.put<any>(`${this.apiUrl}/transactions/${transactionId}/customer-info`, updateData, { headers: this.auth.getAuthHeaders() })
-      .pipe(
-        catchError(error => {
-          console.error('Error updating customer info:', error);
-          throw error;
-        })
-      );
-  }
-
-  /**
    * Upload admin photos to Supabase Storage
    * @param transactionId Transaction ID
    * @param formData FormData containing photos
@@ -332,6 +309,22 @@ export class TransactionService {
         map(response => response.photoUrls || []),
         catchError(error => {
           console.error('Error uploading admin photos:', error);
+          throw error;
+        })
+      );
+  }
+
+  /**
+   * Update customer information for a transaction (seller can edit when item is Awaiting Pick Up)
+   */
+  updateCustomerInfo(transactionId: string | number, updateData: any): Observable<any> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.put<any>(`${this.apiUrl}/transactions/${transactionId}/customer-info`, updateData, { headers: this.auth.getAuthHeaders() })
+      .pipe(
+        catchError(error => {
+          console.error('Error updating customer info:', error);
           throw error;
         })
       );
