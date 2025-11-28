@@ -150,15 +150,11 @@ export class TransactionService {
         })
       );
   }
-
   /**
    * Get a single transaction by ID with full details
    */
   getTransactionById(transactionId: string | number): Observable<any> {
-    const token = this.getAuthToken();
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-
-    return this.http.get<any>(`${this.apiUrl}/transactions/${transactionId}`, { headers: this.auth.getAuthHeaders()})
+    return this.http.get<any>(`${this.apiUrl}/transactions/${transactionId}`, { headers: this.auth.getAuthHeaders() })
       .pipe(
         catchError(error => {
           console.error('Error fetching transaction by ID:', error);
@@ -318,9 +314,6 @@ export class TransactionService {
    * Update customer information for a transaction (seller can edit when item is Awaiting Pick Up)
    */
   updateCustomerInfo(transactionId: string | number, updateData: any): Observable<any> {
-    const token = this.getAuthToken();
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-
     return this.http.put<any>(`${this.apiUrl}/transactions/${transactionId}/customer-info`, updateData, { headers: this.auth.getAuthHeaders() })
       .pipe(
         catchError(error => {

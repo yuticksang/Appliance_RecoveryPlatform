@@ -30,6 +30,7 @@ interface Category {
 })
 export class EditConditionOptionComponent implements OnInit {
   @Input() optionData!: ConditionOption;
+  @Input() questionType: string | null = null;
   @Output() close = new EventEmitter<void>();
   @Output() optionUpdated = new EventEmitter<any>();
 
@@ -39,12 +40,15 @@ export class EditConditionOptionComponent implements OnInit {
   editOptionForm: FormGroup;
   categories: Category[] = [];
   selectedCategories: Set<string> = new Set();
+  originalSelectedCategories: Set<string> = new Set();
   isChecklistType = false;
+  isImageType = false;
   selectedFile: File | null = null;
   selectedFileName: string = '';
   currentImageUrl: string = '';
   imagePreviewUrl: string = '';
   removeCurrentImage: boolean = false;
+  originalData: ConditionOption | null = null;
 
   constructor(private fb: FormBuilder) {
     this.editOptionForm = this.fb.group({
@@ -61,7 +65,13 @@ export class EditConditionOptionComponent implements OnInit {
     // Check if this is a checklist/question type
     this.isChecklistType = this.optionData.criteriaCodePrefix === 'C' || this.optionData.criteriaCodePrefix === 'OT';
 
+    // Check if this is an image type
+    this.isImageType = this.questionType === 'image';
+
     if (this.optionData) {
+      // Store original data
+      this.originalData = { ...this.optionData };
+
       this.editOptionForm.patchValue({
         description: this.optionData.description || '',
         status: this.optionData.status || 'ACTIVE',
@@ -88,6 +98,8 @@ export class EditConditionOptionComponent implements OnInit {
       .subscribe({
         next: (categories) => {
           this.selectedCategories = new Set(categories.map(c => c.categoryID));
+          // Store original categories
+          this.originalSelectedCategories = new Set(this.selectedCategories);
         },
         error: (err) => {
           console.error('Load condition categories error:', err);
@@ -110,6 +122,35 @@ export class EditConditionOptionComponent implements OnInit {
   get description() { return this.editOptionForm.get('description'); }
   get status() { return this.editOptionForm.get('status'); }
   get question() { return this.editOptionForm.get('question'); }
+
+  // Check if any field has changed
+  get hasChanges(): boolean {
+    if (!this.originalData) return false;
+
+    const categoriesChanged = !this.areSetsEqual(this.selectedCategories, this.originalSelectedCategories);
+    const imageChanged = this.selectedFile !== null || this.removeCurrentImage;
+
+    return (
+      this.description?.value !== (this.originalData.description || '') ||
+      this.status?.value !== this.originalData.status ||
+      (this.question?.value || '') !== (this.originalData.question || '') ||
+      categoriesChanged ||
+      imageChanged
+    );
+  }
+
+  areSetsEqual(set1: Set<string>, set2: Set<string>): boolean {
+    if (set1.size !== set2.size) return false;
+    for (const item of set1) {
+      if (!set2.has(item)) return false;
+    }
+    return true;
+  }
+
+  getCategoryName(categoryID: string): string {
+    const category = this.categories.find(c => c.categoryID === categoryID);
+    return category ? category.categoryName : categoryID;
+  }
 
   onFileSelect(event: any) {
     const file = event.target.files[0];

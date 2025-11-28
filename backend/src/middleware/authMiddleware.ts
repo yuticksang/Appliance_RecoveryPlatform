@@ -8,6 +8,9 @@ export interface AuthRequest extends Request {
     email: string | null;
     username: string;
     userType: string;
+    buyerId?: string | null;
+    sellerId?: string | null;
+    adminId?: string | null;
   };
 }
 
@@ -33,6 +36,9 @@ export const verifyToken = (req: AuthRequest, res: Response, next: NextFunction)
       email: string | null;
       username: string;
       userType: string;
+      buyerId?: string | null;
+      sellerId?: string | null;
+      adminId?: string | null;
     };
 
     // Attach user info to request

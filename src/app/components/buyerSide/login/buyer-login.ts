@@ -79,6 +79,10 @@ export class BuyerLoginComponent implements OnInit {
             return;
           }
 
+          // Clear all auth data first to prevent cross-contamination
+          localStorage.removeItem('admin_token');
+          localStorage.removeItem('admin_user');
+
           // Save auth using buyer-specific storage keys
           localStorage.setItem('buyer_token', res.token);
           localStorage.setItem('buyer_user', JSON.stringify(user));

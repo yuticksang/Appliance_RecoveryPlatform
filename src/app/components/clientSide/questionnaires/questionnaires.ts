@@ -1,5 +1,6 @@
 import { Component, ChangeDetectionStrategy, ChangeDetectorRef, OnInit, inject, signal, computed } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { QuestionnaireService, Category,  SimpleItem } from '../../../services/questionnaire.service';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../services/auth.service';
@@ -45,7 +46,8 @@ export class QuestionnairesComponent implements OnInit{
   private fb = inject(FormBuilder);
   private alertService = inject(AlertService);
   private cdr = inject(ChangeDetectorRef);
-  
+  private route = inject(ActivatedRoute);
+
   currentUser = this.auth.currentUser;
 
   // Step tracking
@@ -75,7 +77,7 @@ export class QuestionnairesComponent implements OnInit{
   selectedAnswers = signal<Record<string, any>>({}); // groupID → answer
   group!: ConditionGroup;  // ← even better, with type
 
-
+  isCalculating = signal<boolean>(false);
 
   // Step 3 - Condition Questionnaires
   notes: string = '';
@@ -90,6 +92,23 @@ export class QuestionnairesComponent implements OnInit{
   valuationScore: number = 0;
   valuationLabel: string = '';
   valuationWorth: number = 0;
+  highestBuyerId: string | null = null;
+  calculatedScores: any;
+
+  // Helper method to format number with commas and 2 decimal places
+  formatWithCommas(value: number): string {
+    return value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // Helper method to get circle color based on valuation label
+  getCircleColor(): string {
+    const label = this.valuationLabel.toLowerCase();
+    if (label.includes('excellent') || label.includes('premium')) return '#10b981'; // Green
+    if (label.includes('good') || label.includes('very good')) return '#3b82f6'; // Blue
+    if (label.includes('fair') || label.includes('average')) return '#f59e0b'; // Orange
+    if (label.includes('poor') || label.includes('bad')) return '#ef4444'; // Red
+    return '#6b7280'; // Default gray
+  }
 
   // Step 5 - Pickup
 /* ────── ADDRESS SIGNALS ────── */
@@ -271,42 +290,27 @@ export class QuestionnairesComponent implements OnInit{
     return URL.createObjectURL(file);
   }
 
-  calculateValuation() {
-    let score = 0;
-
-    // Functional Status (CG001)
-    const funcDesc = this.getFunctionalStatus();
-    if (funcDesc?.includes('Fully')) score += 40;
-    else if (funcDesc?.includes('Partially')) score += 25;
-    else if (funcDesc) score += 10;
-
-    // Physical Condition (CG002)
-    const physDesc = this.getPhysicalCondition();
-    if (physDesc?.includes('Like New')) score += 30;
-    else if (physDesc?.includes('Minor')) score += 25;
-    else if (physDesc?.includes('Missing')) score += 15;
-    else if (physDesc?.includes('Heavily')) score += 10;
-    else if (physDesc?.includes('Rust')) score += 5;
-
-    // Issues
-    const issueCount = this.getSelectedIssueDescriptions().length;
-    if (issueCount === 0 || this.getSelectedIssueDescriptions().includes('None of the above')) {
-      score += 30;
-    } else {
-      score += Math.max(0, 30 - issueCount * 5);
-    }
-
-    this.valuationScore = Math.min(score, 100);
-    this.valuationLabel = this.valuationScore >= 85 ? 'Excellent' 
-      : this.valuationScore >= 70 ? 'Good'
-      : this.valuationScore >= 50 ? 'Fair' : 'Poor';
-    this.valuationWorth = Math.round((this.valuationScore / 100) * 1500);
-  }
-
+  
 
   ngOnInit() {
     console.log('User:', this.currentUser());
     this.loadCategories(); // load actual types from backend
+
+    // Check if categoryId is passed from home page
+    this.route.queryParams.subscribe(params => {
+      if (params['categoryId']) {
+        this.applianceTypeId = params['categoryId'];
+        console.log('Pre-selected category from home:', this.applianceTypeId);
+
+        // Auto-load brands for this category
+        this.onCategoryChange();
+
+        // Skip to step 2 (brand & model selection)
+        this.currentStep = 2;
+        this.maxStepReached = 2;
+        this.cdr.markForCheck();
+      }
+    });
 
     // ALWAYS load condition groups on init
     this.loadConditionGroups();
@@ -437,7 +441,7 @@ export class QuestionnairesComponent implements OnInit{
 
   onAnswerChange() {
     this.cdr.markForCheck();
-    this.calculateValuation(); // if needed
+    
   }
 
   selectImageOption(groupId: string, optionId: string) {
@@ -523,13 +527,13 @@ export class QuestionnairesComponent implements OnInit{
   }
 
   // Backwards compatibility helpers (for existing hardcoded logic)
-  getFunctionalStatus(): string {
-    return this.getFormattedAnswer('CG001');
-  }
+  // getFunctionalStatus(): string {
+  //   return this.getFormattedAnswer('CG001');
+  // }
 
-  getPhysicalCondition(): string {
-    return this.getFormattedAnswer('CG002');
-  }
+  // getPhysicalCondition(): string {
+  //   return this.getFormattedAnswer('CG002');
+  // }
 
   getSelectedIssueDescriptions(): string[] {
     const group = this.conditionGroups().find(g => g.type === 'checkbox');
@@ -740,6 +744,30 @@ export class QuestionnairesComponent implements OnInit{
     this.closeAddressModal();
   }
 
+  getValuationPayload() {
+    const modelId = String(this.selectedModelId);
+    const answers = this.selectedAnswers();
+    const groups = this.conditionGroups();
+    const conditionIds: string[] = [];
+
+    groups.forEach(group =>{
+      const val = answers[group.groupID];
+
+      if (!val) return;
+
+      if (group.type === 'radio' || group.type === 'image') {
+        conditionIds.push(String(val));
+      }else if (group.type === 'checkbox' && Array.isArray(val)){
+        conditionIds.push(...val);
+      }
+    })
+
+    return{
+      modelId,
+      conditionIds
+    };
+  }
+
   nextStep() {
     // Step 1 validation
     if (this.currentStep === 1 && !this.applianceTypeId) {
@@ -774,7 +802,51 @@ export class QuestionnairesComponent implements OnInit{
       // FILE UPLOAD IS 100% OPTIONAL — NO CHECK HERE
       // User can skip even if file_upload group exists
 
-      this.calculateValuation();
+      this.isCalculating.set(true);
+
+      const payload = this.getValuationPayload();
+
+      this.questionnaireService.calculateValuation(payload).subscribe({
+        next: (res) => {
+
+          this.isCalculating.set(false);
+          
+          if(!res){
+            this.alertService.error('Valuation calculation Error!');
+            return;
+          }
+
+          if (res.scoreLabel) {
+            this.valuationWorth = res.valuationWorth || 0;
+            this.highestBuyerId = res.highestBuyerId || null;
+            this.valuationScore = res.scoreLabel.totalScore;
+            this.valuationLabel = res.scoreLabel.classification;
+            this.calculatedScores = res.scoreLabel;
+          } else {
+             // Fallback if data is missing
+             this.valuationScore = 0;
+             this.valuationLabel = 'Unknown';
+             this.calculatedScores = null;
+          }
+
+          this.currentStep++;
+          if (this.currentStep > this.maxStepReached) {
+            this.maxStepReached = this.currentStep;
+          }
+          this.cdr.markForCheck(); // Update UI
+        
+        },
+        error: (err) => {
+          console.error('Valuation calculation failed:', err);
+          this.alertService.error('Failed to calculate valuation. Please try again.');
+          this.isCalculating.set(false);
+          this.cdr.markForCheck();
+        }
+
+
+      });
+
+      return;
     }
 
     if (this.currentStep === 5) {
@@ -900,6 +972,7 @@ export class QuestionnairesComponent implements OnInit{
       pickupDate: this.pickupDate,
       pickupTime: this.pickupTime,
       valuationWorth: this.valuationWorth,
+      highestBuyerId: this.highestBuyerId,
 
       // Send all answers as structured JSON
       questionAnswers: JSON.stringify(questionAnswers)

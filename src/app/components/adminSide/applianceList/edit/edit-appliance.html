@@ -75,10 +75,36 @@
         </div>
       </div>
 
+      <!-- Show changes summary -->
+      <div *ngIf="hasChanges" class="changes-summary">
+        <h4>Changes to be saved:</h4>
+        <ul>
+          <li *ngIf="modelCode?.value !== originalData?.modelCode">
+            Model Code: "{{ originalData?.modelCode }}" → "{{ modelCode?.value }}"
+          </li>
+          <li *ngIf="modelName?.value !== originalData?.modelName">
+            Model Name: "{{ originalData?.modelName }}" → "{{ modelName?.value }}"
+          </li>
+          <li *ngIf="categoryID?.value !== originalData?.categoryID">
+            Category: "{{ getCategoryName(originalData?.categoryID || '') }}" → "{{ getCategoryName(categoryID?.value) }}"
+          </li>
+          <li *ngIf="brandID?.value !== originalData?.brandID">
+            Brand: "{{ getBrandName(originalData?.brandID || '') }}" → "{{ getBrandName(brandID?.value) }}"
+          </li>
+          <li *ngIf="(description?.value || '') !== (originalData?.description || '')">
+            Description: "{{ originalData?.description || '(none)' }}" → "{{ description?.value || '(none)' }}"
+          </li>
+          <li *ngIf="selectedImageFile">
+            Image: Will be updated (new image selected)
+          </li>
+        </ul>
+      </div>
+
       <div class="form-actions">
         <button type="button" class="btn-secondary" (click)="onClose()">Cancel</button>
-        <button type="submit" class="btn-success" [disabled]="editApplianceForm.invalid">
-          Update Appliance
+        <button type="submit" class="btn-success" [disabled]="editApplianceForm.invalid || !hasChanges"
+          [title]="!hasChanges ? 'No changes to save' : editApplianceForm.invalid ? 'Please fill all required fields' : 'Save changes'">
+          {{ hasChanges ? 'Save Changes' : 'No Changes' }}
         </button>
       </div>
     </form>

@@ -85,6 +85,10 @@ export class AdminLoginComponent implements OnInit {
           // optional: check specific admin role from backend
           const role: AdminRole | null = (user.adminRole ?? null) as AdminRole | null;
 
+          // Clear all auth data first to prevent cross-contamination
+          localStorage.removeItem('buyer_token');
+          localStorage.removeItem('buyer_user');
+
           // Save auth using admin-specific storage keys
           localStorage.setItem('admin_token', res.token);
           localStorage.setItem('admin_user', JSON.stringify(user));

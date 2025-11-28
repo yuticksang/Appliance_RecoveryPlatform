@@ -6,6 +6,7 @@ import { AlertService } from '../../../services/alert.service';
 import { Router } from '@angular/router';
 import { AddApplianceComponent } from './add/add-appliance';
 import { EditApplianceComponent } from './edit/edit-appliance';
+import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
 
 type ApplianceStatus = 'ACTIVE' | 'INACTIVE';
 
@@ -38,7 +39,7 @@ type SortDir = 'asc' | 'desc';
 @Component({
   selector: 'app-appliance-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, AddApplianceComponent, EditApplianceComponent],
+  imports: [CommonModule, FormsModule, AddApplianceComponent, EditApplianceComponent, BreadcrumbComponent],
   templateUrl: './appliance-list.html',
   styleUrls: ['./appliance-list.scss']
 })

@@ -2,7 +2,7 @@
   <div class="appliance-container">
     <div class="page-head">
       <h1 class="page-title">Appliance Recovery List</h1>
-      <div class="breadcrumb">Dashboard / Appliances / <span>All Appliances</span></div>
+      <app-breadcrumb></app-breadcrumb>
     </div>
 
     <!-- Toolbar -->
@@ -10,9 +10,46 @@
       <div class="toolbar-left">
         <button class="add-btn" (click)="openAddModal()">
           <i class="ri-add-line"></i> ADD APPLIANCE
+          <span class="badge-counter" *ngIf="availableAppliancesCount() > 0">{{ availableAppliancesCount() }}</span>
         </button>
       </div>
       <div class="toolbar-right">
+        <!-- Category Filter -->
+        <div class="select-wrapper">
+          <select class="category-select" [value]="filterCategory()" (change)="onCategoryFilterChange($any($event.target).value)">
+            <option value="all">All Categories</option>
+            <option *ngFor="let category of uniqueCategories()" [value]="category">
+              {{ category }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Brand Filter -->
+        <div class="select-wrapper">
+          <select class="brand-select" [value]="filterBrand()" (change)="onBrandFilterChange($any($event.target).value)">
+            <option value="all">All Brands</option>
+            <option *ngFor="let brand of uniqueBrands()" [value]="brand">
+              {{ brand }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Price Range Filter -->
+        <div class="price-filter">
+          <input type="number"
+                 placeholder="Min Price"
+                 [value]="filterPriceMin() || ''"
+                 (input)="onPriceMinChange($any($event.target).value)"
+                 class="price-input">
+          <span class="price-separator">-</span>
+          <input type="number"
+                 placeholder="Max Price"
+                 [value]="filterPriceMax() || ''"
+                 (input)="onPriceMaxChange($any($event.target).value)"
+                 class="price-input">
+        </div>
+
+        <!-- Search -->
         <div class="search">
           <input type="text" placeholder="Search..." [value]="search()"
             (input)="onSearchInput($any($event.target).value)" />
@@ -32,9 +69,6 @@
         <thead>
           <tr>
             <th class="narrow">#</th>
-            <th (click)="onSort('applianceID')" class="sortable">
-              Appliance ID <span class="sort">{{ sortIcon('applianceID') }}</span>
-            </th>
             <th class="non-sortable">Image</th>
             <th (click)="onSort('modelCode')" class="sortable">
               Model Code <span class="sort">{{ sortIcon('modelCode') }}</span>
@@ -61,7 +95,6 @@
         <tbody>
           <tr *ngFor="let item of paginatedData(); let i = index">
             <td class="narrow">{{ getRowNumber(i) }}</td>
-            <td>{{ item.applianceID }}</td>
             <td class="image-col">
               <div class="image-cell">
                 <img [src]="getImageSrc(item.image_url)" [alt]="item.modelName" class="appliance-image">
@@ -98,7 +131,9 @@
       <button class="page-btn" (click)="goToPage(currentPage() - 1)"
         [disabled]="currentPage() === 1">‹</button>
 
-      <button class="page-btn active">{{ currentPage() }}</button>
+      <button class="page-btn" *ngFor="let p of pageNumbers()"
+        [class.active]="p === currentPage()"
+        (click)="goToPage(p)">{{ p }}</button>
 
       <button class="page-btn" (click)="goToPage(currentPage() + 1)"
         [disabled]="currentPage() === totalPages()">›</button>
@@ -122,53 +157,38 @@
     </div>
 
     <div class="modal-body">
-      <!-- Category and Brand Row -->
-      <div class="form-row">
-        <div class="form-group">
-          <label>Category</label>
-          <select class="form-control" [value]="selectedCategory()"
-            (change)="onCategoryChange($any($event.target).value)">
-            <option value="">Select Category</option>
-            <option *ngFor="let cat of categories()" [value]="cat.categoryID">
-              {{ cat.categoryName }}
-            </option>
-          </select>
+      <!-- Available Appliances List -->
+      <div class="appliance-list">
+        <div class="appliance-item"
+             *ngFor="let appliance of availableAppliancesForAdd()"
+             [class.selected]="selectedAppliance() === appliance.applianceID"
+             (click)="selectApplianceForAdd(appliance.applianceID)">
+          <div class="appliance-info">
+            <div class="appliance-code">{{ appliance.modelCode }}</div>
+            <div class="appliance-name">{{ appliance.modelName }}</div>
+            <div class="appliance-meta">
+              <span class="category">{{ appliance.categoryName }}</span>
+              <span class="separator">•</span>
+              <span class="brand">{{ appliance.brandName }}</span>
+            </div>
+          </div>
+          <div class="appliance-action" *ngIf="selectedAppliance() === appliance.applianceID">
+            <i class="ri-check-line"></i>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label>Brand</label>
-          <select class="form-control" [value]="selectedBrand()"
-            (change)="onBrandChange($any($event.target).value)"
-            [disabled]="!selectedCategory() || filteredBrands().length === 0">
-            <option value="">Select Brand</option>
-            <option *ngFor="let brand of filteredBrands()" [value]="brand.brandID">
-              {{ brand.brandName }}
-            </option>
-          </select>
+        <div *ngIf="availableAppliancesForAdd().length === 0" class="no-appliances">
+          No appliances available to add
         </div>
       </div>
 
-      <!-- Appliance Selection -->
-      <div class="form-group">
-        <label>Appliance</label>
-        <select class="form-control" [value]="selectedAppliance()"
-          (change)="selectedAppliance.set($any($event.target).value)"
-          [disabled]="!selectedBrand() || filteredAppliances().length === 0">
-          <option value="">Select Appliance</option>
-          <option *ngFor="let appliance of filteredAppliances()" [value]="appliance.applianceID">
-            {{ appliance.modelCode }} - {{ appliance.modelName }}
-          </option>
-        </select>
-      </div>
-
-      <!-- Base Price -->
-      <div class="form-group">
+      <!-- Base Price Input -->
+      <div class="form-group" *ngIf="selectedAppliance()">
         <label>Base Price (RM)</label>
         <input type="number" class="form-control" placeholder="Enter base price"
           [value]="basePrice() ?? ''"
           (input)="basePrice.set(+$any($event.target).value)"
-          min="0" step="0.01"
-          [disabled]="!selectedAppliance()">
+          min="0" step="0.01" autofocus>
       </div>
     </div>
 

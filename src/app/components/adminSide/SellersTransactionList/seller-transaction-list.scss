@@ -17,7 +17,6 @@ $blue-2: #1a73e8;
 .transactions-container {
   max-width: 1600px;
   margin: 0px;
-  padding: 0;
 }
 
 .page-head {
@@ -67,14 +66,14 @@ $blue-2: #1a73e8;
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  margin-bottom: 1.5rem;
-  gap: 1rem;
+  margin-bottom: 12px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
 .filters-right {
   display: flex;
-  gap: 1rem;
+  gap: 10px;
   align-items: center;
   flex-wrap: wrap;
 }
@@ -82,52 +81,41 @@ $blue-2: #1a73e8;
 .filter-dropdown {
   position: relative;
 
-  .filter-select {
-    padding: 0.75rem 2.5rem 0.75rem 1rem;
+  select {
+    height: 36px;
     border: 1px solid $line;
     border-radius: 8px;
-    background: white;
-    font-size: 14px;
-    color: $muted;
-    cursor: pointer;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%234a5568' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 1rem center;
+    padding: 0 12px;
+    padding-right: 40px;
     min-width: 180px;
+    background: white;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    appearance: none;
 
     &:focus {
       outline: none;
-      border-color: $blue-2;
-      box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.12);
+      border-color: #99c8ff;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
     }
   }
 }
 
 .search-box {
-  position: relative;
-
-  .search-input {
-    padding: 0.75rem 2.5rem 0.75rem 1rem;
+  input {
+    height: 36px;
     border: 1px solid $line;
     border-radius: 8px;
-    font-size: 14px;
-    width: 250px;
+    padding: 0 12px;
+    width: 260px;
 
     &:focus {
       outline: none;
-      border-color: $blue-2;
-      box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.12);
+      border-color: #99c8ff;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
     }
-  }
-
-  .search-icon {
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    color: $muted;
-    font-size: 16px;
   }
 }
 
@@ -191,7 +179,7 @@ $blue-2: #1a73e8;
     border-bottom: 2px solid $line;
 
     th {
-      padding: 1rem;
+      padding: 20px 20px;
       text-align: left;
       font-size: 14px;
       font-weight: 600;
@@ -232,7 +220,7 @@ $blue-2: #1a73e8;
     }
 
     td {
-      padding: 1rem;
+      padding: 15px 20px;
       font-size: 14px;
       color: $ink;
       vertical-align: middle;

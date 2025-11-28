@@ -8,6 +8,7 @@ import { AuthService } from './auth.service';
 export interface Category {
   id: number | string;
   name: string;
+  image?: string | null;
 }
 
 export interface SimpleItem {
@@ -30,6 +31,21 @@ export interface ConditionGroup {
   displayOrder: number;
   options: ConditionOption[];
 }
+
+export interface ScoreLabel {
+  functionalityScore: number;
+  appearanceScore: number;
+  componentScore: number;
+  totalScore: number;
+  classification: 'Excellent' | 'Good' | 'Fair' | 'Poor';
+}
+
+export interface ValuationResponse {
+  valuationWorth: number;
+  highestBuyerId: string | null;
+  scoreLabel: ScoreLabel;
+}
+
 
 @Injectable({ providedIn: 'root' })
 export class QuestionnaireService {
@@ -69,6 +85,15 @@ export class QuestionnaireService {
       catchError(err => {
         console.warn('Failed to load models', err);
         return of([]);
+      })
+    );
+  }
+
+  calculateValuation(data: any): Observable<ValuationResponse | null> {
+    return this.http.post<ValuationResponse>(`${this.api}/calculate-valuation`, data, this.buildHeaders()).pipe(
+      catchError(err => {
+        console.warn('Failed to calculate valuation', err);
+        return of(null);
       })
     );
   }

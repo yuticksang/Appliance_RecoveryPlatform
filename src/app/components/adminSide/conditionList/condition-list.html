@@ -2,7 +2,7 @@
   <div class="brand-container">
     <div class="page-head">
       <h1 class="page-title">Condition's List</h1>
-      <div class="breadcrumb">Dashboard / Appliances / <span>Condition</span></div>
+      <app-breadcrumb></app-breadcrumb>
     </div>
 
     <!-- toolbar -->
@@ -152,7 +152,9 @@
             <button class="page-btn" (click)="goToPage(item.group.groupID, getCurrentPage(item.group.groupID) - 1)"
               [disabled]="getCurrentPage(item.group.groupID) === 1">‹</button>
 
-            <button class="page-btn active">{{ getCurrentPage(item.group.groupID) }}</button>
+            <button class="page-btn" *ngFor="let p of getPageNumbers(item.group.groupID)"
+              [class.active]="p === getCurrentPage(item.group.groupID)"
+              (click)="goToPage(item.group.groupID, p)">{{ p }}</button>
 
             <button class="page-btn" (click)="goToPage(item.group.groupID, getCurrentPage(item.group.groupID) + 1)"
               [disabled]="getCurrentPage(item.group.groupID) === getTotalPages(item.group.groupID)">›</button>
@@ -191,10 +193,9 @@
 }
 
 <!-- Add Condition Option Modal -->
-@if (showAddOptionModal() && selectedGroupForAdd()) {
+@if (showAddOptionModal() && getSelectedGroupData()) {
 <app-add-condition-option
-  [groupID]="selectedGroupForAdd()!"
-  [criteriaCodePrefix]="getSelectedGroupPrefix()"
+  [groupData]="getSelectedGroupData()!"
   (close)="onCloseAddOptionModal()"
   (optionAdded)="onOptionAdded($event)">
 </app-add-condition-option>
@@ -204,6 +205,7 @@
 @if (showEditOptionModal() && editingOption()) {
 <app-edit-condition-option
   [optionData]="editingOption()!"
+  [questionType]="getQuestionTypeForOption(editingOption()!)"
   (close)="onCloseEditOptionModal()"
   (optionUpdated)="onOptionUpdated($event)">
 </app-edit-condition-option>

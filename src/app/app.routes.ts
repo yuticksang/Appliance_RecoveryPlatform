@@ -67,7 +67,7 @@ export const routes: Routes = [
         children: [
           {
             path: '',
-            loadComponent: () => import('./components/adminSide/appliance/appliance-list').then(m => m.ApplianceListComponent)
+            loadComponent: () => import('./components/adminSide/applianceList/appliance-list').then(m => m.ApplianceListComponent)
           },
           {
             path: 'price-list',
@@ -107,7 +107,7 @@ export const routes: Routes = [
           children: [
            {
              path: '',
-             loadComponent: () => import('./components/adminSide/appliance/appliance-list').then(m => m.ApplianceListComponent)
+             loadComponent: () => import('./components/adminSide/applianceList/appliance-list').then(m => m.ApplianceListComponent)
            },
            {
              path: 'price-list',
@@ -155,7 +155,7 @@ export const routes: Routes = [
          loadComponent: () => import('./components/adminSide/dashboard/dashboard').then(m => m.Dashboard)
 
        },
-      { path: '', redirectTo: 'sellers', pathMatch: 'full' } // Default redirect to sellers
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' } // Default redirect to dashboard
     ]
   },
 
@@ -171,7 +171,7 @@ export const routes: Routes = [
       },
       {
         path: 'transactions',
-        loadComponent: () => import('./components/buyerSide/dashboard/buyer-dashboard').then(m => m.BuyerDashboardComponent) // Placeholder
+        loadComponent: () => import('./components/buyerSide/transactionList/buyer-transaction-list').then(m => m.BuyerTransactionListComponent)
       },
       {
         path: 'appliances',

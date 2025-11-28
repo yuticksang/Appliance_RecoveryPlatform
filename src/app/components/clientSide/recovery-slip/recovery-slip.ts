@@ -2,6 +2,7 @@ import { Component, ElementRef, ViewChild, inject, OnInit } from '@angular/core'
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { AuthService } from '../../../services/auth.service';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
@@ -17,6 +18,7 @@ export class RecoverySlipComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private http = inject(HttpClient);
+  private auth = inject(AuthService);
 
   transactionId: string | number = '';
   loading = true;
@@ -39,6 +41,7 @@ export class RecoverySlipComponent implements OnInit {
     },
     delivery: { method: 'On-Demand Pickup', pickupDate: '', pickupTime: '' }
   };
+
 
   ngOnInit(): void {
     // Get transaction ID from route params
@@ -68,11 +71,7 @@ export class RecoverySlipComponent implements OnInit {
     this.loading = true;
     this.error = false;
 
-    // Get authentication token
-    const token = this.getAuthToken();
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-
-    this.http.get<any>(`http://localhost:3000/api/transactions/${this.transactionId}`, { headers }).subscribe({
+    this.http.get<any>(`http://localhost:3000/api/transactions/${this.transactionId}`, { headers:this.auth.getAuthHeaders() }).subscribe({
       next: (response) => {
         console.log('✅ Recovery slip data loaded:', response);
         this.mapTransactionToRecoveryData(response);
@@ -84,13 +83,6 @@ export class RecoverySlipComponent implements OnInit {
         this.loading = false;
       }
     });
-  }
-
-  /**
-   * Get the authentication token from localStorage
-   */
-  private getAuthToken(): string | null {
-    return localStorage.getItem('token') || localStorage.getItem('admin_token');
   }
 
   mapTransactionToRecoveryData(data: any): void {
@@ -123,7 +115,7 @@ export class RecoverySlipComponent implements OnInit {
         category: data.category || 'N/A',
         brand: data.brand || 'N/A',
         model: data.modelName || data.model || 'N/A',
-        tradeValue: `RM ${parseFloat(data.finalPrice || data.estimatedPrice || 0).toFixed(2)}`,
+        tradeValue: `RM ${parseFloat(data.finalPrice || data.estimatedPrice || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
         dynamicAnswers: data.dynamicAnswers || []
       },
       delivery: {
