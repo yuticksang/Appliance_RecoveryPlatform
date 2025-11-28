@@ -778,7 +778,7 @@ export class QuestionnairesComponent implements OnInit{
           this.isCalculating.set(false);
           
           if(!res){
-            this.alertService.error('Valuation calculation returned no data.');
+            this.alertService.error('Valuation calculation Error!');
             return;
           }
 
