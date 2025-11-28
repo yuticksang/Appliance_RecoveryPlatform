@@ -21,20 +21,10 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 export const getCategories = async (req: AuthRequest, res: Response) => {
   try {
     const result = await pool.query(
-      `SELECT
-        c."categoryID" as id,
-        c."categoryName" as name,
-        (
-          SELECT a.image_url
-          FROM "Appliance" a
-          WHERE a."categoryID" = c."categoryID"
-          AND a.image_url IS NOT NULL
-          AND a.image_url != ''
-          LIMIT 1
-        ) as image
-       FROM "Category" c
-       WHERE c."status" = 'ACTIVE'
-       ORDER BY c."categoryID" ASC`
+      `SELECT "categoryID" as id, "categoryName" as name 
+       FROM "Category" 
+       WHERE "status" = 'ACTIVE'
+       ORDER BY "categoryID" ASC`
     );
 
     res.json(result.rows);
