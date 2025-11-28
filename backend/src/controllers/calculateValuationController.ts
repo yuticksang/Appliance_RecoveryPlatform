@@ -111,14 +111,14 @@ export const calculateValuation = async (req: Request, res: Response) => {
 
         let markdowns: any[] = [];
 
-        if (conditionIds && Array.isArray(conditionIds) && conditionIds.length > 0) {
+        if (safeConditionIds.length > 0) {
             const markdownsQuery = await pool.query(
-               `SELECT bm."buyerID", bm."markdownPercentage", co."description"
+               `SELECT bm."buyerID", bm."markdownPercentage", bm."conditionID", co."description"
                  FROM "BuyerMarkdown" bm
                  JOIN "ConditionOption" co ON bm."conditionID" = co."conditionID"
                  WHERE bm."buyerID" = ANY($1)
                  AND bm."conditionID" = ANY($2)`,
-                [buyerIds, conditionIds]
+                [buyerIds, safeConditionIds]
             );
 
             markdowns = markdownsQuery.rows;
@@ -127,12 +127,26 @@ export const calculateValuation = async (req: Request, res: Response) => {
         let highestOffer = 0;
         let highestBuyerId: string | null = null;
         let winningMarkdownInfo = 'None';
+        let bestMarkdownTotal = 100;
 
         buyers.forEach(buyer => {
             const base = parseFloat(buyer.basePrice);
             const buyerId = buyer.buyerID;
             
             const applicableMarkdowns = markdowns.filter(m => m.buyerID === buyerId);
+
+            const hasValidRules = safeConditionIds.every((selectedId: string) => {
+                const match = applicableMarkdowns.find(m => m.conditionID === selectedId);
+
+                return match && match.markdownPercentage != null;
+            });
+
+            if (hasValidRules) {
+                console.log(`Valid Buyer List: ${buyerId}`);
+            } else {
+                
+                return; // Skip this buyer
+            }
 
             const totalMarkdownPercentage = applicableMarkdowns.reduce((sum, m) => {
                 return sum + parseFloat(m.markdownPercentage);
@@ -154,9 +168,17 @@ export const calculateValuation = async (req: Request, res: Response) => {
                     winningMarkdownInfo = 'None';
                 }
 
-            }
+            }else if(finalPrice === highestOffer){ // (Check Tie-Breaker)
+                if (effectiveMarkdown < bestMarkdownTotal) {
+                        highestBuyerId = buyerId; // Switch winner to this buyer
+                        bestMarkdownTotal = effectiveMarkdown;
+                            
+                        console.log(` Tie-Breaker: Switched to Buyer ${buyerId} (Lower Markdown: ${effectiveMarkdown}%)`);
+                        }
+                }
         })
 
+        console.log(`🧮 BuyerList: ${buyerIds}`);
         console.log(`🧮 Winner: ${highestBuyerId} | Price: RM${Math.round(highestOffer)} | Deductions: ${winningMarkdownInfo}`);
 
         // FINAL RESPONSE

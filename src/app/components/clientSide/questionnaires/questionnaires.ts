@@ -92,6 +92,7 @@ export class QuestionnairesComponent implements OnInit{
   valuationScore: number = 0;
   valuationLabel: string = '';
   valuationWorth: number = 0;
+  highestBuyerId: string | null = null;
   calculatedScores: any;
 
   // Helper method to format number with commas and 2 decimal places
@@ -811,15 +812,16 @@ export class QuestionnairesComponent implements OnInit{
           this.isCalculating.set(false);
           
           if(!res){
-            this.alertService.error('Valuation calculation returned no data.');
+            this.alertService.error('Valuation calculation Error!');
             return;
           }
 
           if (res.scoreLabel) {
             this.valuationWorth = res.valuationWorth || 0;
-             this.valuationScore = res.scoreLabel.totalScore;
-             this.valuationLabel = res.scoreLabel.classification;
-             this.calculatedScores = res.scoreLabel;
+            this.highestBuyerId = res.highestBuyerId || null;
+            this.valuationScore = res.scoreLabel.totalScore;
+            this.valuationLabel = res.scoreLabel.classification;
+            this.calculatedScores = res.scoreLabel;
           } else {
              // Fallback if data is missing
              this.valuationScore = 0;
@@ -970,6 +972,7 @@ export class QuestionnairesComponent implements OnInit{
       pickupDate: this.pickupDate,
       pickupTime: this.pickupTime,
       valuationWorth: this.valuationWorth,
+      highestBuyerId: this.highestBuyerId,
 
       // Send all answers as structured JSON
       questionAnswers: JSON.stringify(questionAnswers)
