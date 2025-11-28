@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AlertService } from '../../../services/alert.service';
 import { AuthService } from '../../../../auth/auth-service';
+import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
+
 
 interface Category {
   categoryID: string;
@@ -45,7 +47,7 @@ interface BuyerAppliance {
 @Component({
   selector: 'app-buyer-appliance-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BreadcrumbComponent],
   templateUrl: './buyer-appliance-list.html',
   styleUrls: ['./buyer-appliance-list.scss'],
   host: {

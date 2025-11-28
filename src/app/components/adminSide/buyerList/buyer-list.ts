@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { AddBuyerComponent } from './add/add-buyer';
 import { EditBuyerComponent } from './edit/edit-buyer';
 import { AlertService } from '../../../services/alert.service';
+import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
 
 type BuyerStatus = 'ACTIVE' | 'INACTIVE';
 
@@ -26,7 +27,7 @@ type SortDir = 'asc' | 'desc';
 @Component({
   selector: 'app-buyer-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, AddBuyerComponent, EditBuyerComponent],
+  imports: [CommonModule, FormsModule, AddBuyerComponent, EditBuyerComponent, BreadcrumbComponent],
   templateUrl: './buyer-list.html',
   styleUrls: ['./buyer-list.scss']
 })

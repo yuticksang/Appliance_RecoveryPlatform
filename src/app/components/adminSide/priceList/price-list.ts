@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AlertService } from '../../../services/alert.service';
+import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
+
 
 interface PriceRow {
   buyerID: string;
@@ -24,7 +26,7 @@ type SortDir = 'asc' | 'desc';
 @Component({
   selector: 'app-price-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BreadcrumbComponent],
   templateUrl: './price-list.html',
   styleUrls: ['./price-list.scss']
 })

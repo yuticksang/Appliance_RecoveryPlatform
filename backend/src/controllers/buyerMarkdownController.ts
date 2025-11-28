@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
 
-console.log('🔥 buyerMarkdownController.ts loaded! 🔥');
-
 // =====================================================
 // BUYER CONDITION GROUP & OPTION RETRIEVAL
 // =====================================================

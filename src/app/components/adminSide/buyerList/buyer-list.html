@@ -2,7 +2,7 @@
   <div class="buyers-container">
     <div class="page-head">
       <h1 class="page-title">Buyers' List</h1>
-      <div class="breadcrumb">Dashboard / <span>Buyer</span></div>
+      <app-breadcrumb></app-breadcrumb>
     </div>
 
     <!-- toolbar -->
@@ -83,13 +83,13 @@
 
     <!-- pager -->
     <div class="pager" *ngIf="!loading() && !error()">
-      <button class="page-btn" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1">9</button>
+      <button class="page-btn" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1">‹</button>
 
       <button class="page-btn" *ngFor="let p of pageNumbers()" [class.active]="p === currentPage()"
         (click)="goToPage(p)">{{ p }}</button>
 
       <button class="page-btn" (click)="goToPage(currentPage() + 1)"
-        [disabled]="currentPage() === totalPages()">:</button>
+        [disabled]="currentPage() === totalPages()">›</button>
 
       <div class="page-size">
         <select [ngModel]="itemsPerPage()" (ngModelChange)="setPageSize($event)">

@@ -3,8 +3,6 @@ import bcrypt from 'bcryptjs';
 import pool from '../config/database';
 import { createClient } from '@supabase/supabase-js';
 
-console.log('🔥🔥🔥 adminController.ts loaded! 🔥🔥🔥');
-
 // Initialize Supabase Client
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;

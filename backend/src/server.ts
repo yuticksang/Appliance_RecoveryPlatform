@@ -22,15 +22,15 @@ const PORT = process.env.PORT || 3000;
 // Test database connection on startup
 dbPool.connect()
   .then(client => {
-    console.log('✅ Connected to EasyRecovery DB');
+    console.log('Connected to EasyRecovery DB');
     client.release();
   })
-  .catch(err => console.error('❌ Database connection error:', err));
+  .catch(err => console.error('Database connection error:', err));
 
 // Setup automatic cron job for auto-cancellation
 // Runs every day at midnight (00:00)
 cron.schedule('0 0 * * *', async () => {
-  console.log('⏰ Running scheduled auto-cancellation check...');
+  console.log('Running scheduled auto-cancellation check...');
   try {
     // Case 3: Cancel transactions where responseDeadline has passed
     const case3Result = await dbPool.query(
@@ -50,7 +50,7 @@ cron.schedule('0 0 * * *', async () => {
          WHERE "transactionID" = ANY($1::varchar[])`,
         [case3TxnIds]
       );
-      console.log(`✅ Case 3: Cancelled ${case3Result.rows.length} transactions (no response to offer)`);
+      console.log(`Case 3: Cancelled ${case3Result.rows.length} transactions (no response to offer)`);
     }
 
     // Case 4: Cancel transactions where item is "Awaiting Pick Up" for more than 14 days
@@ -73,16 +73,16 @@ cron.schedule('0 0 * * *', async () => {
          WHERE "transactionID" = ANY($1::varchar[])`,
         [case4TxnIds]
       );
-      console.log(`✅ Case 4: Cancelled ${case4Result.rows.length} transactions (no pickup response)`);
+      console.log(`Case 4: Cancelled ${case4Result.rows.length} transactions (no pickup response)`);
     }
 
     const total = case3Result.rows.length + case4Result.rows.length;
-    console.log(`✅ Auto-cancellation complete. Total cancelled: ${total}`);
+    console.log(`Auto-cancellation complete. Total cancelled: ${total}`);
   } catch (error) {
-    console.error('❌ Error in scheduled auto-cancellation:', error);
+    console.error('Error in scheduled auto-cancellation:', error);
   }
 });
-console.log('⏰ Cron job scheduled: Auto-cancellation runs daily at midnight');
+console.log('Cron job scheduled: Auto-cancellation runs daily at midnight');
 
 // Middlewares
 app.use(helmet({
@@ -118,4 +118,4 @@ app.use(express.static(clientPath));
 app.get(/^\/(?!api|uploads).*/, (req, res) => res.sendFile(path.join(clientPath, 'index.html')));
 
 // Start server
-app.listen(PORT, () => console.log(`🚀 Running at http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Running at http://localhost:${PORT}`));

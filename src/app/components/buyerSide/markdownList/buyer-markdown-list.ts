@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AlertService } from '../../../services/alert.service';
+import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
+
 
 interface ConditionOption {
   conditionID: string;
@@ -33,7 +35,7 @@ interface Category {
 @Component({
   selector: 'app-buyer-markdown-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BreadcrumbComponent],
   templateUrl: './buyer-markdown-list.html',
   styleUrls: ['./buyer-markdown-list.scss']
 })

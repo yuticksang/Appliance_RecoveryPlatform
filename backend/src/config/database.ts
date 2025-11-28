@@ -13,11 +13,11 @@ const pool = new Pool({
 });
 
 pool.on('connect', () => {
-  console.log('✅ Connected to Supabase PostgreSQL database');
+  console.log('Connected to Supabase PostgreSQL database');
 });
 
 pool.on('error', (err) => {
-  console.error('❌ Database connection error:', err);
+  console.error('Database connection error:', err);
 });
 
 export default pool;

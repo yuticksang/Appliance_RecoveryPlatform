@@ -7,8 +7,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 );
 
-console.log('🔥🔥🔥 transactionController.ts LOADED - VERSION 2 WITH CONDITION FIX 🔥🔥🔥');
-
 /**
  * Get all transactions for a specific seller
  * Joins SubmittedAppliance, Transaction, ItemStatus, and Appliance tables
@@ -86,10 +84,8 @@ export const getTransactionsBySeller = async (req: Request, res: Response) => {
 /**
  * Get all transactions (admin view)
  */
-export const getAllTransactions = async (req: Request, res: Response) => {
+export const getAllTransactions = async (_req: Request, res: Response) => {
   try {
-    console.log('📦 Fetching all transactions');
-
     const result = await pool.query(
       `SELECT
         t."transactionID" as id,
@@ -123,8 +119,6 @@ export const getAllTransactions = async (req: Request, res: Response) => {
       ORDER BY sa."submissionDate" DESC`
     );
 
-    console.log(`✅ Found ${result.rows.length} total transactions`);
-
     res.json(result.rows);
   } catch (error) {
     console.error('❌ Error fetching all transactions:', error);
@@ -136,14 +130,8 @@ export const getAllTransactions = async (req: Request, res: Response) => {
  * Get a single transaction by ID
  */
 export const getTransactionById = async (req: Request, res: Response) => {
-  console.log('\n' + '='.repeat(60));
-  console.log('🚀🚀🚀 getTransactionById CALLED AT:', new Date().toISOString());
-  console.log('='.repeat(60));
-
   try {
     const { id } = req.params;
-
-    console.log('📦 Fetching transaction ID:', id);
 
     const result = await pool.query(
       `SELECT
@@ -199,7 +187,6 @@ export const getTransactionById = async (req: Request, res: Response) => {
     );
 
     if (result.rows.length === 0) {
-      console.log(`❌ Transaction not found: ${id}`);
       return res.status(404).json({ message: 'Transaction not found' });
     }
 
@@ -217,11 +204,6 @@ export const getTransactionById = async (req: Request, res: Response) => {
        ORDER BY cg."display_order", cs."selectedAt"`,
       [transaction.submittedApplianceID]
     );
-
-    console.log('📋 Raw conditions from DB:', conditionsResult.rows);
-
-    
-
 
     // Add selected issues to the response (for backward compatibility)
     transaction.selectedIssues = conditionsResult.rows.map(row => row.description || row.code);
@@ -373,10 +355,6 @@ export const getTransactionById = async (req: Request, res: Response) => {
     transaction.sellerPhotos = sellerPhotos;
     transaction.adminPhotos = adminPhotos;
 
-    console.log(`✅ Found transaction ${id}:`, transaction);
-    console.log(`📋 Selected issues:`, transaction.selectedIssues);
-    console.log(`📷 Photos:`, transaction.photos);
-
     // Disable caching to ensure fresh data is always returned
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
     res.set('Pragma', 'no-cache');
@@ -416,7 +394,6 @@ export const createTransaction = async (req: Request, res: Response) => {
       [transaction.transactionID]
     );
 
-    console.log('✅ Transaction created:', transaction.transactionID);
 
     res.status(201).json({
       message: 'Transaction created successfully',
@@ -472,7 +449,6 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
       }
 
       const txnResult = await pool.query(updateQuery, queryParams);
-      console.log('✅ Transaction status updated, rows affected:', txnResult.rowCount);
 
       if (txnResult.rowCount === 0) {
         console.error('❌ No transaction found with ID:', id);
@@ -495,15 +471,12 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
 
       // If no rows were updated, insert a new record
       if (updateResult.rowCount === 0) {
-        console.log('⚠️ No ItemStatus found, creating new record...');
         await pool.query(
           `INSERT INTO "ItemStatus" ("transactionID", "itemStatus", "updatedAt")
            VALUES ($1, $2, NOW())`,
           [id, itemStatus]
         );
-        console.log('✅ Item status created');
       } else {
-        console.log('✅ Item status updated, rows affected:', updateResult.rowCount);
       }
     }
 
@@ -536,7 +509,6 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
       [id]
     );
 
-    console.log('✅ Transaction status updated');
 
     res.json(result.rows[0]);
   } catch (error) {
@@ -588,7 +560,7 @@ export const uploadAdminPhotos = async (req: Request, res: Response) => {
       console.log(`📤 Uploading file: ${fileName} (${file.size} bytes)`);
 
       // Upload to admin-review-photos bucket
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('admin-review-photos')
         .upload(filePath, file.buffer, {
           contentType: file.mimetype,
@@ -600,7 +572,6 @@ export const uploadAdminPhotos = async (req: Request, res: Response) => {
         throw new Error(`Upload failed: ${uploadError.message}`);
       }
 
-      console.log('✅ File uploaded to Supabase:', uploadData?.path);
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
@@ -620,7 +591,6 @@ export const uploadAdminPhotos = async (req: Request, res: Response) => {
       console.log('💾 Saved to Photo table');
     }
 
-    console.log(`✅ Successfully uploaded ${uploadedUrls.length} admin photos`);
 
     res.status(200).json({
       message: 'Photos uploaded successfully',
@@ -652,7 +622,6 @@ export const updateTransaction = async (req: Request, res: Response) => {
       brand,
       model,
       category,
-      modelName,
       // All admin's dynamic answers (radio, checkbox, dropdown, image, textarea, file_upload)
       // Format: { [groupID]: conditionID | conditionID[] | textValue | base64Array }
       adminConditions,
@@ -688,7 +657,6 @@ export const updateTransaction = async (req: Request, res: Response) => {
 
       if (applianceResult.rows.length > 0) {
         applianceID = applianceResult.rows[0].applianceID;
-        console.log(`✅ Found applianceID: ${applianceID} for ${category} ${brand} ${model}`);
       } else {
         console.warn(`⚠️ No appliance found for ${category} ${brand} ${model}`);
       }
@@ -717,7 +685,6 @@ export const updateTransaction = async (req: Request, res: Response) => {
          WHERE "submittedApplianceID" = $${paramIndex}`,
         updateValues
       );
-      console.log(`✅ Updated SubmittedAppliance with fields: ${updateFields.join(', ')}`);
     }
 
     // Update Transaction status if provided
@@ -777,7 +744,6 @@ export const updateTransaction = async (req: Request, res: Response) => {
           [submittedApplianceID]
         );
 
-        console.log('✅ Deleted existing admin answers');
 
         // Process each group answer
         for (const [groupID, value] of Object.entries(adminConditions)) {
@@ -785,7 +751,6 @@ export const updateTransaction = async (req: Request, res: Response) => {
           console.log(`📋 Processing group ${groupID} (type: ${questionType}) with value:`, value);
 
           if (!value) {
-            console.log(`⚠️ Skipping empty value for group ${groupID}`);
             continue;
           }
 
@@ -815,7 +780,6 @@ export const updateTransaction = async (req: Request, res: Response) => {
           } else if (questionType === 'checkbox') {
             // Array of conditionIDs
             const conditionIDs = Array.isArray(value) ? value : [value];
-            console.log(`☑️ Saving ${conditionIDs.length} checkbox items`);
 
             for (const conditionID of conditionIDs) {
               if (!conditionID || (typeof conditionID === 'string' && conditionID.trim() === '')) continue;
@@ -874,7 +838,6 @@ export const updateTransaction = async (req: Request, res: Response) => {
           }
         }
 
-        console.log('✅ All admin dynamic answers saved successfully');
       } catch (conditionError) {
         console.error('❌ Error saving admin conditions:', conditionError);
         console.error('❌ Error details:', {
@@ -902,7 +865,6 @@ export const updateTransaction = async (req: Request, res: Response) => {
           [submittedApplianceID]
         );
 
-        console.log('✅ Deleted existing admin photos');
 
         // Insert new admin photos with remark='admin' to distinguish from seller photos
         for (const photo of photos) {
@@ -915,7 +877,6 @@ export const updateTransaction = async (req: Request, res: Response) => {
           }
         }
 
-        console.log('✅ Admin photos saved successfully');
       } catch (photoError) {
         console.error('❌ Error saving photos:', photoError);
         console.error('❌ Photo error details:', {
@@ -928,7 +889,6 @@ export const updateTransaction = async (req: Request, res: Response) => {
       console.log('📷 No photos to update (photos not provided or empty array)');
     }
 
-    console.log('✅ Transaction updated successfully');
 
     res.json({ message: 'Transaction updated successfully' });
   } catch (error) {
@@ -986,7 +946,6 @@ export const updateSubmissionDetails = async (req: Request, res: Response) => {
          WHERE "submittedApplianceID" = $2`,
         [modelId, submittedApplianceID]
       );
-      console.log('✅ Updated appliance model');
     }
 
     // Update pickup details if provided
@@ -1025,7 +984,6 @@ export const updateSubmissionDetails = async (req: Request, res: Response) => {
             submittedApplianceID
           ]
         );
-        console.log('✅ Updated pickup details');
       }
     }
 
@@ -1062,7 +1020,6 @@ export const updateSubmissionDetails = async (req: Request, res: Response) => {
           }
         }
       }
-      console.log('✅ Updated condition selections');
     }
 
     // Mark transaction as updated
@@ -1071,7 +1028,6 @@ export const updateSubmissionDetails = async (req: Request, res: Response) => {
       [id]
     );
 
-    console.log('✅ Submission details updated successfully');
 
     res.json({
       message: 'Submission details updated successfully',
@@ -1155,7 +1111,6 @@ export const updateCustomerInfo = async (req: Request, res: Response) => {
       ]
     );
 
-    console.log('✅ Customer information updated successfully');
 
     // Mark transaction as updated
     await pool.query(

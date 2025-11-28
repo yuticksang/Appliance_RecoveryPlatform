@@ -1,11 +1,11 @@
-<main class="appliance-page">
-  <div class="appliance-container">
+<main class="transactions-page">
+  <div class="transactions-container">
     <div class="page-head">
-      <h1 class="page-title">Appliance's Price List</h1>
+      <h1 class="page-title">My Transactions</h1>
       <app-breadcrumb></app-breadcrumb>
     </div>
 
-    <!-- toolbar -->
+    <!-- Toolbar -->
     <div class="toolbar">
       <div class="toolbar-left">
         <button class="clear-btn" (click)="clearFilters()">Clear Filters</button>
@@ -14,7 +14,7 @@
         <!-- Category Filter -->
         <div class="select-wrapper">
           <select [ngModel]="selectedCategory()" (ngModelChange)="selectedCategory.set($event); onFilterChange()">
-            <option value="">All Categories</option>
+            <option value="all">All Categories</option>
             <option *ngFor="let cat of uniqueCategories()" [value]="cat">{{ cat }}</option>
           </select>
         </div>
@@ -22,17 +22,21 @@
         <!-- Brand Filter -->
         <div class="select-wrapper">
           <select [ngModel]="selectedBrand()" (ngModelChange)="selectedBrand.set($event); onFilterChange()">
-            <option value="">All Brands</option>
+            <option value="all">All Brands</option>
             <option *ngFor="let brand of uniqueBrands()" [value]="brand">{{ brand }}</option>
           </select>
         </div>
 
-        <!-- Buyer Filter -->
-        <div class="select-wrapper">
-          <select [ngModel]="selectedBuyer()" (ngModelChange)="selectedBuyer.set($event); onFilterChange()">
-            <option value="">All Buyers</option>
-            <option *ngFor="let buyer of uniqueBuyers()" [value]="buyer.id">{{ buyer.id }}</option>
-          </select>
+        <!-- Min Price -->
+        <div class="price-input">
+          <input type="number" placeholder="Min Price" [value]="minPrice() ?? ''"
+            (input)="onMinPriceChange($any($event.target).value)" min="0" step="0.01" />
+        </div>
+
+        <!-- Max Price -->
+        <div class="price-input">
+          <input type="number" placeholder="Max Price" [value]="maxPrice() ?? ''"
+            (input)="onMaxPriceChange($any($event.target).value)" min="0" step="0.01" />
         </div>
 
         <!-- Search -->
@@ -44,58 +48,61 @@
     </div>
 
     <!-- Loading state -->
-    <div *ngIf="loading()" class="loading">Loading prices...</div>
+    <div *ngIf="loading()" class="loading">Loading transactions...</div>
 
     <!-- Error state -->
     <div *ngIf="error()" class="error-message">{{ error() }}</div>
 
-    <!-- table -->
+    <!-- Table -->
     <div class="table-wrap" *ngIf="!loading() && !error()">
       <table class="grid">
         <thead>
           <tr>
             <th class="narrow">#</th>
-            <th (click)="setSort('buyer_id')" class="sortable">
-              Buyer ID <span class="sort-icon">{{ getSortIcon('buyer_id') }}</span>
+            <th class="non-sortable">Image</th>
+            <th (click)="setSort('category')" class="sortable">
+              Category <span class="sort-icon">{{ getSortIcon('category') }}</span>
             </th>
-            <th (click)="setSort('applianceID')" class="sortable">
-              Appliance ID <span class="sort-icon">{{ getSortIcon('applianceID') }}</span>
+            <th (click)="setSort('brand')" class="sortable">
+              Brand <span class="sort-icon">{{ getSortIcon('brand') }}</span>
             </th>
-            <th class="non-sortable">Model Code</th>
-            <th class="non-sortable">Model Name</th>
-            <th (click)="setSort('categoryName')" class="sortable">
-              Category <span class="sort-icon">{{ getSortIcon('categoryName') }}</span>
+            <th (click)="setSort('model')" class="sortable">
+              Model <span class="sort-icon">{{ getSortIcon('model') }}</span>
             </th>
-            <th (click)="setSort('brandName')" class="sortable">
-              Brand <span class="sort-icon">{{ getSortIcon('brandName') }}</span>
+            <th (click)="setSort('finalPrice')" class="sortable">
+              Final Price <span class="sort-icon">{{ getSortIcon('finalPrice') }}</span>
             </th>
-            <th (click)="setSort('basePrice')" class="sortable">
-              Price <span class="sort-icon">{{ getSortIcon('basePrice') }}</span>
+            <th (click)="setSort('submittedDate')" class="sortable">
+              Submitted Date <span class="sort-icon">{{ getSortIcon('submittedDate') }}</span>
             </th>
           </tr>
         </thead>
 
         <tbody>
-          <tr *ngFor="let r of paged(); let i = index">
+          <tr *ngFor="let t of paged(); let i = index">
             <td class="narrow">{{ (currentPage() - 1) * itemsPerPage() + i + 1 }}</td>
-            <td>{{ r.buyer_id }}</td>
-            <td>{{ r.applianceID }}</td>
-            <td>{{ r.modelCode }}</td>
-            <td>{{ r.modelName }}</td>
-            <td>{{ r.categoryName || '---' }}</td>
-            <td>{{ r.brandName || '---' }}</td>
-            <td class="price-cell">{{ formatPrice(r.basePrice) }}</td>
+            <td class="image-cell">
+              <img [src]="getImageSrc(t.imageUrl)" alt="{{ t.modelName }}" class="appliance-image">
+            </td>
+            <td>{{ t.category }}</td>
+            <td>{{ t.brand }}</td>
+            <td>
+              <div>{{ t.model }}</div>
+              <div class="model-name">{{ t.modelName }}</div>
+            </td>
+            <td class="price-cell">{{ formatPrice(t.finalPrice) }}</td>
+            <td>{{ formatDate(t.submittedDate) }}</td>
           </tr>
         </tbody>
       </table>
 
       <!-- Empty State -->
       <div *ngIf="paged().length === 0" class="empty-state">
-        <p>No prices found.</p>
+        <p>No transactions found.</p>
       </div>
     </div>
 
-    <!-- pager -->
+    <!-- Pager -->
     <div class="pager" *ngIf="!loading() && !error() && paged().length > 0">
       <button class="page-btn" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1">‹</button>
 

@@ -7,6 +7,8 @@ import { AddConditionGroupComponent } from './add-group/add-condition-group';
 import { EditConditionGroupComponent } from './edit-group/edit-condition-group';
 import { AddConditionOptionComponent } from './add-option/add-condition-option';
 import { EditConditionOptionComponent } from './edit-option/edit-condition-option';
+import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
+
 
 interface ConditionGroup {
   groupID: string;
@@ -45,7 +47,8 @@ type SortDir = 'asc' | 'desc';
     AddConditionGroupComponent,
     EditConditionGroupComponent,
     AddConditionOptionComponent,
-    EditConditionOptionComponent
+    EditConditionOptionComponent,
+    BreadcrumbComponent
   ],
   templateUrl: './condition-list.html',
   styleUrls: ['./condition-list.scss']
