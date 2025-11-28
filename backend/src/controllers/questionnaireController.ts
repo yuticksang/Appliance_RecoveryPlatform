@@ -240,6 +240,7 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       modelId,
       addressId,
       valuationWorth,
+      highestBuyerId,
       pickupDate,
       pickupTime,
       questionAnswers: questionAnswersJson
@@ -407,10 +408,10 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
     // Create Transaction record
     await client.query(
       `INSERT INTO "Transaction" (
-        "submittedApplianceID", "sellerID",
+        "submittedApplianceID", "sellerID", "buyerID",
         "transactionStatus", "createdAt", "updatedAt"
-      ) VALUES ($1, $2, 'Under Review', NOW(), NOW())`,
-      [finalId, sellerId]
+      ) VALUES ($1, $2, $3, 'Under Review', NOW(), NOW())`,
+      [finalId, sellerId, highestBuyerId]
     );
 
     // Get transactionID
