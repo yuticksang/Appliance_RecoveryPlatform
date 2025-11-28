@@ -392,10 +392,10 @@ $blue-2: #1a73e8;
 .main-content {
   font-family: $Space;
   margin-left: 300px;
-  padding: 30px 30px;
+  padding: 0 0 30px 20px;
   transition: margin-left 0.3s ease, padding 0.3s ease;
 
-   &.expanded { 
+   &.expanded {
     margin-left: 80px;
     padding-left: 20px;
   }
@@ -413,7 +413,7 @@ $blue-2: #1a73e8;
   display: flex;
   justify-content: right;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 10px;
   border-bottom: #d1d1d1 1px solid;
 }
 

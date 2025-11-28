@@ -7,9 +7,28 @@ import {
   updateTransactionStatus,
   updateTransaction,
   updateSubmissionDetails,
-  updateCustomerInfo
+  updateCustomerInfo,
+  uploadAdminPhotos
 } from '../controllers/transactionController';
 import { verifyToken } from '../middleware/authMiddleware';
+import multer from 'multer';
+
+// Multer config for photo uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB max
+    files: 10
+  },
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type'));
+    }
+  }
+});
 
 const router = Router();
 
@@ -36,6 +55,9 @@ router.put('/:id/customer-info', updateCustomerInfo);
 
 // Update submission details (seller edit when Awaiting Pick Up)
 router.put('/:id/submission', updateSubmissionDetails);
+
+// Upload admin photos to Supabase Storage
+router.post('/:id/photos', upload.array('photos', 10), uploadAdminPhotos);
 
 // Update transaction (full edit - admin)
 router.put('/:id', updateTransaction);

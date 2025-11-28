@@ -10,21 +10,20 @@ $blue-2: #1a73e8;
 }
 
 .transactions-page {
-  padding: 2rem 0;
   min-height: calc(100vh - 200px);
   font-family: $Space;
 }
 
 .transactions-container {
   max-width: 1600px;
-  margin: 0 auto;
-  padding: 0 2rem;
+  margin: 0px;
+  padding: 0;
 }
 
 .page-head {
   display: grid;
   gap: 6px;
-  margin-bottom: 24px;
+  margin-bottom: 14px;
 
   .page-title {
     font-size: 28px;
@@ -35,8 +34,28 @@ $blue-2: #1a73e8;
   .breadcrumb {
     font-size: 15px;
     color: $muted;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 
-    span {
+    .breadcrumb-link {
+      color: #4299e1;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      font-weight: 500;
+
+      &:hover {
+        color: #2c5282;
+        text-decoration: underline;
+      }
+    }
+
+    .breadcrumb-separator {
+      color: #cbd5e0;
+      font-weight: 400;
+    }
+
+    .breadcrumb-current {
       color: $ink;
       font-weight: 500;
     }

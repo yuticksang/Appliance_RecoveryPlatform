@@ -202,6 +202,18 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   // Mapping of groupID to display name (e.g., {"CG001": "Functional Status", "CG002": "Appearance Status"})
   conditionGroupNames: { [key: string]: string } = {};
 
+  // Seller's submitted conditions
+  sellerConditions: { [key: string]: string | string[] } = {};
+
+  // Admin's reviewed conditions (after review)
+  adminConditions: { [key: string]: string | string[] } = {};
+
+  // Seller's submitted photos
+  sellerPhotos: string[] = [];
+
+  // Admin's review photos
+  adminPhotos: string[] = [];
+
   // Expose Array to template for Array.isArray() check
   Array = Array;
 
@@ -472,17 +484,33 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Check if admin has reviewed the transaction
+  hasBeenReviewed: boolean = false;
+
   loadRealDetails(data: any): void {
     // Load dynamic condition groups from backend
     this.conditionGroups = data.conditionGroups || {};
     this.conditionGroupNames = data.conditionGroupNames || {};
 
+    // Load seller's and admin's conditions
+    this.sellerConditions = data.sellerConditions || {};
+    this.adminConditions = data.adminConditions || {};
+
+    // Load seller's and admin's photos
+    this.sellerPhotos = data.sellerPhotos || [];
+    this.adminPhotos = data.adminPhotos || [];
 
     console.log('🔍 Loaded conditionGroups:', this.conditionGroups);
     console.log('🔍 Loaded conditionGroupNames:', this.conditionGroupNames);
+    console.log('🔍 Loaded sellerConditions:', this.sellerConditions);
+    console.log('🔍 Loaded adminConditions:', this.adminConditions);
 
-    // If awaiting confirmation, show before/after review comparison
-    if (this.isAwaitingConfirmation) {
+    // Check if admin has reviewed (adminConditions exist or finalPrice exists)
+    this.hasBeenReviewed = !!(Object.keys(this.adminConditions).length > 0 || data.finalPrice || data.finalNote);
+    console.log('🔍 Has been reviewed:', this.hasBeenReviewed, '(adminConditions:', Object.keys(this.adminConditions).length, 'finalPrice:', data.finalPrice, ')');
+
+    // If awaiting confirmation or has been reviewed, show before/after review comparison
+    if (this.isAwaitingConfirmation || this.hasBeenReviewed) {
       // Before review - original seller submission
       this.beforeReview = {
         estimatedPrice: data.estimatedPrice || 0,
@@ -493,15 +521,17 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         note: data.initialNote || data.note || '' // Seller's original note
       };
 
-      // After review - admin's assessment (revised price & condition)
-      this.afterReview = {
-        estimatedPrice: data.finalPrice || data.estimatedPrice || 0,
-        brand: data.brand,
-        model: data.model,
-        category: data.category,
-        score: 0, // TODO: Will be fetched from other team's API
-        note: data.finalNote || '' // Admin's review note
-      };
+      // After review - admin's assessment (only if reviewed)
+      if (this.hasBeenReviewed) {
+        this.afterReview = {
+          estimatedPrice: data.finalPrice || data.estimatedPrice || 0,
+          brand: data.brand,
+          model: data.model,
+          category: data.category,
+          score: 0, // TODO: Will be fetched from other team's API
+          note: data.finalNote || '' // Admin's review note
+        };
+      }
     } else {
       // For other statuses, use current appliance info
       this.applianceInfo = {
@@ -529,8 +559,19 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   // Helper to get display name for a groupID (e.g., "CG001" -> "Functional Status")
   getGroupDisplayName(groupId: string): string {
     const displayName = this.conditionGroupNames[groupId] || groupId;
-    console.log(`🔍 getGroupDisplayName(${groupId}) = ${displayName}`);
     return displayName;
+  }
+
+  // Check if admin has made changes to conditions
+  hasAdminReviewedConditions(): boolean {
+    return Object.keys(this.adminConditions).length > 0;
+  }
+
+  // Get list of condition group IDs for iteration
+  getConditionGroupIds(): string[] {
+    // Get all unique group IDs from conditionGroups definition
+    // Sort alphabetically to ensure consistent display order (CG001, CG002, CG003, etc.)
+    return Object.keys(this.conditionGroupNames).sort();
   }
 
   goBack(): void {
