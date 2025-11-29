@@ -229,24 +229,6 @@ $Space: 'Space Grotesk', sans-serif;
   display: block;
 }
 
-.info-box {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  border-radius: 6px;
-  color: #1e40af;
-  font-size: 13px;
-  margin-bottom: 20px;
-
-  i {
-    font-size: 18px;
-    flex-shrink: 0;
-  }
-}
-
 .form-actions {
   display: flex;
   gap: 12px;

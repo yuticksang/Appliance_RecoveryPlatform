@@ -21,6 +21,7 @@ export class EditBrandComponent implements OnInit {
   @Input() brandData!: Brand;
 
   editBrandForm: FormGroup;
+  originalData: Brand | null = null;
 
   constructor(private fb: FormBuilder) {
     this.editBrandForm = this.fb.group({
@@ -31,6 +32,9 @@ export class EditBrandComponent implements OnInit {
 
   ngOnInit() {
     if (this.brandData) {
+      // Store original data
+      this.originalData = { ...this.brandData };
+
       this.editBrandForm.patchValue({
         brandName: this.brandData.brandName,
         description: this.brandData.description
@@ -40,6 +44,16 @@ export class EditBrandComponent implements OnInit {
 
   get brandName() { return this.editBrandForm.get('brandName'); }
   get description() { return this.editBrandForm.get('description'); }
+
+  // Check if any field has changed
+  get hasChanges(): boolean {
+    if (!this.originalData) return false;
+
+    return (
+      this.brandName?.value !== this.originalData.brandName ||
+      (this.description?.value || '') !== (this.originalData.description || '')
+    );
+  }
 
   onClose() {
     this.close.emit();

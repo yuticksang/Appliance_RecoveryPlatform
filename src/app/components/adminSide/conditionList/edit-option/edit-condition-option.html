@@ -7,7 +7,7 @@
 
     <form [formGroup]="editOptionForm" (ngSubmit)="onSubmit()">
       <div class="form-group">
-        <label for="description">Description <span class="required">*</span></label>
+        <label for="description">Description</label>
         <input id="description" type="text" formControlName="description" placeholder="e.g., Fully Functioning"
           [class.error]="description?.invalid && description?.touched">
 
@@ -17,14 +17,14 @@
       </div>
 
       <div class="form-group">
-        <label for="status">Status <span class="required">*</span></label>
+        <label for="status">Status</label>
         <select id="status" formControlName="status">
           <option value="ACTIVE">Active</option>
           <option value="INACTIVE">Inactive</option>
         </select>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" *ngIf="isImageType">
         <label for="image">Upload Image</label>
 
         <!-- Image Preview -->
@@ -63,10 +63,36 @@
         <small class="hint">Select which appliance categories this condition applies to</small>
       </div>
 
+      <!-- Show changes summary -->
+      <div *ngIf="hasChanges" class="changes-summary">
+        <h4>Changes to be saved:</h4>
+        <ul>
+          <li *ngIf="description?.value !== (originalData?.description || '')">
+            Description: "{{ originalData?.description || '(none)' }}" → "{{ description?.value }}"
+          </li>
+          <li *ngIf="status?.value !== originalData?.status">
+            Status: "{{ originalData?.status }}" → "{{ status?.value }}"
+          </li>
+          <li *ngIf="isChecklistType && (question?.value || '') !== (originalData?.question || '')">
+            Question: "{{ originalData?.question || '(none)' }}" → "{{ question?.value || '(none)' }}"
+          </li>
+          <li *ngIf="selectedFile">
+            Image: Will be updated (new image selected)
+          </li>
+          <li *ngIf="removeCurrentImage">
+            Image: Will be removed
+          </li>
+          <li *ngIf="!areSetsEqual(selectedCategories, originalSelectedCategories)">
+            Categories: Updated ({{ selectedCategories.size }} selected)
+          </li>
+        </ul>
+      </div>
+
       <div class="form-actions">
         <button type="button" class="btn-secondary" (click)="onClose()">Cancel</button>
-        <button type="submit" class="btn-primary" [disabled]="editOptionForm.invalid">
-          Update Condition
+        <button type="submit" class="btn-primary" [disabled]="editOptionForm.invalid || !hasChanges"
+          [title]="!hasChanges ? 'No changes to save' : editOptionForm.invalid ? 'Please fill all required fields' : 'Save changes'">
+          {{ hasChanges ? 'Save Changes' : 'No Changes' }}
         </button>
       </div>
     </form>

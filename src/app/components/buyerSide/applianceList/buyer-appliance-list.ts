@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AlertService } from '../../../services/alert.service';
 import { AuthService } from '../../../../auth/auth-service';
+import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
+
 
 interface Category {
   categoryID: string;
@@ -45,7 +47,7 @@ interface BuyerAppliance {
 @Component({
   selector: 'app-buyer-appliance-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BreadcrumbComponent],
   templateUrl: './buyer-appliance-list.html',
   styleUrls: ['./buyer-appliance-list.scss'],
   host: {
@@ -75,6 +77,12 @@ export class BuyerApplianceListComponent implements OnInit {
   selectedAppliance = signal<string>('');
   basePrice = signal<number | null>(null);
 
+  // Filters
+  filterCategory = signal<string>('all');
+  filterBrand = signal<string>('all');
+  filterPriceMin = signal<number | null>(null);
+  filterPriceMax = signal<number | null>(null);
+
   // Pagination
   itemsPerPage = signal<number>(10);
   currentPage = signal<number>(1);
@@ -82,7 +90,7 @@ export class BuyerApplianceListComponent implements OnInit {
   search = signal<string>('');
 
   // Sorting
-  sortKey = signal<SortKey>('applianceID');
+  sortKey = signal<SortKey>('modelCode');
   sortDir = signal<SortDir>('asc');
 
   ngOnInit() {
@@ -120,6 +128,10 @@ export class BuyerApplianceListComponent implements OnInit {
       filtered = filtered.filter(a => a.brandID === brandId);
     }
 
+    // Exclude appliances that buyer has already added
+    const addedApplianceIds = new Set(this.buyerAppliances().map(ba => ba.applianceID));
+    filtered = filtered.filter(a => !addedApplianceIds.has(a.applianceID));
+
     return filtered;
   });
 
@@ -129,11 +141,59 @@ export class BuyerApplianceListComponent implements OnInit {
     return this.appliances().find(a => a.applianceID === applianceId);
   });
 
+  // Get unique categories from buyer appliances
+  uniqueCategories = computed(() => {
+    const categories = this.buyerAppliances()
+      .map(a => a.categoryName)
+      .filter((name): name is string => !!name);
+    return [...new Set(categories)].sort();
+  });
+
+  // Get unique brands from buyer appliances
+  uniqueBrands = computed(() => {
+    const brands = this.buyerAppliances()
+      .map(a => a.brandName)
+      .filter((name): name is string => !!name);
+    return [...new Set(brands)].sort();
+  });
+
+  // Calculate available appliances count
+  availableAppliancesCount = computed(() => {
+    const totalAppliances = this.appliances().length;
+    const addedAppliances = this.buyerAppliances().length;
+    return totalAppliances - addedAppliances;
+  });
+
+  // Get completion percentage
+  completionPercentage = computed(() => {
+    const totalAppliances = this.appliances().length;
+    const addedAppliances = this.buyerAppliances().length;
+
+    if (totalAppliances === 0) return 0;
+    return Math.round((addedAppliances / totalAppliances) * 100);
+  });
+
+  // Check if setup is complete
+  isSetupComplete = computed(() => {
+    return this.availableAppliancesCount() === 0;
+  });
+
+  // Get all available appliances for Add modal (excluding already added)
+  availableAppliancesForAdd = computed(() => {
+    const addedApplianceIds = new Set(this.buyerAppliances().map(ba => ba.applianceID));
+    return this.appliances().filter(a => !addedApplianceIds.has(a.applianceID));
+  });
+
   // Filtered and paginated data
   filteredBuyerAppliances = computed(() => {
     const search = this.search().toLowerCase();
+    const categoryFilter = this.filterCategory();
+    const brandFilter = this.filterBrand();
+    const priceMin = this.filterPriceMin();
+    const priceMax = this.filterPriceMax();
     let filtered = this.buyerAppliances();
 
+    // Apply search filter
     if (search) {
       filtered = filtered.filter(item =>
         (item.categoryName || '').toLowerCase().includes(search) ||
@@ -142,6 +202,24 @@ export class BuyerApplianceListComponent implements OnInit {
         (item.modelName || '').toLowerCase().includes(search) ||
         (item.basePrice?.toString() || '').includes(search)
       );
+    }
+
+    // Apply category filter
+    if (categoryFilter && categoryFilter !== 'all') {
+      filtered = filtered.filter(item => item.categoryName === categoryFilter);
+    }
+
+    // Apply brand filter
+    if (brandFilter && brandFilter !== 'all') {
+      filtered = filtered.filter(item => item.brandName === brandFilter);
+    }
+
+    // Apply price range filter
+    if (priceMin !== null) {
+      filtered = filtered.filter(item => item.basePrice >= priceMin);
+    }
+    if (priceMax !== null) {
+      filtered = filtered.filter(item => item.basePrice <= priceMax);
     }
 
     // Apply sorting
@@ -170,6 +248,11 @@ export class BuyerApplianceListComponent implements OnInit {
 
   totalPages = computed(() => {
     return Math.max(1, Math.ceil(this.filteredBuyerAppliances().length / this.itemsPerPage()));
+  });
+
+  pageNumbers = computed(() => {
+    const total = this.totalPages();
+    return Array.from({ length: total }, (_, i) => i + 1);
   });
 
   paginatedData = computed(() => {
@@ -305,6 +388,11 @@ export class BuyerApplianceListComponent implements OnInit {
     this.selectedBrand.set('');
     this.selectedAppliance.set('');
     this.basePrice.set(null);
+  }
+
+  selectApplianceForAdd(applianceID: string) {
+    this.selectedAppliance.set(applianceID);
+    this.basePrice.set(null); // Reset price when selecting different appliance
   }
 
   onCategoryChange(categoryId: string) {
@@ -445,6 +533,37 @@ export class BuyerApplianceListComponent implements OnInit {
 
   onSearchInput(value: string) {
     this.search.set(value);
+    this.currentPage.set(1);
+  }
+
+  onCategoryFilterChange(value: string) {
+    this.filterCategory.set(value);
+    this.currentPage.set(1);
+  }
+
+  onBrandFilterChange(value: string) {
+    this.filterBrand.set(value);
+    this.currentPage.set(1);
+  }
+
+  onPriceMinChange(value: string) {
+    const num = value ? parseFloat(value) : null;
+    this.filterPriceMin.set(num);
+    this.currentPage.set(1);
+  }
+
+  onPriceMaxChange(value: string) {
+    const num = value ? parseFloat(value) : null;
+    this.filterPriceMax.set(num);
+    this.currentPage.set(1);
+  }
+
+  clearFilters() {
+    this.filterCategory.set('all');
+    this.filterBrand.set('all');
+    this.filterPriceMin.set(null);
+    this.filterPriceMax.set(null);
+    this.search.set('');
     this.currentPage.set(1);
   }
 

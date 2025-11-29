@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { AlertService } from '../../../services/alert.service';
 import { AddBrandComponent } from './add/add-brand';
 import { EditBrandComponent } from './edit/edit-brand';
+import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
 
 type BrandStatus = 'ACTIVE' | 'INACTIVE';
 
@@ -23,7 +24,7 @@ type SortDir = 'asc' | 'desc';
 @Component({
   selector: 'app-brand-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, AddBrandComponent, EditBrandComponent],
+  imports: [CommonModule, FormsModule, AddBrandComponent, EditBrandComponent, BreadcrumbComponent],
   templateUrl: './brand-list.html',
   styleUrls: ['./brand-list.scss']
 })

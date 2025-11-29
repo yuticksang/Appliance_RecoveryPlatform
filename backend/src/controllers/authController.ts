@@ -12,6 +12,9 @@ interface JwtPayload {
   email: string | null; // Admins don't have email
   username: string;
   userType: string;
+  buyerId?: string | null;
+  sellerId?: string | null;
+  adminId?: string | null;
 }
 
 export const register = async (req: Request, res: Response) => {
@@ -218,7 +221,10 @@ export const login = async (req: Request, res: Response) => {
       userId: user.userID,
       email: user.email,
       username: user.username,
-      userType: user.user_type
+      userType: user.user_type,
+      buyerId: user.buyer_id || null,
+      sellerId: user.seller_id || null,
+      adminId: user.admin_id || null
     };
 
     const token = jwt.sign(payload, jwtSecret, { expiresIn: '24h' } as jwt.SignOptions);
@@ -282,8 +288,9 @@ export const forgotPassword = async (req: Request, res: Response) => {
     try {
       await sendPasswordResetEmail(user.email, user.name, resetToken);
       console.log(`✅ Password reset email sent to: ${user.email}`);
-    } catch (emailError) {
+    } catch (emailError: any) {
       console.error('❌ Failed to send password reset email:', emailError);
+      console.error('❌ Email error details:', emailError.message, emailError.code);
       console.log(`Reset link (for testing): ${process.env.FRONTEND_URL || 'http://localhost:4200'}/reset-password/${resetToken}`);
     }
 
@@ -673,7 +680,10 @@ export const googleLogin = async (req: Request, res: Response) => {
       userId: user.userID,
       email: user.email,
       username: user.username,
-      userType: user.user_type
+      userType: user.user_type,
+      buyerId: user.buyer_id || null,
+      sellerId: user.seller_id || null,
+      adminId: user.admin_id || null
     };
 
     const token = jwt.sign(jwtPayload, process.env.JWT_SECRET as string, {

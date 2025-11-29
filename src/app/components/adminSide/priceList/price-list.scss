@@ -33,13 +33,36 @@ $Space: 'Space Grotesk', sans-serif;
     gap: 12px;
     margin-bottom: 12px;
 
+    .toolbar-left {
+        display: flex;
+        gap: 10px;
+
+        .clear-btn {
+            height: 36px;
+            padding: 0 16px;
+            border: 1px solid $line;
+            border-radius: 8px;
+            background: white;
+            color: $ink;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+
+            &:hover {
+                background: #f3f4f6;
+                border-color: $blue-2;
+                color: $blue-2;
+            }
+        }
+    }
+
     .toolbar-right {
         display: flex;
         gap: 10px;
         margin-left: auto;
     }
 
-    .filter-dropdown {
+    .select-wrapper {
         select {
             height: 36px;
             border: 1px solid $line;
@@ -126,9 +149,16 @@ $Space: 'Space Grotesk', sans-serif;
 
         &.sortable {
             cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+
+            &:hover {
+                background: #f3f4f6;
+                color: $ink;
+            }
         }
 
-        .sort {
+        .sort-icon {
             margin-left: 6px;
             color: #9ca3af;
         }

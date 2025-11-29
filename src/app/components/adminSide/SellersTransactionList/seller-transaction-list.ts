@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AlertService } from '../../../services/alert.service';
 import { TransactionService, Transaction } from '../../../services/transaction.service';
+import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
 
 @Component({
   selector: 'app-seller-transaction-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BreadcrumbComponent],
   templateUrl: './seller-transaction-list.html',
   styleUrls: ['./seller-transaction-list.scss']
 })

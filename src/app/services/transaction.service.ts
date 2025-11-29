@@ -19,10 +19,7 @@ export interface Transaction {
   submittedDate: Date;
   estimatedPrice?: number;
   finalPrice?: number;
-  initialNote?: string; // Note from seller during submission
-  finalNote?: string;   // Note from admin during review
-  // For backward compatibility
-  note?: string; // Maps to initialNote for list view
+  note?: string; // Note
 }
 
 @Injectable({
@@ -78,9 +75,7 @@ export class TransactionService {
             submittedDate: new Date(t.submittedDate || t.submissionDate || t.createdAt),
             estimatedPrice: t.estimatedPrice || t.initialOfferPrice || 0,
             finalPrice: t.finalPrice || t.finalOfferPrice,
-            initialNote: t.initialNote,
-            finalNote: t.finalNote,
-            note: t.initialNote || t.note // Backward compatibility
+            note: t.note || ''
           }));
         }),
         catchError(error => {
@@ -114,9 +109,7 @@ export class TransactionService {
             submittedDate: new Date(t.submittedDate || t.submissionDate || t.createdAt),
             estimatedPrice: t.estimatedPrice || t.initialOfferPrice || 0,
             finalPrice: t.finalPrice || t.finalOfferPrice,
-            initialNote: t.initialNote,
-            finalNote: t.finalNote,
-            note: t.initialNote || t.note // Backward compatibility
+            note: t.note || ''
           }));
         }),
         catchError(error => {
@@ -157,15 +150,11 @@ export class TransactionService {
         })
       );
   }
-
   /**
    * Get a single transaction by ID with full details
    */
   getTransactionById(transactionId: string | number): Observable<any> {
-    const token = this.getAuthToken();
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-
-    return this.http.get<any>(`${this.apiUrl}/transactions/${transactionId}`, { headers: this.auth.getAuthHeaders()})
+    return this.http.get<any>(`${this.apiUrl}/transactions/${transactionId}`, { headers: this.auth.getAuthHeaders() })
       .pipe(
         catchError(error => {
           console.error('Error fetching transaction by ID:', error);
@@ -302,12 +291,48 @@ export class TransactionService {
   }
 
   /**
-   * Update customer information for a transaction (seller can edit when item is Awaiting Pick Up)
+   * Get condition options by group IDs
+   * @param groupIds Array of group IDs
+   * @returns Observable with options grouped by groupID
    */
-  updateCustomerInfo(transactionId: string | number, updateData: any): Observable<any> {
+  getConditionOptionsByGroupIds(groupIds: string[]): Observable<{ [key: string]: any[] }> {
     const token = this.getAuthToken();
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
+    const groupIdsParam = groupIds.join(',');
+    return this.http.get<{ [key: string]: any[] }>(`${this.apiUrl}/transactions/condition-options-by-groups?groupIds=${groupIdsParam}`, { headers })
+      .pipe(
+        catchError(error => {
+          console.error('Error fetching condition options by group IDs:', error);
+          return of({});
+        })
+      );
+  }
+
+  /**
+   * Upload admin photos to Supabase Storage
+   * @param transactionId Transaction ID
+   * @param formData FormData containing photos
+   * @returns Observable<string[]> Array of uploaded photo URLs
+   */
+  uploadAdminPhotos(transactionId: string | number, formData: FormData): Observable<string[]> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.post<any>(`${this.apiUrl}/transactions/${transactionId}/photos`, formData, { headers })
+      .pipe(
+        map(response => response.photoUrls || []),
+        catchError(error => {
+          console.error('Error uploading admin photos:', error);
+          throw error;
+        })
+      );
+  }
+
+  /**
+   * Update customer information for a transaction (seller can edit when item is Awaiting Pick Up)
+   */
+  updateCustomerInfo(transactionId: string | number, updateData: any): Observable<any> {
     return this.http.put<any>(`${this.apiUrl}/transactions/${transactionId}/customer-info`, updateData, { headers: this.auth.getAuthHeaders() })
       .pipe(
         catchError(error => {

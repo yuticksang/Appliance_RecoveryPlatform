@@ -21,20 +21,10 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 export const getCategories = async (req: AuthRequest, res: Response) => {
   try {
     const result = await pool.query(
-      `SELECT
-        c."categoryID" as id,
-        c."categoryName" as name,
-        (
-          SELECT a.image_url
-          FROM "Appliance" a
-          WHERE a."categoryID" = c."categoryID"
-          AND a.image_url IS NOT NULL
-          AND a.image_url != ''
-          LIMIT 1
-        ) as image
-       FROM "Category" c
-       WHERE c."status" = 'ACTIVE'
-       ORDER BY c."categoryID" ASC`
+      `SELECT "categoryID" as id, "categoryName" as name 
+       FROM "Category" 
+       WHERE "status" = 'ACTIVE'
+       ORDER BY "categoryID" ASC`
     );
 
     res.json(result.rows);
@@ -250,6 +240,7 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       modelId,
       addressId,
       valuationWorth,
+      highestBuyerId,
       pickupDate,
       pickupTime,
       questionAnswers: questionAnswersJson
@@ -317,6 +308,14 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       // For radio/image/dropdown: single conditionID
       if ((qa.type === 'radio' || qa.type === 'image' || qa.type === 'dropdown') && qa.answer) {
         console.log(`  → Saving ${qa.type} answer: ${qa.answer}`);
+
+        // Fetch the description for this conditionID
+        const descResult = await client.query(
+          `SELECT description FROM "ConditionOption" WHERE "conditionID" = $1`,
+          [qa.answer]
+        );
+        const descriptionText = descResult.rows.length > 0 ? descResult.rows[0].description : '';
+
         await client.query(
           `INSERT INTO "ConditionSelected"
           ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID","score")
@@ -330,6 +329,13 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       if (qa.type === 'checkbox' && Array.isArray(qa.answer)) {
         console.log(`  → Saving ${qa.answer.length} checkbox items`);
         for (const conditionID of qa.answer) {
+          // Fetch the description for this conditionID
+          const descResult = await client.query(
+            `SELECT description FROM "ConditionOption" WHERE "conditionID" = $1`,
+            [conditionID]
+          );
+          const descriptionText = descResult.rows.length > 0 ? descResult.rows[0].description : '';
+
           await client.query(
             `INSERT INTO "ConditionSelected"
             ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID","score")
@@ -417,10 +423,10 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
     // Create Transaction record
     await client.query(
       `INSERT INTO "Transaction" (
-        "submittedApplianceID", "sellerID",
+        "submittedApplianceID", "sellerID", "buyerID",
         "transactionStatus", "createdAt", "updatedAt"
-      ) VALUES ($1, $2, 'Under Review', NOW(), NOW())`,
-      [finalId, sellerId]
+      ) VALUES ($1, $2, $3, 'Under Review', NOW(), NOW())`,
+      [finalId, sellerId, highestBuyerId]
     );
 
     // Get transactionID

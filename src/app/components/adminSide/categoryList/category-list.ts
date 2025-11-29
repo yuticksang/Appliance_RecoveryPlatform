@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { AlertService } from '../../../services/alert.service';
 import { AddCategoryComponent } from './add/add-category';
 import { EditCategoryComponent } from './edit/edit-category';
+import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
 
 type CategoryStatus = 'ACTIVE' | 'INACTIVE';
 
@@ -23,7 +24,7 @@ type SortDir = 'asc' | 'desc';
 @Component({
   selector: 'app-category-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, AddCategoryComponent, EditCategoryComponent],
+  imports: [CommonModule, FormsModule, AddCategoryComponent, EditCategoryComponent, BreadcrumbComponent],
   templateUrl: './category-list.html',
   styleUrls: ['./category-list.scss']
 })

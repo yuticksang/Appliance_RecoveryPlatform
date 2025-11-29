@@ -26,6 +26,7 @@ export class EditConditionGroupComponent {
 
   editGroupForm: FormGroup;
   allGroups: ConditionGroup[] = [];
+  originalData: ConditionGroup | null = null;
 
   questionTypes = [
     { value: 'radio', label: 'Radio Buttons (Single Choice)' },
@@ -46,6 +47,9 @@ export class EditConditionGroupComponent {
 
   ngOnInit() {
     if (this.groupData) {
+      // Store original data
+      this.originalData = { ...this.groupData };
+
       this.editGroupForm.patchValue({
         criteriaName: this.groupData.criteriaName,
         question_title: this.groupData.question_title || '',
@@ -77,6 +81,23 @@ export class EditConditionGroupComponent {
 
   get display_order() {
     return this.editGroupForm.get('display_order');
+  }
+
+  // Check if any field has changed
+  get hasChanges(): boolean {
+    if (!this.originalData) return false;
+
+    return (
+      this.criteriaName?.value !== this.originalData.criteriaName ||
+      (this.question_title?.value || '') !== (this.originalData.question_title || '') ||
+      this.question_type?.value !== (this.originalData.question_type || 'radio') ||
+      (this.display_order?.value || null) !== (this.originalData.display_order || null)
+    );
+  }
+
+  getQuestionTypeName(value: string): string {
+    const type = this.questionTypes.find(t => t.value === value);
+    return type ? type.label : value;
   }
 
   shouldShowQuestionFields(): boolean {

@@ -21,6 +21,7 @@ export class EditCategoryComponent implements OnInit {
   @Input() categoryData!: Category;
 
   editCategoryForm: FormGroup;
+  originalData: Category | null = null;
 
   constructor(private fb: FormBuilder) {
     this.editCategoryForm = this.fb.group({
@@ -31,6 +32,9 @@ export class EditCategoryComponent implements OnInit {
 
   ngOnInit() {
     if (this.categoryData) {
+      // Store original data
+      this.originalData = { ...this.categoryData };
+
       this.editCategoryForm.patchValue({
         categoryName: this.categoryData.categoryName,
         description: this.categoryData.description
@@ -40,6 +44,16 @@ export class EditCategoryComponent implements OnInit {
 
   get categoryName() { return this.editCategoryForm.get('categoryName'); }
   get description() { return this.editCategoryForm.get('description'); }
+
+  // Check if any field has changed
+  get hasChanges(): boolean {
+    if (!this.originalData) return false;
+
+    return (
+      this.categoryName?.value !== this.originalData.categoryName ||
+      (this.description?.value || '') !== (this.originalData.description || '')
+    );
+  }
 
   onClose() {
     this.close.emit();

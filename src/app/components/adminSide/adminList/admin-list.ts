@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { AddAdminComponent } from './add/add-admin';
 import { EditAdminComponent } from './edit/edit-admin';
 import { AlertService } from '../../../services/alert.service';
+import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
 
 type AdminRole = 'SUPER ADMIN' | 'ADMIN';
 type AdminStatus = 'ACTIVE' | 'INACTIVE';
@@ -27,7 +28,7 @@ type SortDir = 'asc' | 'desc';
 @Component({
   selector: 'app-admin-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, AddAdminComponent, EditAdminComponent],
+  imports: [CommonModule, FormsModule, AddAdminComponent, EditAdminComponent, BreadcrumbComponent],
   templateUrl: './admin-list.html',
   styleUrls: ['./admin-list.scss']
 })

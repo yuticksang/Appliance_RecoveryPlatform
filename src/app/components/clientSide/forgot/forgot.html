@@ -1,7 +1,12 @@
 <section class="auth-shell">
   <h1 class="title">Reset Password</h1>
 
-  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <div *ngIf="submitted" class="success-message">
+    <p>Password reset link sent! Please check your email inbox to reset your password.</p>
+    <button routerLink="/login" class="btn-primary">Back to Login</button>
+  </div>
+
+  <form *ngIf="!submitted" [formGroup]="form" (ngSubmit)="submit()" novalidate>
     <label class="field">
       <span>Enter Your Email address</span>
       <input type="email" formControlName="email" placeholder="you@example.com" />
@@ -9,6 +14,8 @@
       <small class="error" *ngIf="f.email.touched && f.email.errors?.['email']">Enter a valid email.</small>
     </label>
 
-    <button class="btn-primary" type="submit">Reset</button>
+    <button class="btn-primary" type="submit" [disabled]="loading">
+      {{ loading ? 'Sending...' : 'Reset' }}
+    </button>
   </form>
 </section>

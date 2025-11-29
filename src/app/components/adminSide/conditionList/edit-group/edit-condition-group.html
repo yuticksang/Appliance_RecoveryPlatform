@@ -6,13 +6,9 @@
     </div>
 
     <form [formGroup]="editGroupForm" (ngSubmit)="onSubmit()">
-      <div class="info-box">
-        <i class="ri-information-line"></i>
-        <span>You can only edit the name. The code prefix ({{ groupData.criteriaCodePrefix }}) cannot be changed to maintain data consistency.</span>
-      </div>
 
       <div class="form-group">
-        <label for="criteriaName">Condition Type Name <span class="required">*</span></label>
+        <label for="criteriaName">Condition Type Name </label>
         <input
           id="criteriaName"
           type="text"
@@ -34,7 +30,7 @@
       <!-- Only show question fields for non-Photo/Notes groups -->
       @if(shouldShowQuestionFields()) {
         <div class="form-group">
-          <label for="display_order">Display Order <span class="required">*</span></label>
+          <label for="display_order">Display Order </label>
           <input
             id="display_order"
             type="number"
@@ -53,7 +49,7 @@
         </div>
 
         <div class="form-group">
-          <label for="question_title">Question Title <span class="required">*</span></label>
+          <label for="question_title">Question Title </label>
           <input
             id="question_title"
             type="text"
@@ -68,7 +64,7 @@
         </div>
 
         <div class="form-group">
-          <label for="question_type">Question Type <span class="required">*</span></label>
+          <label for="question_type">Question Type </label>
           <select
             id="question_type"
             formControlName="question_type"
@@ -85,10 +81,30 @@
         </div>
       }
 
+      <!-- Show changes summary -->
+      <div *ngIf="hasChanges" class="changes-summary">
+        <h4>Changes to be saved:</h4>
+        <ul>
+          <li *ngIf="criteriaName?.value !== originalData?.criteriaName">
+            Condition Type Name: "{{ originalData?.criteriaName }}" → "{{ criteriaName?.value }}"
+          </li>
+          <li *ngIf="(question_title?.value || '') !== (originalData?.question_title || '')">
+            Question Title: "{{ originalData?.question_title || '(none)' }}" → "{{ question_title?.value || '(none)' }}"
+          </li>
+          <li *ngIf="question_type?.value !== (originalData?.question_type || 'radio')">
+            Question Type: "{{ getQuestionTypeName(originalData?.question_type || 'radio') }}" → "{{ getQuestionTypeName(question_type?.value) }}"
+          </li>
+          <li *ngIf="(display_order?.value || null) !== (originalData?.display_order || null)">
+            Display Order: "{{ originalData?.display_order || '(not set)' }}" → "{{ display_order?.value || '(not set)' }}"
+          </li>
+        </ul>
+      </div>
+
       <div class="form-actions">
         <button type="button" class="btn-secondary" (click)="onClose()">Cancel</button>
-        <button type="submit" class="btn-primary" [disabled]="editGroupForm.invalid">
-          Update Type
+        <button type="submit" class="btn-primary" [disabled]="editGroupForm.invalid || !hasChanges"
+          [title]="!hasChanges ? 'No changes to save' : editGroupForm.invalid ? 'Please fill all required fields' : 'Save changes'">
+          {{ hasChanges ? 'Save Changes' : 'No Changes' }}
         </button>
       </div>
     </form>
