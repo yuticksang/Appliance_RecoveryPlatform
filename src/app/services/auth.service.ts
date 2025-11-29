@@ -229,7 +229,10 @@ export class AuthService {
   }
 
   getToken(): string | null {
-    return localStorage.getItem('token');
+    // Check for admin token first, then seller token, then buyer token
+    return localStorage.getItem('admin_token') ||
+           localStorage.getItem('token') ||
+           localStorage.getItem('buyer_token');
   }
 
   // HTTP interceptor helper

@@ -41,6 +41,10 @@ export class TransactionsComponent implements OnInit, OnDestroy {
   sortColumn: string = '';
   sortDirection: 'asc' | 'desc' = 'asc';
 
+  // Notification for awaiting confirmation
+  showNotificationBanner: boolean = false;
+  awaitingConfirmationCount: number = 0;
+
   // Helper method to get sort icon
   sortIcon(column: string): string {
     if (this.sortColumn !== column) return '↕';
@@ -86,6 +90,9 @@ export class TransactionsComponent implements OnInit, OnDestroy {
         console.log('Transaction IDs:', transactions.map(t => ({ id: t.id, type: typeof t.id })));
         this.transactions = transactions;
 
+        // Check for transactions awaiting confirmation
+        this.checkAwaitingConfirmation();
+
         // Extract unique categories and brands from the loaded transactions
         this.extractCategories();
         this.extractBrands();
@@ -98,6 +105,22 @@ export class TransactionsComponent implements OnInit, OnDestroy {
         this.loading = false;
       }
     });
+  }
+
+  checkAwaitingConfirmation(): void {
+    // Count transactions with "Awaiting Confirmation" status
+    this.awaitingConfirmationCount = this.transactions.filter(
+      t => t.transactionStatus === 'Awaiting Confirmation'
+    ).length;
+
+    // Show notification banner if there are any
+    if (this.awaitingConfirmationCount > 0) {
+      this.showNotificationBanner = true;
+    }
+  }
+
+  closeNotificationBanner(): void {
+    this.showNotificationBanner = false;
   }
 
   extractCategories(): void {
