@@ -972,6 +972,7 @@ export class QuestionnairesComponent implements OnInit{
       pickupDate: this.pickupDate,
       pickupTime: this.pickupTime,
       valuationWorth: this.valuationWorth,
+      valuationScore: this.valuationScore,
       highestBuyerId: this.highestBuyerId,
 
       // Send all answers as structured JSON
