@@ -48,11 +48,14 @@ export const getTransactionsBySeller = async (req: Request, res: Response) => {
         sa."submissionDate" as "submittedDate",
         sa."initialOfferPrice" as "estimatedPrice",
         sa."finalOfferPrice" as "finalPrice",
+        sa."initialScore" as "initialScore",
+        sa."finalScore" as "finalScore",
         t."transactionStatus",
         t."createdAt",
         t."updatedAt",
         t."paymentDueDate",
         t."rejectionReason",
+        t."responseDeadline",
         i."itemStatus",
         i."updatedAt" as "itemStatusUpdatedAt",
         b."brandName" as brand,
@@ -93,11 +96,14 @@ export const getAllTransactions = async (_req: Request, res: Response) => {
         sa."submissionDate" as "submittedDate",
         sa."initialOfferPrice" as "estimatedPrice",
         sa."finalOfferPrice" as "finalPrice",
+        sa."initialScore" as "initialScore",
+        sa."finalScore" as "finalScore",
         t."transactionStatus",
         t."createdAt",
         t."updatedAt",
         t."paymentDueDate",
         t."rejectionReason",
+        t."responseDeadline",
         i."itemStatus",
         i."updatedAt" as "itemStatusUpdatedAt",
         b."brandName" as brand,
@@ -146,6 +152,7 @@ export const getTransactionById = async (req: Request, res: Response) => {
         t."createdAt",
         t."updatedAt",
         t."paymentDueDate",
+        t."responseDeadline",
         t."rejectionReason",
         COALESCE(i."itemStatus", 'Awaiting Pick Up') as "itemStatus",
         i."updatedAt" as "itemStatusUpdatedAt",
@@ -785,10 +792,12 @@ export const updateTransaction = async (req: Request, res: Response) => {
       // Format: { [groupID]: conditionID | conditionID[] | textValue | base64Array }
       adminConditions,
       // Photo uploads from admin (base64 data URLs)
-      photos
+      photos,
+      // Final score from admin review
+      finalScore
     } = req.body;
 
-    console.log('📝 Updating transaction with full data:', { id, transactionStatus, itemStatus, adminConditions, hasPhotos: !!photos, photoCount: photos?.length });
+    console.log('📝 Updating transaction with full data:', { id, transactionStatus, itemStatus, adminConditions, hasPhotos: !!photos, photoCount: photos?.length, finalScore });
 
     // Get the submittedApplianceID for this transaction
     const txnResult = await pool.query(
@@ -887,7 +896,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
       }
     }
 
-    // Update SubmittedAppliance table (final price and appliance details)
+    // Update SubmittedAppliance table (final price, final score, and appliance details)
     const updateFields: string[] = [];
     const updateValues: any[] = [];
     let paramIndex = 1;
@@ -897,6 +906,13 @@ export const updateTransaction = async (req: Request, res: Response) => {
       updateFields.push(`"finalOfferPrice" = $${paramIndex++}`);
       updateValues.push(calculatedFinalPrice);
       console.log(`💰 Updating finalOfferPrice to RM${calculatedFinalPrice}`);
+    }
+
+    // Save final score from admin review
+    if (finalScore !== undefined && finalScore !== null) {
+      updateFields.push(`"finalScore" = $${paramIndex++}`);
+      updateValues.push(parseFloat(finalScore));
+      console.log(`📊 Updating finalScore to ${finalScore}`);
     }
 
     if (applianceID) {
@@ -916,12 +932,23 @@ export const updateTransaction = async (req: Request, res: Response) => {
 
     // Update Transaction status if provided
     if (transactionStatus) {
-      await pool.query(
-        `UPDATE "Transaction"
-         SET "transactionStatus" = $1, "updatedAt" = NOW()
-         WHERE "transactionID" = $2`,
-        [transactionStatus, id]
-      );
+      // If status is "Awaiting Confirmation", set responseDeadline to 14 days from now
+      if (transactionStatus === 'Awaiting Confirmation') {
+        await pool.query(
+          `UPDATE "Transaction"
+           SET "transactionStatus" = $1, "updatedAt" = NOW(), "responseDeadline" = NOW() + INTERVAL '14 days'
+           WHERE "transactionID" = $2`,
+          [transactionStatus, id]
+        );
+        console.log('📅 Setting responseDeadline to 14 days from now for status: Awaiting Confirmation');
+      } else {
+        await pool.query(
+          `UPDATE "Transaction"
+           SET "transactionStatus" = $1, "updatedAt" = NOW()
+           WHERE "transactionID" = $2`,
+          [transactionStatus, id]
+        );
+      }
     }
 
     // Update ItemStatus if provided

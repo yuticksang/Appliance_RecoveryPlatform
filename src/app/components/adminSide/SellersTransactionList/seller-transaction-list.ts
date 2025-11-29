@@ -34,6 +34,16 @@ export class SellerTransactionListComponent implements OnInit {
 
   loading: boolean = false;
 
+  // Sorting properties
+  sortColumn: string = '';
+  sortDirection: 'asc' | 'desc' = 'asc';
+
+  // Helper method to get sort icon
+  sortIcon(column: string): string {
+    if (this.sortColumn !== column) return '↕';
+    return this.sortDirection === 'asc' ? '↑' : '↓';
+  }
+
   ngOnInit(): void {
     this.loadAllTransactions();
   }
@@ -111,6 +121,11 @@ export class SellerTransactionListComponent implements OnInit {
       );
     }
 
+    // Apply sorting if a column is selected
+    if (this.sortColumn) {
+      filtered = this.sortTransactions(filtered);
+    }
+
     this.filteredTransactions = filtered;
     this.totalPages = Math.ceil(this.filteredTransactions.length / this.itemsPerPage);
 
@@ -118,6 +133,74 @@ export class SellerTransactionListComponent implements OnInit {
     if (this.currentPage > this.totalPages && this.totalPages > 0) {
       this.currentPage = 1;
     }
+  }
+
+  sortBy(column: string): void {
+    // Toggle direction if clicking the same column, otherwise reset to ascending
+    if (this.sortColumn === column) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortColumn = column;
+      this.sortDirection = 'asc';
+    }
+
+    this.applyFilters();
+  }
+
+  sortTransactions(transactions: Transaction[]): Transaction[] {
+    return transactions.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      // Get values based on column
+      switch (this.sortColumn) {
+        case 'id':
+          aValue = a.id;
+          bValue = b.id;
+          break;
+        case 'sellerId':
+          aValue = a.sellerId;
+          bValue = b.sellerId;
+          break;
+        case 'category':
+          aValue = a.category;
+          bValue = b.category;
+          break;
+        case 'brand':
+          aValue = a.brand;
+          bValue = b.brand;
+          break;
+        case 'model':
+          aValue = a.model;
+          bValue = b.model;
+          break;
+        case 'transactionStatus':
+          aValue = a.transactionStatus;
+          bValue = b.transactionStatus;
+          break;
+        case 'itemStatus':
+          aValue = a.itemStatus;
+          bValue = b.itemStatus;
+          break;
+        default:
+          return 0;
+      }
+
+      // Convert to lowercase for case-insensitive sorting (for strings)
+      if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+      if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+
+      // Compare values
+      let comparison = 0;
+      if (aValue > bValue) {
+        comparison = 1;
+      } else if (aValue < bValue) {
+        comparison = -1;
+      }
+
+      // Apply direction
+      return this.sortDirection === 'asc' ? comparison : -comparison;
+    });
   }
 
   get paginatedTransactions(): Transaction[] {

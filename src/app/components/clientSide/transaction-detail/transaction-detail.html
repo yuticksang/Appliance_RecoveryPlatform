@@ -39,6 +39,26 @@
         </div>
     </div>
 
+    <!-- Deadline Warning -->
+    <div class="deadline-warning" *ngIf="transaction?.responseDeadline && isAwaitingConfirmation"
+         [class.deadline-expired]="isDeadlineExpired()"
+         [class.deadline-approaching]="isDeadlineApproaching()">
+      <div class="deadline-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 6v6l4 2"/>
+        </svg>
+      </div>
+      <div class="deadline-content">
+        <div class="deadline-title">Response Deadline</div>
+        <div class="deadline-info">
+          <span class="deadline-date">{{ transaction.responseDeadline ? formatDate(transaction.responseDeadline) : 'N/A' }}</span>
+          <span class="deadline-separator">•</span>
+          <span class="days-remaining">{{ daysUntilDeadline }} {{ daysUntilDeadline === 1 ? 'day' : 'days' }} remaining</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Cancellation Button for Pending Payment (Case 5) -->
     <div *ngIf="isPendingPayment"
          class="decision-section cancellation-section"

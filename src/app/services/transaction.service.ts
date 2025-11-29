@@ -20,6 +20,7 @@ export interface Transaction {
   estimatedPrice?: number;
   finalPrice?: number;
   note?: string; // Note
+  responseDeadline?: string; // Response deadline date for seller to respond to offer
 }
 
 @Injectable({
@@ -75,7 +76,8 @@ export class TransactionService {
             submittedDate: new Date(t.submittedDate || t.submissionDate || t.createdAt),
             estimatedPrice: t.estimatedPrice || t.initialOfferPrice || 0,
             finalPrice: t.finalPrice || t.finalOfferPrice,
-            note: t.note || ''
+            note: t.note || '',
+            responseDeadline: t.responseDeadline || t.response_deadline
           }));
         }),
         catchError(error => {
@@ -109,7 +111,8 @@ export class TransactionService {
             submittedDate: new Date(t.submittedDate || t.submissionDate || t.createdAt),
             estimatedPrice: t.estimatedPrice || t.initialOfferPrice || 0,
             finalPrice: t.finalPrice || t.finalOfferPrice,
-            note: t.note || ''
+            note: t.note || '',
+            responseDeadline: t.responseDeadline || t.response_deadline
           }));
         }),
         catchError(error => {

@@ -33,13 +33,12 @@
 
         <!-- Search Box -->
         <div class="search-box">
-          <input 
-            type="text" 
-            placeholder="Search..." 
+          <input
+            type="text"
+            placeholder="Search..."
             [(ngModel)]="searchQuery"
             (input)="onSearch()"
             class="search-input">
-          <span class="search-icon">🔍</span>
         </div>
       </div>
     </div>
@@ -64,14 +63,26 @@
           <tr>
             <th>#</th>
             <th>Image</th>
-            <th>Brand</th>
+            <th class="sortable" (click)="sortBy('brand')">
+              Brand <span class="sort">{{ sortIcon('brand') }}</span>
+            </th>
             <th></th>
-            <th>Category</th>
+            <th class="sortable" (click)="sortBy('category')">
+              Category <span class="sort">{{ sortIcon('category') }}</span>
+            </th>
             <th></th>
-            <th>Model</th>
-            <th>Model Name</th>
-            <th>Transaction Status</th>
-            <th>Item Status</th>
+            <th class="sortable" (click)="sortBy('model')">
+              Model <span class="sort">{{ sortIcon('model') }}</span>
+            </th>
+            <th class="sortable" (click)="sortBy('modelName')">
+              Model Name <span class="sort">{{ sortIcon('modelName') }}</span>
+            </th>
+            <th class="sortable" (click)="sortBy('transactionStatus')">
+              Transaction Status <span class="sort">{{ sortIcon('transactionStatus') }}</span>
+            </th>
+            <th class="sortable" (click)="sortBy('itemStatus')">
+              Item Status <span class="sort">{{ sortIcon('itemStatus') }}</span>
+            </th>
           </tr>
         </thead>
         <tbody>
