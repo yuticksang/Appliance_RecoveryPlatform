@@ -177,17 +177,17 @@
                 <div class="header-label after">AFTER REVIEW</div>
               </div>
 
-              <!-- Price Comparison - HIDDEN FOR NOW (will implement later) -->
-              <!-- <div class="inspection-item">
+              <!-- Price Comparison -->
+              <div class="inspection-item">
                 <h4 class="inspection-label">PRICE</h4>
-                <div class="inspection-columns">
+                <div class="inspection-columns" [class.single-column]="!hasAdminConditions()">
                   <div class="column-content">
                     <div class="price-display">
                       <span class="price-label">RM</span>
                       <span class="price-value">{{ (transaction()?.estimatedPrice | number:'1.2-2') || '0.00' }}</span>
                     </div>
                   </div>
-                  <div class="column-content">
+                  <div class="column-content" *ngIf="hasAdminConditions()">
                     <div class="price-display">
                       <span class="price-label">RM</span>
                       <span class="price-value" [class.changed]="transaction()?.finalPrice && transaction()?.finalPrice !== transaction()?.estimatedPrice">
@@ -196,7 +196,7 @@
                     </div>
                   </div>
                 </div>
-              </div> -->
+              </div>
 
               <!-- All Condition Groups in display_order (only show groups with submitted data) -->
               <ng-container *ngFor="let group of getConditionGroupsWithData()">
@@ -405,15 +405,15 @@
 
             <!-- EDIT MODE: Admin can modify values -->
             <ng-container *ngIf="editMode()">
-              <!-- Price Input - HIDDEN FOR NOW (will implement later) -->
-              <!-- <div class="inspection-item-edit">
+              <!-- Price Input -->
+              <div class="inspection-item-edit">
                 <h4 class="inspection-label">FINAL PRICE</h4>
                 <div class="price-input-container">
                   <span class="price-label">RM</span>
                   <input type="number" class="edit-input-price" [(ngModel)]="finalPrice" step="0.01" placeholder="Enter final price" />
                   <span class="estimated-hint">(Estimated: RM {{ (transaction()?.estimatedPrice | number:'1.2-2') || '0.00' }})</span>
                 </div>
-              </div> -->
+              </div>
 
               <!-- All Dynamic Condition Groups in display_order -->
               <ng-container *ngFor="let group of conditionGroups">
