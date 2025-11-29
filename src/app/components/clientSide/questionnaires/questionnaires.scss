@@ -190,6 +190,12 @@
   display: block;
   font-weight: 600;
   margin-bottom: 10px;
+
+  .required-asterisk {
+    color: #ef4444;
+    margin-left: 4px;
+    font-weight: 700;
+  }
 }
 
 .form-select, .form-control {

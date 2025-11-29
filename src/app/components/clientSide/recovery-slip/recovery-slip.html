@@ -55,6 +55,7 @@
         <p><strong>Category:</strong> {{ recoveryData.appliance.category }}</p>
         <p><strong>Brand:</strong> {{ recoveryData.appliance.brand }}</p>
         <p><strong>Model:</strong> {{ recoveryData.appliance.model }}</p>
+        <p><strong>Condition Score:</strong> {{ recoveryData.appliance.initialScore }}% ({{ getScoreLabel(recoveryData.appliance.initialScore) }})</p>
         <p><strong>Trade-in Value:</strong> {{ recoveryData.appliance.tradeValue }}</p>
 
         <!-- Dynamic Question Answers -->

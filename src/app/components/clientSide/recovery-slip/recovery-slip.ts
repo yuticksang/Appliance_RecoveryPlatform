@@ -37,6 +37,7 @@ export class RecoverySlipComponent implements OnInit {
       brand: '',
       model: '',
       tradeValue: '',
+      initialScore: 0,
       dynamicAnswers: [] as Array<{ sectionName: string; question: string; type: string; answer: string | string[] }>
     },
     delivery: { method: 'On-Demand Pickup', pickupDate: '', pickupTime: '' }
@@ -116,6 +117,7 @@ export class RecoverySlipComponent implements OnInit {
         brand: data.brand || 'N/A',
         model: data.modelName || data.model || 'N/A',
         tradeValue: `RM ${parseFloat(data.finalPrice || data.estimatedPrice || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        initialScore: parseFloat(data.initialScore) || 0,
         dynamicAnswers: data.dynamicAnswers || []
       },
       delivery: {
@@ -124,6 +126,13 @@ export class RecoverySlipComponent implements OnInit {
         pickupTime: data.pickupTimeSlot || 'Not scheduled'
       }
     };
+  }
+
+  getScoreLabel(score: number): string {
+    if (score >= 85) return 'Excellent';
+    else if (score >= 70) return 'Good';
+    else if (score >= 50) return 'Fair';
+    else return 'Poor';
   }
 
   calculateConditionScore(functionalStatus: string, physicalCondition: string): string {

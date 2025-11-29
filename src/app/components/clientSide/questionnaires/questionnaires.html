@@ -73,7 +73,10 @@
 
     <!-- DYNAMIC QUESTIONS -->
     <div *ngFor="let group of conditionGroups()" class="question-section">
-      <p class="question">{{ group.question }}</p>
+      <p class="question">
+        {{ group.question }}
+        <span *ngIf="group.type !== 'textarea' && group.type !== 'file_upload'" class="required-asterisk">*</span>
+      </p>
 
       <!-- SINGLE CHOICE -->
       <div *ngIf="group.type === 'radio'" class="form-section">
