@@ -405,16 +405,6 @@
 
             <!-- EDIT MODE: Admin can modify values -->
             <ng-container *ngIf="editMode()">
-              <!-- Price Input -->
-              <div class="inspection-item-edit">
-                <h4 class="inspection-label">FINAL PRICE</h4>
-                <div class="price-input-container">
-                  <span class="price-label">RM</span>
-                  <input type="number" class="edit-input-price" [(ngModel)]="finalPrice" step="0.01" placeholder="Enter final price" />
-                  <span class="estimated-hint">(Estimated: RM {{ (transaction()?.estimatedPrice | number:'1.2-2') || '0.00' }})</span>
-                </div>
-              </div>
-
               <!-- All Dynamic Condition Groups in display_order -->
               <ng-container *ngFor="let group of conditionGroups">
                 <!-- Radio/Dropdown/Image type (single selection) -->

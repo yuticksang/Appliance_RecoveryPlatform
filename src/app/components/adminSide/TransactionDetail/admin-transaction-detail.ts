@@ -29,7 +29,6 @@ export class AdminTransactionDetailComponent implements OnInit {
   // Editable fields
   transactionStatus = '';
   itemStatus = '';
-  finalPrice = 0;
   selectedCategoryId: string | number | null = null;
   selectedBrandId: string | number | null = null;
   selectedApplianceId: string | number | null = null;
@@ -124,7 +123,6 @@ export class AdminTransactionDetailComponent implements OnInit {
         this.transaction.set(mappedData);
         this.transactionStatus = data.transactionStatus;
         this.itemStatus = data.itemStatus;
-        this.finalPrice = data.finalPrice || data.estimatedPrice || 0;
         this.note = data.note || '';
 
         // Load seller-submitted photos from backend
@@ -367,7 +365,8 @@ export class AdminTransactionDetailComponent implements OnInit {
   }
 
   /**
-   * Pre-fill the edit form with the seller's original submitted data
+   * Pre-fill the edit form with the last saved data
+   * Priority: Admin's last saved data > Seller's original data
    */
   private prefillFormWithSellerData(): void {
     const txn = this.transaction();
@@ -376,19 +375,35 @@ export class AdminTransactionDetailComponent implements OnInit {
     // Pre-fill basic fields
     this.transactionStatus = txn.transactionStatus || '';
     this.itemStatus = txn.itemStatus || '';
-    this.finalPrice = txn.finalPrice || txn.estimatedPrice || 0;
 
     // Pre-fill category, brand, appliance dropdowns by matching names
     // Use the existing method that matches by name
     this.setSelectedIdsFromTransaction(txn);
 
-    // Pre-fill dynamic condition selections from seller's original submission
-    // Use sellerConditions (what seller filled) instead of adminConditions
-    if (txn.sellerConditions && typeof txn.sellerConditions === 'object') {
-      // Clear existing selections first
-      this.selectedConditions = {};
+    // Pre-fill dynamic condition selections
+    // Priority: Use admin's last saved data if it exists, otherwise use seller's data
+    this.selectedConditions = {};
 
-      // Copy seller's selections to the form
+    // Check if admin has previously saved data
+    const hasAdminData = txn.adminConditions && typeof txn.adminConditions === 'object' && Object.keys(txn.adminConditions).length > 0;
+
+    if (hasAdminData) {
+      // Use admin's last saved data (from previous edit)
+      console.log('📋 Pre-filling with admin\'s last saved data');
+      for (const [groupID, value] of Object.entries(txn.adminConditions)) {
+        this.selectedConditions[groupID] = value as string | string[];
+
+        // Also pre-fill photo previews if this is a file_upload group
+        const group = this.conditionGroups.find(g => g.groupID === groupID);
+        if (group && group.question_type === 'file_upload' && Array.isArray(value)) {
+          // Show admin's last saved photos as previews
+          this.uploadedFilePreviews[groupID] = value;
+          console.log(`📸 Pre-filling ${value.length} photo previews for group ${groupID}`);
+        }
+      }
+    } else if (txn.sellerConditions && typeof txn.sellerConditions === 'object') {
+      // Use seller's original data (first time admin is editing)
+      console.log('📋 Pre-filling with seller\'s original data (first edit)');
       for (const [groupID, value] of Object.entries(txn.sellerConditions)) {
         this.selectedConditions[groupID] = value as string | string[];
       }
@@ -488,13 +503,13 @@ export class AdminTransactionDetailComponent implements OnInit {
     const updateData = {
       transactionStatus: this.transactionStatus,
       itemStatus: this.itemStatus,
-      finalPrice: this.finalPrice,
       brand: selectedBrand?.brandName || '',
       model: selectedAppliance?.modelCode || '',
       category: selectedCategory?.categoryName || '',
       modelName: selectedAppliance?.modelName || '',
       note: this.note, // Note
       // Send admin checklist conditions (includes photo URLs for file_upload groups)
+      // Price will be automatically calculated from adminConditions in the backend
       adminConditions: adminConditions
     };
 
@@ -521,7 +536,6 @@ export class AdminTransactionDetailComponent implements OnInit {
     if (txn) {
       this.transactionStatus = txn.transactionStatus;
       this.itemStatus = txn.itemStatus;
-      this.finalPrice = txn.finalPrice || txn.estimatedPrice;
       this.note = txn.note || ''; // Note
       // Reset selected IDs
       this.setSelectedIdsFromTransaction(txn);
