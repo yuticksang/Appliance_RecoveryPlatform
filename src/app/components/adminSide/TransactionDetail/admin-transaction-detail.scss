@@ -1445,17 +1445,6 @@ $Space: 'Space Grotesk', sans-serif;
 
           &.changed {
             color: #48bb78;  // Green to show it was updated
-            position: relative;
-
-            &::after {
-              content: '✓';
-              position: absolute;
-              right: -1.5rem;
-              top: 50%;
-              transform: translateY(-50%);
-              font-size: 20px;
-              color: #48bb78;
-            }
           }
         }
       }
