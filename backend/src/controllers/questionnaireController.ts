@@ -1,3 +1,4 @@
+
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/authMiddleware';
 import pool from '../config/database';

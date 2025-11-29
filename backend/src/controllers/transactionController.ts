@@ -48,11 +48,14 @@ export const getTransactionsBySeller = async (req: Request, res: Response) => {
         sa."submissionDate" as "submittedDate",
         sa."initialOfferPrice" as "estimatedPrice",
         sa."finalOfferPrice" as "finalPrice",
+        sa."initialScore" as "initialScore",
+        sa."finalScore" as "finalScore",
         t."transactionStatus",
         t."createdAt",
         t."updatedAt",
         t."paymentDueDate",
         t."rejectionReason",
+        t."responseDeadline",
         i."itemStatus",
         i."updatedAt" as "itemStatusUpdatedAt",
         b."brandName" as brand,
@@ -93,11 +96,14 @@ export const getAllTransactions = async (_req: Request, res: Response) => {
         sa."submissionDate" as "submittedDate",
         sa."initialOfferPrice" as "estimatedPrice",
         sa."finalOfferPrice" as "finalPrice",
+        sa."initialScore" as "initialScore",
+        sa."finalScore" as "finalScore",
         t."transactionStatus",
         t."createdAt",
         t."updatedAt",
         t."paymentDueDate",
         t."rejectionReason",
+        t."responseDeadline",
         i."itemStatus",
         i."updatedAt" as "itemStatusUpdatedAt",
         b."brandName" as brand,
@@ -146,6 +152,7 @@ export const getTransactionById = async (req: Request, res: Response) => {
         t."createdAt",
         t."updatedAt",
         t."paymentDueDate",
+        t."responseDeadline",
         t."rejectionReason",
         COALESCE(i."itemStatus", 'Awaiting Pick Up') as "itemStatus",
         i."updatedAt" as "itemStatusUpdatedAt",
@@ -275,7 +282,7 @@ export const getTransactionById = async (req: Request, res: Response) => {
       [transaction.submittedApplianceID, transaction.categoryID]
     );
 
-    console.log('� Condition groups for this transaction:', conditionGroupsResult.rows);
+    console.log('� Condition groups for this transaction:', conditionGroupsResult.rows);
 
     // Create conditionGroupNames mapping with display_order and question_type
     const conditionGroupNames: Record<string, string> = {};
@@ -287,9 +294,9 @@ export const getTransactionById = async (req: Request, res: Response) => {
       conditionGroupTypes[row.groupID] = row.question_type;
     });
 
-    console.log('� Condition group names mapping:', conditionGroupNames);
-    console.log('� Condition group order mapping:', conditionGroupOrder);
-    console.log('� Condition group types mapping:', conditionGroupTypes);
+    console.log('� Condition group names mapping:', conditionGroupNames);
+    console.log('� Condition group order mapping:', conditionGroupOrder);
+    console.log('� Condition group types mapping:', conditionGroupTypes);
 
     // Group conditions by groupID and selectedBy (seller vs admin)
     // Using groupID instead of criteriaName for better mapping
@@ -297,7 +304,7 @@ export const getTransactionById = async (req: Request, res: Response) => {
     const adminConditions: { [key: string]: string | string[] } = {};
 
     conditionsResult.rows.forEach(row => {
-      console.log(`� Processing condition: ${row.description || row.textValue}, Group: ${row.criteriaName} (${row.groupID}), Type: ${row.question_type}, SelectedBy: ${row.selectedBy}`);
+      console.log(`� Processing condition: ${row.description || row.textValue}, Group: ${row.criteriaName} (${row.groupID}), Type: ${row.question_type}, SelectedBy: ${row.selectedBy}`);
 
       const groupID = row.groupID;
       const questionType = row.question_type;
@@ -308,12 +315,12 @@ export const getTransactionById = async (req: Request, res: Response) => {
       if (questionType === 'textarea') {
         // For textarea, use textValue (free-form text)
         value = row.textValue || '';
-        console.log(`� Textarea value for ${groupID}:`, value);
+        console.log(`� Textarea value for ${groupID}:`, value);
       } else if (questionType === 'file_upload') {
         // For file_upload, parse JSON array from textValue
         try {
           value = row.textValue ? JSON.parse(row.textValue) : [];
-          console.log(`� File upload value for ${groupID}:`, value);
+          console.log(`� File upload value for ${groupID}:`, value);
         } catch (e) {
           console.error(` Error parsing file_upload JSON for ${groupID}:`, e);
           value = [];
@@ -355,8 +362,8 @@ export const getTransactionById = async (req: Request, res: Response) => {
       }
     });
 
-    console.log('� Seller conditions:', sellerConditions);
-    console.log('� Admin conditions:', adminConditions);
+    console.log('� Seller conditions:', sellerConditions);
+    console.log('� Admin conditions:', adminConditions);
 
     // Add both to response
     transaction.sellerConditions = sellerConditions;  // Before (what seller filled)
@@ -398,8 +405,8 @@ export const getTransactionById = async (req: Request, res: Response) => {
     transaction.conditionGroupTypes = conditionGroupTypes;
 
     console.log(` Found transaction ${id}:`, transaction);
-    console.log(`� Selected issues:`, transaction.selectedIssues);
-    console.log(`� Photos:`, transaction.photos);
+    console.log(`� Selected issues:`, transaction.selectedIssues);
+    console.log(`� Photos:`, transaction.photos);
 
     // Disable caching to ensure fresh data is always returned
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -421,7 +428,7 @@ export const createTransaction = async (req: Request, res: Response) => {
   try {
     const { submittedApplianceID, sellerID } = req.body;
 
-    console.log('� Creating new transaction:', { submittedApplianceID, sellerID });
+    console.log('� Creating new transaction:', { submittedApplianceID, sellerID });
 
     // Insert into Transaction table
     const transactionResult = await pool.query(
@@ -459,11 +466,11 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { transactionStatus, itemStatus } = req.body;
 
-    console.log('� Updating transaction:', { id, transactionStatus, itemStatus });
+    console.log('� Updating transaction:', { id, transactionStatus, itemStatus });
 
     // Update transaction status with automatic deadline setting
     if (transactionStatus) {
-      console.log('� Updating transaction status to:', transactionStatus);
+      console.log('� Updating transaction status to:', transactionStatus);
 
       // Determine which deadlines to set based on status
       let updateQuery = '';
@@ -476,7 +483,7 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
          WHERE "transactionID" = $2
          RETURNING *`;
         queryParams = [transactionStatus, id];
-        console.log('� Setting responseDeadline to 14 days from now');
+        console.log('� Setting responseDeadline to 14 days from now');
       } else if (transactionStatus === 'Pending Payment') {
         // Set paymentDueDate to 14 days from now
         updateQuery = `UPDATE "Transaction"
@@ -484,7 +491,7 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
          WHERE "transactionID" = $2
          RETURNING *`;
         queryParams = [transactionStatus, id];
-        console.log('� Setting paymentDueDate to 14 days from now');
+        console.log('� Setting paymentDueDate to 14 days from now');
       } else {
         // For other statuses, just update the status
         updateQuery = `UPDATE "Transaction"
@@ -504,7 +511,7 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
 
     // Update item status (try update first, then insert if needed)
     if (itemStatus) {
-      console.log('� Updating item status to:', itemStatus);
+      console.log('� Updating item status to:', itemStatus);
 
       // Try to update first
       const updateResult = await pool.query(
@@ -569,8 +576,8 @@ export const uploadAdminPhotos = async (req: Request, res: Response) => {
   try {
     const { id } = req.params; // transactionID
 
-    console.log('� Uploading admin photos for transaction:', id);
-    console.log('� Files received:', req.files);
+    console.log('� Uploading admin photos for transaction:', id);
+    console.log('� Files received:', req.files);
 
     // Get the submittedApplianceID for this transaction
     const txnResult = await client.query(
@@ -584,7 +591,7 @@ export const uploadAdminPhotos = async (req: Request, res: Response) => {
     }
 
     const submittedApplianceID = txnResult.rows[0].submittedApplianceID;
-    console.log('� Submitted Appliance ID:', submittedApplianceID);
+    console.log('� Submitted Appliance ID:', submittedApplianceID);
 
     // Upload photos to Supabase Storage
     const files = req.files as Express.Multer.File[];
@@ -593,7 +600,7 @@ export const uploadAdminPhotos = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'No photos provided' });
     }
 
-    console.log(`� Processing ${files.length} files...`);
+    console.log(`� Processing ${files.length} files...`);
     const uploadedUrls: string[] = [];
 
     for (const file of files) {
@@ -601,7 +608,7 @@ export const uploadAdminPhotos = async (req: Request, res: Response) => {
       const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}.${fileExt}`;
       const filePath = `${submittedApplianceID}/${fileName}`;
 
-      console.log(`� Uploading file: ${fileName} (${file.size} bytes)`);
+      console.log(`� Uploading file: ${fileName} (${file.size} bytes)`);
 
       // Upload to admin-review-photos bucket
       const { error: uploadError } = await supabase.storage
@@ -622,7 +629,7 @@ export const uploadAdminPhotos = async (req: Request, res: Response) => {
         .from('admin-review-photos')
         .getPublicUrl(filePath);
 
-      console.log('� Public URL:', publicUrl);
+      console.log('� Public URL:', publicUrl);
       uploadedUrls.push(publicUrl);
 
       // Save to Photo table with remark='admin'
@@ -632,7 +639,7 @@ export const uploadAdminPhotos = async (req: Request, res: Response) => {
         [submittedApplianceID, publicUrl]
       );
 
-      console.log('� Saved to Photo table');
+      console.log('� Saved to Photo table');
     }
 
 
@@ -759,7 +766,7 @@ const calculatePriceFromConditions = async (modelId: string, conditionIds: strin
       }
     });
 
-    console.log(`� Calculated price: RM${Math.round(highestOffer)} from buyer ${highestBuyerId}`);
+    console.log(`� Calculated price: RM${Math.round(highestOffer)} from buyer ${highestBuyerId}`);
     return Math.round(highestOffer);
   } catch (error) {
     console.error(' Error calculating price:', error);
@@ -785,10 +792,12 @@ export const updateTransaction = async (req: Request, res: Response) => {
       // Format: { [groupID]: conditionID | conditionID[] | textValue | base64Array }
       adminConditions,
       // Photo uploads from admin (base64 data URLs)
-      photos
+      photos,
+      // Final score from admin review
+      finalScore
     } = req.body;
 
-    console.log('� Updating transaction with full data:', { id, transactionStatus, itemStatus, adminConditions, hasPhotos: !!photos, photoCount: photos?.length });
+    console.log('Updating transaction with full data:', { id, transactionStatus, itemStatus, adminConditions, hasPhotos: !!photos, photoCount: photos?.length, finalScore });
 
     // Get the submittedApplianceID for this transaction
     const txnResult = await pool.query(
@@ -878,16 +887,16 @@ export const updateTransaction = async (req: Request, res: Response) => {
         }
       }
 
-      console.log('� Calculating final price with conditionIDs:', conditionIds);
+      console.log('� Calculating final price with conditionIDs:', conditionIds);
 
       // Calculate price based on conditions
       if (conditionIds.length > 0) {
         calculatedFinalPrice = await calculatePriceFromConditions(applianceID, conditionIds);
-        console.log('� Calculated final price:', calculatedFinalPrice);
+        console.log('� Calculated final price:', calculatedFinalPrice);
       }
     }
 
-    // Update SubmittedAppliance table (final price and appliance details)
+    // Update SubmittedAppliance table (final price, final score, and appliance details)
     const updateFields: string[] = [];
     const updateValues: any[] = [];
     let paramIndex = 1;
@@ -896,7 +905,14 @@ export const updateTransaction = async (req: Request, res: Response) => {
     if (calculatedFinalPrice !== null) {
       updateFields.push(`"finalOfferPrice" = $${paramIndex++}`);
       updateValues.push(calculatedFinalPrice);
-      console.log(`� Updating finalOfferPrice to RM${calculatedFinalPrice}`);
+      console.log(`� Updating finalOfferPrice to RM${calculatedFinalPrice}`);
+    }
+
+    // Save final score from admin review
+    if (finalScore !== undefined && finalScore !== null) {
+      updateFields.push(`"finalScore" = $${paramIndex++}`);
+      updateValues.push(parseFloat(finalScore));
+      console.log(`📊 Updating finalScore to ${finalScore}`);
     }
 
     if (applianceID) {
@@ -916,12 +932,23 @@ export const updateTransaction = async (req: Request, res: Response) => {
 
     // Update Transaction status if provided
     if (transactionStatus) {
-      await pool.query(
-        `UPDATE "Transaction"
-         SET "transactionStatus" = $1, "updatedAt" = NOW()
-         WHERE "transactionID" = $2`,
-        [transactionStatus, id]
-      );
+      // If status is "Awaiting Confirmation", set responseDeadline to 14 days from now
+      if (transactionStatus === 'Awaiting Confirmation') {
+        await pool.query(
+          `UPDATE "Transaction"
+           SET "transactionStatus" = $1, "updatedAt" = NOW(), "responseDeadline" = NOW() + INTERVAL '14 days'
+           WHERE "transactionID" = $2`,
+          [transactionStatus, id]
+        );
+        console.log('📅 Setting responseDeadline to 14 days from now for status: Awaiting Confirmation');
+      } else {
+        await pool.query(
+          `UPDATE "Transaction"
+           SET "transactionStatus" = $1, "updatedAt" = NOW()
+           WHERE "transactionID" = $2`,
+          [transactionStatus, id]
+        );
+      }
     }
 
     // Update ItemStatus if provided
@@ -949,7 +976,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
     // Handles ALL types: radio, checkbox, dropdown, image, textarea, file_upload
     // ─────────────────────────────────────────────────────────
     if (adminConditions && typeof adminConditions === 'object' && Object.keys(adminConditions).length > 0) {
-      console.log('� Saving admin dynamic answers:', adminConditions);
+      console.log('� Saving admin dynamic answers:', adminConditions);
 
       try {
         // Fetch condition groups to identify question types
@@ -962,7 +989,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
           groupTypes[row.groupID] = row.question_type;
         });
 
-        console.log('� Group types:', groupTypes);
+        console.log('� Group types:', groupTypes);
 
         // First, delete ALL existing admin answers for this submission
         await pool.query(
@@ -971,11 +998,18 @@ export const updateTransaction = async (req: Request, res: Response) => {
           [submittedApplianceID]
         );
 
+        // Reset the sequence to avoid duplicate key errors
+        await pool.query(`
+          SELECT setval('condition_selected_id_seq',
+            COALESCE((SELECT MAX(CAST(SUBSTRING("conditionSelectionID" FROM 3) AS INTEGER)) FROM "ConditionSelected"), 0) + 1,
+            false)
+        `);
+
 
         // Process each group answer
         for (const [groupID, value] of Object.entries(adminConditions)) {
           const questionType = groupTypes[groupID];
-          console.log(`� Processing group ${groupID} (type: ${questionType}) with value:`, value);
+          console.log(`� Processing group ${groupID} (type: ${questionType}) with value:`, value);
 
           if (!value) {
             continue;
@@ -984,7 +1018,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
           // Handle based on question type
           if (questionType === 'textarea') {
             // Save text value
-            console.log(`� Saving textarea answer (${(value as string).length} chars)`);
+            console.log(`� Saving textarea answer (${(value as string).length} chars)`);
             await pool.query(
               `INSERT INTO "ConditionSelected"
                ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue")
@@ -994,7 +1028,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
           } else if (questionType === 'file_upload') {
             // Save file upload URLs as JSON array in textValue
             const photoUrls = Array.isArray(value) ? value : [];
-            console.log(`� Saving ${photoUrls.length} file upload URLs for group ${groupID}`);
+            console.log(`� Saving ${photoUrls.length} file upload URLs for group ${groupID}`);
 
             if (photoUrls.length > 0) {
               await pool.query(
@@ -1050,7 +1084,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
             }
           } else {
             // radio, dropdown, image - single conditionID or description
-            console.log(`� Saving ${questionType} answer: ${value}`);
+            console.log(`� Saving ${questionType} answer: ${value}`);
 
             let actualConditionID = value;
             let descriptionText = value; // Default to the value itself
@@ -1109,7 +1143,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
     // Only update if photos array is explicitly provided
     // ─────────────────────────────────────────────────────────
     if (photos && Array.isArray(photos) && photos.length > 0) {
-      console.log('� Processing photos:', photos.length, 'photos');
+      console.log('� Processing photos:', photos.length, 'photos');
 
       try {
         // Delete only existing ADMIN photos for this submission (keep seller photos)
@@ -1139,7 +1173,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
         throw photoError;
       }
     } else {
-      console.log('� No photos to update (photos not provided or empty array)');
+      console.log('� No photos to update (photos not provided or empty array)');
     }
 
 
@@ -1169,7 +1203,7 @@ export const updateSubmissionDetails = async (req: Request, res: Response) => {
       questionAnswers // JSON string of new answers
     } = req.body;
 
-    console.log('� Updating submission details for transaction:', id);
+    console.log('� Updating submission details for transaction:', id);
     console.log('Payload:', req.body);
 
     // Get the submittedApplianceID for this transaction
@@ -1243,7 +1277,7 @@ export const updateSubmissionDetails = async (req: Request, res: Response) => {
     // Update condition answers if provided
     if (questionAnswers) {
       const answers = JSON.parse(questionAnswers);
-      console.log('� Updating condition answers:', answers);
+      console.log('� Updating condition answers:', answers);
 
       // Delete existing condition selections for this submission
       await pool.query(
@@ -1313,7 +1347,7 @@ export const updateCustomerInfo = async (req: Request, res: Response) => {
       pickupTimeSlot
     } = req.body;
 
-    console.log('� Updating customer info for transaction:', id);
+    console.log('� Updating customer info for transaction:', id);
     console.log('Payload:', req.body);
 
     // Get the submittedApplianceID and check item status

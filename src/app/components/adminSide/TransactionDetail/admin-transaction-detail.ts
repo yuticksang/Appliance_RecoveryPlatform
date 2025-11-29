@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, Observable } from 'rxjs';
 import { TransactionService } from '../../../services/transaction.service';
+import { QuestionnaireService } from '../../../services/questionnaire.service';
 import { AlertService } from '../../../services/alert.service';
 
 @Component({
@@ -17,6 +18,7 @@ export class AdminTransactionDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private transactionService = inject(TransactionService);
+  private questionnaireService = inject(QuestionnaireService);
   private alertService = inject(AlertService);
 
   transaction = signal<any>(null);
@@ -421,10 +423,9 @@ export class AdminTransactionDetailComponent implements OnInit {
     const selectedCategory = this.categories.find(c => c.categoryID === this.selectedCategoryId);
     const selectedBrand = this.brands.find(b => b.brandID === this.selectedBrandId);
 
-    // Build adminConditions object from selectedConditions
-    // Format: { [groupID]: value (description string, array of descriptions, or base64 strings for files) }
-    // Include ALL types: radio, checkbox, dropdown, image, textarea, and file_upload
+    // Build adminConditions object and collect conditionIds for scoring
     const adminConditions: { [key: string]: string | string[] } = {};
+    const conditionIds: string[] = [];
 
     for (const group of this.conditionGroups) {
       const selectedValue = this.selectedConditions[group.groupID];
@@ -434,17 +435,75 @@ export class AdminTransactionDetailComponent implements OnInit {
         if (typeof selectedValue === 'string' && selectedValue.trim() === '') continue;
 
         adminConditions[group.groupID] = selectedValue;
+
+        // ✅ Collect conditionIds for score calculation
+        if (group.question_type === 'radio' || group.question_type === 'dropdown' || group.question_type === 'image') {
+          const option = group.options.find((opt: any) => opt.description === selectedValue);
+          if (option?.conditionID) {
+            conditionIds.push(option.conditionID);
+          }
+        } else if (group.question_type === 'checkbox' && Array.isArray(selectedValue)) {
+          selectedValue.forEach(desc => {
+            const option = group.options.find((opt: any) => opt.description === desc);
+            if (option?.conditionID) {
+              conditionIds.push(option.conditionID);
+            }
+          });
+        }
       }
     }
 
     console.log('📋 Admin conditions to save:', adminConditions);
+    console.log('🎯 Condition IDs for scoring:', conditionIds);
 
-    // Send update request (file uploads are handled in sendUpdateRequest)
-    this.sendUpdateRequest(txn, adminConditions, selectedBrand, selectedAppliance, selectedCategory);
+    // ✅ Calculate score using the calculateValuation endpoint
+    if (conditionIds.length > 0) {
+      const payload = {
+        modelId: this.selectedApplianceId,
+        conditionIds: conditionIds
+      };
+
+      console.log('📊 Calculating admin score with payload:', payload);
+
+      this.questionnaireService.calculateValuation(payload).subscribe({
+        next: (scoreResponse: any) => {
+          console.log('✅ Admin score calculated:', scoreResponse);
+
+          const scoreLabel = scoreResponse?.scoreLabel || {};
+          const finalScore = scoreLabel.totalScore || 0;
+          const finalPrice = scoreResponse?.valuationWorth || txn.estimatedPrice;
+
+          console.log(`📊 Final Score: ${finalScore}, Final Price: RM ${finalPrice}`);
+
+          // Send update with calculated score
+          this.performUpdateWithScore(txn, adminConditions, selectedBrand, selectedAppliance, selectedCategory, finalScore, finalPrice);
+        },
+        error: (err: any) => {
+          console.error('❌ Error calculating admin score:', err);
+          this.alertService.error('Failed to calculate score. Saving without score update.');
+          // Continue with save even if score calculation fails
+          this.performUpdateWithScore(txn, adminConditions, selectedBrand, selectedAppliance, selectedCategory, 0, txn.estimatedPrice);
+        }
+      });
+    } else {
+      // No conditions selected, save without score
+      console.log('⚠️ No conditions selected for scoring');
+      this.performUpdateWithScore(txn, adminConditions, selectedBrand, selectedAppliance, selectedCategory, 0, txn.estimatedPrice);
+    }
   }
 
-  // Helper method to send the update request
-  private sendUpdateRequest(txn: any, adminConditions: any, selectedBrand: any, selectedAppliance: any, selectedCategory: any): void {
+  /**
+   * Perform update with calculated score
+   */
+  private performUpdateWithScore(
+    txn: any,
+    adminConditions: any,
+    selectedBrand: any,
+    selectedAppliance: any,
+    selectedCategory: any,
+    finalScore: number,
+    finalPrice: number
+  ): void {
     // First, upload admin photos to Supabase Storage if there are any
     const uploadPromises: { groupID: string, observable: Observable<string[]> }[] = [];
 
@@ -465,24 +524,17 @@ export class AdminTransactionDetailComponent implements OnInit {
       }
     }
 
-    // Wait for all photo uploads to complete, then send the update
     if (uploadPromises.length > 0) {
-      // Use forkJoin to wait for all uploads to complete
       const observables = uploadPromises.map(p => p.observable);
 
       forkJoin(observables).subscribe({
         next: (uploadResults) => {
-          // Map uploaded URLs back to their groupIDs
           uploadResults.forEach((urls, index) => {
             const groupID = uploadPromises[index].groupID;
             adminConditions[groupID] = urls;
-            console.log(`✅ Mapped ${urls.length} photos to group ${groupID}`);
           });
 
-          console.log(`✅ Total photos uploaded: ${uploadResults.flat().length}`);
-
-          // Now send update with photo URLs in adminConditions
-          this.performUpdate(txn, adminConditions, selectedBrand, selectedAppliance, selectedCategory);
+          this.sendFinalUpdate(txn, adminConditions, selectedBrand, selectedAppliance, selectedCategory, finalScore, finalPrice);
         },
         error: (error) => {
           console.error('❌ Error uploading photos:', error);
@@ -490,16 +542,22 @@ export class AdminTransactionDetailComponent implements OnInit {
         }
       });
     } else {
-      // No photos to upload, just send the update
-      this.performUpdate(txn, adminConditions, selectedBrand, selectedAppliance, selectedCategory);
+      this.sendFinalUpdate(txn, adminConditions, selectedBrand, selectedAppliance, selectedCategory, finalScore, finalPrice);
     }
   }
 
-  // Perform the actual update request
-  private performUpdate(txn: any, adminConditions: any, selectedBrand: any, selectedAppliance: any, selectedCategory: any): void {
-    // Note: Photo URLs are already in adminConditions[groupID] from the upload step
-    // No need to pass uploadedPhotoUrls separately anymore
-
+  /**
+   * Send final update request to backend
+   */
+  private sendFinalUpdate(
+    txn: any,
+    adminConditions: any,
+    selectedBrand: any,
+    selectedAppliance: any,
+    selectedCategory: any,
+    finalScore: number,
+    finalPrice: number
+  ): void {
     const updateData = {
       transactionStatus: this.transactionStatus,
       itemStatus: this.itemStatus,
@@ -507,21 +565,21 @@ export class AdminTransactionDetailComponent implements OnInit {
       model: selectedAppliance?.modelCode || '',
       category: selectedCategory?.categoryName || '',
       modelName: selectedAppliance?.modelName || '',
-      note: this.note, // Note
-      // Send admin checklist conditions (includes photo URLs for file_upload groups)
-      // Price will be automatically calculated from adminConditions in the backend
-      adminConditions: adminConditions
+      note: this.note,
+      adminConditions: adminConditions,
+      finalScore: finalScore,      // ✅ Add score
+      finalPrice: finalPrice        // ✅ Add price
     };
 
-    console.log('📤 Sending update data:', updateData);
+    console.log('📤 Sending update data with score:', updateData);
 
     this.transactionService.updateTransaction(txn.id, updateData).subscribe({
       next: () => {
-        this.alertService.success('Transaction updated successfully');
+        this.alertService.success('Transaction updated successfully with score: ' + finalScore);
         this.editMode.set(false);
-        this.uploadedFiles = {}; // Clear uploaded files
-        this.uploadedFilePreviews = {}; // Clear previews
-        this.loadAllData(txn.id); // Reload to get fresh data
+        this.uploadedFiles = {};
+        this.uploadedFilePreviews = {};
+        this.loadAllData(txn.id);
       },
       error: (error) => {
         console.error('❌ Error updating transaction:', error);
@@ -630,16 +688,31 @@ export class AdminTransactionDetailComponent implements OnInit {
   // ========== CHECKBOX HELPER METHODS ==========
 
   // Toggle checkbox selection for a condition option
+  // "None" is mutually exclusive - if selected, clear all others; if others selected, clear "None"
   toggleCheckboxOption(groupID: string, optionDescription: string): void {
     if (!Array.isArray(this.selectedConditions[groupID])) {
       this.selectedConditions[groupID] = [];
     }
     const arr = this.selectedConditions[groupID] as string[];
     const index = arr.indexOf(optionDescription);
+
     if (index > -1) {
+      // Unchecking the option
       arr.splice(index, 1);
     } else {
-      arr.push(optionDescription);
+      // Checking the option
+      if (optionDescription.toLowerCase() === 'none') {
+        // If selecting "None", clear all other selections
+        this.selectedConditions[groupID] = ['None'];
+      } else {
+        // If selecting any other option, remove "None" first
+        const noneIndex = arr.findIndex(item => item.toLowerCase() === 'none');
+        if (noneIndex > -1) {
+          arr.splice(noneIndex, 1);
+        }
+        // Then add the new selection
+        arr.push(optionDescription);
+      }
     }
   }
 
@@ -990,5 +1063,45 @@ export class AdminTransactionDetailComponent implements OnInit {
 
     return options;
   }
-  
+
+  // ========== RESPONSE DEADLINE METHODS ==========
+
+  // Calculate days until deadline
+  get daysUntilDeadline(): number {
+    const txn = this.transaction();
+    if (!txn?.responseDeadline) return 0;
+
+    const now = new Date();
+    const deadline = new Date(txn.responseDeadline);
+    const timeDifference = deadline.getTime() - now.getTime();
+    const daysDifference = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
+
+    return Math.max(0, daysDifference); // Return 0 if negative (expired)
+  }
+
+  // Check if deadline has passed
+  isDeadlineExpired(): boolean {
+    const txn = this.transaction();
+    if (!txn?.responseDeadline) return false;
+
+    const now = new Date();
+    const deadline = new Date(txn.responseDeadline);
+    return now > deadline;
+  }
+
+  // Check if deadline is approaching (≤ 3 days)
+  isDeadlineApproaching(): boolean {
+    return this.daysUntilDeadline <= 3 && !this.isDeadlineExpired();
+  }
+
+  // Get CSS class for deadline status
+  deadlineStatusClass(): string {
+    if (this.isDeadlineExpired()) {
+      return 'expired';
+    } else if (this.isDeadlineApproaching()) {
+      return 'warning';
+    }
+    return 'normal';
+  }
+
 }
