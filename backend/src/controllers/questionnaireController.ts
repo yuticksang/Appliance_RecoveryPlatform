@@ -319,9 +319,9 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
         console.log(`  → Saving ${qa.type} answer: ${qa.answer}`);
         await client.query(
           `INSERT INTO "ConditionSelected"
-          ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID")
-          VALUES ($1, $2, true, 'seller', NOW(), $3)`,
-          [qa.answer, finalId, qa.groupID]
+          ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID","score")
+          VALUES ($1, $2, true, 'seller', NOW(), $3, $4)`,
+          [qa.answer, finalId, qa.groupID, qa.score]
         );
         savedCount++;
       }
@@ -332,9 +332,9 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
         for (const conditionID of qa.answer) {
           await client.query(
             `INSERT INTO "ConditionSelected"
-            ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID")
-            VALUES ($1, $2, true, 'seller', NOW(), $3)`,
-            [conditionID, finalId, qa.groupID]
+            ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID","score")
+            VALUES ($1, $2, true, 'seller', NOW(), $3, $4)`,
+            [conditionID, finalId, qa.groupID, qa.score]
           );
           savedCount++;
         }

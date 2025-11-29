@@ -27,6 +27,7 @@ export interface ConditionGroup {
   groupID: string;
   sectionName: string;
   question: string;
+  score: number;
   type: 'radio' | 'image' | 'checkbox' | 'file_upload' | 'textarea';
   displayOrder: number;
   options: ConditionOption[];
