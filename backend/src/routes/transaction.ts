@@ -6,9 +6,10 @@ import {
   createTransaction,
   updateTransactionStatus,
   updateTransaction,
-  uploadAdminPhotos,
   updateSubmissionDetails,
-  updateCustomerInfo
+  updateCustomerInfo,
+  uploadAdminPhotos,
+  getConditionOptionsByGroupIds
 } from '../controllers/transactionController';
 import { verifyToken } from '../middleware/authMiddleware';
 import multer from 'multer';
@@ -41,6 +42,9 @@ router.get('/seller/:sellerId', getTransactionsBySeller);
 // Get all transactions (admin)
 router.get('/', getAllTransactions);
 
+// Get condition options by group IDs
+router.get('/condition-options-by-groups', verifyToken, getConditionOptionsByGroupIds);
+
 // Get single transaction by ID
 router.get('/:id', getTransactionById);
 
@@ -49,7 +53,7 @@ router.post('/', createTransaction);
 
 // Update transaction status
 router.put('/:id/status', updateTransactionStatus);
-
+  
 // Upload admin photos to Supabase Storage
 router.post('/:id/photos', upload.array('photos', 10), uploadAdminPhotos);
 
@@ -61,5 +65,6 @@ router.put('/:id/submission', updateSubmissionDetails);
 
 // Update transaction (full edit - admin)
 router.put('/:id', updateTransaction);
+
 
 export default router;

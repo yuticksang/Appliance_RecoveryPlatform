@@ -7,8 +7,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || ''
 );
 
-console.log('🔥🔥🔥 transactionController.ts LOADED');
-
 /**
  * Get all transactions for a specific seller
  * Joins SubmittedAppliance, Transaction, ItemStatus, and Appliance tables
@@ -235,20 +233,43 @@ export const getTransactionById = async (req: Request, res: Response) => {
         : row.selectedOptions[0]?.description || 'N/A'
     }));
 
-
-
-
-
-    // Fetch all condition groups for this specific category that were active at submission time
+           // Fetch all condition groups for this specific category that were active at submission time
     // This ensures old transactions only show groups that existed when they were submitted
+    // This query is used for BOTH seller view AND admin edit
     const conditionGroupsResult = await pool.query(
-      `SELECT DISTINCT cg."groupID", cg."criteriaName", cg.question_type, cg.display_order
+      `SELECT DISTINCT cg."groupID", cg."criteriaName", cg.question_type, COALESCE(cg.display_order, 999999) as display_order
        FROM "ConditionGroup" cg
-       LEFT JOIN "ConditionOption" co ON cg."groupID" = co."groupID"
-       LEFT JOIN "ConditionSelected" cs ON co."conditionID" = cs."conditionID"
-       WHERE (cs."submittedApplianceID" = $1 OR cg.question_type = 'textarea' OR cg.question_type = 'file_upload')
-       AND (cg."categoryID" = $2 OR cg."categoryID" IS NULL)
-       ORDER BY COALESCE(cg.display_order, 999999) ASC`,
+       WHERE cg."groupID" IN (
+         -- Get all unique groupIDs that have data for this submission
+         -- These should ALWAYS show regardless of current status
+         SELECT DISTINCT COALESCE(co."groupID", cs."groupID") as "groupID"
+         FROM "ConditionSelected" cs
+         LEFT JOIN "ConditionOption" co ON cs."conditionID" = co."conditionID"
+         WHERE cs."submittedApplianceID" = $1
+         AND cs."isChecked" = true
+         
+         UNION
+         
+         -- Also include ALL groups that existed before or at submission time
+         -- (for empty groups - show them regardless of current active/inactive status)
+         SELECT cg2."groupID"
+         FROM "ConditionGroup" cg2
+         WHERE cg2."created_at" <= (
+           SELECT sa."submissionDate" 
+           FROM "SubmittedAppliance" sa 
+           WHERE sa."submittedApplianceID" = $1
+         )
+         AND (
+           EXISTS (
+             SELECT 1 FROM "Category_ConditionGroup" ccg
+             WHERE ccg."groupID" = cg2."groupID" AND ccg."categoryID" = $2
+           )
+           OR NOT EXISTS (
+             SELECT 1 FROM "Category_ConditionGroup" WHERE "groupID" = cg2."groupID"
+           )
+         )
+       )
+       ORDER BY display_order ASC`,
       [transaction.submittedApplianceID, transaction.categoryID]
     );
 
@@ -628,6 +649,41 @@ export const uploadAdminPhotos = async (req: Request, res: Response) => {
     client.release();
   }
 };
+
+export const getConditionOptionsByGroupIds = async (req: Request, res: Response) => {
+    try {
+      const { groupIds } = req.query; // Comma-separated group IDs
+
+      if (!groupIds || typeof groupIds !== 'string') {
+        return res.status(400).json({ message: 'groupIds parameter is required' });
+      }
+
+      const groupIdArray = groupIds.split(',');
+
+      const result = await pool.query(
+        `SELECT co."conditionID", co."groupID", co.code, co.description, co.question, co.image
+         FROM "ConditionOption" co
+         WHERE co."groupID" = ANY($1)
+         ORDER BY co."conditionID"`,
+        [groupIdArray]
+      );
+
+      // Group options by groupID
+      const optionsByGroup: { [key: string]: any[] } = {};
+      result.rows.forEach(row => {
+        if (!optionsByGroup[row.groupID]) {
+          optionsByGroup[row.groupID] = [];
+        }
+        optionsByGroup[row.groupID].push(row);
+      });
+
+      res.json(optionsByGroup);
+    } catch (error) {
+      console.error('❌ Error fetching condition options by group IDs:', error);
+      res.status(500).json({ message: 'Failed to fetch condition options' });
+    }
+  };
+
 
 /**
  * Update transaction with full data (admin edit)

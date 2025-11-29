@@ -1066,6 +1066,24 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     return this.adminPhotos || [];
   }
 
+    // Check if a group has any seller data (for showing "No data" message)
+  hasSellerDataForGroup(groupID: string): boolean {
+    if (this.isFileUploadGroup(groupID)) {
+      return this.sellerPhotos.length > 0;
+    }
+    const value = this.sellerConditions[groupID];
+    return value !== undefined && value !== null && value !== '';
+  }
+
+  // Check if a group has any admin data (for showing "No data" message)
+  hasAdminDataForGroup(groupID: string): boolean {
+    if (this.isFileUploadGroup(groupID)) {
+      return this.adminPhotos.length > 0;
+    }
+    const value = this.adminConditions[groupID];
+    return value !== undefined && value !== null && value !== '';
+  }
+
   // Photo navigation for seller photos
   prevSellerPhoto(event: Event): void {
     event.stopPropagation();
