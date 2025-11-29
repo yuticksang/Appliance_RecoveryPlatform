@@ -47,6 +47,8 @@ export class PriceListComponent implements OnInit {
   selectedCategory = signal<string>('');
   selectedBrand = signal<string>('');
   selectedBuyer = signal<string>('');
+  minPrice = signal<number | null>(null);
+  maxPrice = signal<number | null>(null);
 
   itemsPerPageOptions = [10, 20, 30, 50];
   itemsPerPage = signal<number>(10);
@@ -101,6 +103,8 @@ export class PriceListComponent implements OnInit {
     const selectedCat = this.selectedCategory();
     const selectedBrand = this.selectedBrand();
     const selectedBuyer = this.selectedBuyer();
+    const min = this.minPrice();
+    const max = this.maxPrice();
 
     let list = this.rows().filter(r => {
       const matchesSearch = !q ||
@@ -117,7 +121,11 @@ export class PriceListComponent implements OnInit {
       const matchesBrand = !selectedBrand || r.brandName === selectedBrand;
       const matchesBuyer = !selectedBuyer || r.buyer_id === selectedBuyer;
 
-      return matchesSearch && matchesCategory && matchesBrand && matchesBuyer;
+      const price = parseFloat(r.basePrice.toString()) || 0;
+      const matchesMinPrice = min === null || price >= min;
+      const matchesMaxPrice = max === null || price <= max;
+
+      return matchesSearch && matchesCategory && matchesBrand && matchesBuyer && matchesMinPrice && matchesMaxPrice;
     });
 
     // Sort
@@ -172,6 +180,8 @@ export class PriceListComponent implements OnInit {
     this.selectedCategory.set('');
     this.selectedBrand.set('');
     this.selectedBuyer.set('');
+    this.minPrice.set(null);
+    this.maxPrice.set(null);
     this.currentPage.set(1);
   }
 
