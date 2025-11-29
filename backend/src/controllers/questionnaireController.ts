@@ -240,12 +240,13 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       modelId,
       addressId,
       valuationWorth,
+      valuationScore,
       highestBuyerId,
       pickupDate,
       pickupTime,
       questionAnswers: questionAnswersJson
     } = req.body;
-
+    
     if (!modelId || !addressId) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
@@ -282,19 +283,21 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
     const subRes = await client.query(
       `INSERT INTO "SubmittedAppliance" (
         "submittedApplianceID", "sellerID", "applianceID", "addressID",
-        "initialOfferPrice"
-      ) VALUES ($1, $2, $3, $4, $5)
+        "initialOfferPrice", "initialScore"
+      ) VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING "submittedApplianceID"`,
       [
         submittedApplianceID,
         sellerId,
         modelId,
         addressId,
-        parseFloat(valuationWorth) || 0
+        parseFloat(valuationWorth) || 0,
+        parseFloat(valuationScore) || 0
       ]
     );
 
     const finalId = subRes.rows[0].submittedApplianceID;
+
 
     // ─────────────────────────────────────────────────────────
     // SAVE ALL DYNAMIC ANSWERS TO ConditionSelected
@@ -316,6 +319,7 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
         );
         const descriptionText = descResult.rows.length > 0 ? descResult.rows[0].description : '';
 
+        //save with score column
         await client.query(
           `INSERT INTO "ConditionSelected"
           ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID","score")
@@ -336,6 +340,7 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
           );
           const descriptionText = descResult.rows.length > 0 ? descResult.rows[0].description : '';
 
+         // ✅ Save each checkbox item with score
           await client.query(
             `INSERT INTO "ConditionSelected"
             ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID","score")
@@ -343,7 +348,7 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
             [conditionID, finalId, qa.groupID, qa.score]
           );
           savedCount++;
-        }
+      }
       }
 
       // For textarea: save text value

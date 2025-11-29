@@ -140,6 +140,8 @@ export const getTransactionById = async (req: Request, res: Response) => {
         sa."submissionDate" as "submittedDate",
         COALESCE(sa."initialOfferPrice", 0) as "estimatedPrice",
         sa."finalOfferPrice" as "finalPrice",
+        sa."initialScore" as "initialScore",
+        sa."finalScore" as "finalScore",
         t."transactionStatus",
         t."createdAt",
         t."updatedAt",
@@ -686,8 +688,89 @@ export const getConditionOptionsByGroupIds = async (req: Request, res: Response)
 
 
 /**
+ * Helper function to calculate price based on condition selections
+ * Replicates the logic from calculateValuationController.ts
+ */
+const calculatePriceFromConditions = async (modelId: string, conditionIds: string[]): Promise<number> => {
+  try {
+    console.log(`🧮 Calculating price for Model: ${modelId} with Conditions:`, conditionIds);
+
+    // PRICING ENGINE - Get base prices from buyers
+    const basePriceQuery = await pool.query(
+      `SELECT "buyerID", "basePrice"
+       FROM "BuyerAppliance"
+       WHERE "applianceID" = $1
+       AND "status" = 'ACTIVE'`,
+      [modelId]
+    );
+
+    const buyers = basePriceQuery.rows;
+
+    if (buyers.length === 0) {
+      console.log('⚠️ No active buyers found for this appliance');
+      return 0;
+    }
+
+    const buyerIds = buyers.map(b => b.buyerID);
+    let markdowns: any[] = [];
+
+    if (conditionIds.length > 0) {
+      const markdownsQuery = await pool.query(
+        `SELECT bm."buyerID", bm."markdownPercentage", bm."conditionID", co."description"
+         FROM "BuyerMarkdown" bm
+         JOIN "ConditionOption" co ON bm."conditionID" = co."conditionID"
+         WHERE bm."buyerID" = ANY($1)
+         AND bm."conditionID" = ANY($2)`,
+        [buyerIds, conditionIds]
+      );
+
+      markdowns = markdownsQuery.rows;
+    }
+
+    let highestOffer = 0;
+    let highestBuyerId: string | null = null;
+
+    buyers.forEach(buyer => {
+      const base = parseFloat(buyer.basePrice);
+      const buyerId = buyer.buyerID;
+
+      const applicableMarkdowns = markdowns.filter(m => m.buyerID === buyerId);
+
+      // Check if buyer has rules for all selected conditions
+      const hasValidRules = conditionIds.every((selectedId: string) => {
+        const match = applicableMarkdowns.find(m => m.conditionID === selectedId);
+        return match && match.markdownPercentage != null;
+      });
+
+      if (!hasValidRules) {
+        return; // Skip this buyer
+      }
+
+      const totalMarkdownPercentage = applicableMarkdowns.reduce((sum, m) => {
+        return sum + parseFloat(m.markdownPercentage);
+      }, 0);
+
+      const effectiveMarkdown = Math.min(totalMarkdownPercentage, 100);
+      const finalPrice = base * (1 - effectiveMarkdown / 100);
+
+      if (finalPrice > highestOffer) {
+        highestOffer = finalPrice;
+        highestBuyerId = buyerId;
+      }
+    });
+
+    console.log(`💰 Calculated price: RM${Math.round(highestOffer)} from buyer ${highestBuyerId}`);
+    return Math.round(highestOffer);
+  } catch (error) {
+    console.error('❌ Error calculating price:', error);
+    return 0;
+  }
+};
+
+/**
  * Update transaction with full data (admin edit)
  * Now supports dynamic condition selections stored in ConditionSelected table
+ * Price is automatically calculated from admin condition selections
  */
 export const updateTransaction = async (req: Request, res: Response) => {
   try {
@@ -695,7 +778,6 @@ export const updateTransaction = async (req: Request, res: Response) => {
     const {
       transactionStatus,
       itemStatus,
-      finalPrice,
       brand,
       model,
       category,
@@ -706,7 +788,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
       photos
     } = req.body;
 
-    console.log('📝 Updating transaction with full data:', { id, transactionStatus, itemStatus, finalPrice, adminConditions, hasPhotos: !!photos, photoCount: photos?.length });
+    console.log('📝 Updating transaction with full data:', { id, transactionStatus, itemStatus, adminConditions, hasPhotos: !!photos, photoCount: photos?.length });
 
     // Get the submittedApplianceID for this transaction
     const txnResult = await pool.query(
@@ -739,14 +821,82 @@ export const updateTransaction = async (req: Request, res: Response) => {
       }
     }
 
+    // ─────────────────────────────────────────────────────────
+    // CALCULATE FINAL PRICE FROM ADMIN CONDITIONS
+    // Price is automatically calculated based on condition selections
+    // ─────────────────────────────────────────────────────────
+    let calculatedFinalPrice: number | null = null;
+
+    if (applianceID && adminConditions && typeof adminConditions === 'object') {
+      // Extract all conditionIDs from adminConditions
+      const conditionIds: string[] = [];
+
+      for (const [groupID, value] of Object.entries(adminConditions)) {
+        if (!value) continue;
+
+        // Fetch group type to know how to extract conditionIDs
+        const groupTypeResult = await pool.query(
+          `SELECT question_type FROM "ConditionGroup" WHERE "groupID" = $1`,
+          [groupID]
+        );
+
+        const questionType = groupTypeResult.rows[0]?.question_type;
+
+        // Only extract conditionIDs for types that have them (skip textarea and file_upload)
+        if (questionType && questionType !== 'textarea' && questionType !== 'file_upload') {
+          if (questionType === 'checkbox' && Array.isArray(value)) {
+            // For checkbox, add all selected conditionIDs
+            for (const item of value) {
+              if (typeof item === 'string' && item.startsWith('CO')) {
+                conditionIds.push(item);
+              } else if (typeof item === 'string') {
+                // It's a description, look up the conditionID
+                const condResult = await pool.query(
+                  `SELECT "conditionID" FROM "ConditionOption" WHERE "groupID" = $1 AND description = $2`,
+                  [groupID, item]
+                );
+                if (condResult.rows.length > 0) {
+                  conditionIds.push(condResult.rows[0].conditionID);
+                }
+              }
+            }
+          } else {
+            // For radio, dropdown, image - single value
+            if (typeof value === 'string' && value.startsWith('CO')) {
+              conditionIds.push(value as string);
+            } else if (typeof value === 'string') {
+              // It's a description, look up the conditionID
+              const condResult = await pool.query(
+                `SELECT "conditionID" FROM "ConditionOption" WHERE "groupID" = $1 AND description = $2`,
+                [groupID, value]
+              );
+              if (condResult.rows.length > 0) {
+                conditionIds.push(condResult.rows[0].conditionID);
+              }
+            }
+          }
+        }
+      }
+
+      console.log('💰 Calculating final price with conditionIDs:', conditionIds);
+
+      // Calculate price based on conditions
+      if (conditionIds.length > 0) {
+        calculatedFinalPrice = await calculatePriceFromConditions(applianceID, conditionIds);
+        console.log('💰 Calculated final price:', calculatedFinalPrice);
+      }
+    }
+
     // Update SubmittedAppliance table (final price and appliance details)
     const updateFields: string[] = [];
     const updateValues: any[] = [];
     let paramIndex = 1;
 
-    if (finalPrice !== undefined && finalPrice !== null) {
+    // Use calculated price instead of manual input
+    if (calculatedFinalPrice !== null) {
       updateFields.push(`"finalOfferPrice" = $${paramIndex++}`);
-      updateValues.push(finalPrice);
+      updateValues.push(calculatedFinalPrice);
+      console.log(`💰 Updating finalOfferPrice to RM${calculatedFinalPrice}`);
     }
 
     if (applianceID) {
