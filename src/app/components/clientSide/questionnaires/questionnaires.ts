@@ -90,6 +90,9 @@ export class QuestionnairesComponent implements OnInit{
 
   // Step 4 - Valuation
   valuationScore: number = 0;
+  functionalityScore: number = 0;
+  appearanceScore: number = 0;
+  componentScore: number = 0;
   valuationLabel: string = '';
   valuationWorth: number = 0;
   calculatedScores: any;
@@ -818,6 +821,11 @@ export class QuestionnairesComponent implements OnInit{
           if (res.scoreLabel) {
             this.valuationWorth = res.valuationWorth || 0;
              this.valuationScore = res.scoreLabel.totalScore;
+             this.functionalityScore = res.scoreLabel.functionalityScore;
+             this.appearanceScore = res.scoreLabel.appearanceScore;
+             this.componentScore = res.scoreLabel.componentScore;
+
+             console.log('Score:', res.scoreLabel.appearanceScore, res.scoreLabel.functionalityScore, res.scoreLabel.componentScore, res.scoreLabel.totalScore);
              this.valuationLabel = res.scoreLabel.classification;
              this.calculatedScores = res.scoreLabel;
           } else {
@@ -825,6 +833,9 @@ export class QuestionnairesComponent implements OnInit{
              this.valuationScore = 0;
              this.valuationLabel = 'Unknown';
              this.calculatedScores = null;
+             this.functionalityScore = 0;
+             this.appearanceScore = 0;
+             this.componentScore = 0;
           }
 
           this.currentStep++;
