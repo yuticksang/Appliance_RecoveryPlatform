@@ -6,12 +6,12 @@ export const getBuyerAppliances = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.userId; // Get user ID from auth middleware
 
-    console.log('🔍 getBuyerAppliances called');
+    console.log('� getBuyerAppliances called');
     console.log('   User from token:', (req as any).user);
     console.log('   User ID:', userId);
 
     if (!userId) {
-      console.log('❌ No user ID found - Unauthorized');
+      console.log(' No user ID found - Unauthorized');
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
@@ -22,7 +22,7 @@ export const getBuyerAppliances = async (req: Request, res: Response) => {
     );
 
     if (userQuery.rows.length === 0) {
-      console.log('❌ User not found');
+      console.log(' User not found');
       return res.status(404).json({ message: 'User not found' });
     }
 
@@ -30,7 +30,7 @@ export const getBuyerAppliances = async (req: Request, res: Response) => {
     console.log('   Buyer ID:', buyerId);
 
     if (!buyerId) {
-      console.log('❌ User is not a buyer');
+      console.log(' User is not a buyer');
       return res.status(403).json({ message: 'User is not a buyer' });
     }
 
@@ -56,12 +56,12 @@ export const getBuyerAppliances = async (req: Request, res: Response) => {
     console.log('   Executing query with buyerID:', buyerId);
     const result = await pool.query(query, [buyerId]);
 
-    console.log('✅ Query result:', result.rows.length, 'appliances found');
+    console.log(' Query result:', result.rows.length, 'appliances found');
     console.log('   Data:', result.rows);
 
     res.json(result.rows);
   } catch (error) {
-    console.error('❌ Error fetching buyer appliances:', error);
+    console.error(' Error fetching buyer appliances:', error);
     res.status(500).json({ message: 'Failed to fetch buyer appliances' });
   }
 };
@@ -285,7 +285,7 @@ export const getBuyerTransactions = async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user?.userId;
 
-    console.log('🔍 getBuyerTransactions called');
+    console.log('� getBuyerTransactions called');
     console.log('   User ID:', userId);
 
     if (!userId) {
@@ -352,10 +352,10 @@ export const getBuyerTransactions = async (req: Request, res: Response) => {
     console.log('   Executing transactions query with buyerId:', buyerId);
     const result = await pool.query(query, [buyerId]);
 
-    console.log('✅ Found', result.rows.length, 'transactions for buyer');
+    console.log(' Found', result.rows.length, 'transactions for buyer');
     res.json(result.rows);
   } catch (error) {
-    console.error('❌ Error fetching buyer transactions:', error);
+    console.error(' Error fetching buyer transactions:', error);
     res.status(500).json({ message: 'Failed to fetch buyer transactions' });
   }
 };

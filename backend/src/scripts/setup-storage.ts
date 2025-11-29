@@ -11,23 +11,23 @@ const supabase = createClient(
 
 async function setupStorage() {
   try {
-    console.log('🔧 Setting up Supabase Storage buckets...');
+    console.log('� Setting up Supabase Storage buckets...');
 
     // Check if admin-review-photos bucket exists
     const { data: buckets, error: listError } = await supabase.storage.listBuckets();
 
     if (listError) {
-      console.error('❌ Error listing buckets:', listError);
+      console.error(' Error listing buckets:', listError);
       return;
     }
 
-    console.log('📦 Existing buckets:', buckets?.map(b => b.name));
+    console.log('� Existing buckets:', buckets?.map(b => b.name));
 
     const bucketName = 'admin-review-photos';
     const bucketExists = buckets?.some(b => b.name === bucketName);
 
     if (!bucketExists) {
-      console.log(`📦 Creating bucket: ${bucketName}`);
+      console.log(`� Creating bucket: ${bucketName}`);
 
       const { data, error } = await supabase.storage.createBucket(bucketName, {
         public: true,
@@ -36,17 +36,17 @@ async function setupStorage() {
       });
 
       if (error) {
-        console.error('❌ Error creating bucket:', error);
+        console.error(' Error creating bucket:', error);
       } else {
-        console.log('✅ Bucket created successfully:', data);
+        console.log(' Bucket created successfully:', data);
       }
     } else {
-      console.log('✅ Bucket already exists:', bucketName);
+      console.log(' Bucket already exists:', bucketName);
     }
 
-    console.log('\n🎉 Storage setup complete!');
+    console.log('\n� Storage setup complete!');
   } catch (error) {
-    console.error('❌ Setup failed:', error);
+    console.error(' Setup failed:', error);
   }
 }
 

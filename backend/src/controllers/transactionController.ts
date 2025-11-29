@@ -74,7 +74,7 @@ export const getTransactionsBySeller = async (req: Request, res: Response) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error('❌ Error fetching transactions by seller:', error);
+    console.error(' Error fetching transactions by seller:', error);
     res.status(500).json({ message: 'Failed to fetch transactions', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 };
@@ -117,7 +117,7 @@ export const getAllTransactions = async (_req: Request, res: Response) => {
 
     res.json(result.rows);
   } catch (error) {
-    console.error('❌ Error fetching all transactions:', error);
+    console.error(' Error fetching all transactions:', error);
     res.status(500).json({ message: 'Failed to fetch transactions', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 };
@@ -275,7 +275,7 @@ export const getTransactionById = async (req: Request, res: Response) => {
       [transaction.submittedApplianceID, transaction.categoryID]
     );
 
-    console.log('📋 Condition groups for this transaction:', conditionGroupsResult.rows);
+    console.log('� Condition groups for this transaction:', conditionGroupsResult.rows);
 
     // Create conditionGroupNames mapping with display_order and question_type
     const conditionGroupNames: Record<string, string> = {};
@@ -287,9 +287,9 @@ export const getTransactionById = async (req: Request, res: Response) => {
       conditionGroupTypes[row.groupID] = row.question_type;
     });
 
-    console.log('📋 Condition group names mapping:', conditionGroupNames);
-    console.log('📋 Condition group order mapping:', conditionGroupOrder);
-    console.log('📋 Condition group types mapping:', conditionGroupTypes);
+    console.log('� Condition group names mapping:', conditionGroupNames);
+    console.log('� Condition group order mapping:', conditionGroupOrder);
+    console.log('� Condition group types mapping:', conditionGroupTypes);
 
     // Group conditions by groupID and selectedBy (seller vs admin)
     // Using groupID instead of criteriaName for better mapping
@@ -297,7 +297,7 @@ export const getTransactionById = async (req: Request, res: Response) => {
     const adminConditions: { [key: string]: string | string[] } = {};
 
     conditionsResult.rows.forEach(row => {
-      console.log(`📋 Processing condition: ${row.description || row.textValue}, Group: ${row.criteriaName} (${row.groupID}), Type: ${row.question_type}, SelectedBy: ${row.selectedBy}`);
+      console.log(`� Processing condition: ${row.description || row.textValue}, Group: ${row.criteriaName} (${row.groupID}), Type: ${row.question_type}, SelectedBy: ${row.selectedBy}`);
 
       const groupID = row.groupID;
       const questionType = row.question_type;
@@ -308,14 +308,14 @@ export const getTransactionById = async (req: Request, res: Response) => {
       if (questionType === 'textarea') {
         // For textarea, use textValue (free-form text)
         value = row.textValue || '';
-        console.log(`📝 Textarea value for ${groupID}:`, value);
+        console.log(`� Textarea value for ${groupID}:`, value);
       } else if (questionType === 'file_upload') {
         // For file_upload, parse JSON array from textValue
         try {
           value = row.textValue ? JSON.parse(row.textValue) : [];
-          console.log(`📸 File upload value for ${groupID}:`, value);
+          console.log(`� File upload value for ${groupID}:`, value);
         } catch (e) {
-          console.error(`❌ Error parsing file_upload JSON for ${groupID}:`, e);
+          console.error(` Error parsing file_upload JSON for ${groupID}:`, e);
           value = [];
         }
       } else {
@@ -355,8 +355,8 @@ export const getTransactionById = async (req: Request, res: Response) => {
       }
     });
 
-    console.log('📋 Seller conditions:', sellerConditions);
-    console.log('📋 Admin conditions:', adminConditions);
+    console.log('� Seller conditions:', sellerConditions);
+    console.log('� Admin conditions:', adminConditions);
 
     // Add both to response
     transaction.sellerConditions = sellerConditions;  // Before (what seller filled)
@@ -397,9 +397,9 @@ export const getTransactionById = async (req: Request, res: Response) => {
     transaction.conditionGroupOrder = conditionGroupOrder;
     transaction.conditionGroupTypes = conditionGroupTypes;
 
-    console.log(`✅ Found transaction ${id}:`, transaction);
-    console.log(`📋 Selected issues:`, transaction.selectedIssues);
-    console.log(`📷 Photos:`, transaction.photos);
+    console.log(` Found transaction ${id}:`, transaction);
+    console.log(`� Selected issues:`, transaction.selectedIssues);
+    console.log(`� Photos:`, transaction.photos);
 
     // Disable caching to ensure fresh data is always returned
     res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
@@ -408,7 +408,7 @@ export const getTransactionById = async (req: Request, res: Response) => {
 
     res.json(transaction);
   } catch (error) {
-    console.error('❌ Error fetching transaction by ID:', error);
+    console.error(' Error fetching transaction by ID:', error);
     console.error('Full error:', error);
     res.status(500).json({ message: 'Failed to fetch transaction', error: error instanceof Error ? error.message : 'Unknown error' });
   }
@@ -421,7 +421,7 @@ export const createTransaction = async (req: Request, res: Response) => {
   try {
     const { submittedApplianceID, sellerID } = req.body;
 
-    console.log('📝 Creating new transaction:', { submittedApplianceID, sellerID });
+    console.log('� Creating new transaction:', { submittedApplianceID, sellerID });
 
     // Insert into Transaction table
     const transactionResult = await pool.query(
@@ -446,7 +446,7 @@ export const createTransaction = async (req: Request, res: Response) => {
       transaction
     });
   } catch (error) {
-    console.error('❌ Error creating transaction:', error);
+    console.error(' Error creating transaction:', error);
     res.status(500).json({ message: 'Failed to create transaction', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 };
@@ -459,11 +459,11 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { transactionStatus, itemStatus } = req.body;
 
-    console.log('📝 Updating transaction:', { id, transactionStatus, itemStatus });
+    console.log('� Updating transaction:', { id, transactionStatus, itemStatus });
 
     // Update transaction status with automatic deadline setting
     if (transactionStatus) {
-      console.log('🔄 Updating transaction status to:', transactionStatus);
+      console.log('� Updating transaction status to:', transactionStatus);
 
       // Determine which deadlines to set based on status
       let updateQuery = '';
@@ -476,7 +476,7 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
          WHERE "transactionID" = $2
          RETURNING *`;
         queryParams = [transactionStatus, id];
-        console.log('📅 Setting responseDeadline to 14 days from now');
+        console.log('� Setting responseDeadline to 14 days from now');
       } else if (transactionStatus === 'Pending Payment') {
         // Set paymentDueDate to 14 days from now
         updateQuery = `UPDATE "Transaction"
@@ -484,7 +484,7 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
          WHERE "transactionID" = $2
          RETURNING *`;
         queryParams = [transactionStatus, id];
-        console.log('📅 Setting paymentDueDate to 14 days from now');
+        console.log('� Setting paymentDueDate to 14 days from now');
       } else {
         // For other statuses, just update the status
         updateQuery = `UPDATE "Transaction"
@@ -497,14 +497,14 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
       const txnResult = await pool.query(updateQuery, queryParams);
 
       if (txnResult.rowCount === 0) {
-        console.error('❌ No transaction found with ID:', id);
+        console.error(' No transaction found with ID:', id);
         return res.status(404).json({ message: 'Transaction not found' });
       }
     }
 
     // Update item status (try update first, then insert if needed)
     if (itemStatus) {
-      console.log('🔄 Updating item status to:', itemStatus);
+      console.log('� Updating item status to:', itemStatus);
 
       // Try to update first
       const updateResult = await pool.query(
@@ -556,7 +556,7 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
 
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('❌ Error updating transaction status:', error);
+    console.error(' Error updating transaction status:', error);
     res.status(500).json({ message: 'Failed to update transaction status', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 };
@@ -569,8 +569,8 @@ export const uploadAdminPhotos = async (req: Request, res: Response) => {
   try {
     const { id } = req.params; // transactionID
 
-    console.log('📸 Uploading admin photos for transaction:', id);
-    console.log('📸 Files received:', req.files);
+    console.log('� Uploading admin photos for transaction:', id);
+    console.log('� Files received:', req.files);
 
     // Get the submittedApplianceID for this transaction
     const txnResult = await client.query(
@@ -579,21 +579,21 @@ export const uploadAdminPhotos = async (req: Request, res: Response) => {
     );
 
     if (txnResult.rows.length === 0) {
-      console.error('❌ Transaction not found:', id);
+      console.error(' Transaction not found:', id);
       return res.status(404).json({ message: 'Transaction not found' });
     }
 
     const submittedApplianceID = txnResult.rows[0].submittedApplianceID;
-    console.log('📦 Submitted Appliance ID:', submittedApplianceID);
+    console.log('� Submitted Appliance ID:', submittedApplianceID);
 
     // Upload photos to Supabase Storage
     const files = req.files as Express.Multer.File[];
     if (!files || files.length === 0) {
-      console.error('❌ No files received');
+      console.error(' No files received');
       return res.status(400).json({ message: 'No photos provided' });
     }
 
-    console.log(`📸 Processing ${files.length} files...`);
+    console.log(`� Processing ${files.length} files...`);
     const uploadedUrls: string[] = [];
 
     for (const file of files) {
@@ -601,7 +601,7 @@ export const uploadAdminPhotos = async (req: Request, res: Response) => {
       const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}.${fileExt}`;
       const filePath = `${submittedApplianceID}/${fileName}`;
 
-      console.log(`📤 Uploading file: ${fileName} (${file.size} bytes)`);
+      console.log(`� Uploading file: ${fileName} (${file.size} bytes)`);
 
       // Upload to admin-review-photos bucket
       const { error: uploadError } = await supabase.storage
@@ -612,7 +612,7 @@ export const uploadAdminPhotos = async (req: Request, res: Response) => {
         });
 
       if (uploadError) {
-        console.error('❌ Supabase upload error:', uploadError);
+        console.error(' Supabase upload error:', uploadError);
         throw new Error(`Upload failed: ${uploadError.message}`);
       }
 
@@ -622,7 +622,7 @@ export const uploadAdminPhotos = async (req: Request, res: Response) => {
         .from('admin-review-photos')
         .getPublicUrl(filePath);
 
-      console.log('🔗 Public URL:', publicUrl);
+      console.log('� Public URL:', publicUrl);
       uploadedUrls.push(publicUrl);
 
       // Save to Photo table with remark='admin'
@@ -632,7 +632,7 @@ export const uploadAdminPhotos = async (req: Request, res: Response) => {
         [submittedApplianceID, publicUrl]
       );
 
-      console.log('💾 Saved to Photo table');
+      console.log('� Saved to Photo table');
     }
 
 
@@ -641,8 +641,8 @@ export const uploadAdminPhotos = async (req: Request, res: Response) => {
       photoUrls: uploadedUrls
     });
   } catch (error) {
-    console.error('❌ Error uploading admin photos:', error);
-    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error(' Error uploading admin photos:', error);
+    console.error(' Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     res.status(500).json({
       message: 'Failed to upload photos',
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -681,7 +681,7 @@ export const getConditionOptionsByGroupIds = async (req: Request, res: Response)
 
       res.json(optionsByGroup);
     } catch (error) {
-      console.error('❌ Error fetching condition options by group IDs:', error);
+      console.error(' Error fetching condition options by group IDs:', error);
       res.status(500).json({ message: 'Failed to fetch condition options' });
     }
   };
@@ -707,7 +707,7 @@ const calculatePriceFromConditions = async (modelId: string, conditionIds: strin
     const buyers = basePriceQuery.rows;
 
     if (buyers.length === 0) {
-      console.log('⚠️ No active buyers found for this appliance');
+      console.log('⚠ No active buyers found for this appliance');
       return 0;
     }
 
@@ -759,10 +759,10 @@ const calculatePriceFromConditions = async (modelId: string, conditionIds: strin
       }
     });
 
-    console.log(`💰 Calculated price: RM${Math.round(highestOffer)} from buyer ${highestBuyerId}`);
+    console.log(`� Calculated price: RM${Math.round(highestOffer)} from buyer ${highestBuyerId}`);
     return Math.round(highestOffer);
   } catch (error) {
-    console.error('❌ Error calculating price:', error);
+    console.error(' Error calculating price:', error);
     return 0;
   }
 };
@@ -788,7 +788,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
       photos
     } = req.body;
 
-    console.log('📝 Updating transaction with full data:', { id, transactionStatus, itemStatus, adminConditions, hasPhotos: !!photos, photoCount: photos?.length });
+    console.log('� Updating transaction with full data:', { id, transactionStatus, itemStatus, adminConditions, hasPhotos: !!photos, photoCount: photos?.length });
 
     // Get the submittedApplianceID for this transaction
     const txnResult = await pool.query(
@@ -817,7 +817,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
       if (applianceResult.rows.length > 0) {
         applianceID = applianceResult.rows[0].applianceID;
       } else {
-        console.warn(`⚠️ No appliance found for ${category} ${brand} ${model}`);
+        console.warn(`⚠ No appliance found for ${category} ${brand} ${model}`);
       }
     }
 
@@ -878,12 +878,12 @@ export const updateTransaction = async (req: Request, res: Response) => {
         }
       }
 
-      console.log('💰 Calculating final price with conditionIDs:', conditionIds);
+      console.log('� Calculating final price with conditionIDs:', conditionIds);
 
       // Calculate price based on conditions
       if (conditionIds.length > 0) {
         calculatedFinalPrice = await calculatePriceFromConditions(applianceID, conditionIds);
-        console.log('💰 Calculated final price:', calculatedFinalPrice);
+        console.log('� Calculated final price:', calculatedFinalPrice);
       }
     }
 
@@ -896,7 +896,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
     if (calculatedFinalPrice !== null) {
       updateFields.push(`"finalOfferPrice" = $${paramIndex++}`);
       updateValues.push(calculatedFinalPrice);
-      console.log(`💰 Updating finalOfferPrice to RM${calculatedFinalPrice}`);
+      console.log(`� Updating finalOfferPrice to RM${calculatedFinalPrice}`);
     }
 
     if (applianceID) {
@@ -949,7 +949,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
     // Handles ALL types: radio, checkbox, dropdown, image, textarea, file_upload
     // ─────────────────────────────────────────────────────────
     if (adminConditions && typeof adminConditions === 'object' && Object.keys(adminConditions).length > 0) {
-      console.log('📋 Saving admin dynamic answers:', adminConditions);
+      console.log('� Saving admin dynamic answers:', adminConditions);
 
       try {
         // Fetch condition groups to identify question types
@@ -962,7 +962,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
           groupTypes[row.groupID] = row.question_type;
         });
 
-        console.log('📋 Group types:', groupTypes);
+        console.log('� Group types:', groupTypes);
 
         // First, delete ALL existing admin answers for this submission
         await pool.query(
@@ -975,7 +975,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
         // Process each group answer
         for (const [groupID, value] of Object.entries(adminConditions)) {
           const questionType = groupTypes[groupID];
-          console.log(`📋 Processing group ${groupID} (type: ${questionType}) with value:`, value);
+          console.log(`� Processing group ${groupID} (type: ${questionType}) with value:`, value);
 
           if (!value) {
             continue;
@@ -984,7 +984,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
           // Handle based on question type
           if (questionType === 'textarea') {
             // Save text value
-            console.log(`📝 Saving textarea answer (${(value as string).length} chars)`);
+            console.log(`� Saving textarea answer (${(value as string).length} chars)`);
             await pool.query(
               `INSERT INTO "ConditionSelected"
                ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue")
@@ -994,7 +994,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
           } else if (questionType === 'file_upload') {
             // Save file upload URLs as JSON array in textValue
             const photoUrls = Array.isArray(value) ? value : [];
-            console.log(`📸 Saving ${photoUrls.length} file upload URLs for group ${groupID}`);
+            console.log(`� Saving ${photoUrls.length} file upload URLs for group ${groupID}`);
 
             if (photoUrls.length > 0) {
               await pool.query(
@@ -1026,7 +1026,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
                   actualConditionID = condResult.rows[0].conditionID;
                   descriptionText = condResult.rows[0].description;
                 } else {
-                  console.warn(`⚠️ Condition not found: "${conditionID}" in group ${groupID}`);
+                  console.warn(`⚠ Condition not found: "${conditionID}" in group ${groupID}`);
                   continue;
                 }
               } else {
@@ -1050,7 +1050,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
             }
           } else {
             // radio, dropdown, image - single conditionID or description
-            console.log(`🔘 Saving ${questionType} answer: ${value}`);
+            console.log(`� Saving ${questionType} answer: ${value}`);
 
             let actualConditionID = value;
             let descriptionText = value; // Default to the value itself
@@ -1067,7 +1067,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
                 actualConditionID = condResult.rows[0].conditionID;
                 descriptionText = condResult.rows[0].description;
               } else {
-                console.warn(`⚠️ Condition not found: "${value}" in group ${groupID}`);
+                console.warn(`⚠ Condition not found: "${value}" in group ${groupID}`);
                 continue;
               }
             } else {
@@ -1092,8 +1092,8 @@ export const updateTransaction = async (req: Request, res: Response) => {
         }
 
       } catch (conditionError) {
-        console.error('❌ Error saving admin conditions:', conditionError);
-        console.error('❌ Error details:', {
+        console.error(' Error saving admin conditions:', conditionError);
+        console.error(' Error details:', {
           message: conditionError instanceof Error ? conditionError.message : 'Unknown error',
           stack: conditionError instanceof Error ? conditionError.stack : undefined,
           adminConditions
@@ -1109,7 +1109,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
     // Only update if photos array is explicitly provided
     // ─────────────────────────────────────────────────────────
     if (photos && Array.isArray(photos) && photos.length > 0) {
-      console.log('📷 Processing photos:', photos.length, 'photos');
+      console.log('� Processing photos:', photos.length, 'photos');
 
       try {
         // Delete only existing ADMIN photos for this submission (keep seller photos)
@@ -1131,21 +1131,21 @@ export const updateTransaction = async (req: Request, res: Response) => {
         }
 
       } catch (photoError) {
-        console.error('❌ Error saving photos:', photoError);
-        console.error('❌ Photo error details:', {
+        console.error(' Error saving photos:', photoError);
+        console.error(' Photo error details:', {
           message: photoError instanceof Error ? photoError.message : 'Unknown error',
           photosCount: photos.length
         });
         throw photoError;
       }
     } else {
-      console.log('📷 No photos to update (photos not provided or empty array)');
+      console.log('� No photos to update (photos not provided or empty array)');
     }
 
 
     res.json({ message: 'Transaction updated successfully' });
   } catch (error) {
-    console.error('❌ Error updating transaction:', error);
+    console.error(' Error updating transaction:', error);
     res.status(500).json({ message: 'Failed to update transaction', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 };
@@ -1169,7 +1169,7 @@ export const updateSubmissionDetails = async (req: Request, res: Response) => {
       questionAnswers // JSON string of new answers
     } = req.body;
 
-    console.log('📝 Updating submission details for transaction:', id);
+    console.log('� Updating submission details for transaction:', id);
     console.log('Payload:', req.body);
 
     // Get the submittedApplianceID for this transaction
@@ -1243,7 +1243,7 @@ export const updateSubmissionDetails = async (req: Request, res: Response) => {
     // Update condition answers if provided
     if (questionAnswers) {
       const answers = JSON.parse(questionAnswers);
-      console.log('📋 Updating condition answers:', answers);
+      console.log('� Updating condition answers:', answers);
 
       // Delete existing condition selections for this submission
       await pool.query(
@@ -1287,7 +1287,7 @@ export const updateSubmissionDetails = async (req: Request, res: Response) => {
       transactionID: id
     });
   } catch (error) {
-    console.error('❌ Error updating submission details:', error);
+    console.error(' Error updating submission details:', error);
     res.status(500).json({
       message: 'Failed to update submission details',
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -1313,7 +1313,7 @@ export const updateCustomerInfo = async (req: Request, res: Response) => {
       pickupTimeSlot
     } = req.body;
 
-    console.log('📝 Updating customer info for transaction:', id);
+    console.log('� Updating customer info for transaction:', id);
     console.log('Payload:', req.body);
 
     // Get the submittedApplianceID and check item status
@@ -1376,7 +1376,7 @@ export const updateCustomerInfo = async (req: Request, res: Response) => {
       transactionID: id
     });
   } catch (error) {
-    console.error('❌ Error updating customer information:', error);
+    console.error(' Error updating customer information:', error);
     res.status(500).json({
       message: 'Failed to update customer information',
       error: error instanceof Error ? error.message : 'Unknown error'
