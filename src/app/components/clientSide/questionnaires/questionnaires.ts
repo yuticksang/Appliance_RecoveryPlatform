@@ -821,6 +821,10 @@ export class QuestionnairesComponent implements OnInit{
 
           if (res.scoreLabel) {
             this.valuationWorth = res.valuationWorth || 0;
+            this.highestBuyerId = res.highestBuyerId || null;
+            this.valuationScore = res.scoreLabel.totalScore;
+            this.valuationLabel = res.scoreLabel.classification;
+            this.calculatedScores = res.scoreLabel;
              this.valuationScore = res.scoreLabel.totalScore;
              this.functionalityScore = res.scoreLabel.functionalityScore;
              this.appearanceScore = res.scoreLabel.appearanceScore;
