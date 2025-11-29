@@ -57,6 +57,202 @@ $Space: 'Space Grotesk', sans-serif;
   margin: 0;
   padding: 0;
   position: relative;
+
+  // ✅ ADD OVERFLOW FIXES TO ALL TEXT ELEMENTS
+  * {
+    box-sizing: border-box;
+  }
+
+  p, span, div, h1, h2, h3, h4, h5, h6, label, li {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    max-width: 100%;
+  }
+
+  // ✅ FIX INFO SECTIONS
+  .info-section {
+    overflow: hidden;
+
+    .section-title {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .info-value {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      white-space: normal;
+      max-width: 100%;
+    }
+  }
+
+  // ✅ FIX DETAIL ITEMS
+  .detail-item {
+    overflow: hidden;
+
+    .detail-label {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .detail-value {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      white-space: normal;
+      max-width: 100%;
+    }
+  }
+
+  // ✅ FIX NOTE SECTIONS (MAIN FIX FOR YOUR ISSUE)
+  .note-section {
+    overflow: hidden;
+
+    .note-label {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .note-value {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      white-space: normal;
+      max-width: 100%;
+      line-height: 1.6;
+    }
+  }
+
+  .note-text {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    max-width: 100%;
+
+    &.empty {
+      color: #a0aec0;
+      font-style: italic;
+    }
+
+    &.changed {
+      color: #48bb78;
+      font-weight: 600;
+    }
+  }
+
+  // ✅ FIX INSPECTION ITEMS
+  .inspection-item {
+    overflow: hidden;
+
+    .inspection-label {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .inspection-columns {
+      overflow: hidden;
+
+      .column-content {
+        overflow: hidden;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+
+        .condition-list {
+          .condition-item {
+            overflow: hidden;
+
+            .condition-text {
+              word-wrap: break-word;
+              overflow-wrap: break-word;
+              word-break: break-word;
+              white-space: normal;
+              flex: 1;
+              max-width: 100%;
+
+              &.changed {
+                color: #48bb78;
+                font-weight: 600;
+              }
+            }
+
+            &.empty .condition-text {
+              color: #a0aec0;
+              font-style: italic;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // ✅ FIX EDIT INPUTS
+  .edit-select,
+  .edit-input,
+  .edit-textarea {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  .edit-textarea {
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  // ✅ FIX CHECKBOX OPTIONS
+  .checkbox-options {
+    overflow-y: auto;
+  }
+
+  .checkbox-option {
+    overflow: hidden;
+
+    input[type="checkbox"] {
+      flex-shrink: 0;
+    }
+
+    .checkbox-label {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      white-space: normal;
+      flex: 1;
+      max-width: 100%;
+    }
+  }
+
+  // ✅ FIX DEADLINE WARNING
+  .deadline-warning {
+    overflow: hidden;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+
+    .deadline-content {
+      overflow: hidden;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .deadline-date,
+    .days-remaining {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
+  }
+
+  // ✅ FIX RIGHT COLUMN
+  .right-column {
+    overflow: hidden;
+  }
+
+  .appliance-info-card {
+    max-width: 100%;
+    overflow: hidden;
+  }
 }
 
 /* Page Header */
