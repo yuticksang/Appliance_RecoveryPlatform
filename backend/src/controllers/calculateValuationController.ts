@@ -68,9 +68,13 @@ export const calculateValuation = async (req: Request, res: Response) => {
             const weight = parseFloat(row.weightPercentage) || 0;
             const groupScore = parseFloat(row.totalGroupScore) || 0;
 
-            if (row.criteriaName === 'Functionality Status') scoreLabel.functionalityScore = groupScore;
-            else if (row.criteriaName === 'Appearance Status') scoreLabel.appearanceScore = groupScore;
-            else if (row.criteriaName === 'Checklist') scoreLabel.componentScore = groupScore;
+          if (row.groupID === 'CG001') {
+                scoreLabel.functionalityScore = groupScore;
+            } else if (row.groupID === 'CG002') {
+                scoreLabel.appearanceScore = groupScore;
+            } else if (row.groupID === 'CG003') {
+                scoreLabel.componentScore = groupScore;
+            }
             
             scoreLabel.totalScore += (weight /100) * groupScore;
 
