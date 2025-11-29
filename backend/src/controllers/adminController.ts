@@ -19,7 +19,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
       'SELECT "userID", email, name, username, phone, user_type, user_status, admin_role, admin_id, buyer_id, seller_id, created_at FROM users ORDER BY admin_id ASC NULLS LAST, "userID" ASC'
     );
 
-    console.log('👥 Fetched users:', result.rows.map(u => ({ userID: u.userID, username: u.username, admin_id: u.admin_id, user_type: u.user_type })));
+    console.log('� Fetched users:', result.rows.map(u => ({ userID: u.userID, username: u.username, admin_id: u.admin_id, user_type: u.user_type })));
     res.json(result.rows);
   } catch (error) {
     console.error('Get all users error:', error);
@@ -52,12 +52,12 @@ export const checkUsername = async (req: Request, res: Response) => {
 // Create new user (admin or buyer)
 export const createUser = async (req: Request, res: Response) => {
   try {
-    console.log('📝 Create user request:', req.body);
+    console.log('� Create user request:', req.body);
     const { password, name, username, phone, user_type, admin_role } = req.body;
 
     // Validate required fields
     if (!password || !name || !username) {
-      console.log('❌ Missing required fields');
+      console.log(' Missing required fields');
       return res.status(400).json({ message: 'Password, name, and username are required' });
     }
 
@@ -68,7 +68,7 @@ export const createUser = async (req: Request, res: Response) => {
     );
 
     if (existingUser.rows.length > 0) {
-      console.log('❌ Username already exists for', user_type || 'admin', ':', username);
+      console.log(' Username already exists for', user_type || 'admin', ':', username);
       return res.status(400).json({ message: 'Username already exists for this user type' });
     }
 
@@ -80,13 +80,13 @@ export const createUser = async (req: Request, res: Response) => {
       );
 
       if (existingEmail.rows.length > 0) {
-        console.log('❌ Email already exists for', user_type || 'admin', ':', req.body.email);
+        console.log(' Email already exists for', user_type || 'admin', ':', req.body.email);
         return res.status(400).json({ message: 'Email already exists for this user type' });
       }
     }
 
     // Hash password
-    console.log('🔒 Hashing password...');
+    console.log('� Hashing password...');
     const hashedPassword = await bcrypt.hash(password, 12);
 
     // Generate appropriate ID based on user type
@@ -116,7 +116,7 @@ export const createUser = async (req: Request, res: Response) => {
     }
 
     // Create user
-    console.log('💾 Inserting user into database...');
+    console.log('� Inserting user into database...');
     const result = await pool.query(
       `INSERT INTO users (${queryFields})
        VALUES (${queryValues})
@@ -124,13 +124,13 @@ export const createUser = async (req: Request, res: Response) => {
       queryParams
     );
 
-    console.log('✅ User created successfully:', result.rows[0]);
+    console.log(' User created successfully:', result.rows[0]);
     res.status(201).json({
       message: 'User created successfully',
       user: result.rows[0]
     });
   } catch (error) {
-    console.error('❌ Create user error:', error);
+    console.error(' Create user error:', error);
     res.status(500).json({ message: 'Failed to create user' });
   }
 };
@@ -202,7 +202,7 @@ export const updateUser = async (req: Request, res: Response) => {
 
     // If password is provided, hash it and add to update
     if (password && password.trim() !== '') {
-      console.log('🔒 Updating password for user:', id);
+      console.log('� Updating password for user:', id);
       const hashedPassword = await bcrypt.hash(password, 12);
       updateFields.push(`password = $${paramCount++}`);
       updateValues.push(hashedPassword);
@@ -224,7 +224,7 @@ export const updateUser = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    console.log('✅ User updated successfully');
+    console.log(' User updated successfully');
     res.json({
       message: 'User updated successfully',
       user: result.rows[0]
@@ -319,7 +319,7 @@ export const getAllCategories = async (req: Request, res: Response) => {
       'SELECT "categoryID", "categoryName", description, count, status, created_at FROM "Category" ORDER BY "categoryName" ASC'
     );
 
-    console.log('📂 Fetched categories:', result.rows.length);
+    console.log('� Fetched categories:', result.rows.length);
     res.json(result.rows);
   } catch (error) {
     console.error('Get all categories error:', error);
@@ -334,7 +334,7 @@ export const getAllBrands = async (req: Request, res: Response) => {
       'SELECT "brandID", "brandName", description, count, status, created_at FROM "Brand" ORDER BY "brandName" ASC'
     );
 
-    console.log('🏷️ Fetched brands:', result.rows.length);
+    console.log('� Fetched brands:', result.rows.length);
     res.json(result.rows);
   } catch (error) {
     console.error('Get all brands error:', error);
@@ -364,7 +364,7 @@ export const getAllAppliances = async (req: Request, res: Response) => {
       ORDER BY a."applianceID" ASC`
     );
 
-    console.log('📱 Fetched appliances:', result.rows.length);
+    console.log('� Fetched appliances:', result.rows.length);
     res.json(result.rows);
   } catch (error) {
     console.error('Get all appliances error:', error);
@@ -378,7 +378,7 @@ export const createAppliance = async (req: Request, res: Response) => {
     const { categoryID, brandID, modelCode, modelName, description } = req.body;
     const imageFile = (req as any).file;
 
-    console.log('📝 Create appliance request:', { categoryID, brandID, modelCode, modelName, hasFile: !!imageFile });
+    console.log('� Create appliance request:', { categoryID, brandID, modelCode, modelName, hasFile: !!imageFile });
 
     // Validate required fields
     if (!categoryID || !brandID || !modelCode || !modelName) {
@@ -402,7 +402,7 @@ export const createAppliance = async (req: Request, res: Response) => {
       const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}.${fileExt}`;
       const filePath = `appliances/${modelCode}/${fileName}`;
 
-      console.log(`📸 Uploading appliance image to Supabase: ${filePath}`);
+      console.log(`� Uploading appliance image to Supabase: ${filePath}`);
 
       const { error: uploadError } = await supabase.storage
         .from('appliance-images')
@@ -422,7 +422,7 @@ export const createAppliance = async (req: Request, res: Response) => {
         .getPublicUrl(filePath);
 
       imageUrl = publicUrl;
-      console.log(`✅ Appliance image uploaded to Supabase: ${imageUrl}`);
+      console.log(` Appliance image uploaded to Supabase: ${imageUrl}`);
     }
 
     const result = await pool.query(
@@ -432,7 +432,7 @@ export const createAppliance = async (req: Request, res: Response) => {
       [categoryID, brandID, modelCode, modelName, description || null, imageUrl]
     );
 
-    console.log('✅ Appliance created:', result.rows[0]);
+    console.log(' Appliance created:', result.rows[0]);
     res.status(201).json({
       message: 'Appliance created successfully',
       appliance: result.rows[0]
@@ -450,7 +450,7 @@ export const updateAppliance = async (req: Request, res: Response) => {
     const { modelCode, modelName, categoryID, brandID, description, removeImage } = req.body;
     const imageFile = (req as any).file;
     
-    console.log('🔄 Update appliance request:', { 
+    console.log('� Update appliance request:', { 
       id, modelCode, modelName, categoryID, brandID, 
       hasFile: !!imageFile, removeImage 
     });
@@ -483,14 +483,14 @@ export const updateAppliance = async (req: Request, res: Response) => {
     
     // Handle image update using Supabase (same as createAppliance)
     if (imageFile) {
-      console.log('📤 New image file uploaded, saving to Supabase...');
+      console.log('� New image file uploaded, saving to Supabase...');
       
       // Upload new image to Supabase Storage
       const fileExt = imageFile.originalname.split('.').pop();
       const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}.${fileExt}`;
       const filePath = `appliances/${modelCode || currentData.modelCode}/${fileName}`;
 
-      console.log(`📸 Uploading updated appliance image to Supabase: ${filePath}`);
+      console.log(`� Uploading updated appliance image to Supabase: ${filePath}`);
 
       const { error: uploadError } = await supabase.storage
         .from('appliance-images')
@@ -510,14 +510,14 @@ export const updateAppliance = async (req: Request, res: Response) => {
         .getPublicUrl(filePath);
 
       imageUrl = publicUrl;
-      console.log(`✅ Updated appliance image uploaded to Supabase: ${imageUrl}`);
+      console.log(` Updated appliance image uploaded to Supabase: ${imageUrl}`);
       
       // TODO: Consider deleting old image from Supabase if needed
       
     } else if (removeImage === 'true') {
       // Remove image explicitly
       imageUrl = null;
-      console.log('🗑️ Image marked for removal');
+      console.log('� Image marked for removal');
       
       // TODO: Consider deleting image from Supabase if needed
     }
@@ -540,14 +540,14 @@ export const updateAppliance = async (req: Request, res: Response) => {
       ]
     );
     
-    console.log('✅ Appliance updated in database:', result.rows[0]);
+    console.log(' Appliance updated in database:', result.rows[0]);
     res.json({
       message: 'Appliance updated successfully',
       appliance: result.rows[0]
     });
     
   } catch (error) {
-    console.error('❌ Update appliance error:', error);
+    console.error(' Update appliance error:', error);
     res.status(500).json({ message: 'Failed to update appliance' });
   }
 };
@@ -572,7 +572,7 @@ export const updateApplianceStatus = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Appliance not found' });
     }
 
-    console.log('✅ Appliance status updated:', result.rows[0]);
+    console.log(' Appliance status updated:', result.rows[0]);
     res.json({
       message: 'Appliance status updated successfully',
       appliance: result.rows[0]
@@ -613,7 +613,7 @@ export const createCategory = async (req: Request, res: Response) => {
       [categoryName, description || null]
     );
 
-    console.log('✅ Category created:', result.rows[0]);
+    console.log(' Category created:', result.rows[0]);
     res.status(201).json({
       message: 'Category created successfully',
       category: result.rows[0]
@@ -652,7 +652,7 @@ export const updateCategory = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Category not found' });
     }
 
-    console.log('✅ Category updated:', result.rows[0]);
+    console.log(' Category updated:', result.rows[0]);
     res.json({
       message: 'Category updated successfully',
       category: result.rows[0]
@@ -694,7 +694,7 @@ export const updateCategoryStatus = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Category not found' });
     }
 
-    console.log('✅ Category status updated:', result.rows[0]);
+    console.log(' Category status updated:', result.rows[0]);
     res.json({
       message: 'Category status updated successfully',
       category: result.rows[0]
@@ -735,7 +735,7 @@ export const createBrand = async (req: Request, res: Response) => {
       [brandName, description || null]
     );
 
-    console.log('✅ Brand created:', result.rows[0]);
+    console.log(' Brand created:', result.rows[0]);
     res.status(201).json({
       message: 'Brand created successfully',
       brand: result.rows[0]
@@ -774,7 +774,7 @@ export const updateBrand = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Brand not found' });
     }
 
-    console.log('✅ Brand updated:', result.rows[0]);
+    console.log(' Brand updated:', result.rows[0]);
     res.json({
       message: 'Brand updated successfully',
       brand: result.rows[0]
@@ -816,7 +816,7 @@ export const updateBrandStatus = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Brand not found' });
     }
 
-    console.log('✅ Brand status updated:', result.rows[0]);
+    console.log(' Brand status updated:', result.rows[0]);
     res.json({
       message: 'Brand status updated successfully',
       brand: result.rows[0]
@@ -856,7 +856,7 @@ export const getAllBuyerPrices = async (req: Request, res: Response) => {
       ORDER BY u.buyer_id ASC, c."categoryName" ASC, b."brandName" ASC, a."modelName" ASC`
     );
 
-    console.log('💰 Fetched buyer prices:', result.rows.length);
+    console.log('� Fetched buyer prices:', result.rows.length);
     res.json(result.rows);
   } catch (error) {
     console.error('Get buyer prices error:', error);

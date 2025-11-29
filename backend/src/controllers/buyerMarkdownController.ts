@@ -20,7 +20,7 @@ export const getBuyerConditionGroups = async (req: Request, res: Response) => {
       ORDER BY COALESCE(cg."display_order", 999999) ASC, cg."created_at" ASC
     `);
 
-    console.log('ðŸ“‚ Fetched buyer condition groups:', result.rows.length);
+    console.log('‚ Fetched buyer condition groups:', result.rows.length);
     res.json(result.rows);
   } catch (error: any) {
     console.error('Get buyer condition groups error:', error);
@@ -57,7 +57,7 @@ export const getBuyerConditionOptions = async (req: Request, res: Response) => {
       ORDER BY cg."display_order" ASC NULLS LAST, co.created_at ASC
     `);
 
-    console.log('ðŸ“‚ Fetched buyer condition options:', result.rows.length);
+    console.log('‚ Fetched buyer condition options:', result.rows.length);
     res.json(result.rows);
   } catch (error: any) {
     console.error('Get buyer condition options error:', error);
@@ -77,7 +77,7 @@ export const getBuyerCategories = async (req: Request, res: Response) => {
       ORDER BY "categoryName" ASC
     `);
 
-    console.log('ðŸ“‚ Fetched buyer categories:', result.rows.length);
+    console.log('‚ Fetched buyer categories:', result.rows.length);
     res.json(result.rows);
   } catch (error: any) {
     console.error('Get buyer categories error:', error);
@@ -113,7 +113,7 @@ export const getBuyerMarkdowns = async (req: Request, res: Response) => {
       ORDER BY co.code ASC
     `, [buyerID]);
 
-    console.log(`ðŸ“‚ Fetched markdowns for buyer ${buyerID}:`, result.rows.length);
+    console.log(`‚ Fetched markdowns for buyer ${buyerID}:`, result.rows.length);
     res.json(result.rows);
   } catch (error: any) {
     console.error('Get buyer markdowns error:', error);
@@ -173,7 +173,7 @@ export const saveBuyerMarkdowns = async (req: Request, res: Response) => {
 
     await pool.query('COMMIT');
 
-    console.log(`âœ… Saved ${markdowns.length} markdowns for buyer ${buyerID}`);
+    console.log(` Saved ${markdowns.length} markdowns for buyer ${buyerID}`);
     res.json({
       message: 'Markdowns saved successfully',
       count: markdowns.length
@@ -217,7 +217,7 @@ export const updateSingleBuyerMarkdown = async (req: Request, res: Response) => 
       RETURNING *
     `, [buyerID, conditionId, roundedMarkdown]);
 
-    console.log(`âœ… Updated markdown for buyer ${buyerID}, condition ${conditionId}`);
+    console.log(` Updated markdown for buyer ${buyerID}, condition ${conditionId}`);
     res.json(result.rows[0]);
   } catch (error: any) {
     console.error('Update buyer markdown error:', error);
@@ -246,7 +246,7 @@ export const deleteBuyerMarkdown = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Markdown not found' });
     }
 
-    console.log(`âœ… Deleted markdown for buyer ${buyerID}, condition ${conditionId}`);
+    console.log(` Deleted markdown for buyer ${buyerID}, condition ${conditionId}`);
     res.json({ message: 'Markdown deleted successfully' });
   } catch (error: any) {
     console.error('Delete buyer markdown error:', error);

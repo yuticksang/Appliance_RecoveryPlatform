@@ -21,6 +21,7 @@ interface ConditionGroup {
   groupID: string;
   sectionName: string;
   question: string;
+  score: number;
   type: 'radio' | 'image' | 'checkbox' | 'file_upload' | 'textarea';
   displayOrder: number;
   options: {
@@ -947,6 +948,9 @@ export class QuestionnairesComponent implements OnInit{
           groupID: group.groupID,
           type: group.type,
           answer: answer || null, // conditionID
+          score: group.type === 'radio'
+          ? this.functionalityScore
+          : this.appearanceScore,
           answerText: answer ? group.options.find(opt => opt.id === answer)?.description : null
         };
       }
@@ -957,6 +961,7 @@ export class QuestionnairesComponent implements OnInit{
           groupID: group.groupID,
           type: group.type,
           answer: Array.isArray(answer) ? answer : [], // array of conditionIDs
+          score: this.componentScore,
           answerText: Array.isArray(answer)
             ? answer.map(id => group.options.find(opt => opt.id === id)?.description).filter(Boolean)
             : []

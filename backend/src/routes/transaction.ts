@@ -63,7 +63,6 @@ router.put('/:id/customer-info', updateCustomerInfo);
 // Update submission details (seller edit when Awaiting Pick Up)
 router.put('/:id/submission', updateSubmissionDetails);
 
-
 // Update transaction (full edit - admin)
 router.put('/:id', updateTransaction);
 

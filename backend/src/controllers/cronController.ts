@@ -8,7 +8,7 @@ import pool from '../config/database';
  */
 export const autoCancelOverdueTransactions = async (req: Request, res: Response) => {
   try {
-    console.log('🔄 Running auto-cancellation check...');
+    console.log('� Running auto-cancellation check...');
 
     // Case 3: Cancel transactions where responseDeadline has passed
     // Status: "Awaiting Confirmation" and responseDeadline < NOW()
@@ -30,7 +30,7 @@ export const autoCancelOverdueTransactions = async (req: Request, res: Response)
          WHERE "transactionID" = ANY($1::varchar[])`,
         [case3TxnIds]
       );
-      console.log(`✅ Case 3: Cancelled ${case3Result.rows.length} transactions (no response to offer)`);
+      console.log(` Case 3: Cancelled ${case3Result.rows.length} transactions (no response to offer)`);
     }
 
     // Case 4: Cancel transactions where item is "Awaiting Pick Up" for more than 14 days
@@ -55,7 +55,7 @@ export const autoCancelOverdueTransactions = async (req: Request, res: Response)
          WHERE "transactionID" = ANY($1::varchar[])`,
         [case4TxnIds]
       );
-      console.log(`✅ Case 4: Cancelled ${case4Result.rows.length} transactions (no pickup response)`);
+      console.log(` Case 4: Cancelled ${case4Result.rows.length} transactions (no pickup response)`);
     }
 
     const totalCancelled = case3Result.rows.length + case4Result.rows.length;
@@ -71,7 +71,7 @@ export const autoCancelOverdueTransactions = async (req: Request, res: Response)
       ]
     });
   } catch (error) {
-    console.error('❌ Error in auto-cancellation:', error);
+    console.error(' Error in auto-cancellation:', error);
     res.status(500).json({
       message: 'Failed to run auto-cancellation',
       error: error instanceof Error ? error.message : 'Unknown error'

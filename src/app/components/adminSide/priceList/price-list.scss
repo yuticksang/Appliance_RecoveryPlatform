@@ -85,6 +85,27 @@ $Space: 'Space Grotesk', sans-serif;
         }
     }
 
+    .price-filter {
+        input {
+            height: 36px;
+            border: 1px solid $line;
+            border-radius: 8px;
+            padding: 0 12px;
+            width: 140px;
+            background: white;
+
+            &:focus {
+                outline: none;
+                border-color: #99c8ff;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+            }
+
+            &::placeholder {
+                color: $muted;
+            }
+        }
+    }
+
     .search {
         position: relative;
 

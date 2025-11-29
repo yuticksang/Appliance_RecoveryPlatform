@@ -234,8 +234,8 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
     const userId = req.user?.userId;
     if (!userId) return res.status(401).json({ message: 'Unauthorized' });
 
-    console.log('📦 BODY →', req.body);
-    console.log('📁 FILES →', req.files);
+    console.log('� BODY →', req.body);
+    console.log('� FILES →', req.files);
 
     const {
       modelId,
@@ -261,7 +261,7 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Invalid question answers format' });
     }
 
-    console.log('📋 Parsed Question Answers:', questionAnswers);
+    console.log('� Parsed Question Answers:', questionAnswers);
 
     // Get seller_id from users table
     const userRes = await client.query(
@@ -307,7 +307,7 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
     // ─────────────────────────────────────────────────────────
     let savedCount = 0;
     for (const qa of questionAnswers) {
-      console.log(`🔄 Processing question: groupID=${qa.groupID}, type=${qa.type}, answer=`, qa.answer);
+      console.log(`� Processing question: groupID=${qa.groupID}, type=${qa.type}, answer=`, qa.answer);
 
       // For radio/image/dropdown: single conditionID
       if ((qa.type === 'radio' || qa.type === 'image' || qa.type === 'dropdown') && qa.answer) {
@@ -323,9 +323,9 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
         //save with score column
         await client.query(
           `INSERT INTO "ConditionSelected"
-          ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue")
+          ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID","score")
           VALUES ($1, $2, true, 'seller', NOW(), $3, $4)`,
-          [qa.answer, finalId, qa.groupID, descriptionText]
+          [qa.answer, finalId, qa.groupID, qa.score]
         );
         savedCount++;
       }
@@ -341,12 +341,12 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
           );
           const descriptionText = descResult.rows.length > 0 ? descResult.rows[0].description : '';
 
-         // ✅ Save each checkbox item with score
+         //  Save each checkbox item with score
           await client.query(
             `INSERT INTO "ConditionSelected"
-            ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue")
+            ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID","score")
             VALUES ($1, $2, true, 'seller', NOW(), $3, $4)`,
-            [conditionID, finalId, qa.groupID, descriptionText]
+            [conditionID, finalId, qa.groupID, qa.score]
           );
           savedCount++;
       }
@@ -370,14 +370,14 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    console.log(`✅ Saved ${savedCount} condition selections for ${finalId} (out of ${questionAnswers.length} total answers)`);
+    console.log(` Saved ${savedCount} condition selections for ${finalId} (out of ${questionAnswers.length} total answers)`);
 
     // VERIFY: Check what was actually saved in the database
     const verifyResult = await client.query(
       `SELECT COUNT(*) as count FROM "ConditionSelected" WHERE "submittedApplianceID" = $1`,
       [finalId]
     );
-    console.log(`🔍 VERIFICATION: ConditionSelected table has ${verifyResult.rows[0].count} rows for ${finalId}`);
+    console.log(`� VERIFICATION: ConditionSelected table has ${verifyResult.rows[0].count} rows for ${finalId}`);
 
     // Insert Pickup Table
     if (!pickupDate || !pickupTime) {
