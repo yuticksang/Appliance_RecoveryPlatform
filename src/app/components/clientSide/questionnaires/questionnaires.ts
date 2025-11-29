@@ -825,22 +825,22 @@ export class QuestionnairesComponent implements OnInit{
             this.valuationScore = res.scoreLabel.totalScore;
             this.valuationLabel = res.scoreLabel.classification;
             this.calculatedScores = res.scoreLabel;
-             this.valuationScore = res.scoreLabel.totalScore;
-             this.functionalityScore = res.scoreLabel.functionalityScore;
-             this.appearanceScore = res.scoreLabel.appearanceScore;
-             this.componentScore = res.scoreLabel.componentScore;
+            this.valuationScore = res.scoreLabel.totalScore;
+            this.functionalityScore = res.scoreLabel.functionalityScore;
+            this.appearanceScore = res.scoreLabel.appearanceScore;
+            this.componentScore = res.scoreLabel.componentScore;
 
-             console.log('Score:', res.scoreLabel.appearanceScore, res.scoreLabel.functionalityScore, res.scoreLabel.componentScore, res.scoreLabel.totalScore);
-             this.valuationLabel = res.scoreLabel.classification;
-             this.calculatedScores = res.scoreLabel;
+            console.log('Score:', res.scoreLabel.appearanceScore, res.scoreLabel.functionalityScore, res.scoreLabel.componentScore, res.scoreLabel.totalScore);
+            this.valuationLabel = res.scoreLabel.classification;
+            this.calculatedScores = res.scoreLabel;
           } else {
-             // Fallback if data is missing
-             this.valuationScore = 0;
-             this.valuationLabel = 'Unknown';
-             this.calculatedScores = null;
-             this.functionalityScore = 0;
-             this.appearanceScore = 0;
-             this.componentScore = 0;
+            // Fallback if data is missing
+            this.valuationScore = 0;
+            this.valuationLabel = 'Unknown';
+            this.calculatedScores = null;
+            this.functionalityScore = 0;
+            this.appearanceScore = 0;
+            this.componentScore = 0;
           }
 
           this.currentStep++;

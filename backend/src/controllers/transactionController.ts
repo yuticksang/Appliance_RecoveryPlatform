@@ -140,6 +140,8 @@ export const getTransactionById = async (req: Request, res: Response) => {
         sa."submissionDate" as "submittedDate",
         COALESCE(sa."initialOfferPrice", 0) as "estimatedPrice",
         sa."finalOfferPrice" as "finalPrice",
+        sa."initialScore" as "initialScore",
+        sa."finalScore" as "finalScore",
         t."transactionStatus",
         t."createdAt",
         t."updatedAt",
