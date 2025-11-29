@@ -989,7 +989,16 @@ export class QuestionnairesComponent implements OnInit{
       highestBuyerId: this.highestBuyerId,
 
       // Send all answers as structured JSON
-      questionAnswers: JSON.stringify(questionAnswers)
+      questionAnswers: JSON.stringify(questionAnswers),
+
+      //add scores data to payload
+      scoreLabel: JSON.stringify({
+        functionalityScore: this.functionalityScore,
+        appearanceScore: this.appearanceScore,
+        componentScore: this.componentScore,
+        totalScore: this.valuationScore,
+        classification: this.valuationLabel
+      })
     };
 
     console.log('🚀 DYNAMIC PAYLOAD →', payload);

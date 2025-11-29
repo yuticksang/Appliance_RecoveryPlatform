@@ -243,9 +243,19 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
       highestBuyerId,
       pickupDate,
       pickupTime,
-      questionAnswers: questionAnswersJson
+      questionAnswers: questionAnswersJson,
+      //add score data
+      scoreLabel: scoreLabelJson
     } = req.body;
 
+    let scoreLabel: any = null;
+    try {
+      scoreLabel = JSON.parse(scoreLabelJson || '{}');
+    } catch (e) {
+      console.warn('Failed to parse scoreLabel:', e);
+    }
+    console.log('📊 Parsed Score Label:', scoreLabel);
+    
     if (!modelId || !addressId) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
@@ -296,6 +306,9 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
 
     const finalId = subRes.rows[0].submittedApplianceID;
 
+    //ADD FOR SCORE LABEL EXTRACTION
+    const totalScore = scoreLabel?.totalScore || 0;
+
     // ─────────────────────────────────────────────────────────
     // SAVE ALL DYNAMIC ANSWERS TO ConditionSelected
     // selectedBy = 'seller' for initial submission
@@ -307,7 +320,7 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
 
       // For radio/image/dropdown: single conditionID
       if ((qa.type === 'radio' || qa.type === 'image' || qa.type === 'dropdown') && qa.answer) {
-        console.log(`  → Saving ${qa.type} answer: ${qa.answer}`);
+        console.log(`  → Saving ${qa.type} answer: ${qa.answer} with score: ${totalScore}`);
 
         // Fetch the description for this conditionID
         const descResult = await client.query(
@@ -316,18 +329,19 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
         );
         const descriptionText = descResult.rows.length > 0 ? descResult.rows[0].description : '';
 
+        //save with score column
         await client.query(
           `INSERT INTO "ConditionSelected"
-          ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue")
-          VALUES ($1, $2, true, 'seller', NOW(), $3, $4)`,
-          [qa.answer, finalId, qa.groupID, descriptionText]
+          ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue", "score")
+          VALUES ($1, $2, true, 'seller', NOW(), $3, $4, $5)`,
+          [qa.answer, finalId, qa.groupID, descriptionText, totalScore]
         );
         savedCount++;
       }
 
       // For checkbox: array of conditionIDs
       if (qa.type === 'checkbox' && Array.isArray(qa.answer)) {
-        console.log(`  → Saving ${qa.answer.length} checkbox items`);
+        console.log(`  → Saving ${qa.answer.length} checkbox items with score: ${totalScore}`);
         for (const conditionID of qa.answer) {
           // Fetch the description for this conditionID
           const descResult = await client.query(
@@ -336,14 +350,15 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
           );
           const descriptionText = descResult.rows.length > 0 ? descResult.rows[0].description : '';
 
+         // ✅ Save each checkbox item with score
           await client.query(
             `INSERT INTO "ConditionSelected"
-            ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue")
-            VALUES ($1, $2, true, 'seller', NOW(), $3, $4)`,
-            [conditionID, finalId, qa.groupID, descriptionText]
+            ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue", "score")
+            VALUES ($1, $2, true, 'seller', NOW(), $3, $4, $5)`,
+            [conditionID, finalId, qa.groupID, descriptionText, totalScore]
           );
           savedCount++;
-        }
+      }
       }
 
       // For textarea: save text value
@@ -351,9 +366,9 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
         console.log(`  → Saving textarea answer (${qa.answer.length} chars)`);
         await client.query(
           `INSERT INTO "ConditionSelected"
-          ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue")
-          VALUES (NULL, $1, true, 'seller', NOW(), $2, $3)`,
-          [finalId, qa.groupID, qa.answer]
+          ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue", "score")
+          VALUES (NULL, $1, true, 'seller', NOW(), $2, $3, $4)`,
+          [finalId, qa.groupID, qa.answer, totalScore]
         );
         savedCount++;
       }
@@ -481,7 +496,8 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
     await client.query('COMMIT');
     res.status(201).json({
       message: 'Submission successful!',
-      submittedApplianceID: finalId
+      submittedApplianceID: finalId,
+      totalScore: totalScore // Return score in response
     });
   } catch (error: any) {
     await client.query('ROLLBACK');
