@@ -1,7 +1,11 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
+import { createClient } from '@supabase/supabase-js';
 
-console.log('🔥🔥🔥 transactionController.ts LOADED - VERSION 2 WITH CONDITION FIX 🔥🔥🔥');
+const supabase = createClient(
+  process.env.SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+);
 
 /**
  * Get all transactions for a specific seller
@@ -10,8 +14,30 @@ console.log('🔥🔥🔥 transactionController.ts LOADED - VERSION 2 WITH CONDI
 export const getTransactionsBySeller = async (req: Request, res: Response) => {
   try {
     const { sellerId } = req.params;
+    const authUser = (req as any).user; // From JWT token
 
-    console.log('📦 Fetching transactions for seller ID:', sellerId);
+    // Authorization check: Sellers can only view their own transactions
+    // Admins can view any seller's transactions
+    if (authUser.userType === 'seller') {
+      // For sellers, verify they're requesting their own transactions
+      // Need to check if authUser.userId owns this seller_id
+      const userCheckResult = await pool.query(
+        `SELECT seller_id FROM users WHERE "userID" = $1 AND user_type = 'seller'`,
+        [authUser.userId]
+      );
+
+      if (userCheckResult.rows.length === 0) {
+        return res.status(403).json({ message: 'Unauthorized access' });
+      }
+
+      const userSellerId = userCheckResult.rows[0].seller_id;
+
+      if (userSellerId !== sellerId) {
+        return res.status(403).json({ message: 'You can only view your own transactions' });
+      }
+    } else if (authUser.userType !== 'admin' && authUser.userType !== 'superadmin') {
+      return res.status(403).json({ message: 'Unauthorized access' });
+    }
 
     const result = await pool.query(
       `SELECT
@@ -36,7 +62,7 @@ export const getTransactionsBySeller = async (req: Request, res: Response) => {
         a.image_url as "imageUrl"
       FROM "Transaction" t
       INNER JOIN "SubmittedAppliance" sa ON t."submittedApplianceID" = sa."submittedApplianceID"
-      INNER JOIN users u ON t."sellerID" = u.seller_id
+      LEFT JOIN users u ON t."sellerID" = u.seller_id
       LEFT JOIN "ItemStatus" i ON t."transactionID" = i."transactionID"
       LEFT JOIN "Appliance" a ON sa."applianceID" = a."applianceID"
       LEFT JOIN "Brand" b ON a."brandID" = b."brandID"
@@ -45,8 +71,6 @@ export const getTransactionsBySeller = async (req: Request, res: Response) => {
       ORDER BY sa."submissionDate" DESC`,
       [sellerId]
     );
-
-    console.log(`✅ Found ${result.rows.length} transactions for seller ${sellerId}`);
 
     res.json(result.rows);
   } catch (error) {
@@ -58,10 +82,8 @@ export const getTransactionsBySeller = async (req: Request, res: Response) => {
 /**
  * Get all transactions (admin view)
  */
-export const getAllTransactions = async (req: Request, res: Response) => {
+export const getAllTransactions = async (_req: Request, res: Response) => {
   try {
-    console.log('📦 Fetching all transactions');
-
     const result = await pool.query(
       `SELECT
         t."transactionID" as id,
@@ -71,8 +93,6 @@ export const getAllTransactions = async (req: Request, res: Response) => {
         sa."submissionDate" as "submittedDate",
         sa."initialOfferPrice" as "estimatedPrice",
         sa."finalOfferPrice" as "finalPrice",
-        sa."initialNote" as "initialNote",
-        sa."finalNote" as "finalNote",
         t."transactionStatus",
         t."createdAt",
         t."updatedAt",
@@ -87,15 +107,13 @@ export const getAllTransactions = async (req: Request, res: Response) => {
         a.image_url as "imageUrl"
       FROM "Transaction" t
       INNER JOIN "SubmittedAppliance" sa ON t."submittedApplianceID" = sa."submittedApplianceID"
-      INNER JOIN users u ON t."sellerID" = u.seller_id
+      LEFT JOIN users u ON t."sellerID" = u.seller_id
       LEFT JOIN "ItemStatus" i ON t."transactionID" = i."transactionID"
       LEFT JOIN "Appliance" a ON sa."applianceID" = a."applianceID"
       LEFT JOIN "Brand" b ON a."brandID" = b."brandID"
       LEFT JOIN "Category" c ON a."categoryID" = c."categoryID"
       ORDER BY sa."submissionDate" DESC`
     );
-
-    console.log(`✅ Found ${result.rows.length} total transactions`);
 
     res.json(result.rows);
   } catch (error) {
@@ -108,14 +126,8 @@ export const getAllTransactions = async (req: Request, res: Response) => {
  * Get a single transaction by ID
  */
 export const getTransactionById = async (req: Request, res: Response) => {
-  console.log('\n' + '='.repeat(60));
-  console.log('🚀🚀🚀 getTransactionById CALLED AT:', new Date().toISOString());
-  console.log('='.repeat(60));
-
   try {
     const { id } = req.params;
-
-    console.log('📦 Fetching transaction ID:', id);
 
     const result = await pool.query(
       `SELECT
@@ -165,7 +177,6 @@ export const getTransactionById = async (req: Request, res: Response) => {
     );
 
     if (result.rows.length === 0) {
-      console.log(`❌ Transaction not found: ${id}`);
       return res.status(404).json({ message: 'Transaction not found' });
     }
 
@@ -183,11 +194,6 @@ export const getTransactionById = async (req: Request, res: Response) => {
        ORDER BY cg."display_order", cs."selectedAt"`,
       [transaction.submittedApplianceID]
     );
-
-    console.log('📋 Raw conditions from DB:', conditionsResult.rows);
-
-    
-
 
     // Add selected issues to the response (for backward compatibility)
     transaction.selectedIssues = conditionsResult.rows.map(row => row.description || row.code);
@@ -227,16 +233,61 @@ export const getTransactionById = async (req: Request, res: Response) => {
         : row.selectedOptions[0]?.description || 'N/A'
     }));
 
-
-
-
-
-    // Fetch all condition groups to identify textarea and file_upload types
+           // Fetch all condition groups for this specific category that were active at submission time
+    // This ensures old transactions only show groups that existed when they were submitted
+    // This query is used for BOTH seller view AND admin edit
     const conditionGroupsResult = await pool.query(
-      `SELECT "groupID", "criteriaName", question_type FROM "ConditionGroup"`
+      `SELECT DISTINCT cg."groupID", cg."criteriaName", cg.question_type, COALESCE(cg.display_order, 999999) as display_order
+       FROM "ConditionGroup" cg
+       WHERE cg."groupID" IN (
+         -- Get all unique groupIDs that have data for this submission
+         -- These should ALWAYS show regardless of current status
+         SELECT DISTINCT COALESCE(co."groupID", cs."groupID") as "groupID"
+         FROM "ConditionSelected" cs
+         LEFT JOIN "ConditionOption" co ON cs."conditionID" = co."conditionID"
+         WHERE cs."submittedApplianceID" = $1
+         AND cs."isChecked" = true
+         
+         UNION
+         
+         -- Also include ALL groups that existed before or at submission time
+         -- (for empty groups - show them regardless of current active/inactive status)
+         SELECT cg2."groupID"
+         FROM "ConditionGroup" cg2
+         WHERE cg2."created_at" <= (
+           SELECT sa."submissionDate" 
+           FROM "SubmittedAppliance" sa 
+           WHERE sa."submittedApplianceID" = $1
+         )
+         AND (
+           EXISTS (
+             SELECT 1 FROM "Category_ConditionGroup" ccg
+             WHERE ccg."groupID" = cg2."groupID" AND ccg."categoryID" = $2
+           )
+           OR NOT EXISTS (
+             SELECT 1 FROM "Category_ConditionGroup" WHERE "groupID" = cg2."groupID"
+           )
+         )
+       )
+       ORDER BY display_order ASC`,
+      [transaction.submittedApplianceID, transaction.categoryID]
     );
 
-    console.log('📋 Condition groups:', conditionGroupsResult.rows);
+    console.log('📋 Condition groups for this transaction:', conditionGroupsResult.rows);
+
+    // Create conditionGroupNames mapping with display_order and question_type
+    const conditionGroupNames: Record<string, string> = {};
+    const conditionGroupOrder: Record<string, number> = {};
+    const conditionGroupTypes: Record<string, string> = {};
+    conditionGroupsResult.rows.forEach(row => {
+      conditionGroupNames[row.groupID] = row.criteriaName;
+      conditionGroupOrder[row.groupID] = row.display_order ?? 999999;
+      conditionGroupTypes[row.groupID] = row.question_type;
+    });
+
+    console.log('📋 Condition group names mapping:', conditionGroupNames);
+    console.log('📋 Condition group order mapping:', conditionGroupOrder);
+    console.log('📋 Condition group types mapping:', conditionGroupTypes);
 
     // Group conditions by groupID and selectedBy (seller vs admin)
     // Using groupID instead of criteriaName for better mapping
@@ -339,6 +390,11 @@ export const getTransactionById = async (req: Request, res: Response) => {
     transaction.sellerPhotos = sellerPhotos;
     transaction.adminPhotos = adminPhotos;
 
+    // Include conditionGroupNames, conditionGroupOrder, and conditionGroupTypes in the response
+    transaction.conditionGroupNames = conditionGroupNames;
+    transaction.conditionGroupOrder = conditionGroupOrder;
+    transaction.conditionGroupTypes = conditionGroupTypes;
+
     console.log(`✅ Found transaction ${id}:`, transaction);
     console.log(`📋 Selected issues:`, transaction.selectedIssues);
     console.log(`📷 Photos:`, transaction.photos);
@@ -382,7 +438,6 @@ export const createTransaction = async (req: Request, res: Response) => {
       [transaction.transactionID]
     );
 
-    console.log('✅ Transaction created:', transaction.transactionID);
 
     res.status(201).json({
       message: 'Transaction created successfully',
@@ -438,7 +493,6 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
       }
 
       const txnResult = await pool.query(updateQuery, queryParams);
-      console.log('✅ Transaction status updated, rows affected:', txnResult.rowCount);
 
       if (txnResult.rowCount === 0) {
         console.error('❌ No transaction found with ID:', id);
@@ -461,15 +515,12 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
 
       // If no rows were updated, insert a new record
       if (updateResult.rowCount === 0) {
-        console.log('⚠️ No ItemStatus found, creating new record...');
         await pool.query(
           `INSERT INTO "ItemStatus" ("transactionID", "itemStatus", "updatedAt")
            VALUES ($1, $2, NOW())`,
           [id, itemStatus]
         );
-        console.log('✅ Item status created');
       } else {
-        console.log('✅ Item status updated, rows affected:', updateResult.rowCount);
       }
     }
 
@@ -482,8 +533,6 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
         sa."submissionDate" as "submittedDate",
         sa."initialOfferPrice" as "estimatedPrice",
         sa."finalOfferPrice" as "finalPrice",
-        sa."initialNote",
-        sa."finalNote",
         t."transactionStatus",
         t."updatedAt",
         i."itemStatus",
@@ -502,7 +551,6 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
       [id]
     );
 
-    console.log('✅ Transaction status updated');
 
     res.json(result.rows[0]);
   } catch (error) {
@@ -512,8 +560,215 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
 };
 
 /**
+ * Upload admin photos to Supabase Storage and save URLs to Photo table
+ */
+export const uploadAdminPhotos = async (req: Request, res: Response) => {
+  const client = await pool.connect();
+  try {
+    const { id } = req.params; // transactionID
+
+    console.log('📸 Uploading admin photos for transaction:', id);
+    console.log('📸 Files received:', req.files);
+
+    // Get the submittedApplianceID for this transaction
+    const txnResult = await client.query(
+      `SELECT "submittedApplianceID" FROM "Transaction" WHERE "transactionID" = $1`,
+      [id]
+    );
+
+    if (txnResult.rows.length === 0) {
+      console.error('❌ Transaction not found:', id);
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
+
+    const submittedApplianceID = txnResult.rows[0].submittedApplianceID;
+    console.log('📦 Submitted Appliance ID:', submittedApplianceID);
+
+    // Upload photos to Supabase Storage
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) {
+      console.error('❌ No files received');
+      return res.status(400).json({ message: 'No photos provided' });
+    }
+
+    console.log(`📸 Processing ${files.length} files...`);
+    const uploadedUrls: string[] = [];
+
+    for (const file of files) {
+      const fileExt = file.originalname.split('.').pop();
+      const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}.${fileExt}`;
+      const filePath = `${submittedApplianceID}/${fileName}`;
+
+      console.log(`📤 Uploading file: ${fileName} (${file.size} bytes)`);
+
+      // Upload to admin-review-photos bucket
+      const { error: uploadError } = await supabase.storage
+        .from('admin-review-photos')
+        .upload(filePath, file.buffer, {
+          contentType: file.mimetype,
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('❌ Supabase upload error:', uploadError);
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
+
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('admin-review-photos')
+        .getPublicUrl(filePath);
+
+      console.log('🔗 Public URL:', publicUrl);
+      uploadedUrls.push(publicUrl);
+
+      // Save to Photo table with remark='admin'
+      await client.query(
+        `INSERT INTO "Photo" ("submittedApplianceID", "photoURL", "remark", "uploadDate")
+         VALUES ($1, $2, 'admin', NOW())`,
+        [submittedApplianceID, publicUrl]
+      );
+
+      console.log('💾 Saved to Photo table');
+    }
+
+
+    res.status(200).json({
+      message: 'Photos uploaded successfully',
+      photoUrls: uploadedUrls
+    });
+  } catch (error) {
+    console.error('❌ Error uploading admin photos:', error);
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    res.status(500).json({
+      message: 'Failed to upload photos',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  } finally {
+    client.release();
+  }
+};
+
+export const getConditionOptionsByGroupIds = async (req: Request, res: Response) => {
+    try {
+      const { groupIds } = req.query; // Comma-separated group IDs
+
+      if (!groupIds || typeof groupIds !== 'string') {
+        return res.status(400).json({ message: 'groupIds parameter is required' });
+      }
+
+      const groupIdArray = groupIds.split(',');
+
+      const result = await pool.query(
+        `SELECT co."conditionID", co."groupID", co.code, co.description, co.question, co.image
+         FROM "ConditionOption" co
+         WHERE co."groupID" = ANY($1)
+         ORDER BY co."conditionID"`,
+        [groupIdArray]
+      );
+
+      // Group options by groupID
+      const optionsByGroup: { [key: string]: any[] } = {};
+      result.rows.forEach(row => {
+        if (!optionsByGroup[row.groupID]) {
+          optionsByGroup[row.groupID] = [];
+        }
+        optionsByGroup[row.groupID].push(row);
+      });
+
+      res.json(optionsByGroup);
+    } catch (error) {
+      console.error('❌ Error fetching condition options by group IDs:', error);
+      res.status(500).json({ message: 'Failed to fetch condition options' });
+    }
+  };
+
+
+/**
+ * Helper function to calculate price based on condition selections
+ * Replicates the logic from calculateValuationController.ts
+ */
+const calculatePriceFromConditions = async (modelId: string, conditionIds: string[]): Promise<number> => {
+  try {
+    console.log(`🧮 Calculating price for Model: ${modelId} with Conditions:`, conditionIds);
+
+    // PRICING ENGINE - Get base prices from buyers
+    const basePriceQuery = await pool.query(
+      `SELECT "buyerID", "basePrice"
+       FROM "BuyerAppliance"
+       WHERE "applianceID" = $1
+       AND "status" = 'ACTIVE'`,
+      [modelId]
+    );
+
+    const buyers = basePriceQuery.rows;
+
+    if (buyers.length === 0) {
+      console.log('⚠️ No active buyers found for this appliance');
+      return 0;
+    }
+
+    const buyerIds = buyers.map(b => b.buyerID);
+    let markdowns: any[] = [];
+
+    if (conditionIds.length > 0) {
+      const markdownsQuery = await pool.query(
+        `SELECT bm."buyerID", bm."markdownPercentage", bm."conditionID", co."description"
+         FROM "BuyerMarkdown" bm
+         JOIN "ConditionOption" co ON bm."conditionID" = co."conditionID"
+         WHERE bm."buyerID" = ANY($1)
+         AND bm."conditionID" = ANY($2)`,
+        [buyerIds, conditionIds]
+      );
+
+      markdowns = markdownsQuery.rows;
+    }
+
+    let highestOffer = 0;
+    let highestBuyerId: string | null = null;
+
+    buyers.forEach(buyer => {
+      const base = parseFloat(buyer.basePrice);
+      const buyerId = buyer.buyerID;
+
+      const applicableMarkdowns = markdowns.filter(m => m.buyerID === buyerId);
+
+      // Check if buyer has rules for all selected conditions
+      const hasValidRules = conditionIds.every((selectedId: string) => {
+        const match = applicableMarkdowns.find(m => m.conditionID === selectedId);
+        return match && match.markdownPercentage != null;
+      });
+
+      if (!hasValidRules) {
+        return; // Skip this buyer
+      }
+
+      const totalMarkdownPercentage = applicableMarkdowns.reduce((sum, m) => {
+        return sum + parseFloat(m.markdownPercentage);
+      }, 0);
+
+      const effectiveMarkdown = Math.min(totalMarkdownPercentage, 100);
+      const finalPrice = base * (1 - effectiveMarkdown / 100);
+
+      if (finalPrice > highestOffer) {
+        highestOffer = finalPrice;
+        highestBuyerId = buyerId;
+      }
+    });
+
+    console.log(`💰 Calculated price: RM${Math.round(highestOffer)} from buyer ${highestBuyerId}`);
+    return Math.round(highestOffer);
+  } catch (error) {
+    console.error('❌ Error calculating price:', error);
+    return 0;
+  }
+};
+
+/**
  * Update transaction with full data (admin edit)
  * Now supports dynamic condition selections stored in ConditionSelected table
+ * Price is automatically calculated from admin condition selections
  */
 export const updateTransaction = async (req: Request, res: Response) => {
   try {
@@ -521,11 +776,9 @@ export const updateTransaction = async (req: Request, res: Response) => {
     const {
       transactionStatus,
       itemStatus,
-      finalPrice,
       brand,
       model,
       category,
-      modelName,
       // All admin's dynamic answers (radio, checkbox, dropdown, image, textarea, file_upload)
       // Format: { [groupID]: conditionID | conditionID[] | textValue | base64Array }
       adminConditions,
@@ -533,7 +786,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
       photos
     } = req.body;
 
-    console.log('📝 Updating transaction with full data:', { id, transactionStatus, itemStatus, finalPrice, adminConditions, hasPhotos: !!photos, photoCount: photos?.length });
+    console.log('📝 Updating transaction with full data:', { id, transactionStatus, itemStatus, adminConditions, hasPhotos: !!photos, photoCount: photos?.length });
 
     // Get the submittedApplianceID for this transaction
     const txnResult = await pool.query(
@@ -547,13 +800,117 @@ export const updateTransaction = async (req: Request, res: Response) => {
 
     const submittedApplianceID = txnResult.rows[0].submittedApplianceID;
 
-    // Update SubmittedAppliance table (only final offer price)
-    await pool.query(
-      `UPDATE "SubmittedAppliance"
-       SET "finalOfferPrice" = COALESCE($1, "finalOfferPrice")
-       WHERE "submittedApplianceID" = $2`,
-      [finalPrice, submittedApplianceID]
-    );
+    // Find the applianceID by matching category, brand, and model
+    let applianceID = null;
+    if (category && brand && model) {
+      const applianceResult = await pool.query(
+        `SELECT a."applianceID"
+         FROM "Appliance" a
+         JOIN "Category" c ON a."categoryID" = c."categoryID"
+         JOIN "Brand" b ON a."brandID" = b."brandID"
+         WHERE c."categoryName" = $1 AND b."brandName" = $2 AND a."modelCode" = $3`,
+        [category, brand, model]
+      );
+
+      if (applianceResult.rows.length > 0) {
+        applianceID = applianceResult.rows[0].applianceID;
+      } else {
+        console.warn(`⚠️ No appliance found for ${category} ${brand} ${model}`);
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // CALCULATE FINAL PRICE FROM ADMIN CONDITIONS
+    // Price is automatically calculated based on condition selections
+    // ─────────────────────────────────────────────────────────
+    let calculatedFinalPrice: number | null = null;
+
+    if (applianceID && adminConditions && typeof adminConditions === 'object') {
+      // Extract all conditionIDs from adminConditions
+      const conditionIds: string[] = [];
+
+      for (const [groupID, value] of Object.entries(adminConditions)) {
+        if (!value) continue;
+
+        // Fetch group type to know how to extract conditionIDs
+        const groupTypeResult = await pool.query(
+          `SELECT question_type FROM "ConditionGroup" WHERE "groupID" = $1`,
+          [groupID]
+        );
+
+        const questionType = groupTypeResult.rows[0]?.question_type;
+
+        // Only extract conditionIDs for types that have them (skip textarea and file_upload)
+        if (questionType && questionType !== 'textarea' && questionType !== 'file_upload') {
+          if (questionType === 'checkbox' && Array.isArray(value)) {
+            // For checkbox, add all selected conditionIDs
+            for (const item of value) {
+              if (typeof item === 'string' && item.startsWith('CO')) {
+                conditionIds.push(item);
+              } else if (typeof item === 'string') {
+                // It's a description, look up the conditionID
+                const condResult = await pool.query(
+                  `SELECT "conditionID" FROM "ConditionOption" WHERE "groupID" = $1 AND description = $2`,
+                  [groupID, item]
+                );
+                if (condResult.rows.length > 0) {
+                  conditionIds.push(condResult.rows[0].conditionID);
+                }
+              }
+            }
+          } else {
+            // For radio, dropdown, image - single value
+            if (typeof value === 'string' && value.startsWith('CO')) {
+              conditionIds.push(value as string);
+            } else if (typeof value === 'string') {
+              // It's a description, look up the conditionID
+              const condResult = await pool.query(
+                `SELECT "conditionID" FROM "ConditionOption" WHERE "groupID" = $1 AND description = $2`,
+                [groupID, value]
+              );
+              if (condResult.rows.length > 0) {
+                conditionIds.push(condResult.rows[0].conditionID);
+              }
+            }
+          }
+        }
+      }
+
+      console.log('💰 Calculating final price with conditionIDs:', conditionIds);
+
+      // Calculate price based on conditions
+      if (conditionIds.length > 0) {
+        calculatedFinalPrice = await calculatePriceFromConditions(applianceID, conditionIds);
+        console.log('💰 Calculated final price:', calculatedFinalPrice);
+      }
+    }
+
+    // Update SubmittedAppliance table (final price and appliance details)
+    const updateFields: string[] = [];
+    const updateValues: any[] = [];
+    let paramIndex = 1;
+
+    // Use calculated price instead of manual input
+    if (calculatedFinalPrice !== null) {
+      updateFields.push(`"finalOfferPrice" = $${paramIndex++}`);
+      updateValues.push(calculatedFinalPrice);
+      console.log(`💰 Updating finalOfferPrice to RM${calculatedFinalPrice}`);
+    }
+
+    if (applianceID) {
+      updateFields.push(`"applianceID" = $${paramIndex++}`);
+      updateValues.push(applianceID);
+    }
+
+    if (updateFields.length > 0) {
+      updateValues.push(submittedApplianceID);
+      await pool.query(
+        `UPDATE "SubmittedAppliance"
+         SET ${updateFields.join(', ')}
+         WHERE "submittedApplianceID" = $${paramIndex}`,
+        updateValues
+      );
+    }
 
     // Update Transaction status if provided
     if (transactionStatus) {
@@ -612,7 +969,6 @@ export const updateTransaction = async (req: Request, res: Response) => {
           [submittedApplianceID]
         );
 
-        console.log('✅ Deleted existing admin answers');
 
         // Process each group answer
         for (const [groupID, value] of Object.entries(adminConditions)) {
@@ -620,7 +976,6 @@ export const updateTransaction = async (req: Request, res: Response) => {
           console.log(`📋 Processing group ${groupID} (type: ${questionType}) with value:`, value);
 
           if (!value) {
-            console.log(`⚠️ Skipping empty value for group ${groupID}`);
             continue;
           }
 
@@ -635,71 +990,105 @@ export const updateTransaction = async (req: Request, res: Response) => {
               [submittedApplianceID, groupID, value]
             );
           } else if (questionType === 'file_upload') {
-            // File upload handled through Photo table (see below)
-            console.log(`📸 File upload for group ${groupID} - handled via Photo table`);
+            // Save file upload URLs as JSON array in textValue
+            const photoUrls = Array.isArray(value) ? value : [];
+            console.log(`📸 Saving ${photoUrls.length} file upload URLs for group ${groupID}`);
+
+            if (photoUrls.length > 0) {
+              await pool.query(
+                `INSERT INTO "ConditionSelected"
+                 ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue")
+                 VALUES (NULL, $1, true, 'admin', NOW(), $2, $3)`,
+                [submittedApplianceID, groupID, JSON.stringify(photoUrls)]
+              );
+            }
           } else if (questionType === 'checkbox') {
-            // Array of conditionIDs
+            // Array of conditionIDs or descriptions
             const conditionIDs = Array.isArray(value) ? value : [value];
-            console.log(`☑️ Saving ${conditionIDs.length} checkbox items`);
 
             for (const conditionID of conditionIDs) {
               if (!conditionID || (typeof conditionID === 'string' && conditionID.trim() === '')) continue;
 
               let actualConditionID = conditionID;
+              let descriptionText = conditionID; // Default to the value itself
 
-              // Look up conditionID if it's a description
+              // Look up conditionID and description
               if (typeof conditionID !== 'string' || !conditionID.startsWith('CO')) {
+                // Value is a description, look up the conditionID
                 const condResult = await pool.query(
-                  `SELECT "conditionID" FROM "ConditionOption"
+                  `SELECT "conditionID", description FROM "ConditionOption"
                    WHERE "groupID" = $1 AND description = $2`,
                   [groupID, conditionID]
                 );
                 if (condResult.rows.length > 0) {
                   actualConditionID = condResult.rows[0].conditionID;
+                  descriptionText = condResult.rows[0].description;
                 } else {
                   console.warn(`⚠️ Condition not found: "${conditionID}" in group ${groupID}`);
                   continue;
                 }
+              } else {
+                // Value is a conditionID, fetch the description
+                const condResult = await pool.query(
+                  `SELECT description FROM "ConditionOption" WHERE "conditionID" = $1`,
+                  [actualConditionID]
+                );
+                if (condResult.rows.length > 0) {
+                  descriptionText = condResult.rows[0].description;
+                }
               }
 
+              // Store both conditionID and description text in textValue for easy reference
               await pool.query(
                 `INSERT INTO "ConditionSelected"
-                 ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID")
-                 VALUES ($1, $2, true, 'admin', NOW(), $3)`,
-                [actualConditionID, submittedApplianceID, groupID]
+                 ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue")
+                 VALUES ($1, $2, true, 'admin', NOW(), $3, $4)`,
+                [actualConditionID, submittedApplianceID, groupID, descriptionText]
               );
             }
           } else {
-            // radio, dropdown, image - single conditionID
+            // radio, dropdown, image - single conditionID or description
             console.log(`🔘 Saving ${questionType} answer: ${value}`);
 
             let actualConditionID = value;
+            let descriptionText = value; // Default to the value itself
 
-            // Look up conditionID if it's a description
+            // Look up conditionID and description
             if (typeof value !== 'string' || !value.startsWith('CO')) {
+              // Value is a description, look up the conditionID
               const condResult = await pool.query(
-                `SELECT "conditionID" FROM "ConditionOption"
+                `SELECT "conditionID", description FROM "ConditionOption"
                  WHERE "groupID" = $1 AND description = $2`,
                 [groupID, value]
               );
               if (condResult.rows.length > 0) {
                 actualConditionID = condResult.rows[0].conditionID;
+                descriptionText = condResult.rows[0].description;
               } else {
                 console.warn(`⚠️ Condition not found: "${value}" in group ${groupID}`);
                 continue;
               }
+            } else {
+              // Value is a conditionID, fetch the description
+              const condResult = await pool.query(
+                `SELECT description FROM "ConditionOption" WHERE "conditionID" = $1`,
+                [actualConditionID]
+              );
+              if (condResult.rows.length > 0) {
+                descriptionText = condResult.rows[0].description;
+              }
             }
 
+            // Store both conditionID and description text in textValue for easy reference
             await pool.query(
               `INSERT INTO "ConditionSelected"
-               ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID")
-               VALUES ($1, $2, true, 'admin', NOW(), $3)`,
-              [actualConditionID, submittedApplianceID, groupID]
+               ("conditionID", "submittedApplianceID", "isChecked", "selectedBy", "selectedAt", "groupID", "textValue")
+               VALUES ($1, $2, true, 'admin', NOW(), $3, $4)`,
+              [actualConditionID, submittedApplianceID, groupID, descriptionText]
             );
           }
         }
 
-        console.log('✅ All admin dynamic answers saved successfully');
       } catch (conditionError) {
         console.error('❌ Error saving admin conditions:', conditionError);
         console.error('❌ Error details:', {
@@ -727,7 +1116,6 @@ export const updateTransaction = async (req: Request, res: Response) => {
           [submittedApplianceID]
         );
 
-        console.log('✅ Deleted existing admin photos');
 
         // Insert new admin photos with remark='admin' to distinguish from seller photos
         for (const photo of photos) {
@@ -740,7 +1128,6 @@ export const updateTransaction = async (req: Request, res: Response) => {
           }
         }
 
-        console.log('✅ Admin photos saved successfully');
       } catch (photoError) {
         console.error('❌ Error saving photos:', photoError);
         console.error('❌ Photo error details:', {
@@ -753,7 +1140,6 @@ export const updateTransaction = async (req: Request, res: Response) => {
       console.log('📷 No photos to update (photos not provided or empty array)');
     }
 
-    console.log('✅ Transaction updated successfully');
 
     res.json({ message: 'Transaction updated successfully' });
   } catch (error) {
@@ -811,7 +1197,6 @@ export const updateSubmissionDetails = async (req: Request, res: Response) => {
          WHERE "submittedApplianceID" = $2`,
         [modelId, submittedApplianceID]
       );
-      console.log('✅ Updated appliance model');
     }
 
     // Update pickup details if provided
@@ -850,7 +1235,6 @@ export const updateSubmissionDetails = async (req: Request, res: Response) => {
             submittedApplianceID
           ]
         );
-        console.log('✅ Updated pickup details');
       }
     }
 
@@ -887,7 +1271,6 @@ export const updateSubmissionDetails = async (req: Request, res: Response) => {
           }
         }
       }
-      console.log('✅ Updated condition selections');
     }
 
     // Mark transaction as updated
@@ -896,7 +1279,6 @@ export const updateSubmissionDetails = async (req: Request, res: Response) => {
       [id]
     );
 
-    console.log('✅ Submission details updated successfully');
 
     res.json({
       message: 'Submission details updated successfully',
@@ -980,7 +1362,6 @@ export const updateCustomerInfo = async (req: Request, res: Response) => {
       ]
     );
 
-    console.log('✅ Customer information updated successfully');
 
     // Mark transaction as updated
     await pool.query(

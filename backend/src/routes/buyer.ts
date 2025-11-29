@@ -4,7 +4,8 @@ import {
   addBuyerAppliance,
   updateBuyerAppliance,
   toggleBuyerApplianceStatus,
-  deleteBuyerAppliance
+  deleteBuyerAppliance,
+  getBuyerTransactions
 } from '../controllers/buyerController';
 import {
   getBuyerConditionGroups,
@@ -16,8 +17,6 @@ import {
   deleteBuyerMarkdown
 } from '../controllers/buyerMarkdownController';
 import { verifyToken } from '../middleware/authMiddleware';
-
-console.log('📍📍📍 buyer routes loaded! 📍📍📍');
 
 const router = express.Router();
 
@@ -39,6 +38,13 @@ router.put('/appliances/:applianceID/status', verifyToken, toggleBuyerApplianceS
 
 // Delete an appliance from buyer's list
 router.delete('/appliances/:applianceID', verifyToken, deleteBuyerAppliance);
+
+// =====================================================
+// BUYER TRANSACTION ROUTES
+// =====================================================
+
+// Get all completed transactions for the logged-in buyer
+router.get('/transactions', verifyToken, getBuyerTransactions);
 
 // =====================================================
 // BUYER MARKDOWN ROUTES

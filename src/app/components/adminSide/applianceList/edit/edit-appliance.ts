@@ -39,6 +39,7 @@ export class EditApplianceComponent implements OnInit {
   editApplianceForm: FormGroup;
   selectedImageFile: File | null = null;
   imagePreview: string = 'assets/image/appliance_sample.png';
+  originalData: Appliance | null = null;
 
   constructor(private fb: FormBuilder) {
     this.editApplianceForm = this.fb.group({
@@ -52,6 +53,9 @@ export class EditApplianceComponent implements OnInit {
 
   ngOnInit() {
     if (this.applianceData) {
+      // Store original data
+      this.originalData = { ...this.applianceData };
+
       this.editApplianceForm.patchValue({
         modelCode: this.applianceData.modelCode,
         modelName: this.applianceData.modelName,
@@ -72,6 +76,30 @@ export class EditApplianceComponent implements OnInit {
   get categoryID() { return this.editApplianceForm.get('categoryID'); }
   get brandID() { return this.editApplianceForm.get('brandID'); }
   get description() { return this.editApplianceForm.get('description'); }
+
+  // Check if any field has changed
+  get hasChanges(): boolean {
+    if (!this.originalData) return false;
+
+    return (
+      this.modelCode?.value !== this.originalData.modelCode ||
+      this.modelName?.value !== this.originalData.modelName ||
+      this.categoryID?.value !== this.originalData.categoryID ||
+      this.brandID?.value !== this.originalData.brandID ||
+      (this.description?.value || '') !== (this.originalData.description || '') ||
+      this.selectedImageFile !== null
+    );
+  }
+
+  getCategoryName(categoryID: string): string {
+    const category = this.categories.find(c => c.categoryID === categoryID);
+    return category ? category.categoryName : categoryID;
+  }
+
+  getBrandName(brandID: string): string {
+    const brand = this.brands.find(b => b.brandID === brandID);
+    return brand ? brand.brandName : brandID;
+  }
 
   onImageSelected(event: any) {
     const file = event.target.files[0];

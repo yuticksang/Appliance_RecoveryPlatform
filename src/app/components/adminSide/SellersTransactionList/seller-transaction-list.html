@@ -2,7 +2,7 @@
   <div class="transactions-container">
     <div class="page-head">
       <h1 class="page-title">Transaction's List</h1>
-      <div class="breadcrumb">Dashboard / <span>Transaction</span></div>
+      <app-breadcrumb></app-breadcrumb>
     </div>
 
     <!-- Filters & Actions Bar -->
@@ -12,8 +12,7 @@
         <div class="filter-dropdown">
           <select
             [(ngModel)]="selectedCategory"
-            (change)="onCategoryChange()"
-            class="filter-select">
+            (change)="onCategoryChange()">
             <option value="">Select a Category</option>
             <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
           </select>
@@ -23,8 +22,7 @@
         <div class="filter-dropdown">
           <select
             [(ngModel)]="selectedBrand"
-            (change)="onBrandChange()"
-            class="filter-select">
+            (change)="onBrandChange()">
             <option value="">Select a Brand</option>
             <option *ngFor="let brand of brands" [value]="brand">{{ brand }}</option>
           </select>
@@ -36,9 +34,7 @@
             type="text"
             placeholder="Search..."
             [(ngModel)]="searchQuery"
-            (input)="onSearch()"
-            class="search-input">
-          <span class="search-icon">🔍</span>
+            (input)="onSearch()">
         </div>
       </div>
     </div>

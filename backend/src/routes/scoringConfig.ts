@@ -3,8 +3,6 @@ import { getAllConditionGroup, getCategory, updateConditionScore } from '../cont
 
 const router = express.Router();
 
-console.log('📍📍📍 scoringConfig routes loaded! 📍📍📍');
-
 router.get('/categories', getCategory);
 
 router.get('/:categoryID', getAllConditionGroup);

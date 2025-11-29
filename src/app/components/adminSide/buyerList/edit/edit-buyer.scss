@@ -134,8 +134,12 @@ $Space: 'Space Grotesk', sans-serif;
     font-size: 14px;
 
     &.btn-primary {
-      background: #007bff;
+      background: #22c55e;
       color: white;
+
+      &:hover:not(:disabled) {
+        background: #16a34a;
+      }
 
       &:disabled {
         background: #ccc;

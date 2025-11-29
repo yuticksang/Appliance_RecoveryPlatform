@@ -19,9 +19,9 @@ export class AddBuyerComponent {
     this.addBuyerForm = this.fb.group({
       fullName: ['', [Validators.required]],
       username: ['', [Validators.required, Validators.minLength(3)]],
-      email: ['', [Validators.email]],
-      phone: [''],
-      password: ['', [Validators.required, Validators.minLength(6)]],
+      email: ['', [Validators.required, Validators.email]],
+      phone: ['', [Validators.required]],
+      password: ['', [Validators.required, Validators.minLength(8)]],
       confirmPassword: ['', [Validators.required]]
     });
   }

@@ -1,8 +1,6 @@
 import { Request, Response } from 'express';
 import pool from '../config/database';
 
-console.log('🔥 buyerMarkdownController.ts loaded! 🔥');
-
 // =====================================================
 // BUYER CONDITION GROUP & OPTION RETRIEVAL
 // =====================================================
@@ -18,11 +16,11 @@ export const getBuyerConditionGroups = async (req: Request, res: Response) => {
         cg."display_order"
       FROM "ConditionGroup" cg
       WHERE cg."status" = 'ACTIVE'
-      AND cg."question_type" IN ('radio', 'checkbox', 'image_selection')
+      AND cg."question_type" IN ('radio', 'checkbox', 'image')
       ORDER BY COALESCE(cg."display_order", 999999) ASC, cg."created_at" ASC
     `);
 
-    console.log('📂 Fetched buyer condition groups (filtered):', result.rows.length);
+    console.log('📂 Fetched buyer condition groups:', result.rows.length);
     res.json(result.rows);
   } catch (error: any) {
     console.error('Get buyer condition groups error:', error);
@@ -44,21 +42,22 @@ export const getBuyerConditionOptions = async (req: Request, res: Response) => {
         co.image,
         co.status,
         co.question,
+        co.created_at,
         cg."criteriaName",
         cg."question_type",
+        cg."display_order",
         STRING_AGG(c."categoryName", ', ' ORDER BY c."categoryName") as "categoryNames"
       FROM "ConditionOption" co
       INNER JOIN "ConditionGroup" cg ON co."groupID" = cg."groupID"
       LEFT JOIN "Category_Condition" cc ON co."conditionID" = cc."conditionID"
       LEFT JOIN "Category" c ON cc."categoryID" = c."categoryID"
-      WHERE co."status" = 'ACTIVE'
-      AND cg."status" = 'ACTIVE'
-      AND cg."question_type" IN ('radio', 'checkbox', 'image_selection')
-      GROUP BY co."conditionID", co."groupID", co.code, co.description, co.image, co.status, co.question, cg."criteriaName", cg."question_type"
-      ORDER BY cg."display_order" ASC, co.created_at ASC
+      WHERE cg."status" = 'ACTIVE'
+      AND cg."question_type" IN ('radio', 'checkbox', 'image')
+      GROUP BY co."conditionID", co."groupID", co.code, co.description, co.image, co.status, co.question, co.created_at, cg."criteriaName", cg."question_type", cg."display_order"
+      ORDER BY cg."display_order" ASC NULLS LAST, co.created_at ASC
     `);
 
-    console.log('📂 Fetched buyer condition options (filtered):', result.rows.length);
+    console.log('📂 Fetched buyer condition options:', result.rows.length);
     res.json(result.rows);
   } catch (error: any) {
     console.error('Get buyer condition options error:', error);
@@ -95,10 +94,10 @@ export const getBuyerCategories = async (req: Request, res: Response) => {
 
 export const getBuyerMarkdowns = async (req: Request, res: Response) => {
   try {
-    const buyerID = (req as any).user?.userID;
+    const buyerID = (req as any).user?.buyerId;
 
     if (!buyerID) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      return res.status(401).json({ message: 'Unauthorized - No buyer ID found' });
     }
 
     const result = await pool.query(`
@@ -127,11 +126,11 @@ export const getBuyerMarkdowns = async (req: Request, res: Response) => {
 
 export const saveBuyerMarkdowns = async (req: Request, res: Response) => {
   try {
-    const buyerID = (req as any).user?.userID;
+    const buyerID = (req as any).user?.buyerId;
     const { markdowns } = req.body; // Array of { conditionID, markdownPercentage }
 
     if (!buyerID) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      return res.status(401).json({ message: 'Unauthorized - No buyer ID found' });
     }
 
     if (!markdowns || !Array.isArray(markdowns)) {
@@ -159,13 +158,16 @@ export const saveBuyerMarkdowns = async (req: Request, res: Response) => {
           });
         }
 
+        // Round to whole number (integer)
+        const roundedMarkdown = Math.round(markdownPercentage);
+
         // Insert the markdown
         await pool.query(`
           INSERT INTO "BuyerMarkdown" ("buyerID", "conditionID", "markdownPercentage")
           VALUES ($1, $2, $3)
           ON CONFLICT ("buyerID", "conditionID")
           DO UPDATE SET "markdownPercentage" = $3
-        `, [buyerID, conditionID, markdownPercentage]);
+        `, [buyerID, conditionID, roundedMarkdown]);
       }
     }
 
@@ -188,12 +190,12 @@ export const saveBuyerMarkdowns = async (req: Request, res: Response) => {
 
 export const updateSingleBuyerMarkdown = async (req: Request, res: Response) => {
   try {
-    const buyerID = (req as any).user?.userID;
+    const buyerID = (req as any).user?.buyerId;
     const { conditionId } = req.params;
     const { markdownPercentage } = req.body;
 
     if (!buyerID) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      return res.status(401).json({ message: 'Unauthorized - No buyer ID found' });
     }
 
     if (markdownPercentage === undefined || markdownPercentage === null) {
@@ -204,13 +206,16 @@ export const updateSingleBuyerMarkdown = async (req: Request, res: Response) => 
       return res.status(400).json({ message: 'Markdown percentage must be between 0 and 100' });
     }
 
+    // Round to whole number (integer)
+    const roundedMarkdown = Math.round(markdownPercentage);
+
     const result = await pool.query(`
       INSERT INTO "BuyerMarkdown" ("buyerID", "conditionID", "markdownPercentage")
       VALUES ($1, $2, $3)
       ON CONFLICT ("buyerID", "conditionID")
       DO UPDATE SET "markdownPercentage" = $3
       RETURNING *
-    `, [buyerID, conditionId, markdownPercentage]);
+    `, [buyerID, conditionId, roundedMarkdown]);
 
     console.log(`✅ Updated markdown for buyer ${buyerID}, condition ${conditionId}`);
     res.json(result.rows[0]);
@@ -225,11 +230,11 @@ export const updateSingleBuyerMarkdown = async (req: Request, res: Response) => 
 
 export const deleteBuyerMarkdown = async (req: Request, res: Response) => {
   try {
-    const buyerID = (req as any).user?.userID;
+    const buyerID = (req as any).user?.buyerId;
     const { conditionId } = req.params;
 
     if (!buyerID) {
-      return res.status(401).json({ message: 'Unauthorized' });
+      return res.status(401).json({ message: 'Unauthorized - No buyer ID found' });
     }
 
     const result = await pool.query(

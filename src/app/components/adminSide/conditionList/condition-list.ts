@@ -7,6 +7,8 @@ import { AddConditionGroupComponent } from './add-group/add-condition-group';
 import { EditConditionGroupComponent } from './edit-group/edit-condition-group';
 import { AddConditionOptionComponent } from './add-option/add-condition-option';
 import { EditConditionOptionComponent } from './edit-option/edit-condition-option';
+import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
+
 
 interface ConditionGroup {
   groupID: string;
@@ -45,7 +47,8 @@ type SortDir = 'asc' | 'desc';
     AddConditionGroupComponent,
     EditConditionGroupComponent,
     AddConditionOptionComponent,
-    EditConditionOptionComponent
+    EditConditionOptionComponent,
+    BreadcrumbComponent
   ],
   templateUrl: './condition-list.html',
   styleUrls: ['./condition-list.scss']
@@ -304,6 +307,17 @@ export class ConditionListComponent implements OnInit {
   editCondition(option: ConditionOption) {
     this.editingOption.set(option);
     this.showEditOptionModal.set(true);
+  }
+
+  getQuestionTypeForOption(option: ConditionOption): string | null {
+    const group = this.conditionGroups().find(g => g.groupID === option.groupID);
+    return group?.question_type || null;
+  }
+
+  getSelectedGroupData(): ConditionGroup | null {
+    const groupId = this.selectedGroupForAdd();
+    if (!groupId) return null;
+    return this.conditionGroups().find(g => g.groupID === groupId) || null;
   }
 
   toggleStatus(option: ConditionOption) {

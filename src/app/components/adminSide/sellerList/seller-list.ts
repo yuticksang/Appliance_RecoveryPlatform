@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AlertService } from '../../../services/alert.service';
+import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
 
 type SellerStatus = 'ACTIVE' | 'INACTIVE';
 
@@ -24,7 +25,7 @@ type SortDir = 'asc' | 'desc';
 @Component({
   selector: 'app-seller-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BreadcrumbComponent],
   templateUrl: './seller-list.html',
   styleUrls: ['./seller-list.scss']
 })

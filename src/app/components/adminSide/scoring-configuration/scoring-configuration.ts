@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EditScore } from './edit-score/edit-score';
 import { Condition, ConditionGroup, Category, ScoringConfigurationService } from './scoring-configuration.service';
+import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
 
 
 
@@ -11,7 +12,7 @@ type SortDir = 'asc' | 'desc';
 
 @Component({
   selector: 'app-scoring-configuration',
-  imports: [CommonModule, FormsModule, EditScore],
+  imports: [CommonModule, FormsModule, EditScore, BreadcrumbComponent],
   templateUrl: './scoring-configuration.html',
   styleUrl: './scoring-configuration.scss',
 })

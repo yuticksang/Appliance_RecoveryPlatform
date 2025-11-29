@@ -20,54 +20,64 @@ export class AuthService {
   }
 
   private restoreUserFromStorage() {
-    // Try to restore admin user first
-    const adminToken = localStorage.getItem('admin_token');
-    const adminUserJson = localStorage.getItem('admin_user');
+    // Determine which user type to restore based on current URL/context
+    const currentPath = window.location.pathname;
+    const isAdminPath = currentPath.startsWith('/admin');
+    const isBuyerPath = currentPath.startsWith('/buyer');
 
-    if (adminToken && adminUserJson) {
-      try {
-        const user = JSON.parse(adminUserJson);
+    // Try to restore admin user only if on admin path
+    if (isAdminPath || !isBuyerPath) {
+      const adminToken = localStorage.getItem('admin_token');
+      const adminUserJson = localStorage.getItem('admin_user');
 
-        // ONLY restore admin/superadmin users
-        if (user.userType === 'admin' || user.userType === 'superadmin') {
-          this.user.set(user);
-          console.log('✅ Admin user restored from localStorage:', user);
-          return;
-        } else {
-          console.log('ℹ️ Non-admin user found in admin storage, clearing');
+      if (adminToken && adminUserJson) {
+        try {
+          const user = JSON.parse(adminUserJson);
+
+          // ONLY restore admin/superadmin users
+          if (user.userType === 'admin' || user.userType === 'superadmin') {
+            this.user.set(user);
+            console.log('✅ Admin user restored from localStorage');
+            return;
+          } else {
+            // Invalid admin user data, clear it
+            localStorage.removeItem('admin_token');
+            localStorage.removeItem('admin_user');
+          }
+        } catch (error) {
+          console.error('❌ Failed to restore admin user:', error);
+          // Clear invalid data
           localStorage.removeItem('admin_token');
           localStorage.removeItem('admin_user');
         }
-      } catch (error) {
-        console.error('❌ Failed to restore admin user from localStorage:', error);
-        // Clear invalid data
-        localStorage.removeItem('admin_token');
-        localStorage.removeItem('admin_user');
       }
     }
 
-    // Try to restore buyer user
-    const buyerToken = localStorage.getItem('buyer_token');
-    const buyerUserJson = localStorage.getItem('buyer_user');
+    // Try to restore buyer user only if on buyer path
+    if (isBuyerPath || !isAdminPath) {
+      const buyerToken = localStorage.getItem('buyer_token');
+      const buyerUserJson = localStorage.getItem('buyer_user');
 
-    if (buyerToken && buyerUserJson) {
-      try {
-        const user = JSON.parse(buyerUserJson);
+      if (buyerToken && buyerUserJson) {
+        try {
+          const user = JSON.parse(buyerUserJson);
 
-        // ONLY restore buyer users
-        if (user.userType === 'buyer') {
-          this.user.set(user);
-          console.log('✅ Buyer user restored from localStorage:', user);
-        } else {
-          console.log('ℹ️ Non-buyer user found in buyer storage, clearing');
+          // ONLY restore buyer users
+          if (user.userType === 'buyer') {
+            this.user.set(user);
+            console.log('✅ Buyer user restored from localStorage');
+            return;
+          } else {
+            // Invalid buyer user data, clear it
+            localStorage.removeItem('buyer_token');
+            localStorage.removeItem('buyer_user');
+          }
+        } catch (error) {
+          console.error('❌ Failed to restore buyer user:', error);
+          // Clear invalid data
           localStorage.removeItem('buyer_token');
           localStorage.removeItem('buyer_user');
         }
-      } catch (error) {
-        console.error('❌ Failed to restore buyer user from localStorage:', error);
-        // Clear invalid data
-        localStorage.removeItem('buyer_token');
-        localStorage.removeItem('buyer_user');
       }
     }
   }

@@ -278,3 +278,84 @@ export const deleteBuyerAppliance = async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Failed to remove appliance' });
   }
 };
+
+// Get transactions for the logged-in buyer
+// Only shows completed transactions where the buyer's base price applies
+export const getBuyerTransactions = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user?.userId;
+
+    console.log('🔍 getBuyerTransactions called');
+    console.log('   User ID:', userId);
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    // Get buyer_id from users table
+    const userQuery = await pool.query(
+      'SELECT buyer_id FROM users WHERE "userID" = $1',
+      [userId]
+    );
+
+    if (userQuery.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const buyerId = userQuery.rows[0].buyer_id;
+    console.log('   Buyer ID:', buyerId);
+
+    if (!buyerId) {
+      return res.status(403).json({ message: 'User is not a buyer' });
+    }
+
+    // Get all transactions where:
+    // 1. Transaction has this buyer assigned
+    // 2. Transaction status is 'Completed'
+    const query = `
+      SELECT
+        t."transactionID" as id,
+        t."sellerID" as "sellerId",
+        t."buyerID" as "buyerId",
+        COALESCE(u.name, 'Unknown') as "sellerName",
+        sa."submittedApplianceID",
+        sa."submissionDate" as "submittedDate",
+        COALESCE(sa."initialOfferPrice", 0) as "estimatedPrice",
+        sa."finalOfferPrice" as "finalPrice",
+        '' as "initialNote",
+        '' as "finalNote",
+        t."transactionStatus",
+        t."createdAt",
+        t."updatedAt",
+        t."paymentDueDate",
+        COALESCE(i."itemStatus", 'Pending') as "itemStatus",
+        i."updatedAt" as "itemStatusUpdatedAt",
+        COALESCE(b."brandName", '') as brand,
+        COALESCE(c."categoryName", '') as category,
+        COALESCE(a."modelCode", '') as model,
+        COALESCE(a."modelName", '') as "modelName",
+        COALESCE(a.image_url, '') as "imageUrl",
+        COALESCE(ba."basePrice", 0) as "buyerBasePrice"
+      FROM "Transaction" t
+      INNER JOIN "SubmittedAppliance" sa ON t."submittedApplianceID" = sa."submittedApplianceID"
+      LEFT JOIN users u ON t."sellerID" = u.seller_id
+      LEFT JOIN "ItemStatus" i ON t."transactionID" = i."transactionID"
+      LEFT JOIN "Appliance" a ON sa."applianceID" = a."applianceID"
+      LEFT JOIN "Brand" b ON a."brandID" = b."brandID"
+      LEFT JOIN "Category" c ON a."categoryID" = c."categoryID"
+      LEFT JOIN "BuyerAppliance" ba ON a."applianceID" = ba."applianceID" AND ba."buyerID" = $1
+      WHERE t."buyerID" = $1
+        AND t."transactionStatus" = 'Completed'
+      ORDER BY sa."submissionDate" DESC
+    `;
+
+    console.log('   Executing transactions query with buyerId:', buyerId);
+    const result = await pool.query(query, [buyerId]);
+
+    console.log('✅ Found', result.rows.length, 'transactions for buyer');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('❌ Error fetching buyer transactions:', error);
+    res.status(500).json({ message: 'Failed to fetch buyer transactions' });
+  }
+};
