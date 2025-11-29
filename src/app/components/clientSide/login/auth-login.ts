@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 import { AlertService } from '../../../services/alert.service';
 import { AlertComponent } from '../../../shared/alert/alert.component';
+import { TransactionService } from '../../../services/transaction.service';
 
 declare const google: any;
 
@@ -21,6 +22,7 @@ export class AuthLoginComponent implements OnInit {
   private alertService = inject(AlertService);
   private router = inject(Router);
   private platformId = inject(PLATFORM_ID);
+  private transactionService = inject(TransactionService);
 
   hide = true;
   loading = false;
@@ -115,6 +117,9 @@ export class AuthLoginComponent implements OnInit {
             // Show success message
             this.alertService.success('Logged in successfully!');
 
+            // Check for pending transactions awaiting confirmation
+            this.checkPendingTransactions(response.user.sellerId);
+
             // Redirect to seller home
             this.router.navigate(['/home']);
           } else {
@@ -191,6 +196,32 @@ export class AuthLoginComponent implements OnInit {
         this.alertService.error(errorMessage);
         this.loading = false;
         console.error('Google login error:', err);
+      }
+    });
+  }
+
+  checkPendingTransactions(sellerId: string): void {
+    // Fetch transactions for this seller
+    this.transactionService.getTransactionsBySeller(sellerId).subscribe({
+      next: (transactions) => {
+        // Count transactions with "Awaiting Confirmation" status
+        const awaitingCount = transactions.filter(
+          t => t.transactionStatus === 'Awaiting Confirmation'
+        ).length;
+
+        // Show alert if there are pending confirmations
+        if (awaitingCount > 0) {
+          const message = awaitingCount === 1
+            ? 'You have 1 transaction awaiting your confirmation!'
+            : `You have ${awaitingCount} transactions awaiting your confirmation!`;
+
+          // Show info alert
+          this.alertService.info(message);
+        }
+      },
+      error: (err) => {
+        console.error('Failed to check pending transactions:', err);
+        // Silently fail - don't interrupt login flow
       }
     });
   }

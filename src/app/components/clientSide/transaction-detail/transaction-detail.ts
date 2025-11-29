@@ -7,11 +7,13 @@ import { filter, take } from 'rxjs/operators';
 import { TransactionService, Transaction } from '../../../services/transaction.service';
 import { AuthService } from '../../../services/auth.service';
 import { AlertService } from '../../../services/alert.service';
+import { BreadcrumbService } from '../../../services/breadcrumb.service';
+import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
 
 @Component({
   selector: 'app-transaction-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BreadcrumbComponent],
   templateUrl: './transaction-detail.html',
   styleUrls: ['./transaction-detail.scss']
 })
@@ -21,6 +23,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   private transactionService = inject(TransactionService);
   private authService = inject(AuthService);
   private alertService = inject(AlertService);
+  private breadcrumbService = inject(BreadcrumbService);
 
   transaction: Transaction | null = null;
   loading: boolean = true;
@@ -333,6 +336,12 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    // Set breadcrumbs
+    this.breadcrumbService.setBreadcrumbs([
+      { label: 'Transactions', url: '/transactions' },
+      { label: 'Transaction Detail' }
+    ]);
+
     // Get transaction ID from route
     this.route.params.subscribe(params => {
       // Support both string IDs (e.g., "TXN-123") and numeric IDs

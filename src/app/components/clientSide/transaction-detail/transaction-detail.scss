@@ -48,6 +48,11 @@ $Space: 'Space Grotesk', sans-serif;
 /* Header */
 .detail-header {
   margin-bottom: 2rem;
+
+  app-breadcrumb {
+    display: block;
+    margin-bottom: 1.5rem;
+  }
 }
 
 .top-actions {

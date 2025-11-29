@@ -88,17 +88,11 @@
 
     <!-- Header -->
     <div class="detail-header">
-      <div class="top-actions">
-        <span class="back-link" (click)="goBack()">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-            <path d="M10 18L2 10L10 2L11.4 3.4L5.8 9H18V11H5.8L11.4 16.6L10 18Z"/>
-          </svg>
-          Back to Transactions
-        </span>
-      </div>
+      <!-- Breadcrumb -->
+      <app-breadcrumb></app-breadcrumb>
 
       <div class="title-status-row">
-        <h1 class="page-title">APPLIANCE INFORMATION</h1>
+        <h1 class="page-title">Appliance Information</h1>
         <div class="status-badges">
           <span class="status-badge" [ngClass]="getStatusClass(transaction.transactionStatus)">
             {{ transaction.transactionStatus }}
@@ -333,23 +327,26 @@
               <span class="price-label">RM</span>
               <span class="price-value">{{ beforeReview.estimatedPrice }}</span>
             </div>
-            <div class="details-grid">
-              <div class="detail-item">
-                <h4 class="detail-label">BRAND</h4>
-                <p class="detail-value">{{ beforeReview.brand }}</p>
-              </div>
-              <div class="detail-item">
-                <h4 class="detail-label">MODEL</h4>
-                <p class="detail-value">{{ beforeReview.model }}</p>
-              </div>
-              <div class="detail-item">
-                <h4 class="detail-label">CATEGORY</h4>
-                <p class="detail-value">{{ beforeReview.category }}</p>
-              </div>
-              <div class="detail-item">
-                <h4 class="detail-label">SCORE</h4>
-                <p class="detail-value">{{ beforeReview.score }}</p>
-              </div>
+            <!-- Appliance Details -->
+            <div class="condition-group">
+              <h4 class="condition-group-label">BRAND</h4>
+              <p class="condition-value">{{ beforeReview.brand }}</p>
+            </div>
+            <div class="condition-group">
+              <h4 class="condition-group-label">MODEL</h4>
+              <p class="condition-value">{{ beforeReview.model }}</p>
+            </div>
+            <div class="condition-group">
+              <h4 class="condition-group-label">CATEGORY</h4>
+              <p class="condition-value">{{ beforeReview.category }}</p>
+            </div>
+            <div class="condition-group">
+              <h4 class="condition-group-label">MODEL NAME</h4>
+              <p class="condition-value">{{ beforeReview.modelName || 'N/A' }}</p>
+            </div>
+            <div class="condition-group">
+              <h4 class="condition-group-label">SCORE</h4>
+              <p class="condition-value">{{ beforeReview.score }}</p>
             </div>
 
             <!-- Dynamic Condition Groups - Seller's Original Submission -->
@@ -438,23 +435,26 @@
               <span class="price-label">RM</span>
               <span class="price-value">{{ afterReview.estimatedPrice }}</span>
             </div>
-            <div class="details-grid">
-              <div class="detail-item">
-                <h4 class="detail-label">BRAND</h4>
-                <p class="detail-value">{{ afterReview.brand }}</p>
-              </div>
-              <div class="detail-item">
-                <h4 class="detail-label">MODEL</h4>
-                <p class="detail-value">{{ afterReview.model }}</p>
-              </div>
-              <div class="detail-item">
-                <h4 class="detail-label">CATEGORY</h4>
-                <p class="detail-value">{{ afterReview.category }}</p>
-              </div>
-              <div class="detail-item">
-                <h4 class="detail-label">SCORE</h4>
-                <p class="detail-value">{{ afterReview.score }}</p>
-              </div>
+            <!-- Appliance Details -->
+            <div class="condition-group">
+              <h4 class="condition-group-label">BRAND</h4>
+              <p class="condition-value">{{ afterReview.brand }}</p>
+            </div>
+            <div class="condition-group">
+              <h4 class="condition-group-label">MODEL</h4>
+              <p class="condition-value">{{ afterReview.model }}</p>
+            </div>
+            <div class="condition-group">
+              <h4 class="condition-group-label">CATEGORY</h4>
+              <p class="condition-value">{{ afterReview.category }}</p>
+            </div>
+            <div class="condition-group">
+              <h4 class="condition-group-label">MODEL NAME</h4>
+              <p class="condition-value">{{ afterReview.modelName || 'N/A' }}</p>
+            </div>
+            <div class="condition-group">
+              <h4 class="condition-group-label">SCORE</h4>
+              <p class="condition-value">{{ afterReview.score }}</p>
             </div>
 
             <!-- Dynamic Condition Groups - Admin's Review -->
@@ -598,28 +598,26 @@
             <span class="price-value">{{ applianceInfo.estimatedPrice }}</span>
           </div>
 
-          <!-- Appliance Details Grid -->
-          <div class="details-grid">
-            <div class="detail-item">
-              <h4 class="detail-label">BRAND</h4>
-              <p class="detail-value">{{ applianceInfo.brand || 'N/A' }}</p>
-            </div>
-            <div class="detail-item">
-              <h4 class="detail-label">MODEL</h4>
-              <p class="detail-value">{{ applianceInfo.model || 'N/A' }}</p>
-            </div>
-            <div class="detail-item">
-              <h4 class="detail-label">CATEGORY</h4>
-              <p class="detail-value">{{ applianceInfo.category || 'N/A' }}</p>
-            </div>
-            <div class="detail-item">
-              <h4 class="detail-label">MODEL NAME</h4>
-              <p class="detail-value">{{ applianceInfo.modelName || 'N/A' }}</p>
-            </div>
-             <div class="detail-item">
-              <h4 class="detail-label">SCORE</h4>
-              <p class="detail-value">{{ applianceInfo.score || 0 }}</p>
-            </div>
+          <!-- Appliance Details -->
+          <div class="condition-group">
+            <h4 class="condition-group-label">BRAND</h4>
+            <p class="condition-value">{{ applianceInfo.brand || 'N/A' }}</p>
+          </div>
+          <div class="condition-group">
+            <h4 class="condition-group-label">MODEL</h4>
+            <p class="condition-value">{{ applianceInfo.model || 'N/A' }}</p>
+          </div>
+          <div class="condition-group">
+            <h4 class="condition-group-label">CATEGORY</h4>
+            <p class="condition-value">{{ applianceInfo.category || 'N/A' }}</p>
+          </div>
+          <div class="condition-group">
+            <h4 class="condition-group-label">MODEL NAME</h4>
+            <p class="condition-value">{{ applianceInfo.modelName || 'N/A' }}</p>
+          </div>
+          <div class="condition-group">
+            <h4 class="condition-group-label">SCORE</h4>
+            <p class="condition-value">{{ applianceInfo.score || 0 }}</p>
           </div>
 
           <!-- Dynamic Condition Groups - Shows all seller-submitted conditions in display_order -->

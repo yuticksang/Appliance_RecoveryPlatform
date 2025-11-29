@@ -21,6 +21,94 @@ $Space: 'Space Grotesk', sans-serif;
   text-align: center;
 }
 
+/* Notification Banner */
+.notification-banner {
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 4px 6px rgba(245, 158, 11, 0.1);
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.notification-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  background: #f59e0b;
+  border-radius: 50%;
+  color: white;
+
+  svg {
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.notification-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+
+  strong {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #92400e;
+  }
+
+  span {
+    font-size: 0.875rem;
+    color: #78350f;
+    line-height: 1.5;
+  }
+}
+
+.notification-close {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: #92400e;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: rgba(146, 64, 14, 0.1);
+    color: #78350f;
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
 /* Filters Bar */
 .filters-bar {
   display: flex;
@@ -170,10 +258,19 @@ $Space: 'Space Grotesk', sans-serif;
   tbody {
     tr {
       border-bottom: 1px solid #e2e8f0;
-      transition: background 0.2s;
+      transition: all 0.2s;
 
       &.transaction-row {
         cursor: pointer;
+      }
+
+      &.has-update {
+        background: #fffbeb;
+        border-left: 3px solid #f59e0b;
+
+        &:hover {
+          background: #fef3c7;
+        }
       }
 
       &:hover {
@@ -191,6 +288,36 @@ $Space: 'Space Grotesk', sans-serif;
       color: #2d3748;
       vertical-align: middle;
     }
+  }
+}
+
+// Row number with notification dot
+.row-number {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  position: relative;
+}
+
+.notification-dot {
+  width: 8px;
+  height: 8px;
+  background: #ef4444;
+  border-radius: 50%;
+  display: inline-block;
+  animation: pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
   }
 }
 
@@ -386,6 +513,17 @@ $Space: 'Space Grotesk', sans-serif;
 }
 
 @media (max-width: 768px) {
+  .notification-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .notification-close {
+    align-self: flex-end;
+    margin-top: -2rem;
+  }
+
   .filters-bar {
     flex-direction: column;
     align-items: stretch;

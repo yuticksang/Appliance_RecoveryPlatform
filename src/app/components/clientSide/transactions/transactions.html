@@ -2,6 +2,28 @@
   <div class="transactions-container">
     <h1 class="page-title">Transaction's List</h1>
 
+    <!-- Notification Banner for Awaiting Confirmation -->
+    <div *ngIf="showNotificationBanner" class="notification-banner">
+      <div class="notification-content">
+        <div class="notification-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+            <path d="M12 8v4"/>
+            <path d="M12 16h.01"/>
+          </svg>
+        </div>
+        <div class="notification-text">
+          <strong>Action Required!</strong>
+          <span>You have {{ awaitingConfirmationCount }} transaction{{ awaitingConfirmationCount > 1 ? 's' : '' }} awaiting your confirmation. Please review and respond.</span>
+        </div>
+        <button class="notification-close" (click)="closeNotificationBanner()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
     <!-- Filters & Actions Bar -->
     <div class="filters-bar">
       <button class="btn-new-appliance" (click)="addNewAppliance()">
@@ -86,10 +108,18 @@
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let transaction of paginatedTransactions; let i = index" 
+          <tr *ngFor="let transaction of paginatedTransactions; let i = index"
               class="transaction-row"
+              [class.has-update]="transaction.transactionStatus === 'Awaiting Confirmation'"
               (click)="viewTransactionDetail(transaction.id)">
-            <td>{{ (currentPage - 1) * itemsPerPage + i + 1 }}</td>
+            <td>
+              <div class="row-number">
+                {{ (currentPage - 1) * itemsPerPage + i + 1 }}
+                <span *ngIf="transaction.transactionStatus === 'Awaiting Confirmation'"
+                      class="notification-dot"
+                      title="New update - Awaiting your confirmation"></span>
+              </div>
+            </td>
             <td>
               <div class="appliance-image">
                 <img [src]="transaction.image" [alt]="transaction.modelName" />
