@@ -59,10 +59,10 @@
       </div>
     </div>
 
-    <!-- Cancellation Button for Pending Payment (Case 5) -->
-    <div *ngIf="isPendingPayment"
-         class="decision-section cancellation-section"
-         [class.hidden]="!isHeaderVisible">
+
+    <!-- Cancellation Button - Available for all non-final statuses -->
+    <div *ngIf="canCancelTransaction()"
+         class="decision-section cancellation-section">
         <div class="decision-content">
           <div class="decision-header">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
