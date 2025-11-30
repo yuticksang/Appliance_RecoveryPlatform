@@ -90,7 +90,7 @@
             <td>{{ (currentPage - 1) * itemsPerPage + i + 1 }}</td>
             <td class="transaction-id">{{ transaction.id }}</td>
             <td>{{ transaction.sellerId }}</td>
-            <td>{{ transaction.id }}</td>
+            <td>N/A</td>
             <td>{{ transaction.category }}</td>
             <td>{{ transaction.brand }}</td>
             <td>{{ transaction.model }}</td>
@@ -152,3 +152,17 @@
     </div>
   </div>
 </main>
+
+<!-- Confirmation Modal -->
+@if (showConfirmModal()) {
+<div class="modal-overlay" (click)="onCancelDelete()">
+  <div class="confirm-modal" (click)="$event.stopPropagation()">
+    <h2 class="confirm-title">Confirm Action</h2>
+    <p class="confirm-message">{{ getConfirmMessage() }}</p>
+    <div class="confirm-actions">
+      <button class="btn-cancel" (click)="onCancelDelete()">Cancel</button>
+      <button class="btn-confirm" (click)="onConfirmDelete()">Confirm</button>
+    </div>
+  </div>
+</div>
+}

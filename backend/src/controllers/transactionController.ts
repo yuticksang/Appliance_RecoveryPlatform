@@ -1417,3 +1417,93 @@ export const updateCustomerInfo = async (req: Request, res: Response) => {
     });
   }
 };
+
+/**
+ * Delete a transaction (admin only)
+ * Deletes transaction and all related data
+ */
+export const deleteTransaction = async (req: Request, res: Response) => {
+  const client = await pool.connect();
+  try {
+    const { id } = req.params;
+    const authUser = (req as any).user; // From JWT token
+
+    console.log('🗑️ Deleting transaction:', id);
+
+    // Only allow admins to delete transactions
+    if (authUser.userType !== 'admin' && authUser.userType !== 'superadmin') {
+      return res.status(403).json({ message: 'Unauthorized. Only admins can delete transactions.' });
+    }
+
+    await client.query('BEGIN');
+
+    // Get the submittedApplianceID for this transaction
+    const txnResult = await client.query(
+      `SELECT "submittedApplianceID" FROM "Transaction" WHERE "transactionID" = $1`,
+      [id]
+    );
+
+    if (txnResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ message: 'Transaction not found' });
+    }
+
+    const submittedApplianceID = txnResult.rows[0].submittedApplianceID;
+
+    // Delete related records in order (due to foreign key constraints)
+
+    // 1. Delete ItemStatus
+    await client.query(
+      `DELETE FROM "ItemStatus" WHERE "transactionID" = $1`,
+      [id]
+    );
+
+    // 2. Delete Transaction
+    await client.query(
+      `DELETE FROM "Transaction" WHERE "transactionID" = $1`,
+      [id]
+    );
+
+    // 3. Delete ConditionSelected
+    await client.query(
+      `DELETE FROM "ConditionSelected" WHERE "submittedApplianceID" = $1`,
+      [submittedApplianceID]
+    );
+
+    // 4. Delete Photos
+    await client.query(
+      `DELETE FROM "Photo" WHERE "submittedApplianceID" = $1`,
+      [submittedApplianceID]
+    );
+
+    // 5. Delete Pickup
+    await client.query(
+      `DELETE FROM "Pickup" WHERE "submittedApplianceID" = $1`,
+      [submittedApplianceID]
+    );
+
+    // 6. Finally delete SubmittedAppliance
+    await client.query(
+      `DELETE FROM "SubmittedAppliance" WHERE "submittedApplianceID" = $1`,
+      [submittedApplianceID]
+    );
+
+    await client.query('COMMIT');
+
+    console.log('✅ Transaction deleted successfully:', id);
+
+    res.json({
+      message: 'Transaction deleted successfully',
+      transactionID: id
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Error deleting transaction:', error);
+    res.status(500).json({
+      message: 'Failed to delete transaction',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  } finally {
+    client.release();
+  }
+};
