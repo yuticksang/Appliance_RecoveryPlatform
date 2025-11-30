@@ -470,11 +470,11 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
     const { id } = req.params;
     const { transactionStatus, itemStatus } = req.body;
 
-    console.log('� Updating transaction:', { id, transactionStatus, itemStatus });
+    console.log('📝 Updating transaction:', { id, transactionStatus, itemStatus });
 
     // Update transaction status with automatic deadline setting
     if (transactionStatus) {
-      console.log('� Updating transaction status to:', transactionStatus);
+      console.log('📝 Updating transaction status to:', transactionStatus);
 
       // Determine which deadlines to set based on status
       let updateQuery = '';
@@ -487,7 +487,25 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
          WHERE "transactionID" = $2
          RETURNING *`;
         queryParams = [transactionStatus, id];
-        console.log('� Setting responseDeadline to 14 days from now');
+        console.log('📅 Setting responseDeadline to 14 days from now');
+        
+        // AUTO-VALIDATION: Set item status to "Picked Up" when transaction status is "Awaiting Confirmation"
+        const updateResult = await pool.query(
+          `UPDATE "ItemStatus"
+           SET "itemStatus" = 'Picked Up', "updatedAt" = NOW()
+           WHERE "transactionID" = $1
+           RETURNING *`,
+          [id]
+        );
+
+        if (updateResult.rowCount === 0) {
+          await pool.query(
+            `INSERT INTO "ItemStatus" ("transactionID", "itemStatus", "updatedAt")
+             VALUES ($1, 'Picked Up', NOW())`,
+            [id]
+          );
+        }
+        console.log('🔄 Auto-setting item status to "Picked Up" for Awaiting Confirmation transaction');
       } else if (transactionStatus === 'Pending Payment') {
         // Set paymentDueDate to 14 days from now
         updateQuery = `UPDATE "Transaction"
@@ -495,7 +513,7 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
          WHERE "transactionID" = $2
          RETURNING *`;
         queryParams = [transactionStatus, id];
-        console.log('� Setting paymentDueDate to 14 days from now');
+        console.log('📅 Setting paymentDueDate to 14 days from now');
       } else {
         // For other statuses, just update the status
         updateQuery = `UPDATE "Transaction"
@@ -508,14 +526,15 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
       const txnResult = await pool.query(updateQuery, queryParams);
 
       if (txnResult.rowCount === 0) {
-        console.error(' No transaction found with ID:', id);
+        console.error('❌ No transaction found with ID:', id);
         return res.status(404).json({ message: 'Transaction not found' });
       }
     }
 
     // Update item status (try update first, then insert if needed)
-    if (itemStatus) {
-      console.log('� Updating item status to:', itemStatus);
+    // Only if not "Awaiting Confirmation" (since we auto-set it above)
+    if (itemStatus && transactionStatus !== 'Awaiting Confirmation') {
+      console.log('📝 Updating item status to:', itemStatus);
 
       // Try to update first
       const updateResult = await pool.query(
@@ -533,8 +552,9 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
            VALUES ($1, $2, NOW())`,
           [id, itemStatus]
         );
-      } else {
       }
+    } else if (itemStatus && transactionStatus === 'Awaiting Confirmation') {
+      console.log('⚠️ Item status change ignored - auto-set to "Picked Up" due to transaction status validation');
     }
 
     // Fetch updated transaction
@@ -564,10 +584,9 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
       [id]
     );
 
-
     res.json(result.rows[0]);
   } catch (error) {
-    console.error(' Error updating transaction status:', error);
+    console.error('❌ Error updating transaction status:', error);
     res.status(500).json({ message: 'Failed to update transaction status', error: error instanceof Error ? error.message : 'Unknown error' });
   }
 };
@@ -936,7 +955,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
 
     // Update Transaction status if provided
     if (transactionStatus) {
-      // If status is "Awaiting Confirmation", set responseDeadline to 14 days from now
+      // ✅ AUTO-VALIDATION: If status is "Awaiting Confirmation", auto-set item status to "Picked Up"
       if (transactionStatus === 'Awaiting Confirmation') {
         await pool.query(
           `UPDATE "Transaction"
@@ -945,6 +964,24 @@ export const updateTransaction = async (req: Request, res: Response) => {
           [transactionStatus, id]
         );
         console.log('📅 Setting responseDeadline to 14 days from now for status: Awaiting Confirmation');
+        
+        // ✅ AUTO-VALIDATION: Set item status to "Picked Up"
+        const updateResult = await pool.query(
+          `UPDATE "ItemStatus"
+           SET "itemStatus" = 'Picked Up', "updatedAt" = NOW()
+           WHERE "transactionID" = $1
+           RETURNING *`,
+          [id]
+        );
+
+        if (updateResult.rowCount === 0) {
+          await pool.query(
+            `INSERT INTO "ItemStatus" ("transactionID", "itemStatus", "updatedAt")
+             VALUES ($1, 'Picked Up', NOW())`,
+            [id]
+          );
+        }
+        console.log('🔄 Auto-setting item status to "Picked Up" for Awaiting Confirmation transaction');
       } else {
         await pool.query(
           `UPDATE "Transaction"
@@ -955,8 +992,8 @@ export const updateTransaction = async (req: Request, res: Response) => {
       }
     }
 
-    // Update ItemStatus if provided
-    if (itemStatus) {
+    // Update ItemStatus if provided (and not already auto-set above)
+    if (itemStatus && transactionStatus !== 'Awaiting Confirmation') {
       const updateResult = await pool.query(
         `UPDATE "ItemStatus"
          SET "itemStatus" = $1, "updatedAt" = NOW()
@@ -972,6 +1009,8 @@ export const updateTransaction = async (req: Request, res: Response) => {
           [id, itemStatus]
         );
       }
+    } else if (itemStatus && transactionStatus === 'Awaiting Confirmation') {
+      console.log('⚠️ Item status change ignored - auto-set to "Picked Up" due to transaction status validation');
     }
 
     // ─────────────────────────────────────────────────────────

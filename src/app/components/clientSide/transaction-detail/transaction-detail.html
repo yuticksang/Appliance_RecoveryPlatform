@@ -88,18 +88,22 @@
 
     <!-- Header -->
     <div class="detail-header">
-      <!-- Breadcrumb -->
-      <app-breadcrumb></app-breadcrumb>
-
-      <div class="title-status-row">
-        <h1 class="page-title">Appliance Information</h1>
-        <div class="status-badges">
-          <span class="status-badge" [ngClass]="getStatusClass(transaction.transactionStatus)">
-            {{ transaction.transactionStatus }}
-          </span>
-          <span class="status-badge item-status" [ngClass]="getItemStatusClass(transaction.itemStatus)">
-            {{ transaction.itemStatus }}
-          </span>
+      <!-- .Title, Breadcrumb, and Status in one row -->
+      <div class="title-breadcrumb-status-row">
+        <div class="title-breadcrumb-section">
+          <h1 class="page-title">Appliance Information</h1>
+          <app-breadcrumb></app-breadcrumb>
+        </div>
+        
+        <div class="status-section">
+          <div class="status-badges">
+            <span class="status-badge" [ngClass]="getStatusClass(transaction.transactionStatus)">
+              {{ transaction.transactionStatus }}
+            </span>
+            <span class="status-badge item-status" [ngClass]="getItemStatusClass(transaction.itemStatus)">
+              {{ transaction.itemStatus }}
+            </span>
+          </div>
         </div>
       </div>
 
