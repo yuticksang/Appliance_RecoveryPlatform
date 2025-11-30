@@ -9,7 +9,8 @@ import {
   updateSubmissionDetails,
   updateCustomerInfo,
   uploadAdminPhotos,
-  getConditionOptionsByGroupIds
+  getConditionOptionsByGroupIds,
+  deleteTransaction
 } from '../controllers/transactionController';
 import { verifyToken } from '../middleware/authMiddleware';
 import multer from 'multer';
@@ -66,5 +67,7 @@ router.put('/:id/submission', updateSubmissionDetails);
 // Update transaction (full edit - admin)
 router.put('/:id', updateTransaction);
 
+// Delete transaction (admin only)
+router.delete('/:id', deleteTransaction);
 
 export default router;

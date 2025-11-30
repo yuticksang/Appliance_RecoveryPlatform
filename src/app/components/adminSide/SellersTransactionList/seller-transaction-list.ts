@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -20,6 +20,10 @@ export class SellerTransactionListComponent implements OnInit {
 
   transactions: Transaction[] = [];
   filteredTransactions: Transaction[] = [];
+
+  // Confirmation modal
+  showConfirmModal = signal(false);
+  confirmTarget = signal<Transaction | null>(null);
 
   selectedCategory: string = '';
   selectedBrand: string = '';
@@ -288,8 +292,63 @@ export class SellerTransactionListComponent implements OnInit {
     if (event) {
       event.stopPropagation(); // Prevent row click from firing
     }
+
     console.log('🗑️ Delete requested for transaction:', transaction.id);
-    this.alertService.error('Delete functionality is not yet implemented. Please contact the developer.');
+
+    // Show confirmation modal
+    this.confirmTarget.set(transaction);
+    this.showConfirmModal.set(true);
+  }
+
+  viewReport(transaction: Transaction, event?: Event): void {
+  if (event) {
+    event.stopPropagation(); // Prevent row click from firing
+  }
+  
+  console.log('📊 Viewing report for transaction:', transaction.id);
+  
+  this.router.navigate(['/admin/transactions/report', transaction.id]);
+
+}
+
+  onConfirmDelete(): void {
+    const transaction = this.confirmTarget();
+    if (!transaction) return;
+
+    // Delete the transaction
+    this.transactionService.deleteTransaction(transaction.id).subscribe({
+      next: (response) => {
+        console.log('✅ Transaction deleted successfully:', response);
+        this.alertService.success(`Transaction ${transaction.id} deleted successfully`);
+
+        // Remove from local arrays
+        this.transactions = this.transactions.filter(t => t.id !== transaction.id);
+        this.applyFilters(); // Re-apply filters to update filtered list and pagination
+
+        // Close modal
+        this.onCancelDelete();
+      },
+      error: (error) => {
+        console.error('❌ Error deleting transaction:', error);
+        const errorMessage = error.error?.message || 'Failed to delete transaction. Please try again.';
+        this.alertService.error(errorMessage);
+
+        // Close modal
+        this.onCancelDelete();
+      }
+    });
+  }
+
+  onCancelDelete(): void {
+    this.showConfirmModal.set(false);
+    this.confirmTarget.set(null);
+  }
+
+  getConfirmMessage(): string {
+    const transaction = this.confirmTarget();
+    if (!transaction) return '';
+
+    return `Are you sure you want to delete transaction "${transaction.id}"?`;
   }
 
   getImageUrl(imageUrl?: string): string {

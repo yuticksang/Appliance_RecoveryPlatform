@@ -344,4 +344,20 @@ export class TransactionService {
         })
       );
   }
+
+  /**
+   * Delete a transaction (admin only)
+   */
+  deleteTransaction(transactionId: string | number): Observable<any> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.delete<any>(`${this.apiUrl}/transactions/${transactionId}`, { headers })
+      .pipe(
+        catchError(error => {
+          console.error('Error deleting transaction:', error);
+          throw error;
+        })
+      );
+  }
 }

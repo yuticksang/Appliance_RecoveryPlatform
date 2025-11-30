@@ -99,6 +99,9 @@
             <th class="sortable" (click)="sortBy('modelName')">
               Model Name <span class="sort">{{ sortIcon('modelName') }}</span>
             </th>
+            <th class="sortable" (click)="sortBy('submittedDate')">
+              Submission Date <span class="sort">{{ sortIcon('submittedDate') }}</span>
+            </th>
             <th class="sortable" (click)="sortBy('transactionStatus')">
               Transaction Status <span class="sort">{{ sortIcon('transactionStatus') }}</span>
             </th>
@@ -131,6 +134,7 @@
             <td></td>
             <td>{{ transaction.model }}</td>
             <td>{{ transaction.modelName }}</td>
+            <td class="submission-date">{{ transaction.submittedDate | date:'dd MMM yyyy' }}</td>
             <td>
               <span
                 class="status-badge"
