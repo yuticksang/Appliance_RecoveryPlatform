@@ -332,16 +332,16 @@ export class AuthService {
   }
 
   /**
-   * Get the buyer ID for the current user (e.g., 'B001')
-   * Returns null if user is not a buyer or not logged in
+   * Get the buyer ID of the currently logged-in buyer
    */
   getBuyerId(): string | null {
-    const user = this.currentUserSubject.value;
-    if (!user || user.userType !== 'buyer') {
-      return null;
+    const user = this.getCurrentUser();
+    if (user && user.userType === 'buyer') {
+      return user.buyerId || null;
     }
-    return user.buyerId || null;
+    return null;
   }
+  
 
   /**
    * Get the admin ID for the current user (e.g., 'A001')

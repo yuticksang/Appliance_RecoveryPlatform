@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { AlertService } from '../../../services/alert.service';
 import { AuthService } from '../../../../auth/auth-service';
 import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
+import { TransactionService } from '../../../services/transaction.service';
 
 interface BuyerTransaction {
   id: string;
@@ -14,7 +15,7 @@ interface BuyerTransaction {
   submittedApplianceID: string;
   submittedDate: Date;
   estimatedPrice: number;
-  finalPrice: number;
+  finalPrice?: number; // ✅ CHANGE from 'number' to 'number | undefined' or 'number?'
   initialNote: string;
   finalNote: string;
   transactionStatus: string;
@@ -46,6 +47,7 @@ export class BuyerTransactionListComponent implements OnInit {
   private alertService = inject(AlertService);
   private auth = inject(AuthService);
   private router = inject(Router);
+  private transactionService = inject(TransactionService); // ✅ ADD THIS
   private apiUrl = 'http://localhost:3000/api';
 
   // State
@@ -69,8 +71,82 @@ export class BuyerTransactionListComponent implements OnInit {
   sortKey = signal<SortKey>('submittedDate');
   sortDir = signal<SortDir>('desc');
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.loadTransactions();
+  }
+
+  loadTransactions() {
+    this.loading.set(true);
+    this.error.set('');
+
+    // ✅ Check buyer_user instead of currentUser
+    const buyerUserStr = localStorage.getItem('buyer_user');
+    
+    if (!buyerUserStr) {
+      console.log('❌ No buyer_user found in localStorage');
+      this.error.set('Buyer not logged in. Please log in again.');
+      this.loading.set(false);
+      return;
+    }
+
+    let buyerUser;
+    try {
+      buyerUser = JSON.parse(buyerUserStr);
+      console.log('👤 Parsed buyer user:', buyerUser);
+    } catch (e) {
+      console.log('❌ Error parsing buyer user JSON:', e);
+      this.error.set('Invalid buyer data. Please log in again.');
+      this.loading.set(false);
+      return;
+    }
+
+    const buyerId = buyerUser?.buyerId;
+    console.log('🆔 Extracted buyerId:', buyerId);
+    
+    if (!buyerId) {
+      console.log('❌ No buyerId found. Buyer user object:', buyerUser);
+      this.error.set('Buyer ID not found. Please log in as a buyer.');
+      this.loading.set(false);
+      return;
+    }
+
+    console.log('🔍 Fetching transactions for buyer:', buyerId);
+
+    this.transactionService.getTransactionsByBuyer(buyerId).subscribe({
+      next: (data) => {
+        console.log('✅ Loaded buyer transactions:', data);
+        const buyerTransactions: BuyerTransaction[] = data.map(t => ({
+          id: t.id,
+          sellerId: t.sellerId,
+          sellerName: t.sellerName,
+          submittedApplianceID: '',
+          submittedDate: new Date(t.submittedDate),
+          estimatedPrice: Number(t.estimatedPrice) || 0,
+          finalPrice: Number(t.finalPrice) || 0, // ✅ Always return a number (0 if null/undefined)
+          initialNote: t.note || '',
+          finalNote: t.note || '',
+          transactionStatus: t.transactionStatus,
+          createdAt: new Date(t.submittedDate),
+          updatedAt: new Date(t.submittedDate),
+          paymentDueDate: undefined,
+          itemStatus: t.itemStatus,
+          itemStatusUpdatedAt: new Date(t.submittedDate),
+          brand: t.brand,
+          category: t.category,
+          model: t.model,
+          modelName: t.modelName || '',
+          imageUrl: t.image,
+          buyerBasePrice: t.finalPrice ? Number(t.finalPrice) : Number(t.estimatedPrice) || 0
+        }));
+        this.transactions.set(buyerTransactions);
+        this.loading.set(false);
+      },
+      error: (err) => {
+        console.error('❌ Error loading buyer transactions:', err);
+        this.error.set('Failed to load transactions. Please try again.');
+        this.loading.set(false);
+      }
+    });
   }
 
   // Computed values
@@ -146,35 +222,33 @@ export class BuyerTransactionListComponent implements OnInit {
   });
 
   // API calls
-  loadTransactions() {
-    this.loading.set(true);
-    this.error.set('');
+  // loadTransactions() {
+  //   this.loading.set(true);
+  //   this.error.set('');
 
-    const token = localStorage.getItem('buyer_token');
-    const headers = new HttpHeaders({
-      'Authorization': token ? `Bearer ${token}` : ''
-    });
+  //   const buyerId = this.auth.getBuyerId();
+  
+  //   if (!buyerId) {
+  //     this.error.set('Buyer ID not found. Please log in again.');
+  //     this.loading.set(false);
+  //     return;
+  //   }
 
-    this.http.get<BuyerTransaction[]>(`${this.apiUrl}/buyer/transactions`, { headers })
-      .subscribe({
-        next: (data) => {
-          console.log('💰 Fetched buyer transactions:', data);
-          this.transactions.set(data);
-          this.loading.set(false);
-        },
-        error: (err) => {
-          console.error('Load buyer transactions error:', err);
-          this.error.set('Failed to load transactions');
-          this.loading.set(false);
+  //   console.log('🔍 Fetching transactions for buyer:', buyerId);
 
-          if (err.status === 401) {
-            this.alertService.error('Your session has expired. Please log in again.');
-          } else {
-            this.alertService.error('Failed to load transactions');
-          }
-        }
-      });
-  }
+  //   this.transactionService.getTransactionsByBuyer(buyerId).subscribe({
+  //     next: (data) => {
+  //       console.log('✅ Loaded buyer transactions:', data);
+  //       this.transactions.set(data);
+  //       this.loading.set(false);
+  //     },
+  //     error: (err) => {
+  //       console.error('❌ Error loading buyer transactions:', err);
+  //       this.error.set('Failed to load transactions. Please try again.');
+  //       this.loading.set(false);
+  //     }
+  //   });
+  // }
 
   // Methods
   setSort(key: SortKey) {
@@ -230,8 +304,10 @@ export class BuyerTransactionListComponent implements OnInit {
     this.currentPage.set(1);
   }
 
-  formatPrice(price: number | null | undefined): string {
-    if (!price) return 'RM 0.00';
+  formatPrice(price: number | undefined): string {
+    if (price === undefined || price === null || isNaN(price)) {
+      return 'RM 0.00';
+    }
     return `RM ${price.toFixed(2)}`;
   }
 

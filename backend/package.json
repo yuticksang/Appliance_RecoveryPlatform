@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
- "scripts": {
-    "dev": "nodemon",
-    "start": "node dist/server.js",
-    "build": "tsc"
+  "scripts": {
+    "dev": "set NODE_OPTIONS=--dns-result-order=ipv4first && nodemon --exec ts-node src/server.ts",
+    "start": "set NODE_OPTIONS=--dns-result-order=ipv4first && node dist/server.js",
+    "build": "npx tsc"
   },
   "keywords": [],
   "author": "",
@@ -44,6 +44,7 @@
     "@types/uuid": "^10.0.0",
     "nodemon": "^3.1.10",
     "ts-node": "^10.9.2",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   }
 }

@@ -64,7 +64,9 @@
             <th class="sortable" (click)="sortBy('sellerId')">
               Seller ID <span class="sort">{{ sortIcon('sellerId') }}</span>
             </th>
-            <th>Buyer ID</th>
+            <th class="sortable" (click)="sortBy('buyerId')">
+              Buyer ID <span class="sort">{{ sortIcon('buyerId') }}</span>
+            </th>
             <th class="sortable" (click)="sortBy('category')">
               Category <span class="sort">{{ sortIcon('category') }}</span>
             </th>
@@ -90,7 +92,7 @@
             <td>{{ (currentPage - 1) * itemsPerPage + i + 1 }}</td>
             <td class="transaction-id">{{ transaction.id }}</td>
             <td>{{ transaction.sellerId }}</td>
-            <td>N/A</td>
+            <td>{{ transaction.buyerId || 'N/A' }}</td>
             <td>{{ transaction.category }}</td>
             <td>{{ transaction.brand }}</td>
             <td>{{ transaction.model }}</td>

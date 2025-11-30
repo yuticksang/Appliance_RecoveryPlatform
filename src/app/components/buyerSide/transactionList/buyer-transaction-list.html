@@ -90,7 +90,16 @@
               <div>{{ t.model }}</div>
               <div class="model-name">{{ t.modelName }}</div>
             </td>
-            <td class="price-cell">{{ formatPrice(t.finalPrice) }}</td>
+            <td>
+              @if (transaction.finalPrice && transaction.finalPrice > 0) {
+                {{ formatPrice(transaction.finalPrice) }}
+              } @else if (transaction.estimatedPrice && transaction.estimatedPrice > 0) {
+                {{ formatPrice(transaction.estimatedPrice) }}
+                <small class="text-muted">(Estimated)</small>
+              } @else {
+                <span class="text-muted">Pending</span>
+              }
+            </td>
             <td>{{ formatDate(t.submittedDate) }}</td>
           </tr>
         </tbody>

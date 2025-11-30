@@ -10,7 +10,8 @@ import {
   updateCustomerInfo,
   uploadAdminPhotos,
   getConditionOptionsByGroupIds,
-  deleteTransaction
+  deleteTransaction,
+  getTransactionsByBuyer
 } from '../controllers/transactionController';
 import { verifyToken } from '../middleware/authMiddleware';
 import multer from 'multer';
@@ -37,6 +38,9 @@ const router = Router();
 // All routes require authentication
 router.use(verifyToken);
 
+// ✅ MOVE THIS UP - Before /:id route
+router.get('/buyer/:buyerId', verifyToken, getTransactionsByBuyer);
+
 // Get transactions for a specific seller
 router.get('/seller/:sellerId', getTransactionsBySeller);
 
@@ -46,6 +50,7 @@ router.get('/', getAllTransactions);
 // Get condition options by group IDs
 router.get('/condition-options-by-groups', verifyToken, getConditionOptionsByGroupIds);
 
+// ✅ Generic routes go AFTER specific ones
 // Get single transaction by ID
 router.get('/:id', getTransactionById);
 

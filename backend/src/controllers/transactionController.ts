@@ -43,6 +43,7 @@ export const getTransactionsBySeller = async (req: Request, res: Response) => {
       `SELECT
         t."transactionID" as id,
         t."sellerID" as "sellerId",
+        t."buyerID" as "buyerId",
         u.name as "sellerName",
         sa."submittedApplianceID",
         sa."submissionDate" as "submittedDate",
@@ -92,6 +93,7 @@ export const getAllTransactions = async (_req: Request, res: Response) => {
         t."transactionID" as id,
         t."sellerID" as "sellerId",
         u.name as "sellerName",
+        t."buyerID" as "buyerId",
         sa."submittedApplianceID",
         sa."submissionDate" as "submittedDate",
         sa."initialOfferPrice" as "estimatedPrice",
@@ -242,7 +244,7 @@ export const getTransactionById = async (req: Request, res: Response) => {
         : row.selectedOptions[0]?.description || 'N/A'
     }));
 
-           // Fetch all condition groups for this specific category that were active at submission time
+    // Fetch all condition groups for this specific category that were active at submission time
     // This ensures old transactions only show groups that existed when they were submitted
     // This query is used for BOTH seller view AND admin edit
     const conditionGroupsResult = await pool.query(
@@ -660,38 +662,38 @@ export const uploadAdminPhotos = async (req: Request, res: Response) => {
 };
 
 export const getConditionOptionsByGroupIds = async (req: Request, res: Response) => {
-    try {
-      const { groupIds } = req.query; // Comma-separated group IDs
+  try {
+    const { groupIds } = req.query; // Comma-separated group IDs
 
-      if (!groupIds || typeof groupIds !== 'string') {
-        return res.status(400).json({ message: 'groupIds parameter is required' });
-      }
+    if (!groupIds || typeof groupIds !== 'string') {
+      return res.status(400).json({ message: 'groupIds parameter is required' });
+    }
 
-      const groupIdArray = groupIds.split(',');
+    const groupIdArray = groupIds.split(',');
 
-      const result = await pool.query(
-        `SELECT co."conditionID", co."groupID", co.code, co.description, co.question, co.image
+    const result = await pool.query(
+      `SELECT co."conditionID", co."groupID", co.code, co.description, co.question, co.image
          FROM "ConditionOption" co
          WHERE co."groupID" = ANY($1)
          ORDER BY co."conditionID"`,
-        [groupIdArray]
-      );
+      [groupIdArray]
+    );
 
-      // Group options by groupID
-      const optionsByGroup: { [key: string]: any[] } = {};
-      result.rows.forEach(row => {
-        if (!optionsByGroup[row.groupID]) {
-          optionsByGroup[row.groupID] = [];
-        }
-        optionsByGroup[row.groupID].push(row);
-      });
+    // Group options by groupID
+    const optionsByGroup: { [key: string]: any[] } = {};
+    result.rows.forEach(row => {
+      if (!optionsByGroup[row.groupID]) {
+        optionsByGroup[row.groupID] = [];
+      }
+      optionsByGroup[row.groupID].push(row);
+    });
 
-      res.json(optionsByGroup);
-    } catch (error) {
-      console.error(' Error fetching condition options by group IDs:', error);
-      res.status(500).json({ message: 'Failed to fetch condition options' });
-    }
-  };
+    res.json(optionsByGroup);
+  } catch (error) {
+    console.error(' Error fetching condition options by group IDs:', error);
+    res.status(500).json({ message: 'Failed to fetch condition options' });
+  }
+};
 
 
 /**
@@ -1505,5 +1507,82 @@ export const deleteTransaction = async (req: Request, res: Response) => {
     });
   } finally {
     client.release();
+  }
+};
+
+/**
+ * Get all transactions for a specific buyer
+ * Shows transactions where this buyer won (has the highest offer)
+ */
+export const getTransactionsByBuyer = async (req: Request, res: Response) => {
+  try {
+    const { buyerId } = req.params;
+    const authUser = (req as any).user;
+
+    // ✅ Security check: Buyers can only view their own transactions
+    if (authUser.userType === 'buyer') {
+      const userCheckResult = await pool.query(
+        `SELECT buyer_id FROM users WHERE "userID" = $1 AND user_type = 'buyer'`,
+        [authUser.userId]
+      );
+
+      if (userCheckResult.rows.length === 0) {
+        return res.status(403).json({ message: 'Unauthorized access' });
+      }
+
+      const userBuyerId = userCheckResult.rows[0].buyer_id;
+
+      if (userBuyerId !== buyerId) {
+        return res.status(403).json({ message: 'You can only view your own transactions' });
+      }
+    }
+
+    // ✅ Fetch transactions where this buyer won
+    const result = await pool.query(
+      `SELECT
+        t."transactionID" as id,
+        t."sellerID" as "sellerId",
+        t."buyerID" as "buyerId",
+        COALESCE(u.name, 'Unknown') as "sellerName",
+        sa."submittedApplianceID",
+        sa."submissionDate" as "submittedDate",
+        COALESCE(sa."initialOfferPrice", 0) as "estimatedPrice",
+        sa."finalOfferPrice" as "finalPrice",
+        sa."initialScore" as "initialScore",
+        sa."finalScore" as "finalScore",
+        t."transactionStatus",
+        t."createdAt",
+        t."updatedAt",
+        t."paymentDueDate",
+        t."rejectionReason",
+        t."responseDeadline",
+        COALESCE(i."itemStatus", 'Awaiting Pick Up') as "itemStatus",
+        i."updatedAt" as "itemStatusUpdatedAt",
+        COALESCE(b."brandName", 'Unknown') as brand,
+        COALESCE(c."categoryName", 'Unknown') as category,
+        COALESCE(a."modelCode", 'N/A') as model,
+        COALESCE(a."modelName", 'N/A') as "modelName",
+        COALESCE(a.image_url, '') as "imageUrl"
+      FROM "Transaction" t
+      INNER JOIN "SubmittedAppliance" sa ON t."submittedApplianceID" = sa."submittedApplianceID"
+      LEFT JOIN users u ON t."sellerID" = u.seller_id
+      LEFT JOIN "ItemStatus" i ON t."transactionID" = i."transactionID"
+      LEFT JOIN "Appliance" a ON sa."applianceID" = a."applianceID"
+      LEFT JOIN "Brand" b ON a."brandID" = b."brandID"
+      LEFT JOIN "Category" c ON a."categoryID" = c."categoryID"
+      WHERE t."buyerID" = $1
+      AND t."transactionStatus" IN ('Awaiting Confirmation', 'Confirmed', 'Completed')
+      ORDER BY sa."submissionDate" DESC`,
+      [buyerId]
+    );
+
+    console.log(`📊 Found ${result.rows.length} transactions for buyer ${buyerId}`);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('❌ Error fetching transactions by buyer:', error);
+    res.status(500).json({ 
+      message: 'Failed to fetch transactions', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
   }
 };

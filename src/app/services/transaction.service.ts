@@ -8,6 +8,7 @@ import { AuthService } from './auth.service';
 export interface Transaction {
   id: string; // Transaction ID is always varchar in database (e.g., "TXN001")
   sellerId: string; // Seller ID is always varchar in database (e.g., "S001")
+  buyerId?: string;
   sellerName: string;
   image: string;
   brand: string;
@@ -65,6 +66,7 @@ export class TransactionService {
           return transactions.map(t => ({
             id: t.id || t.transactionID,
             sellerId: t.sellerId || t.sellerID,
+            buyerId: t.buyerId || t.buyerID, // ✅ ADD THIS LINE
             sellerName: t.sellerName || 'Unknown',
             image: t.image || t.imageUrl || 'assets/image/placeholder-appliance.png',
             brand: t.brand || '',
@@ -100,6 +102,7 @@ export class TransactionService {
           return transactions.map(t => ({
             id: t.id || t.transactionID,
             sellerId: t.sellerId || t.sellerID,
+            buyerId: t.buyerId || t.buyerID, // ✅ ADD THIS LINE
             sellerName: t.sellerName || 'Unknown',
             image: t.image || t.imageUrl || 'assets/image/placeholder-appliance.png',
             brand: t.brand || '',
@@ -357,6 +360,43 @@ export class TransactionService {
         catchError(error => {
           console.error('Error deleting transaction:', error);
           throw error;
+        })
+      );
+  }
+
+  /**
+   * Get transactions for a specific buyer (transactions they won)
+   * @param buyerId - The buyer ID (e.g., 'B001', 'B002')
+   */
+  getTransactionsByBuyer(buyerId: string): Observable<Transaction[]> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.get<Transaction[]>(`${this.apiUrl}/transactions/buyer/${buyerId}`, { headers })
+      .pipe(
+        map((transactions: any[]) => {
+          return transactions.map(t => ({
+            id: t.id || t.transactionID,
+            sellerId: t.sellerId || t.sellerID,
+            buyerId: t.buyerId || t.buyerID,
+            sellerName: t.sellerName || 'Unknown',
+            image: t.imageUrl || t.image || 'assets/image/placeholder-appliance.png',
+            brand: t.brand || '',
+            category: t.category || '',
+            model: t.model || '',
+            modelName: t.modelName || t.model_name || '',
+            transactionStatus: t.transactionStatus || t.transaction_status || 'Under Review',
+            itemStatus: t.itemStatus || t.item_status || 'Awaiting Pick Up',
+            submittedDate: new Date(t.submittedDate || t.submissionDate || t.createdAt),
+            estimatedPrice: t.estimatedPrice || t.initialOfferPrice || 0,
+            finalPrice: t.finalPrice || t.finalOfferPrice || 0,
+            note: t.note || '',
+            responseDeadline: t.responseDeadline || t.response_deadline
+          }));
+        }),
+        catchError(error => {
+          console.error('Error fetching buyer transactions:', error);
+          return of([]);
         })
       );
   }
