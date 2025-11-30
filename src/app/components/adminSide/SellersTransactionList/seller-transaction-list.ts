@@ -300,6 +300,17 @@ export class SellerTransactionListComponent implements OnInit {
     this.showConfirmModal.set(true);
   }
 
+  viewReport(transaction: Transaction, event?: Event): void {
+  if (event) {
+    event.stopPropagation(); // Prevent row click from firing
+  }
+  
+  console.log('📊 Viewing report for transaction:', transaction.id);
+  
+  this.router.navigate(['/admin/transactions/report', transaction.id]);
+
+}
+
   onConfirmDelete(): void {
     const transaction = this.confirmTarget();
     if (!transaction) return;

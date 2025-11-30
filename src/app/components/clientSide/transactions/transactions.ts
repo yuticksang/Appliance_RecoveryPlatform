@@ -205,6 +205,10 @@ export class TransactionsComponent implements OnInit, OnDestroy {
           aValue = a.modelName;
           bValue = b.modelName;
           break;
+        case 'submissionDate':
+        aValue = new Date(a.submittedDate).getTime();
+        bValue = new Date(b.submittedDate).getTime();
+        break;
         case 'transactionStatus':
           aValue = a.transactionStatus;
           bValue = b.transactionStatus;
