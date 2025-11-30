@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "scripts": {
-    "dev": "set NODE_OPTIONS=--dns-result-order=ipv4first && nodemon src/server.ts",
-    "start": "set NODE_OPTIONS=--dns-result-order=ipv4first && node dist/server.js",
+ "scripts": {
+    "dev": "nodemon",
+    "start": "node dist/server.js",
     "build": "tsc"
   },
   "keywords": [],
