@@ -209,7 +209,7 @@ export const getTransactionById = async (req: Request, res: Response) => {
     // Add selected issues to the response (for backward compatibility)
     transaction.selectedIssues = conditionsResult.rows.map(row => row.description || row.code);
 
-    // NEW: Fetch DYNAMIC question-answer pairs
+    // NEW: Fetch DYNAMIC question-answer pairs (SELLER only - for recovery slip)
     const questionAnswersResult = await pool.query(
       `SELECT
         cg."groupID",
@@ -225,7 +225,9 @@ export const getTransactionById = async (req: Request, res: Response) => {
        FROM "ConditionSelected" cs
        JOIN "ConditionOption" co ON cs."conditionID" = co."conditionID"
        JOIN "ConditionGroup" cg ON co."groupID" = cg."groupID"
-       WHERE cs."submittedApplianceID" = $1 AND cs."isChecked" = true
+       WHERE cs."submittedApplianceID" = $1
+       AND cs."isChecked" = true
+       AND COALESCE(cs."selectedBy", 'seller') = 'seller'
        GROUP BY cg."groupID", cg."criteriaName", cg."question_title", cg."question_type"
        ORDER BY cg."display_order" ASC`,
       [transaction.submittedApplianceID]
