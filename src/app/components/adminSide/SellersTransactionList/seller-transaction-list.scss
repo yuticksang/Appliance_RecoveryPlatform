@@ -1,3 +1,5 @@
+@use "sass:color";
+
 $Space: 'Space Grotesk', sans-serif;
 $line: #e5e7eb;
 $ink: #111827;
@@ -509,5 +511,79 @@ $blue-2: #1a73e8;
 
   .transactions-table {
     min-width: 1000px;
+  }
+}
+
+/* Confirmation Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.confirm-modal {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 450px;
+  width: 90%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.confirm-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: $ink;
+  margin-bottom: 15px;
+}
+
+.confirm-message {
+  font-size: 15px;
+  color: $muted;
+  margin-bottom: 25px;
+  line-height: 1.5;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.btn-cancel {
+  padding: 10px 24px;
+  border-radius: 8px;
+  border: 1px solid $line;
+  background: white;
+  color: $ink;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+
+  &:hover {
+    background: #f9fafb;
+  }
+}
+
+.btn-confirm {
+  padding: 10px 24px;
+  font-family: $Space;
+  border-radius: 8px;
+  border: none;
+  background: $blue-2;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 14px;
+
+  &:hover {
+    background: color.adjust($blue-2, $lightness: -5%);
   }
 }
