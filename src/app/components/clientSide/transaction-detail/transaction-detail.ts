@@ -241,7 +241,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     return this.transaction?.transactionStatus === 'Awaiting Confirmation';
   }
 
-  // Check if transaction is in Pending Payment status (Case 5)
+  // Check if transaction is in Pending Payment status
   get isPendingPayment(): boolean {
     return this.transaction?.transactionStatus === 'Pending Payment';
   }
@@ -664,7 +664,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     this.transactionService.updateTransactionStatus(
       this.transactionId,
       'Pending Payment',
-      'Awaiting Pick Up'
+      'Picked Up'    
     ).subscribe({
       next: (updatedTransaction) => {
         console.log('✅ Offer accepted successfully:', updatedTransaction);

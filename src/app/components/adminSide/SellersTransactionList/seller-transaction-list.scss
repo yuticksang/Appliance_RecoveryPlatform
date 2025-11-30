@@ -254,30 +254,57 @@ $blue-2: #1a73e8;
   }
 
   .actions {
-    text-align: left;
+    text-align: center;
     white-space: nowrap;
+    padding: 15px 10px !important;
 
     .icon {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 6px;
+      width: 32px;
+      height: 32px;
+      padding: 0;
       border: 1px solid #ddd;
-      border-radius: 4px;
-      background: transparent;
+      border-radius: 6px;
+      background: white;
       cursor: pointer;
-      margin: 0 2px;
+      margin: 0 4px;
       transition: all 0.2s ease;
+      vertical-align: middle; // Align vertically
 
       .action-icon {
-        width: 15px;
-        height: 15px;
+        width: 16px;
+        height: 16px;
         object-fit: contain;
+      }
+
+      i {
+        font-size: 16px;
+        line-height: 1;
+        // color: #4299e1;
       }
 
       &:hover {
         background-color: #f5f5f5;
         border-color: #999;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      // Specific hover colors
+      &[title="Edit"]:hover {
+        background-color: #e6f7ff;
+        border-color: #4299e1;
+      }
+
+      &[title="View Report"]:hover {
+        background-color: #e6f7ff;
+        border-color: #4299e1;
+        
+        i {
+          color: #2c5282;
+        }
       }
 
       &.danger:hover {
@@ -286,11 +313,9 @@ $blue-2: #1a73e8;
       }
     }
 
+    // Remove the placeholder - not needed anymore
     .icon-placeholder {
-      display: inline-block;
-      width: 27px;
-      height: 27px;
-      margin: 0 2px;
+      display: none;
     }
   }
 }
