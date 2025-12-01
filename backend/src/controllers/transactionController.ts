@@ -158,6 +158,7 @@ export const getTransactionById = async (req: Request, res: Response) => {
         t."rejectionReason",
         COALESCE(i."itemStatus", 'Awaiting Pick Up') as "itemStatus",
         i."updatedAt" as "itemStatusUpdatedAt",
+        -- Original appliance (seller's submission)
         COALESCE(b."brandName", 'Unknown') as brand,
         b."brandID" as "brandId",
         COALESCE(c."categoryName", 'Unknown') as category,
@@ -166,6 +167,12 @@ export const getTransactionById = async (req: Request, res: Response) => {
         a."applianceID" as "modelId",
         COALESCE(a."modelName", 'N/A') as "modelName",
         COALESCE(a.image_url, '') as "imageUrl",
+        -- Final appliance (admin's correction, if changed)
+        COALESCE(fb."brandName", b."brandName", 'Unknown') as "finalBrand",
+        COALESCE(fc."categoryName", c."categoryName", 'Unknown') as "finalCategory",
+        COALESCE(fa."modelCode", a."modelCode", 'N/A') as "finalModel",
+        COALESCE(fa."modelName", a."modelName", 'N/A') as "finalModelName",
+        -- Pickup details
         p."addressID" as "addressId",
         COALESCE(p."snapshotReceiverName", 'N/A') as "addressName",
         COALESCE(p."snapshotPhoneNum", 'N/A') as "addressPhone",
@@ -179,9 +186,14 @@ export const getTransactionById = async (req: Request, res: Response) => {
       INNER JOIN "SubmittedAppliance" sa ON t."submittedApplianceID" = sa."submittedApplianceID"
       LEFT JOIN users u ON t."sellerID" = u.seller_id
       LEFT JOIN "ItemStatus" i ON t."transactionID" = i."transactionID"
+      -- Original appliance joins
       LEFT JOIN "Appliance" a ON sa."applianceID" = a."applianceID"
       LEFT JOIN "Brand" b ON a."brandID" = b."brandID"
       LEFT JOIN "Category" c ON a."categoryID" = c."categoryID"
+      -- Final appliance joins (admin's correction)
+      LEFT JOIN "Appliance" fa ON sa."finalApplianceID" = fa."applianceID"
+      LEFT JOIN "Brand" fb ON fa."brandID" = fb."brandID"
+      LEFT JOIN "Category" fc ON fa."categoryID" = fc."categoryID"
       LEFT JOIN "Pickup" p ON sa."submittedApplianceID" = p."submittedApplianceID"
       WHERE t."transactionID" = $1`,
       [id]
@@ -798,7 +810,9 @@ export const updateTransaction = async (req: Request, res: Response) => {
       // Photo uploads from admin (base64 data URLs)
       photos,
       // Final score from admin review
-      finalScore
+      finalScore,
+      // Final appliance ID selected by admin (if category/brand/model changed)
+      finalApplianceID
     } = req.body;
 
     console.log('Updating transaction with full data:', { id, transactionStatus, itemStatus, adminConditions, hasPhotos: !!photos, photoCount: photos?.length, finalScore });
@@ -919,9 +933,12 @@ export const updateTransaction = async (req: Request, res: Response) => {
       console.log(`📊 Updating finalScore to ${finalScore}`);
     }
 
-    if (applianceID) {
-      updateFields.push(`"applianceID" = $${paramIndex++}`);
-      updateValues.push(applianceID);
+    // Save finalApplianceID if admin changed the appliance details
+    // DO NOT update applianceID - keep the original seller's submission
+    if (finalApplianceID) {
+      updateFields.push(`"finalApplianceID" = $${paramIndex++}`);
+      updateValues.push(finalApplianceID);
+      console.log(`🔄 Updating finalApplianceID to ${finalApplianceID} (keeping original applianceID unchanged)`);
     }
 
     if (updateFields.length > 0) {

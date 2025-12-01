@@ -605,12 +605,13 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
       if (this.hasBeenReviewed) {
         this.afterReview = {
           estimatedPrice: data.finalPrice || data.estimatedPrice || 0,
-          brand: data.brand,
-          model: data.model,
-          category: data.category,
-          modelName: data.modelName,
-          score: data.finalScore || data.initialScore || 0, // TODO: Will be fetched from other team's API
-          note: data.note || '' // Note
+          // Use final appliance details (admin's correction) if available, otherwise use original
+          brand: data.finalBrand || data.brand,
+          model: data.finalModel || data.model,
+          category: data.finalCategory || data.category,
+          modelName: data.finalModelName || data.modelName,
+          score: data.finalScore || data.initialScore || 0,
+          note: data.note || ''
         };
       }
     } else {
