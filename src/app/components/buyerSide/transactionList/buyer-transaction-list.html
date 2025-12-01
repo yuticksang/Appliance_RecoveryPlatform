@@ -91,10 +91,10 @@
               <div class="model-name">{{ t.modelName }}</div>
             </td>
             <td>
-              @if (transaction.finalPrice && transaction.finalPrice > 0) {
-                {{ formatPrice(transaction.finalPrice) }}
-              } @else if (transaction.estimatedPrice && transaction.estimatedPrice > 0) {
-                {{ formatPrice(transaction.estimatedPrice) }}
+              @if (t.finalPrice && t.finalPrice > 0) {
+                {{ formatPrice(t.finalPrice) }}
+              } @else if (t.estimatedPrice && t.estimatedPrice > 0) {
+                {{ formatPrice(t.estimatedPrice) }}
                 <small class="text-muted">(Estimated)</small>
               } @else {
                 <span class="text-muted">Pending</span>
