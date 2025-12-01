@@ -48,6 +48,61 @@ $Space: 'Space Grotesk', sans-serif;
 /* Header */
 .detail-header {
   margin-bottom: 2rem;
+
+  // Combined row for title, breadcrumb, and status
+  .title-breadcrumb-status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
+    
+    @media (max-width: 768px) {
+      flex-direction: column;
+      gap: 1rem;
+    }
+  }
+
+  //Title and Breadcrumb Section (no bottom margin in row layout)
+  .title-breadcrumb-section {
+    flex: 1;
+    
+    .page-title {
+      font-size: 1.75rem;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0 0 0.5rem 0;
+      line-height: 1.2;
+    }
+
+    app-breadcrumb {
+      display: block;
+    }
+  }
+
+  // ✅ UPDATED: Status Section (aligned to the right)
+  .status-section {
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-start;
+    
+    .status-badges {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      
+      @media (max-width: 768px) {
+        justify-content: flex-start;
+      }
+    }
+  }
+
+  // Keep existing app-breadcrumb styles for backward compatibility
+  app-breadcrumb {
+    display: block;
+    margin-bottom: 1.5rem;
+  }
 }
 
 .top-actions {
@@ -365,6 +420,14 @@ $Space: 'Space Grotesk', sans-serif;
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
+  
+  // When used with separate sections, this can be simplified
+  &.legacy {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+  }
 }
 
 .page-title {
@@ -373,13 +436,24 @@ $Space: 'Space Grotesk', sans-serif;
   color: #1a202c;
   margin: 0;
   flex: 1;
-  text-align: center;
+  text-align: left;
+  
+  // When in title-breadcrumb-section, use different sizing
+  .title-breadcrumb-section & {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 0.5rem 0;
+    line-height: 1.2;
+    flex: none;
+  }
 }
 
 .status-badges {
   display: flex;
   gap: 0.75rem;
   flex-shrink: 0;
+  flex-wrap: wrap; // for better mobile wrapping
 }
 
 // Submitted date info (in header area)
@@ -512,7 +586,7 @@ $Space: 'Space Grotesk', sans-serif;
 }
 
 .item-awaiting-return {
-  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+  background: linear-gradient(135deg, #feebc8 0%, #fbd38d 100%);
   color: #991b1b;
 }
 
@@ -529,6 +603,8 @@ $Space: 'Space Grotesk', sans-serif;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 2rem;
+  overflow-x: auto; // Enable horizontal scrolling on small screens
+  padding-bottom: 1rem; // Space for scrollbar
 
   // Single column layout when admin hasn't reviewed yet
   &.single-column {
@@ -543,6 +619,9 @@ $Space: 'Space Grotesk', sans-serif;
   border-radius: 8px;
   padding: 1.5rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  min-width: 300px; // Prevent cards from getting too narrow
+  overflow: hidden; // Prevent content from overflowing the card
+  word-wrap: break-word; // Break long words
 
   &.after-review {
     border: 2px solid #48bb78;
@@ -744,6 +823,9 @@ $Space: 'Space Grotesk', sans-serif;
   padding: 1rem;
   background: #f7fafc;
   border-radius: 6px;
+  overflow: hidden; // Prevent content overflow
+  word-wrap: break-word; // Break long words
+  min-width: 0; // Allow flex/grid items to shrink below content size
 }
 
 .detail-label {
@@ -759,6 +841,11 @@ $Space: 'Space Grotesk', sans-serif;
   color: #2d3748;
   margin: 0;
   font-weight: 500;
+  word-wrap: break-word; // Break long words
+  word-break: break-word; // Break words if needed
+  overflow-wrap: break-word; // Modern browsers
+  white-space: pre-wrap; // Preserve line breaks but wrap text
+  max-width: 100%; // Ensure it doesn't exceed container
 }
 
 /* Note Section */
@@ -1819,4 +1906,179 @@ $Space: 'Space Grotesk', sans-serif;
   margin-top: 0.5rem;
   font-size: 0.875rem;
   color: #64748b;
+}
+
+// ========== RESPONSE DEADLINE WARNING STYLES ==========
+
+.deadline-warning {
+  background: #ffffff;
+  border-left: 4px solid #3b82f6;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
+
+  // Warning state (≤ 3 days)
+  &.deadline-approaching {
+    border-left-color: #f59e0b;
+    background: #fffbeb;
+
+    .deadline-icon svg {
+      stroke: #f59e0b;
+    }
+
+    .deadline-title {
+      color: #92400e;
+    }
+
+    .days-remaining {
+      color: #d97706;
+      font-weight: 700;
+    }
+  }
+
+  // Expired state
+  &.deadline-expired {
+    border-left-color: #ef4444;
+    background: #fef2f2;
+
+    .deadline-icon svg {
+      stroke: #ef4444;
+      animation: shake 0.5s ease-in-out;
+    }
+
+    .deadline-title {
+      color: #991b1b;
+    }
+
+    .days-remaining {
+      color: #dc2626;
+      font-weight: 700;
+    }
+  }
+}
+
+.deadline-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: #eff6ff;
+  border-radius: 50%;
+
+  svg {
+    stroke: #3b82f6;
+    transition: all 0.3s ease;
+  }
+}
+
+.deadline-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.deadline-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.deadline-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.deadline-date {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.deadline-separator {
+  color: #cbd5e1;
+  font-weight: 300;
+}
+
+.days-remaining {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #3b82f6;
+}
+
+// Pulse animation for warning state
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(249, 115, 22, 0.3);
+  }
+}
+
+// Shake animation for expired state
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+// Mobile responsiveness for deadline warning
+@media (max-width: 768px) {
+  .deadline-warning {
+    padding: 0.875rem 1rem;
+    gap: 0.75rem;
+  }
+
+  .deadline-icon {
+    width: 36px;
+    height: 36px;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .deadline-title {
+    font-size: 0.8rem;
+  }
+
+  .deadline-date,
+  .days-remaining {
+    font-size: 0.875rem;
+  }
+
+  .deadline-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .deadline-separator {
+    display: none;
+  }
 }

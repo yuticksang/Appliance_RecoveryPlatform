@@ -58,14 +58,30 @@
         <thead>
           <tr>
             <th>#</th>
-            <th>Transaction ID</th>
-            <th>Seller ID</th>
-            <th>Buyer ID</th>
-            <th>Category</th>
-            <th>Brand</th>
-            <th>Model</th>
-            <th>Transaction Status</th>
-            <th>Item Status</th>
+            <th class="sortable" (click)="sortBy('id')">
+              Transaction ID <span class="sort">{{ sortIcon('id') }}</span>
+            </th>
+            <th class="sortable" (click)="sortBy('sellerId')">
+              Seller ID <span class="sort">{{ sortIcon('sellerId') }}</span>
+            </th>
+            <th class="sortable" (click)="sortBy('buyerId')">
+              Buyer ID <span class="sort">{{ sortIcon('buyerId') }}</span>
+            </th>
+            <th class="sortable" (click)="sortBy('category')">
+              Category <span class="sort">{{ sortIcon('category') }}</span>
+            </th>
+            <th class="sortable" (click)="sortBy('brand')">
+              Brand <span class="sort">{{ sortIcon('brand') }}</span>
+            </th>
+            <th class="sortable" (click)="sortBy('model')">
+              Model <span class="sort">{{ sortIcon('model') }}</span>
+            </th>
+            <th class="sortable" (click)="sortBy('transactionStatus')">
+              Transaction Status <span class="sort">{{ sortIcon('transactionStatus') }}</span>
+            </th>
+            <th class="sortable" (click)="sortBy('itemStatus')">
+              Item Status <span class="sort">{{ sortIcon('itemStatus') }}</span>
+            </th>
             <th class="actions">Actions</th>
           </tr>
         </thead>
@@ -76,7 +92,7 @@
             <td>{{ (currentPage - 1) * itemsPerPage + i + 1 }}</td>
             <td class="transaction-id">{{ transaction.id }}</td>
             <td>{{ transaction.sellerId }}</td>
-            <td>{{ transaction.id }}</td>
+            <td>{{ transaction.buyerId || 'N/A' }}</td>
             <td>{{ transaction.category }}</td>
             <td>{{ transaction.brand }}</td>
             <td>{{ transaction.model }}</td>
@@ -97,6 +113,9 @@
             <td class="actions">
               <button class="icon" title="Edit" (click)="editTransaction(transaction, $event)">
                 <img src="assets/icons/edit.png" alt="Edit" class="action-icon">
+              </button>
+              <button class="icon" title="View Report" (click)="viewReport(transaction, $event)">
+                <i class="ri-file-chart-line"></i>
               </button>
               <span class="icon-placeholder"></span>
               <button class="icon danger" title="Delete" (click)="deleteTransaction(transaction, $event)">
@@ -138,3 +157,17 @@
     </div>
   </div>
 </main>
+
+<!-- Confirmation Modal -->
+@if (showConfirmModal()) {
+<div class="modal-overlay" (click)="onCancelDelete()">
+  <div class="confirm-modal" (click)="$event.stopPropagation()">
+    <h2 class="confirm-title">Confirm Action</h2>
+    <p class="confirm-message">{{ getConfirmMessage() }}</p>
+    <div class="confirm-actions">
+      <button class="btn-cancel" (click)="onCancelDelete()">Cancel</button>
+      <button class="btn-confirm" (click)="onConfirmDelete()">Confirm</button>
+    </div>
+  </div>
+</div>
+}

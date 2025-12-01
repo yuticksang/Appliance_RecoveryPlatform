@@ -75,9 +75,9 @@ export const register = async (req: Request, res: Response) => {
     // Send verification email
     try {
       await sendVerificationEmail(email, name, emailVerificationToken);
-      console.log(`✅ Verification email sent to: ${email}`);
+      console.log(` Verification email sent to: ${email}`);
     } catch (emailError) {
-      console.error('❌ Failed to send verification email:', emailError);
+      console.error(' Failed to send verification email:', emailError);
       // Don't fail registration if email fails
       console.log(`Verification link (for testing): ${process.env.FRONTEND_URL || 'http://localhost:4200'}/verify-email/${emailVerificationToken}`);
     }
@@ -96,10 +96,10 @@ export const login = async (req: Request, res: Response) => {
   try {
     const { emailOrUsername, password } = req.body;
 
-    console.log('🔐 Login attempt:', { emailOrUsername });
+    console.log('� Login attempt:', { emailOrUsername });
 
     if (!emailOrUsername || !password) {
-      console.log('❌ Missing credentials');
+      console.log(' Missing credentials');
       return res.status(400).json({ message: 'Username/admin ID and password are required' });
     }
 
@@ -126,7 +126,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     if (result.rows.length === 0) {
-      console.log('❌ User not found:', emailOrUsername);
+      console.log(' User not found:', emailOrUsername);
       return res.status(401).json({ message: 'Invalid username or email.' });
     }
 
@@ -142,10 +142,10 @@ export const login = async (req: Request, res: Response) => {
     }
 
     if (!user) {
-      console.log('❌ Invalid password');
+      console.log(' Invalid password');
       return res.status(401).json({ message: 'Invalid password. Please try again.' });
     }
-    console.log('👤 User found:', {
+    console.log('� User found:', {
       username: user.username,
       admin_id: user.admin_id,
       user_type: user.user_type,
@@ -155,7 +155,7 @@ export const login = async (req: Request, res: Response) => {
 
     // Check if email is verified (only for sellers with email/password login)
     if (user.user_type === 'seller' && !user.email_verified && user.can_change_password) {
-      console.log('❌ Email not verified, resending verification email...');
+      console.log(' Email not verified, resending verification email...');
 
       // Delete any existing verification tokens for this user
       await pool.query(
@@ -177,9 +177,9 @@ export const login = async (req: Request, res: Response) => {
       // Resend verification email
       try {
         await sendVerificationEmail(user.email, user.name, verificationToken);
-        console.log(`✅ Verification email resent to: ${user.email}`);
+        console.log(` Verification email resent to: ${user.email}`);
       } catch (emailError) {
-        console.error('❌ Failed to resend verification email:', emailError);
+        console.error(' Failed to resend verification email:', emailError);
         console.log(`Verification link (for testing): ${process.env.FRONTEND_URL || 'http://localhost:4200'}/verify-email/${verificationToken}`);
       }
 
@@ -193,7 +193,7 @@ export const login = async (req: Request, res: Response) => {
 
     // Check if account is active
     if (user.user_status !== 'ACTIVE') {
-      console.log('❌ Account not active:', user.user_status);
+      console.log(' Account not active:', user.user_status);
 
       // Different messages for admins vs customers
       const isAdmin = user.user_type === 'admin' || user.user_type === 'superadmin';
@@ -204,7 +204,7 @@ export const login = async (req: Request, res: Response) => {
       return res.status(401).json({ message });
     }
 
-    console.log('✅ Login successful for:', user.username || user.email);
+    console.log(' Login successful for:', user.username || user.email);
 
     // Update last login
     await pool.query('UPDATE users SET last_login = NOW() WHERE "userID" = $1', [user.userID]);
@@ -256,7 +256,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
-    console.log('🔐 Password reset requested for:', email);
+    console.log('� Password reset requested for:', email);
 
     // Check if user exists
     const result = await pool.query(
@@ -287,10 +287,10 @@ export const forgotPassword = async (req: Request, res: Response) => {
     // Send password reset email
     try {
       await sendPasswordResetEmail(user.email, user.name, resetToken);
-      console.log(`✅ Password reset email sent to: ${user.email}`);
+      console.log(` Password reset email sent to: ${user.email}`);
     } catch (emailError: any) {
-      console.error('❌ Failed to send password reset email:', emailError);
-      console.error('❌ Email error details:', emailError.message, emailError.code);
+      console.error(' Failed to send password reset email:', emailError);
+      console.error(' Email error details:', emailError.message, emailError.code);
       console.log(`Reset link (for testing): ${process.env.FRONTEND_URL || 'http://localhost:4200'}/reset-password/${resetToken}`);
     }
 
@@ -307,7 +307,7 @@ export const resetPassword = async (req: Request, res: Response) => {
   try {
     const { token, newPassword } = req.body;
 
-    console.log('🔐 Password reset attempt with token');
+    console.log('� Password reset attempt with token');
 
     if (!newPassword || newPassword.length < 6) {
       return res.status(400).json({
@@ -323,7 +323,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     );
 
     if (tokenResult.rows.length === 0) {
-      console.log('❌ Invalid or expired token');
+      console.log(' Invalid or expired token');
       return res.status(400).json({
         success: false,
         message: 'Invalid or expired password reset link. Please request a new one.'
@@ -347,7 +347,7 @@ export const resetPassword = async (req: Request, res: Response) => {
       [token]
     );
 
-    console.log('✅ Password reset successful for user:', userId);
+    console.log(' Password reset successful for user:', userId);
 
     res.json({
       success: true,
@@ -366,7 +366,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
   try {
     const { token } = req.params;
 
-    console.log('🔍 Verifying email with token:', token);
+    console.log('� Verifying email with token:', token);
 
     // Find valid token
     const tokenResult = await pool.query(
@@ -377,7 +377,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
     );
 
     if (tokenResult.rows.length === 0) {
-      console.log('❌ Invalid or expired token');
+      console.log(' Invalid or expired token');
       return res.status(400).json({
         success: false,
         message: 'Invalid or expired verification link. Please request a new one.'
@@ -398,7 +398,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
       [token]
     );
 
-    console.log('✅ Email verified successfully for user:', userId);
+    console.log(' Email verified successfully for user:', userId);
 
     res.json({
       success: true,
@@ -516,7 +516,7 @@ export const resendVerificationEmail = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
-    console.log('📧 Resend verification requested for:', email);
+    console.log('� Resend verification requested for:', email);
 
     if (!email) {
       return res.status(400).json({ message: 'Email is required' });
@@ -566,9 +566,9 @@ export const resendVerificationEmail = async (req: Request, res: Response) => {
     // Send new verification email
     try {
       await sendVerificationEmail(user.email, user.name, verificationToken);
-      console.log(`✅ New verification email sent to: ${user.email}`);
+      console.log(` New verification email sent to: ${user.email}`);
     } catch (emailError) {
-      console.error('❌ Failed to send verification email:', emailError);
+      console.error(' Failed to send verification email:', emailError);
       console.log(`Verification link (for testing): ${process.env.FRONTEND_URL || 'http://localhost:4200'}/verify-email/${verificationToken}`);
     }
 
@@ -585,7 +585,7 @@ export const googleLogin = async (req: Request, res: Response) => {
   try {
     const { idToken } = req.body;
 
-    console.log('🔐 Google login attempt with token:', idToken ? 'Token received' : 'No token');
+    console.log('� Google login attempt with token:', idToken ? 'Token received' : 'No token');
 
     if (!idToken) {
       return res.status(400).json({ message: 'ID token is required' });
@@ -594,7 +594,7 @@ export const googleLogin = async (req: Request, res: Response) => {
     // Initialize Google OAuth client with your Client ID
     const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-    console.log('🔑 Verifying Google token with Client ID:', process.env.GOOGLE_CLIENT_ID);
+    console.log('� Verifying Google token with Client ID:', process.env.GOOGLE_CLIENT_ID);
 
     // Verify the Google ID token
     const ticket = await client.verifyIdToken({
@@ -603,7 +603,7 @@ export const googleLogin = async (req: Request, res: Response) => {
     });
 
     const payload = ticket.getPayload();
-    console.log('✅ Google token verified successfully:', { email: payload?.email, name: payload?.name });
+    console.log(' Google token verified successfully:', { email: payload?.email, name: payload?.name });
 
     if (!payload || !payload.email) {
       return res.status(400).json({ message: 'Invalid Google token' });
@@ -611,7 +611,7 @@ export const googleLogin = async (req: Request, res: Response) => {
 
     const { email, name, sub: googleId, email_verified } = payload;
 
-    console.log('🔐 Google login attempt:', { email, name });
+    console.log('� Google login attempt:', { email, name });
 
     // Check if user exists with this email
     let userResult = await pool.query(
@@ -623,7 +623,7 @@ export const googleLogin = async (req: Request, res: Response) => {
 
     if (userResult.rows.length === 0) {
       // User doesn't exist, create new user
-      console.log('📝 Creating new user from Google login');
+      console.log('� Creating new user from Google login');
 
       // Generate username from email or name
       const baseUsername = (email.split('@')[0] || name?.toLowerCase().replace(/\s+/g, '') || 'user').substring(0, 20);
@@ -666,7 +666,7 @@ export const googleLogin = async (req: Request, res: Response) => {
         );
       }
 
-      console.log('✅ Existing user logged in with Google');
+      console.log(' Existing user logged in with Google');
     }
 
     // Update last login

@@ -90,6 +90,26 @@
       </div>
     </div>
 
+    <!-- Deadline Warning -->
+    <div class="deadline-warning" *ngIf="transaction()?.responseDeadline && transaction()?.transactionStatus === 'Awaiting Confirmation'"
+         [class.deadline-expired]="isDeadlineExpired()"
+         [class.deadline-approaching]="isDeadlineApproaching()">
+      <div class="deadline-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 6v6l4 2"/>
+        </svg>
+      </div>
+      <div class="deadline-content">
+        <div class="deadline-title">Response Deadline</div>
+        <div class="deadline-info">
+          <span class="deadline-date">{{ transaction()?.responseDeadline ? formatDate(transaction()!.responseDeadline) : 'N/A' }}</span>
+          <span class="deadline-separator">•</span>
+          <span class="days-remaining">{{ daysUntilDeadline }} {{ daysUntilDeadline === 1 ? 'day' : 'days' }} remaining</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Main Content Grid -->
     <div class="content-grid">
       <!-- Left Column - Customer Info -->
@@ -192,6 +212,25 @@
                       <span class="price-label">RM</span>
                       <span class="price-value" [class.changed]="transaction()?.finalPrice && transaction()?.finalPrice !== transaction()?.estimatedPrice">
                         {{ (transaction()?.finalPrice | number:'1.2-2') || (transaction()?.estimatedPrice | number:'1.2-2') || '0.00' }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Score Comparison -->
+              <div class="inspection-item">
+                <h4 class="inspection-label">SCORE</h4>
+                <div class="inspection-columns" [class.single-column]="!hasAdminConditions()">
+                  <div class="column-content">
+                    <div class="price-display">
+                      <span class="price-value">{{ transaction()?.initialScore || '0' }}</span>
+                    </div>
+                  </div>
+                  <div class="column-content" *ngIf="hasAdminConditions()">
+                    <div class="price-display">
+                      <span class="price-value" [class.changed]="transaction()?.finalScore && transaction()?.finalScore !== transaction()?.initialScore">
+                        {{ transaction()?.finalScore || transaction()?.initialScore || '0' }}
                       </span>
                     </div>
                   </div>
@@ -405,16 +444,6 @@
 
             <!-- EDIT MODE: Admin can modify values -->
             <ng-container *ngIf="editMode()">
-              <!-- Price Input -->
-              <div class="inspection-item-edit">
-                <h4 class="inspection-label">FINAL PRICE</h4>
-                <div class="price-input-container">
-                  <span class="price-label">RM</span>
-                  <input type="number" class="edit-input-price" [(ngModel)]="finalPrice" step="0.01" placeholder="Enter final price" />
-                  <span class="estimated-hint">(Estimated: RM {{ (transaction()?.estimatedPrice | number:'1.2-2') || '0.00' }})</span>
-                </div>
-              </div>
-
               <!-- All Dynamic Condition Groups in display_order -->
               <ng-container *ngFor="let group of conditionGroups">
                 <!-- Radio/Dropdown/Image type (single selection) -->

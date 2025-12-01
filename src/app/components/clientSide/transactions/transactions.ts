@@ -30,12 +30,26 @@ export class TransactionsComponent implements OnInit, OnDestroy {
   itemsPerPage: number = 10;
   totalPages: number = 1;
 
-  categories: string[] = ['Laundry', 'Kitchen', 'Cleaning'];
-  brands: string[] = ['LG', 'SAMSUNG', 'PANASONIC'];
+  categories: string[] = [];
+  brands: string[] = [];
 
   loading: boolean = false;
   currentSellerId: string | null = null;
   private authSubscription?: Subscription;
+
+  // Sorting properties
+  sortColumn: string = '';
+  sortDirection: 'asc' | 'desc' = 'asc';
+
+  // Notification for awaiting confirmation
+  showNotificationBanner: boolean = false;
+  awaitingConfirmationCount: number = 0;
+
+  // Helper method to get sort icon
+  sortIcon(column: string): string {
+    if (this.sortColumn !== column) return '↕';
+    return this.sortDirection === 'asc' ? '↑' : '↓';
+  }
 
   ngOnInit(): void {
     // Wait for auth to be ready before loading transactions
@@ -75,6 +89,14 @@ export class TransactionsComponent implements OnInit, OnDestroy {
         console.log('✅ Loaded transactions:', transactions);
         console.log('Transaction IDs:', transactions.map(t => ({ id: t.id, type: typeof t.id })));
         this.transactions = transactions;
+
+        // Check for transactions awaiting confirmation
+        this.checkAwaitingConfirmation();
+
+        // Extract unique categories and brands from the loaded transactions
+        this.extractCategories();
+        this.extractBrands();
+
         this.applyFilters();
         this.loading = false;
       },
@@ -83,6 +105,32 @@ export class TransactionsComponent implements OnInit, OnDestroy {
         this.loading = false;
       }
     });
+  }
+
+  checkAwaitingConfirmation(): void {
+    // Count transactions with "Awaiting Confirmation" status
+    this.awaitingConfirmationCount = this.transactions.filter(
+      t => t.transactionStatus === 'Awaiting Confirmation'
+    ).length;
+
+    // Show notification banner if there are any
+    if (this.awaitingConfirmationCount > 0) {
+      this.showNotificationBanner = true;
+    }
+  }
+
+  closeNotificationBanner(): void {
+    this.showNotificationBanner = false;
+  }
+
+  extractCategories(): void {
+    const categorySet = new Set(this.transactions.map(t => t.category).filter(c => c && c !== 'Unknown'));
+    this.categories = Array.from(categorySet).sort();
+  }
+
+  extractBrands(): void {
+    const brandSet = new Set(this.transactions.map(t => t.brand).filter(b => b && b !== 'Unknown'));
+    this.brands = Array.from(brandSet).sort();
   }
 
   applyFilters(): void {
@@ -108,8 +156,86 @@ export class TransactionsComponent implements OnInit, OnDestroy {
       );
     }
 
+    // Apply sorting if a column is selected
+    if (this.sortColumn) {
+      filtered = this.sortTransactions(filtered);
+    }
+
     this.filteredTransactions = filtered;
     this.totalPages = Math.ceil(this.filteredTransactions.length / this.itemsPerPage);
+
+    // Reset to page 1 if current page exceeds total pages
+    if (this.currentPage > this.totalPages && this.totalPages > 0) {
+      this.currentPage = 1;
+    }
+  }
+
+  sortBy(column: string): void {
+    // Toggle direction if clicking the same column, otherwise reset to ascending
+    if (this.sortColumn === column) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortColumn = column;
+      this.sortDirection = 'asc';
+    }
+
+    this.applyFilters();
+  }
+
+  sortTransactions(transactions: Transaction[]): Transaction[] {
+    return transactions.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      // Get values based on column
+      switch (this.sortColumn) {
+        case 'brand':
+          aValue = a.brand;
+          bValue = b.brand;
+          break;
+        case 'category':
+          aValue = a.category;
+          bValue = b.category;
+          break;
+        case 'model':
+          aValue = a.model;
+          bValue = b.model;
+          break;
+        case 'modelName':
+          aValue = a.modelName;
+          bValue = b.modelName;
+          break;
+        case 'submissionDate':
+        aValue = new Date(a.submittedDate).getTime();
+        bValue = new Date(b.submittedDate).getTime();
+        break;
+        case 'transactionStatus':
+          aValue = a.transactionStatus;
+          bValue = b.transactionStatus;
+          break;
+        case 'itemStatus':
+          aValue = a.itemStatus;
+          bValue = b.itemStatus;
+          break;
+        default:
+          return 0;
+      }
+
+      // Convert to lowercase for case-insensitive sorting (for strings)
+      if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+      if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+
+      // Compare values
+      let comparison = 0;
+      if (aValue > bValue) {
+        comparison = 1;
+      } else if (aValue < bValue) {
+        comparison = -1;
+      }
+
+      // Apply direction
+      return this.sortDirection === 'asc' ? comparison : -comparison;
+    });
   }
 
   get paginatedTransactions(): Transaction[] {

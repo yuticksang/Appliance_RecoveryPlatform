@@ -7,11 +7,13 @@ import { filter, take } from 'rxjs/operators';
 import { TransactionService, Transaction } from '../../../services/transaction.service';
 import { AuthService } from '../../../services/auth.service';
 import { AlertService } from '../../../services/alert.service';
+import { BreadcrumbService } from '../../../services/breadcrumb.service';
+import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
 
 @Component({
   selector: 'app-transaction-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, BreadcrumbComponent],
   templateUrl: './transaction-detail.html',
   styleUrls: ['./transaction-detail.scss']
 })
@@ -21,6 +23,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   private transactionService = inject(TransactionService);
   private authService = inject(AuthService);
   private alertService = inject(AlertService);
+  private breadcrumbService = inject(BreadcrumbService);
 
   transaction: Transaction | null = null;
   loading: boolean = true;
@@ -161,6 +164,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     brand: '',
     model: '',
     category: '',
+    modelName: '',
     score: 0,
     note: ''
   };
@@ -172,6 +176,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     brand: '',
     model: '',
     category: '',
+    modelName: '',
     score: 0,
     note: '',
   };
@@ -236,7 +241,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     return this.transaction?.transactionStatus === 'Awaiting Confirmation';
   }
 
-  // Check if transaction is in Pending Payment status (Case 5)
+  // Check if transaction is in Pending Payment status
   get isPendingPayment(): boolean {
     return this.transaction?.transactionStatus === 'Pending Payment';
   }
@@ -331,6 +336,12 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    // Set breadcrumbs
+    this.breadcrumbService.setBreadcrumbs([
+      { label: 'Transactions', url: '/transactions' },
+      { label: 'Transaction Detail' }
+    ]);
+
     // Get transaction ID from route
     this.route.params.subscribe(params => {
       // Support both string IDs (e.g., "TXN-123") and numeric IDs
@@ -436,6 +447,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         }
 
         console.log('✅ Seller ID verified, loading transaction details...');
+        console.log('🔍 Response Deadline from backend:', data.responseDeadline || data.response_deadline);
 
         // Map backend data to transaction object
         this.transaction = {
@@ -452,8 +464,15 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
           submittedDate: new Date(data.submittedDate),
           estimatedPrice: data.estimatedPrice,
           finalPrice: data.finalPrice,
-          note: data.note || '' // Note from backend
+          note: data.note || '', // Note from backend
+          responseDeadline: data.responseDeadline || data.response_deadline
         };
+
+        console.log('🔍 Transaction object after mapping:', {
+          id: this.transaction.id,
+          status: this.transaction.transactionStatus,
+          responseDeadline: this.transaction.responseDeadline
+        });
 
         // Load REAL customer info from database
         this.customerInfo = {
@@ -527,6 +546,8 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     console.log('🔍 Loaded conditionGroupNames:', this.conditionGroupNames);
     console.log('🔍 Loaded sellerConditions:', this.sellerConditions);
     console.log('🔍 Loaded adminConditions:', this.adminConditions);
+    console.log('🔍 Initial Score (seller):', data.initialScore);
+    console.log('🔍 Final Score (admin):', data.finalScore);
 
     // Check if admin has reviewed (adminConditions exist or finalPrice exists)
     this.hasBeenReviewed = !!(Object.keys(this.adminConditions).length > 0 || data.finalPrice);
@@ -540,8 +561,9 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         brand: data.brand,
         model: data.model,
         category: data.category,
-        score: 0, // TODO: Will be fetched from other team's API
-        note: data.note || '' // Seller's note
+        modelName: data.modelName,
+        score: data.initialScore || 0,
+        note: data.note || ''
       };
 
       // After review - admin's assessment (only if reviewed)
@@ -551,7 +573,8 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
           brand: data.brand,
           model: data.model,
           category: data.category,
-          score: 0, // TODO: Will be fetched from other team's API
+          modelName: data.modelName,
+          score: data.finalScore || data.initialScore || 0, // TODO: Will be fetched from other team's API
           note: data.note || '' // Note
         };
       }
@@ -563,7 +586,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
         model: data.model,
         modelName: data.modelName,
         category: data.category,
-        score: 0, // TODO: Will be fetched from other team's API
+        score: data.finalScore || data.initialScore || 0,
         note: data.note || '' // Note
       };
     }
@@ -641,7 +664,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     this.transactionService.updateTransactionStatus(
       this.transactionId,
       'Pending Payment',
-      'Awaiting Pick Up'
+      'Picked Up'    
     ).subscribe({
       next: (updatedTransaction) => {
         console.log('✅ Offer accepted successfully:', updatedTransaction);
@@ -1132,5 +1155,64 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
       }
     }
     return null;
+  }
+
+  // ========== RESPONSE DEADLINE METHODS ==========
+
+  // Calculate days until deadline
+  get daysUntilDeadline(): number {
+    console.log('📊 daysUntilDeadline getter called');
+    console.log('📊 transaction:', this.transaction);
+    console.log('📊 responseDeadline:', this.transaction?.responseDeadline);
+
+    if (!this.transaction?.responseDeadline) {
+      console.log('⚠️ No responseDeadline found, returning 0');
+      return 0;
+    }
+
+    const now = new Date();
+    const deadline = new Date(this.transaction.responseDeadline);
+    const timeDifference = deadline.getTime() - now.getTime();
+    const daysDifference = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
+
+    console.log('📊 Calculated days:', daysDifference);
+    return Math.max(0, daysDifference); // Return 0 if negative (expired)
+  }
+
+  // Check if deadline has passed
+  isDeadlineExpired(): boolean {
+    if (!this.transaction?.responseDeadline) return false;
+
+    const now = new Date();
+    const deadline = new Date(this.transaction.responseDeadline);
+    return now > deadline;
+  }
+
+  // Check if deadline is approaching (≤ 3 days)
+  isDeadlineApproaching(): boolean {
+    return this.daysUntilDeadline <= 3 && !this.isDeadlineExpired();
+  }
+
+  // Format date for display
+  formatDate(dateStr: string): string {
+    if (!dateStr) return 'N/A';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  // Get CSS class for deadline status
+  deadlineStatusClass(): string {
+    if (this.isDeadlineExpired()) {
+      return 'expired';
+    } else if (this.isDeadlineApproaching()) {
+      return 'warning';
+    }
+    return 'normal';
   }
 }

@@ -46,7 +46,7 @@ export const getAllConditionGroups = async (req: Request, res: Response) => {
       ORDER BY COALESCE(cg."display_order", 999999) ASC, cg."created_at" ASC
     `);
 
-    console.log('ðŸ“‚ Fetched condition groups with categories:', result.rows.length);
+    console.log('‚ Fetched condition groups with categories:', result.rows.length);
     res.json(result.rows);
   } catch (error: any) {
     console.error('Get all condition groups error:', error);
@@ -65,7 +65,7 @@ export const getAllConditionGroups = async (req: Request, res: Response) => {
 export const getActiveConditionGroupsWithOptions = async (req: Request, res: Response) => {
   try {
     const { categoryId } = req.query;
-    console.log('ðŸ“‹ Getting condition groups, categoryId:', categoryId);
+    console.log('‹ Getting condition groups, categoryId:', categoryId);
 
     // Get all active condition groups
     // Note: Category filtering for groups is done via Category_ConditionGroup table
@@ -83,7 +83,7 @@ export const getActiveConditionGroupsWithOptions = async (req: Request, res: Res
     `;
 
     const groupsResult = await pool.query(groupsQuery);
-    console.log('ðŸ“‚ Found groups:', groupsResult.rows.length);
+    console.log('‚ Found groups:', groupsResult.rows.length);
 
     // Get all active options for active groups (optionally filtered by category)
     let optionsQuery = `
@@ -120,7 +120,7 @@ export const getActiveConditionGroupsWithOptions = async (req: Request, res: Res
     } else {
       optionsResult = await pool.query(optionsQuery);
     }
-    console.log('ðŸ“‚ Found options:', optionsResult.rows.length);
+    console.log('‚ Found options:', optionsResult.rows.length);
 
     // Group options by groupID
     const groupsWithOptions = groupsResult.rows.map(group => ({
@@ -128,7 +128,7 @@ export const getActiveConditionGroupsWithOptions = async (req: Request, res: Res
       options: optionsResult.rows.filter(opt => opt.groupID === group.groupID)
     }));
 
-    console.log('ðŸ“‚ Fetched active condition groups with options:', groupsWithOptions.length, categoryId ? `for category ${categoryId}` : '');
+    console.log('‚ Fetched active condition groups with options:', groupsWithOptions.length, categoryId ? `for category ${categoryId}` : '');
     res.json(groupsWithOptions);
   } catch (error: any) {
     console.error('Get active condition groups with options error:', error);
@@ -193,7 +193,7 @@ export const createConditionGroup = async (req: Request, res: Response) => {
       [criteriaName, criteriaCodePrefix, question_title, question_type, nextOrder]
     );
 
-    console.log('âœ… Created condition group:', result.rows[0]);
+    console.log(' Created condition group:', result.rows[0]);
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Create condition group error:', error);
@@ -249,7 +249,7 @@ export const updateConditionGroup = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Condition group not found' });
     }
 
-    console.log('âœ… Updated condition group:', result.rows[0]);
+    console.log(' Updated condition group:', result.rows[0]);
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Update condition group error:', error);
@@ -278,7 +278,7 @@ export const updateConditionGroupStatus = async (req: Request, res: Response) =>
       return res.status(404).json({ message: 'Condition group not found' });
     }
 
-    console.log('âœ… Updated condition group status:', result.rows[0]);
+    console.log(' Updated condition group status:', result.rows[0]);
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Update condition group status error:', error);
@@ -305,7 +305,7 @@ export const getAllConditionOptions = async (req: Request, res: Response) => {
        ORDER BY cg.created_at ASC, co.created_at ASC`
     );
 
-    console.log('ðŸ“‚ Fetched condition options:', result.rows.length);
+    console.log('‚ Fetched condition options:', result.rows.length);
     res.json(result.rows);
   } catch (error: any) {
     console.error('Get all condition options error:', error);
@@ -330,7 +330,7 @@ export const getConditionOptionsByGroup = async (req: Request, res: Response) =>
       [groupId]
     );
 
-    console.log(`ðŸ“‚ Fetched ${result.rows.length} condition options for group ${groupId}`);
+    console.log(`‚ Fetched ${result.rows.length} condition options for group ${groupId}`);
     res.json(result.rows);
   } catch (error) {
     console.error('Get condition options by group error:', error);
@@ -343,7 +343,7 @@ export const createConditionOption = async (req: Request, res: Response) => {
     const { groupID, description, status, question } = req.body;
     const imageFile = req.file;
 
-    console.log('ðŸ“¥ Create condition option request:', {
+    console.log('¥ Create condition option request:', {
       groupID,
       description,
       status,
@@ -354,12 +354,12 @@ export const createConditionOption = async (req: Request, res: Response) => {
     console.log('Full request body:', req.body);
 
     if (!groupID) {
-      console.error('âŒ Missing groupID');
+      console.error(' Missing groupID');
       return res.status(400).json({ message: 'Group ID is required' });
     }
 
     // Verify group exists and get prefix
-    console.log('ðŸ” Checking if group exists:', groupID);
+    console.log(' Checking if group exists:', groupID);
     const groupCheck = await pool.query(
       'SELECT "groupID", "criteriaCodePrefix" FROM "ConditionGroup" WHERE "groupID" = $1',
       [groupID]
@@ -368,7 +368,7 @@ export const createConditionOption = async (req: Request, res: Response) => {
     console.log('Group check result:', groupCheck.rows);
 
     if (groupCheck.rows.length === 0) {
-      console.error('âŒ Group not found:', groupID);
+      console.error(' Group not found:', groupID);
       return res.status(404).json({ message: 'Condition group not found' });
     }
 
@@ -389,10 +389,10 @@ export const createConditionOption = async (req: Request, res: Response) => {
         const lastCode = lastCodeQuery.rows[0].code;
         const lastNumber = parseInt(lastCode.replace(prefix, '')) || 0;
         finalCode = prefix + String(lastNumber + 1).padStart(3, '0');
-        console.log(`ðŸ”¢ Last code: ${lastCode}, Next code: ${finalCode}`);
+        console.log(`¢ Last code: ${lastCode}, Next code: ${finalCode}`);
       } else {
         finalCode = prefix + '001';
-        console.log(`ðŸ”¢ No existing codes, starting with: ${finalCode}`);
+        console.log(`¢ No existing codes, starting with: ${finalCode}`);
       }
     }
 
@@ -403,7 +403,7 @@ export const createConditionOption = async (req: Request, res: Response) => {
       const fileName = `${Date.now()}-${Math.round(Math.random() * 1E9)}.${fileExt}`;
       const filePath = `conditions/${groupID}/${fileName}`;
 
-      console.log(`ðŸ“¸ Uploading image to Supabase: ${filePath}`);
+      console.log(`¸ Uploading image to Supabase: ${filePath}`);
 
       const { error: uploadError } = await supabase.storage
         .from('condition-images')
@@ -423,10 +423,10 @@ export const createConditionOption = async (req: Request, res: Response) => {
         .getPublicUrl(filePath);
 
       imageUrl = publicUrl;
-      console.log(`âœ… Image uploaded to Supabase: ${imageUrl}`);
+      console.log(` Image uploaded to Supabase: ${imageUrl}`);
     }
 
-    console.log('ðŸ’¾ Inserting into database:', {
+    console.log('¾ Inserting into database:', {
       groupID,
       finalCode,
       description: description || null,
@@ -442,7 +442,7 @@ export const createConditionOption = async (req: Request, res: Response) => {
       [groupID, finalCode, description || null, imageUrl, status || 'ACTIVE', question || null]
     );
 
-    console.log('âœ… Created condition option:', result.rows[0]);
+    console.log(' Created condition option:', result.rows[0]);
     res.status(201).json(result.rows[0]);
   } catch (error: any) {
     console.error('Create condition option error:', error);
@@ -460,7 +460,7 @@ export const updateConditionOption = async (req: Request, res: Response) => {
     const { description, imageUrl, status, question, removeImage } = req.body;
     const imageFile = req.file;
 
-    console.log('ðŸ“ Update condition option:', { id, description, status, imageUrl, removeImage: removeImage === 'true', hasFile: !!imageFile });
+    console.log(' Update condition option:', { id, description, status, imageUrl, removeImage: removeImage === 'true', hasFile: !!imageFile });
 
     // Get current option to preserve existing image if no new one is uploaded
     const currentOption = await pool.query(
@@ -483,7 +483,7 @@ export const updateConditionOption = async (req: Request, res: Response) => {
       const groupID = currentOption.rows[0].groupID || 'default';
       const filePath = `conditions/${groupID}/${fileName}`;
 
-      console.log(`ðŸ“¸ Uploading updated image to Supabase: ${filePath}`);
+      console.log(`¸ Uploading updated image to Supabase: ${filePath}`);
 
       const { error: uploadError } = await supabase.storage
         .from('condition-images')
@@ -503,7 +503,7 @@ export const updateConditionOption = async (req: Request, res: Response) => {
         .getPublicUrl(filePath);
 
       finalImageUrl = publicUrl;
-      console.log(`âœ… Image uploaded to Supabase: ${finalImageUrl}`);
+      console.log(` Image uploaded to Supabase: ${finalImageUrl}`);
     } else if (removeImage === 'true') {
       // Explicitly remove image
       finalImageUrl = null;
@@ -515,7 +515,7 @@ export const updateConditionOption = async (req: Request, res: Response) => {
       finalImageUrl = currentOption.rows[0].image;
     }
 
-    console.log('ðŸ’¾ Final image URL:', finalImageUrl);
+    console.log('¾ Final image URL:', finalImageUrl);
 
     const result = await pool.query(
       `UPDATE "ConditionOption"
@@ -525,7 +525,7 @@ export const updateConditionOption = async (req: Request, res: Response) => {
       [description || null, finalImageUrl, status || 'ACTIVE', question || null, id]
     );
 
-    console.log('âœ… Updated condition option:', result.rows[0]);
+    console.log(' Updated condition option:', result.rows[0]);
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Update condition option error:', error);
@@ -546,7 +546,7 @@ export const deleteConditionOption = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Condition option not found' });
     }
 
-    console.log('âœ… Deleted condition option:', id);
+    console.log(' Deleted condition option:', id);
     res.json({ message: 'Condition option deleted successfully' });
   } catch (error) {
     console.error('Delete condition option error:', error);
@@ -596,7 +596,7 @@ export const updateConditionCategories = async (req: Request, res: Response) => 
       );
     }
 
-    console.log('âœ… Updated condition categories for:', conditionId);
+    console.log(' Updated condition categories for:', conditionId);
     res.json({ message: 'Categories updated successfully' });
   } catch (error) {
     console.error('Update condition categories error:', error);
@@ -629,7 +629,7 @@ export const updateDisplayOrders = async (req: Request, res: Response) => {
 
     await pool.query('COMMIT');
 
-    console.log('âœ… Updated display orders for category:', categoryId);
+    console.log(' Updated display orders for category:', categoryId);
     res.json({ message: 'Display orders updated successfully' });
   } catch (error) {
     await pool.query('ROLLBACK');
@@ -742,7 +742,7 @@ export const getAllBuyerMarkdowns = async (req: Request, res: Response) => {
 
     const result = await pool.query(query, queryParams);
 
-    console.log('ðŸ“‚ Fetched buyer markdowns:', result.rows.length);
+    console.log('‚ Fetched buyer markdowns:', result.rows.length);
     res.json(result.rows);
   } catch (error: any) {
     console.error('Get buyer markdowns error:', error);

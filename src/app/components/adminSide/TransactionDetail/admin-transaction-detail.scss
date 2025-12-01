@@ -57,6 +57,202 @@ $Space: 'Space Grotesk', sans-serif;
   margin: 0;
   padding: 0;
   position: relative;
+
+  // ✅ ADD OVERFLOW FIXES TO ALL TEXT ELEMENTS
+  * {
+    box-sizing: border-box;
+  }
+
+  p, span, div, h1, h2, h3, h4, h5, h6, label, li {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    max-width: 100%;
+  }
+
+  // ✅ FIX INFO SECTIONS
+  .info-section {
+    overflow: hidden;
+
+    .section-title {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .info-value {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      white-space: normal;
+      max-width: 100%;
+    }
+  }
+
+  // ✅ FIX DETAIL ITEMS
+  .detail-item {
+    overflow: hidden;
+
+    .detail-label {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .detail-value {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      white-space: normal;
+      max-width: 100%;
+    }
+  }
+
+  // ✅ FIX NOTE SECTIONS (MAIN FIX FOR YOUR ISSUE)
+  .note-section {
+    overflow: hidden;
+
+    .note-label {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .note-value {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      white-space: normal;
+      max-width: 100%;
+      line-height: 1.6;
+    }
+  }
+
+  .note-text {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    max-width: 100%;
+
+    &.empty {
+      color: #a0aec0;
+      font-style: italic;
+    }
+
+    &.changed {
+      color: #48bb78;
+      font-weight: 600;
+    }
+  }
+
+  // ✅ FIX INSPECTION ITEMS
+  .inspection-item {
+    overflow: hidden;
+
+    .inspection-label {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .inspection-columns {
+      overflow: hidden;
+
+      .column-content {
+        overflow: hidden;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+
+        .condition-list {
+          .condition-item {
+            overflow: hidden;
+
+            .condition-text {
+              word-wrap: break-word;
+              overflow-wrap: break-word;
+              word-break: break-word;
+              white-space: normal;
+              flex: 1;
+              max-width: 100%;
+
+              &.changed {
+                color: #48bb78;
+                font-weight: 600;
+              }
+            }
+
+            &.empty .condition-text {
+              color: #a0aec0;
+              font-style: italic;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // ✅ FIX EDIT INPUTS
+  .edit-select,
+  .edit-input,
+  .edit-textarea {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  .edit-textarea {
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  // ✅ FIX CHECKBOX OPTIONS
+  .checkbox-options {
+    overflow-y: auto;
+  }
+
+  .checkbox-option {
+    overflow: hidden;
+
+    input[type="checkbox"] {
+      flex-shrink: 0;
+    }
+
+    .checkbox-label {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      white-space: normal;
+      flex: 1;
+      max-width: 100%;
+    }
+  }
+
+  // ✅ FIX DEADLINE WARNING
+  .deadline-warning {
+    overflow: hidden;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+
+    .deadline-content {
+      overflow: hidden;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .deadline-date,
+    .days-remaining {
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      word-break: break-word;
+    }
+  }
+
+  // ✅ FIX RIGHT COLUMN
+  .right-column {
+    overflow: hidden;
+  }
+
+  .appliance-info-card {
+    max-width: 100%;
+    overflow: hidden;
+  }
 }
 
 /* Page Header */
@@ -418,7 +614,7 @@ $Space: 'Space Grotesk', sans-serif;
 }
 
 .detail-label {
-  font-size: 0.75rem;
+  font-size: 14px;
   font-weight: 700;
   color: #718096;
   margin: 0 0 0.5rem 0;
@@ -426,7 +622,7 @@ $Space: 'Space Grotesk', sans-serif;
 }
 
 .detail-value {
-  font-size: 0.875rem;
+  font-size: 15px;
   color: #2d3748;
   margin: 0;
   font-weight: 500;
@@ -1386,7 +1582,7 @@ $Space: 'Space Grotesk', sans-serif;
     }
 
     .header-label {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 700;
       color: #718096;
       text-transform: uppercase;
@@ -1428,6 +1624,9 @@ $Space: 'Space Grotesk', sans-serif;
 
     .column-content {
       padding-left: 0.25rem;  // Align with headers
+      overflow: hidden;
+      word-wrap: break-word;
+      max-width: 100%;
 
 
       .price-display {
@@ -1445,17 +1644,6 @@ $Space: 'Space Grotesk', sans-serif;
 
           &.changed {
             color: #48bb78;  // Green to show it was updated
-            position: relative;
-
-            &::after {
-              content: '✓';
-              position: absolute;
-              right: -1.5rem;
-              top: 50%;
-              transform: translateY(-50%);
-              font-size: 20px;
-              color: #48bb78;
-            }
           }
         }
       }
@@ -1561,6 +1749,11 @@ $Space: 'Space Grotesk', sans-serif;
   line-height: 1.6;
   margin: 0;
   padding: 0.5rem 0;
+  word-wrap: break-word;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  max-width: 100%;
 
   &.empty {
     color: #a0aec0;
@@ -1775,5 +1968,168 @@ $Space: 'Space Grotesk', sans-serif;
 @media (max-width: 768px) {
   .photos-comparison-section-inline {
     grid-template-columns: 1fr;
+  }
+}
+
+// ========== RESPONSE DEADLINE WARNING STYLES ==========
+
+.deadline-warning {
+  background: #ffffff;
+  border-left: 4px solid #3b82f6;
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
+
+  // Warning state (≤ 3 days)
+  &.deadline-approaching {
+    border-left-color: #f59e0b;
+    background: #fffbeb;
+
+    .deadline-icon svg {
+      stroke: #f59e0b;
+    }
+
+    .deadline-title {
+      color: #92400e;
+    }
+
+    .days-remaining {
+      color: #d97706;
+      font-weight: 700;
+    }
+  }
+
+  // Expired state
+  &.deadline-expired {
+    border-left-color: #ef4444;
+    background: #fef2f2;
+
+    .deadline-icon svg {
+      stroke: #ef4444;
+      animation: shake 0.5s ease-in-out;
+    }
+
+    .deadline-title {
+      color: #991b1b;
+    }
+
+    .days-remaining {
+      color: #dc2626;
+      font-weight: 700;
+    }
+  }
+}
+
+.deadline-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: #eff6ff;
+  border-radius: 50%;
+
+  svg {
+    stroke: #3b82f6;
+    transition: all 0.3s ease;
+  }
+}
+
+.deadline-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.deadline-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.deadline-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.deadline-date {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.deadline-separator {
+  color: #cbd5e1;
+  font-weight: 300;
+}
+
+.days-remaining {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #3b82f6;
+}
+
+// Shake animation for expired state
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+// Mobile responsiveness for deadline warning
+@media (max-width: 768px) {
+  .deadline-warning {
+    padding: 0.875rem 1rem;
+    gap: 0.75rem;
+  }
+
+  .deadline-icon {
+    width: 36px;
+    height: 36px;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .deadline-title {
+    font-size: 0.8rem;
+  }
+
+  .deadline-date,
+  .days-remaining {
+    font-size: 0.875rem;
+  }
+
+  .deadline-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .deadline-separator {
+    display: none;
   }
 }
