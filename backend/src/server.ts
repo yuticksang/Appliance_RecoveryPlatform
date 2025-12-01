@@ -11,6 +11,7 @@ import profileRoutes from './routes/profile';
 import buyerRoutes from './routes/buyer';
 import scoringConfigRoutes from './routes/scoringConfig';
 import transactionRoutes from './routes/transaction';
+import dashboardRoutes from './routes/dashboard';
 import cronRoutes from './routes/cron';
 import dbPool from './config/database';
 import questionnaireRouter from './routes/questionnaire';
@@ -107,6 +108,7 @@ app.use('/api', questionnaireRouter);
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/cron', cronRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Health route
 app.get('/health', (req, res) => res.json({ ok: true, message: 'Server is running' }));

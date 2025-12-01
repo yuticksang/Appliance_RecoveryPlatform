@@ -1,8 +1,9 @@
-import { Component, Inject, PLATFORM_ID } from '@angular/core';
+import { Component, Inject, PLATFORM_ID, OnInit, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartOptions, ChartType } from 'chart.js';
+import { DashboardService } from '../../../services/dashboard.service';
 
 // Add these imports for Chart.js registration
 import {
@@ -20,6 +21,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import { AlertService } from '../../../services/alert.service';
 
 // Register Chart.js components only in browser
 if (typeof window !== 'undefined') {
@@ -45,35 +47,36 @@ interface TimeSeriesData {
   recoveryValue: number;
 }
 
-interface ApplianceData {
-  name: string;
-  recovered: number;
+interface CategoryRecoveredData {
+  categoryName: string;
+  applianceRecovered: number;
+}
+
+interface BrandRecoveredData {
+  brandName: string;
+  applianceRecovered: number;
 }
 
 interface ConditionData {
   condition: string;
   percentage: number;
-  color: string;
+  
+}
+
+interface getTop5RecoveredModel{
+  modelName: string;
+  applianceRecovered: number;
 }
 
 interface Order{
-  id: string;
-  appliance: string;
-  category: string;
-  offerPrice: number;
-  date: string;
-  status: 'Completed' | 'Pending' | 'Processing' | 'Cancelled';
+  transactionID: string;
+  modelName: string;
+  buyerID: string;
+  initialOfferPrice: number;
+  createdAt: string;
+  transactionStatus: string;
 }
 
-interface DashboardData {
-  weekly: TimeSeriesData[];
-  monthly: TimeSeriesData[];
-  category: ApplianceData[];
-  brand: ApplianceData[];
-  conditions: ConditionData[];
-  recentOrders: Order[];
-
-}
 
 
 @Component({
@@ -82,71 +85,34 @@ interface DashboardData {
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
-export class Dashboard {
+export class Dashboard implements OnInit {
   isBrowser: boolean;
+
+  //metrics cards data
+  totalActiveUsers = signal<number>(0);
+  totalActiveTransactions = signal<number>(0);
+  totalPayout = signal<number>(0);
+  totalAppliancesRecovered = signal<number>(0);
+
   activeGraphTab: string = 'appliance';
   activeBarTab: string = 'category';
   activeTimeRange: string = 'monthly';
+  recentOrders = signal<Order[]>([]);
+  timeSeriesData = signal<TimeSeriesData[]>([]);
+  categoryData = signal<CategoryRecoveredData[]>([]);
+  brandData = signal<BrandRecoveredData[]>([]);
+  conditionData = signal<ConditionData[]>([]);
+  top5RecoveredModels = signal<getTop5RecoveredModel[]>([]);
+
   
   constructor(@Inject(PLATFORM_ID) private platformId: Object) {
       this.isBrowser = isPlatformBrowser(this.platformId);
   }
 
-  // CENTRALIZED DATA STRUCTURE
-  dashboardData: DashboardData = {
-    weekly: [
-      { period: 'Mon', applianceRecovered: 15, recoveryValue: 12 },
-      { period: 'Tue', applianceRecovered: 18, recoveryValue: 16 },
-      { period: 'Wed', applianceRecovered: 22, recoveryValue: 19 },
-      { period: 'Thu', applianceRecovered: 20, recoveryValue: 18 },
-      { period: 'Fri', applianceRecovered: 25, recoveryValue: 20 },
-      { period: 'Sat', applianceRecovered: 30, recoveryValue: 22 },
-      { period: 'Sun', applianceRecovered: 28, recoveryValue: 24 }
-    ],
-    monthly: [
-      { period: 'Jan', applianceRecovered: 40, recoveryValue: 12 },
-      { period: 'Feb', applianceRecovered: 40, recoveryValue: 16 },
-      { period: 'Mar', applianceRecovered: 25, recoveryValue: 19 },
-      { period: 'Apr', applianceRecovered: 42, recoveryValue: 18 },
-      { period: 'May', applianceRecovered: 65, recoveryValue: 20 },
-      { period: 'Jun', applianceRecovered: 55, recoveryValue: 22 },
-      { period: 'Jul', applianceRecovered: 48, recoveryValue: 24 },
-      { period: 'Aug', applianceRecovered: 65, recoveryValue: 26 },
-      { period: 'Sep', applianceRecovered: 75, recoveryValue: 28 },
-      { period: 'Oct', applianceRecovered: 57, recoveryValue: 25 },
-      { period: 'Nov', applianceRecovered: 52, recoveryValue: 23 },
-      { period: 'Dec', applianceRecovered: 60, recoveryValue: 21 }
-    ],
-    category: [
-      { name: 'Refrigerators', recovered: 650},
-      { name: 'Washing Machines', recovered: 450},
-      { name: 'Air Conditioners', recovered: 480},
-      { name: 'Microwaves', recovered: 320},
-      { name: 'Freezer', recovered: 380}
-    ],
-    brand: [
-      { name: 'Samsung', recovered: 760},
-      { name: 'LG', recovered: 550},
-      { name: 'Whirlpool', recovered: 420},
-      { name: 'Panasonic', recovered: 220},
-      { name: 'Bosch', recovered: 380}
-    ],
-    conditions: [
-      { condition: 'Excellent', percentage: 22.8, color: '#93C5FD' },
-      { condition: 'Good', percentage: 55.1, color: '#4ECDC4' },
-      { condition: 'Fair', percentage: 13.9, color: '#FFD93D' },
-      { condition: 'Poor', percentage: 11.2, color: '#FF6B6B' }
-    ],
+  private alertService = inject(AlertService);
+  private dashboardService = inject(DashboardService);
 
-    recentOrders: [
-      { id: 'OR1234', appliance: 'LG Front Load Washer', category: 'Washing Machine', offerPrice: 450, date: 'Nov 8, 2025', status: 'Completed' },
-      { id: 'OR1235', appliance: 'Samsung Refrigerator', category: 'Refrigerator', offerPrice: 800, date: 'Nov 7, 2025', status: 'Processing' },
-      { id: 'OR1236', appliance: 'Whirlpool Microwave Oven', category: 'Microwave', offerPrice: 200, date: 'Nov 6, 2025', status: 'Pending' },
-      { id: 'OR1237', appliance: 'Bosch Dishwasher', category: 'Dishwasher', offerPrice: 600, date: 'Nov 5, 2025', status: 'Cancelled' },
-      { id: 'OR1238', appliance: 'Panasonic Air Conditioner', category: 'Air Conditioner', offerPrice: 700, date: 'Nov 4, 2025', status: 'Completed' }
-    ]
-  };
-
+  
   barChartColors = {
     category: '#4ECDC4',  // Teal for category
     brand: '#E8B3E8'      // Purple for brand
@@ -156,67 +122,155 @@ export class Dashboard {
     if (this.isBrowser) {
       // TODO: Replace with API call
       // this.loadDashboardData();
-      this.updateAllCharts();
+
+      this.loadMetrics();
+      this.loadTimeSeriesData();
+      this.loadCategoryandBrandData();
+      this.loadConditionData();
+      this.loadTop5RecoveredModels();
+      this.loadCurrentOrder();
     }
   }
 
-  // ============================================
-  // FUTURE DATABASE INTEGRATION
-  // ============================================
-  // async loadDashboardData() {
-  //   try {
-  //     const response = await fetch('/api/dashboard');
-  //     this.dashboardData = await response.json();
-  //     this.updateAllCharts();
-  //   } catch (error) {
-  //     console.error('Error loading dashboard data:', error);
-  //   }
-  // }
+  loadMetrics(): void {
+
+    this.dashboardService.getTotalPayout().subscribe({
+      next: (response) =>{
+        if (response.success) {
+          this.totalPayout.set(response.data.recoveryValue);
+        }
+      },
+      error: (err) => {
+          console.error('Error loading payout:', err);
+      }
+    });
+
+    this.dashboardService.getAppliancesRecovered().subscribe({
+      next: (response) =>{
+        if (response.success) {
+          this.totalAppliancesRecovered.set(response.data.appliances_recovered);
+        }
+      },      
+      error: (err) => {
+          console.error('Error loading appliances recovered:', err);
+      }
+    });
+
+    this.dashboardService.getActiveUsers().subscribe({
+      next: (response) =>{
+        if (response.success) {
+          this.totalActiveUsers.set(response.data.total_active_sellers);
+        }
+      },      
+      error: (err) => {
+          console.error('Error loading active users:', err);
+      }
+    });
+
+    this.dashboardService.getActiveTransactions().subscribe({
+      next: (response) =>{
+        if (response.success) { 
+          this.totalActiveTransactions.set(response.data.active_transactions);
+        }
+      },      
+      error: (err) => {
+          console.error('Error loading active transactions:', err);
+      }
+    });
+   
   
-  
+  }
+
+  loadTimeSeriesData(): void {
+    this.dashboardService.getRecoveryTimeSeries(this.activeTimeRange).subscribe({
+      next: (response) => {
+        if (response.success) { 
+          this.timeSeriesData.set(response.data);
+          this.updateLineChart();
+        }
+      },
+      error: (err) => {
+        console.error('Error loading recovery time series:', err);
+      }
+    });
+  }
+
+  loadCategoryandBrandData(): void {
+
+    this.dashboardService.getCategoryRecoveryData().subscribe({
+      next: (response) => {
+        if (response.success) { 
+          this.categoryData.set(response.data);
+          this.updateBarChart();
+        }
+      }
+    });
+
+    this.dashboardService.getBrandRecoveryData().subscribe({
+      next: (response) => {
+        if (response.success) { 
+          this.brandData.set(response.data);
+          this.updateBarChart();
+        }
+      }
+    });
+
+  }
+
+  loadConditionData(): void {
+    this.dashboardService.getConditionScoreData().subscribe({
+      next: (response) => {
+
+        if (response.success) { 
+          this.conditionData.set(response.data);
+          this.updatePieChart();
+        } 
+
+      }
+    });
+  }
+
+  loadTop5RecoveredModels(): void {
+    this.dashboardService.getTop5RecoveredModels().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.top5RecoveredModels.set(response.data);
+        }
+      }
+    });
+  }
+
+  loadCurrentOrder() : void{
+    this.dashboardService.getCurrentTransactions().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.recentOrders.set(response.data);
+        }
+      },
+        error: (err) => {
+          console.error('Error loading transactions:', err);
+        }
+    });
+  }
+
   public lineChartData: ChartConfiguration<'line'>['data'] = {
       labels: [],
       datasets: [{
         data: [],
-        label: '',
-        fill: false,
-        tension: 0.5,
-        borderColor: '#E8B3E8',
-        backgroundColor: 'rgba(232, 179, 232, 0.3)',
-        pointBackgroundColor: '#333',
-        pointBorderColor: '#fff',
-        pointHoverBackgroundColor: '#fff',
-        pointHoverBorderColor: '#333'
       }]
   };
 
   public lineChartOptions: ChartOptions<'line'> = {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-            y: {
-                beginAtZero: true,
-                max: 120,
-                grid: {
-                    color: '#f5f5f5'
-                }
-            },
-            x: {
-                grid: {
-                    display: false
-                }
-            }
-        },
-        plugins: {
-            legend: {
-                display: false
-            }
-        }
-    };
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
+      }
+    }
+  };
 
   public lineChartType: ChartType = 'line';
-
-
 
   // Bar chart Data
   barChartData: ChartConfiguration<'bar'>['data'] = {
@@ -234,27 +288,8 @@ export class Dashboard {
     maintainAspectRatio: false,
     plugins: {
       legend: { display: false }
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        max: 800,
-        ticks: {
-          stepSize: 200,
-          callback: function(value) {
-            return value;
-          }
-        },
-        grid: {
-          color: '#e5e7eb'
-        }
-      },
-      x: {
-        grid: {
-          display: false
-        }
-      }
     }
+    
   };
 
   // Pie chart Data
@@ -263,12 +298,7 @@ export class Dashboard {
     datasets: [
       {
         data: [],
-        backgroundColor: [
-          '#93C5FD', 
-          '#4ECDC4', 
-          '#FFD93D', 
-          '#FF6B6B'  
-        ],
+        backgroundColor: [],
         borderWidth: 0,
         hoverOffset: 10
       }
@@ -341,12 +371,55 @@ export class Dashboard {
   }
 
   updateLineChart() : void {
-    const timeData = this.dashboardData[this.activeTimeRange as keyof DashboardData] as TimeSeriesData[];
+    const timeData = this.timeSeriesData();
     const dataKey: keyof TimeSeriesData = this.activeGraphTab === 'appliance' 
       ? 'applianceRecovered' 
       : 'recoveryValue';
     const label = this.activeGraphTab === 'appliance' ? 'Appliance Recovered' : 'Recovery Value';
-     
+    
+    if (this.activeGraphTab === 'appliance') {
+      this.lineChartOptions = {
+        ...this.lineChartOptions,
+        scales: {
+          ...this.lineChartOptions.scales,
+          y: {
+            beginAtZero: true,
+            ticks: {
+              stepSize: 1,
+              callback: function(value) {
+                if (Number.isInteger(value)) {
+                  return value;
+                }
+                return null;
+              }
+            },
+            grid: {
+              color: '#f5f5f5'
+            }
+          }
+        }
+      };
+    } else {
+      // Recovery Value - use automatic scaling with currency format
+      this.lineChartOptions = {
+        ...this.lineChartOptions,
+        scales: {
+          ...this.lineChartOptions.scales,
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return 'RM ' + value.toLocaleString();
+              }
+            },
+            grid: {
+              color: '#f5f5f5'
+            }
+          }
+        }
+      };
+    }
+
      this.lineChartData = {
       labels: timeData.map(d => d.period),
       datasets: [{
@@ -365,14 +438,45 @@ export class Dashboard {
     
   }
 
-   updateBarChart(): void {
+  updateBarChart(): void {
 
-    const barData = this.dashboardData[this.activeBarTab as keyof DashboardData] as ApplianceData[];
+    const barData = this.activeBarTab === 'category' ? this.categoryData() : this.brandData();
     const color = this.barChartColors[this.activeBarTab as 'category' | 'brand'];
+
+    const labels = this.activeBarTab === 'category' 
+      ? this.categoryData().map(c => c.categoryName)
+      : this.brandData().map(b => b.brandName);
+    
+    const data = this.activeBarTab === 'category'
+      ? this.categoryData().map(c => Number(c.applianceRecovered))
+      : this.brandData().map(b => Number(b.applianceRecovered));
+
+    this.barChartOptions ={
+      ...this.barChartOptions,
+      scales: {
+        ...this.barChartOptions.scales,
+         y: {
+            beginAtZero: true,
+            ticks: {
+            stepSize: 1,
+            callback: function(value) {
+              if (Number.isInteger(value)) {
+                return value;
+              }
+              return null;
+            }
+            },
+            grid: {
+              color: '#f5f5f5'
+            }
+          }
+      }
+
+    };
     this.barChartData = {
-      labels: barData.map(c => c.name),
+      labels: labels,
       datasets: [{
-        data: barData.map(c => c.recovered),
+        data: data,
         backgroundColor: color,
         borderRadius: 8,
         barThickness: 40
@@ -381,11 +485,19 @@ export class Dashboard {
   }
 
   updatePieChart(): void {
+    const conditionColors: { [key: string]: string } = {
+      'Excellent': '#93C5FD',  // Blue
+      'Good': '#4ECDC4',       // Teal
+      'Fair': '#FFD93D',       // Yellow
+      'Poor': '#FF6B6B'        // Red
+    };
+    const conditions = this.conditionData();
+    const colors = conditions.map(c => conditionColors[c.condition] || '#CCCCCC');
     this.pieChartData = {
-      labels: this.dashboardData.conditions.map(c => c.condition),
+      labels: conditions.map(c => c.condition),
       datasets: [{
-        data: this.dashboardData.conditions.map(c => c.percentage),
-        backgroundColor: this.dashboardData.conditions.map(c => c.color),
+        data: conditions.map(c => c.percentage),
+        backgroundColor: colors, 
         borderWidth: 0,
         hoverOffset: 10
       }]
@@ -405,12 +517,14 @@ export class Dashboard {
 
   switchTimeRange(range: 'weekly' | 'monthly' | 'yearly'): void {
     this.activeTimeRange = range;
-    this.updateLineChart();
+    this.loadTimeSeriesData();
   }
 
-  formatCurrency(amount: number, currency: string = 'MYR'): string {
-    return `${currency === 'MYR' ? 'RM' : '$'} ${amount.toFixed(2)}`;
-  }
+  formatCurrency(amount: number | string, currency: string = 'MYR'): string {
+  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+  if (isNaN(numAmount)) return `${currency === 'MYR' ? 'RM' : '$'} 0.00`;
+  return `${currency === 'MYR' ? 'RM' : '$'} ${numAmount.toFixed(2)}`;
+}
 
   formatDate(dateString: string | Date): string {
     const date = new Date(dateString);

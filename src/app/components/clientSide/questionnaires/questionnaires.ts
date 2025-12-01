@@ -826,14 +826,11 @@ export class QuestionnairesComponent implements OnInit{
             this.valuationScore = res.scoreLabel.totalScore;
             this.valuationLabel = res.scoreLabel.classification;
             this.calculatedScores = res.scoreLabel;
-             this.valuationScore = res.scoreLabel.totalScore;
              this.functionalityScore = res.scoreLabel.functionalityScore;
              this.appearanceScore = res.scoreLabel.appearanceScore;
              this.componentScore = res.scoreLabel.componentScore;
 
              console.log('Score:', res.scoreLabel.appearanceScore, res.scoreLabel.functionalityScore, res.scoreLabel.componentScore, res.scoreLabel.totalScore);
-             this.valuationLabel = res.scoreLabel.classification;
-             this.calculatedScores = res.scoreLabel;
           } else {
              // Fallback if data is missing
              this.valuationScore = 0;
@@ -991,7 +988,9 @@ export class QuestionnairesComponent implements OnInit{
       pickupDate: this.pickupDate,
       pickupTime: this.pickupTime,
       valuationWorth: this.valuationWorth,
+      valuationScore: this.valuationScore,
       highestBuyerId: this.highestBuyerId,
+      
 
       // Send all answers as structured JSON
       questionAnswers: JSON.stringify(questionAnswers)

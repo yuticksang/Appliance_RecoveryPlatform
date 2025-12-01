@@ -5,22 +5,22 @@
 <div class="stats-grid">
             <div class="stat-card bg-blue">
                 <div class="stat-label">Total Appliances Recovered</div>
-                <div class="stat-value">2,318</div>
+                <div class="stat-value">{{ totalAppliancesRecovered() }}</div>
                 <div class="stat-change">+6.08% <i class="bi bi-arrow-up-right"></i></div>
             </div>
             <div class="stat-card bg-pink">
                 <div class="stat-label">Total Payouts</div>
-                <div class="stat-value">77,265</div>
+                <div class="stat-value">RM {{ totalPayout() }}</div>
                 <div class="stat-change">+11.01% <i class="bi bi-arrow-up-right"></i></div>
             </div>
             <div class="stat-card bg-green">
                 <div class="stat-label">Active Recovery Transactions</div>
-                <div class="stat-value">156</div>
+                <div class="stat-value">{{ totalActiveTransactions() }}</div>
                 <div class="stat-change">+15.03% <i class="bi bi-arrow-up-right"></i></div>
             </div>
             <div class="stat-card bg-purple">
                 <div class="stat-label">Active Users</div>
-                <div class="stat-value">1061</div>
+                <div class="stat-value">{{ totalActiveUsers() }}</div>
                 <div class="stat-change">+15.03% <i class="bi bi-arrow-up-right"></i></div>
             </div>
 </div>
@@ -85,27 +85,12 @@
                 <div class="subheader-label">Appliance</div>
                 <div class="subheader-label">Total Recovered</div>
             </div>
-            
-            <div class="top-item">
-                <div class="item-name">LG Front Load Washer with 6 motion Inverter Direct Drive</div>
-                <div class="item-count">325</div>
-            </div>
-            <div class="top-item">
-                <div class="item-name">Washing Machines</div>
-                <div class="item-count">286</div>
-            </div>
-            <div class="top-item">
-                <div class="item-name">Air Conditioners</div>
-                <div class="item-count">211</div>
-            </div>
-            <div class="top-item">
-                <div class="item-name">Microwaves</div>
-                <div class="item-count">191</div>
-            </div>
-            <div class="top-item">
-                <div class="item-name">Freezers</div>
-                <div class="item-count">165</div>
-            </div>
+            @for (appliances of top5RecoveredModels(); track appliances.modelName) {
+                <div class="top-item">
+                    <div class="item-name">{{ appliances.modelName }}</div>
+                    <div class="item-count">{{ appliances.applianceRecovered }}</div>
+                </div>
+            }
         </div>
     </div>
 </div>
@@ -198,21 +183,21 @@
                     <tr>
                         <th>Transaction ID</th>
                         <th>Appliance</th>
-                        <th>Category</th>
+                        <th>Buyer ID</th>
                         <th>Offer Price</th>
                         <th>Date</th>
                         <th>Status</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @for (order of dashboardData.recentOrders; track order.id){
+                    @for (order of recentOrders(); track order.transactionID){
                         <tr>
-                            <td>#{{order.id}}</td>
-                            <td>{{order.appliance}}</td>
-                            <td>{{order.category}}</td>
-                            <td>{{formatCurrency(order.offerPrice)}}</td>
-                            <td>{{formatDate(order.date)}}</td>
-                            <td><span class="status" [ngClass]="getStatusClass(order.status)">{{order.status}}</span></td>
+                            <td>#{{order.transactionID}}</td>
+                            <td>{{order.modelName}}</td>
+                            <td>{{order.buyerID}}</td>
+                            <td>{{formatCurrency(order.initialOfferPrice)}}</td>
+                            <td>{{formatDate(order.createdAt)}}</td>
+                            <td><span class="status" [ngClass]="getStatusClass(order.transactionStatus)">{{order.transactionStatus}}</span></td>
                         </tr>
                    }
                 </tbody>
