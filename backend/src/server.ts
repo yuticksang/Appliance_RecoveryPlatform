@@ -99,14 +99,14 @@ app.use(cors({
     'Authorization',
     'Access-Control-Allow-Headers'
   ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 }));
 
 // Handle preflight requests globally
 app.options(/^\/.*$/, cors({
   origin: ['http://localhost:4200'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 }));
 
 app.use(morgan('dev'));

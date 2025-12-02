@@ -63,6 +63,7 @@ export class QuestionnairesComponent implements OnInit{
   // Step 1 - Appliance Type
   applianceTypeId: string = '';
   applianceTypes: Category[] = [];
+  loadingCategories: boolean = false;
 
   // Step 2 - Appliance Details
   selectedBrandId: string | number = '';
@@ -71,6 +72,8 @@ export class QuestionnairesComponent implements OnInit{
   selectedModel: string = '';
   brands: SimpleItem[] = [];
   models: SimpleItem[] = [];
+  loadingBrands: boolean = false;
+  loadingModels: boolean = false;
   
 
   // Step 3 - With Condition Questions
@@ -325,7 +328,7 @@ export class QuestionnairesComponent implements OnInit{
     if (value === 3) {
       this.loadConditionGroups();
     }
-    if (value === 5 && this.addresses().length === 0) {
+    if (value === 5) {
       this.loadAddresses();
     }
   }
@@ -333,14 +336,25 @@ export class QuestionnairesComponent implements OnInit{
 
   // Step 1
   private loadCategories(): void {
+    this.loadingCategories = true;
     this.questionnaireService.getCategories().subscribe({
       next: (cats) => {
         if (Array.isArray(cats) && cats.length) {
           this.applianceTypes = cats;
         }
+        this.loadingCategories = false;
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Failed to load categories', err);
+        this.loadingCategories = false;
+        this.cdr.markForCheck();
+        if (err.status === 401) {
+          this.alertService.error('Your session has expired. Please login again.');
+          setTimeout(() => this.auth.logout(), 2000);
+        } else {
+          this.alertService.error('Failed to load categories');
+        }
       }
     });
   }
@@ -351,14 +365,22 @@ export class QuestionnairesComponent implements OnInit{
     this.selectedModelId = '';
     this.brands = [];
     this.models = [];
-    if (!this.applianceTypeId) return;
+    this.loadingBrands = true;
+    if (!this.applianceTypeId) {
+      this.loadingBrands = false;
+      return;
+    }
 
     this.questionnaireService.getBrandsByCategory(this.applianceTypeId).subscribe({
       next: (bs) => {
         this.brands = bs;
+        this.loadingBrands = false;
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Failed to load brands', err);
+        this.loadingBrands = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -367,16 +389,24 @@ export class QuestionnairesComponent implements OnInit{
     // reset selected model when brand changes
     this.selectedModelId = '';
     this.models = [];
+    this.loadingModels = true;
     // set selectedBrand name from loaded brands (optional, used for display/submission)
     this.selectedBrand = this.brands.find(b => String(b.id) === String(this.selectedBrandId))?.name ?? '';
-    if (!this.selectedBrandId) return;
+    if (!this.selectedBrandId) {
+      this.loadingModels = false;
+      return;
+    }
 
     this.questionnaireService.getModelsByCategoryBrand(this.applianceTypeId, this.selectedBrandId).subscribe({
       next: (ms) => {
         this.models = ms;
+        this.loadingModels = false;
+        this.cdr.markForCheck();
       },
       error: (err) => {
         console.error('Failed to load models', err);
+        this.loadingModels = false;
+        this.cdr.markForCheck();
       }
     });
   }
@@ -587,7 +617,12 @@ export class QuestionnairesComponent implements OnInit{
       },
       error: (err) => {
         console.error('Failed to load addresses:', err);
-        this.alertService.error('Failed to load addresses');
+        if (err.status === 401) {
+          this.alertService.error('Your session has expired. Please login again.');
+          setTimeout(() => this.auth.logout(), 2000);
+        } else {
+          this.alertService.error('Failed to load addresses');
+        }
       }
     });
   }
