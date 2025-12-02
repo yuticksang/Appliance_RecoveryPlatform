@@ -12,7 +12,7 @@ import { verifyToken } from '../middleware/authMiddleware';
 import multer from 'multer';
 
 // ---------- Multer Config (Same as in controller) ----------
-
+console.log("🛣️ Routes file is loading...");
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -32,6 +32,7 @@ const upload = multer({
 const router = Router();
 
 // === OTHER ROUTES ===
+router.post('/calculate-valuation', verifyToken, calculateValuation);
 router.get('/categories', verifyToken, getCategories);
 router.get('/brands/:categoryId', verifyToken, getBrandsByCategory);
 router.get('/models/:categoryId/:brandId', verifyToken, getModelsByBrand);
@@ -45,7 +46,7 @@ router.get('/condition-groups/:categoryId', verifyToken, getConditionGroups);
 // router.patch('/addresses/:userId/:addressId/default', verifyToken, setDefaultAddress);
 
 // Valuation Route
-router.post('/calculate-valuation', verifyToken, calculateValuation);
+
 
 // === SUBMIT ROUTE: Multer + Auth + Controller ===
 router.post(

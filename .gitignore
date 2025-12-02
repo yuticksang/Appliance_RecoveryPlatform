@@ -10,6 +10,7 @@
 # Node
 /node_modules
 **/node_modules/
+node_modules/
 npm-debug.log
 yarn-error.log
 /package-lock.json
@@ -53,6 +54,8 @@ __screenshots__/
 
 # Environment files
 /.env
+**/.env
+.env
 
 # System files
 .DS_Store

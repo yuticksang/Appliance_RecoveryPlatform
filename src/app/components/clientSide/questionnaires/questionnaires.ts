@@ -993,6 +993,7 @@ export class QuestionnairesComponent implements OnInit{
       valuationWorth: this.valuationWorth,
       valuationScore: this.valuationScore,
       highestBuyerId: this.highestBuyerId,
+      
 
       // Send all answers as structured JSON
       questionAnswers: JSON.stringify(questionAnswers),

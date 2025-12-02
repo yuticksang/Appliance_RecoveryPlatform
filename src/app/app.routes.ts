@@ -63,6 +63,10 @@ export const routes: Routes = [
         loadComponent: () => import('./components/adminSide/TransactionDetail/admin-transaction-detail').then(m => m.AdminTransactionDetailComponent)
       },
       {
+        path: 'transactions/report/:id',
+        loadComponent: () => import('./components/adminSide/transaction-report/transaction-report').then(m => m.TransactionReportComponent)
+      },
+      {
         path: 'appliances',
         children: [
           {
