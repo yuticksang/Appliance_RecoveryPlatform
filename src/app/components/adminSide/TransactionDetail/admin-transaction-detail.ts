@@ -567,11 +567,12 @@ export class AdminTransactionDetailComponent implements OnInit {
       modelName: selectedAppliance?.modelName || '',
       note: this.note,
       adminConditions: adminConditions,
-      finalScore: finalScore,      // ✅ Add score
-      finalPrice: finalPrice        // ✅ Add price
+      finalScore: finalScore,          // ✅ Add score
+      finalPrice: finalPrice,           // ✅ Add price
+      finalApplianceID: selectedAppliance?.applianceID || null  // ✅ Add finalApplianceID
     };
 
-    console.log('📤 Sending update data with score:', updateData);
+    console.log('📤 Sending update data with score and finalApplianceID:', updateData);
 
     this.transactionService.updateTransaction(txn.id, updateData).subscribe({
       next: () => {
