@@ -12,6 +12,7 @@ export interface Transaction {
   sellerName: string;
   image: string;
   brand: string;
+  submittedApplianceID?: string; // ADD THIS LINE
   category: string;
   model: string;
   modelName: string;
@@ -35,20 +36,47 @@ export class TransactionService {
   constructor() {}
 
   /**
-   * Get the authentication token (supports both seller and admin tokens)
+   * Get the authentication token (supports seller, admin, and buyer tokens)
    */
   private getAuthToken(): string | null {
     // Check for admin token first if admin is logged in
     const adminUser = localStorage.getItem('admin_user');
     const adminToken = localStorage.getItem('admin_token');
+    
+    // Check for buyer token if buyer is logged in
+    const buyerUser = localStorage.getItem('buyer_user');
+    const buyerToken = localStorage.getItem('buyer_token'); // ✅ ADD THIS
+  
     const sellerToken = localStorage.getItem('token');
+
+    console.log('🔑 Token check:', {
+      adminUser: !!adminUser,
+      adminToken: !!adminToken,
+      buyerUser: !!buyerUser,
+      buyerToken: !!buyerToken,
+      sellerToken: !!sellerToken
+    });
 
     // If admin is logged in, use admin token
     if (adminUser && adminToken) {
+      console.log('🔑 Using admin token');
       return adminToken;
     }
-    // Otherwise use seller/buyer token
-    return sellerToken;
+    
+    // If buyer is logged in, use buyer token
+    if (buyerUser && buyerToken) {
+      console.log('🔑 Using buyer token');
+      return buyerToken;
+    }
+    
+    // Otherwise use seller token
+    if (sellerToken) {
+      console.log('🔑 Using seller token');
+      return sellerToken;
+    }
+
+    console.log('❌ No valid token found');
+    return null;
   }
 
   /**
@@ -306,7 +334,7 @@ export class TransactionService {
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
     const groupIdsParam = groupIds.join(',');
-    return this.http.get<{ [key: string]: any[] }>(`${this.apiUrl}/transactions/condition-options-by-groups?groupIds=${groupIdsParam}`, { headers })
+    return this.http.get<{ [key: string]: any }>(`${this.apiUrl}/transactions/condition-options-by-groups?groupIds=${groupIdsParam}`, { headers })
       .pipe(
         catchError(error => {
           console.error('Error fetching condition options by group IDs:', error);
@@ -368,36 +396,25 @@ export class TransactionService {
    * Get transactions for a specific buyer (transactions they won)
    * @param buyerId - The buyer ID (e.g., 'B001', 'B002')
    */
-  getTransactionsByBuyer(buyerId: string): Observable<Transaction[]> {
-    const token = this.getAuthToken();
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+  getTransactionsByBuyer(buyerId: string): Observable<any[]> {
+    // ✅ Get buyer token from localStorage directly
+    const token = localStorage.getItem('buyer_token');
+    
+    if (!token) {
+      console.log('❌ No buyer token found');
+      throw new Error('No authentication token found');
+    }
 
-    return this.http.get<Transaction[]>(`${this.apiUrl}/transactions/buyer/${buyerId}`, { headers })
-      .pipe(
-        map((transactions: any[]) => {
-          return transactions.map(t => ({
-            id: t.id || t.transactionID,
-            sellerId: t.sellerId || t.sellerID,
-            buyerId: t.buyerId || t.buyerID,
-            sellerName: t.sellerName || 'Unknown',
-            image: t.imageUrl || t.image || 'assets/image/placeholder-appliance.png',
-            brand: t.brand || '',
-            category: t.category || '',
-            model: t.model || '',
-            modelName: t.modelName || t.model_name || '',
-            transactionStatus: t.transactionStatus || t.transaction_status || 'Under Review',
-            itemStatus: t.itemStatus || t.item_status || 'Awaiting Pick Up',
-            submittedDate: new Date(t.submittedDate || t.submissionDate || t.createdAt),
-            estimatedPrice: t.estimatedPrice || t.initialOfferPrice || 0,
-            finalPrice: t.finalPrice || t.finalOfferPrice || 0,
-            note: t.note || '',
-            responseDeadline: t.responseDeadline || t.response_deadline
-          }));
-        }),
-        catchError(error => {
-          console.error('Error fetching buyer transactions:', error);
-          return of([]);
-        })
-      );
+    // ✅ Create headers properly
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
+
+    console.log('🔑 Making authenticated request with token:', token.substring(0, 20) + '...');
+
+    return this.http.get<any[]>(`${this.apiUrl}/transactions/buyer/${buyerId}`, { 
+      headers: headers 
+    });
   }
 }

@@ -32,7 +32,7 @@ interface BuyerTransaction {
   buyerBasePrice: number;
 }
 
-type SortKey = 'id' | 'sellerId' | 'sellerName' | 'submittedDate' | 'finalPrice' | 'buyerBasePrice' | 'category' | 'brand' | 'model';
+type SortKey = 'id' | 'sellerId' | 'sellerName' | 'submittedDate' | 'finalPrice' | 'buyerBasePrice' | 'category' | 'brand' | 'model' | 'modelName';
 type SortDir = 'asc' | 'desc';
 
 @Component({
@@ -47,7 +47,7 @@ export class BuyerTransactionListComponent implements OnInit {
   private alertService = inject(AlertService);
   private auth = inject(AuthService);
   private router = inject(Router);
-  private transactionService = inject(TransactionService); // ✅ ADD THIS
+  private transactionService = inject(TransactionService); 
   private apiUrl = 'http://localhost:3000/api';
 
   // State
@@ -79,11 +79,10 @@ export class BuyerTransactionListComponent implements OnInit {
     this.loading.set(true);
     this.error.set('');
 
-    // ✅ Check buyer_user instead of currentUser
+    // ✅ Get buyer info
     const buyerUserStr = localStorage.getItem('buyer_user');
     
     if (!buyerUserStr) {
-      console.log('❌ No buyer_user found in localStorage');
       this.error.set('Buyer not logged in. Please log in again.');
       this.loading.set(false);
       return;
@@ -92,37 +91,63 @@ export class BuyerTransactionListComponent implements OnInit {
     let buyerUser;
     try {
       buyerUser = JSON.parse(buyerUserStr);
-      console.log('👤 Parsed buyer user:', buyerUser);
     } catch (e) {
-      console.log('❌ Error parsing buyer user JSON:', e);
       this.error.set('Invalid buyer data. Please log in again.');
       this.loading.set(false);
       return;
     }
 
-    const buyerId = buyerUser?.buyerId;
-    console.log('🆔 Extracted buyerId:', buyerId);
+    const buyerId = buyerUser?.buyerId || buyerUser?.id;
     
     if (!buyerId) {
-      console.log('❌ No buyerId found. Buyer user object:', buyerUser);
-      this.error.set('Buyer ID not found. Please log in as a buyer.');
+      this.error.set('Buyer ID not found.');
       this.loading.set(false);
       return;
     }
 
-    console.log('🔍 Fetching transactions for buyer:', buyerId);
+    // ✅ GET TOKEN FROM localStorage DIRECTLY
+    const token = localStorage.getItem('buyer_token');
+    console.log('🔑 Found token from localStorage:', token ? 'Token exists (length: ' + token.length + ')' : 'No token found');
+    
+    if (!token) {
+      console.log('❌ No authentication token found in localStorage');
+      this.error.set('Authentication token missing. Please log in again.');
+      this.loading.set(false);
+      return;
+    }
 
-    this.transactionService.getTransactionsByBuyer(buyerId).subscribe({
+    console.log('🔍 Making API call for buyer:', buyerId);
+
+    // ✅ FIXED: Use HttpHeaders constructor properly
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
+
+    console.log('📤 Request headers created');
+    console.log('📤 Authorization header:', `Bearer ${token.substring(0, 20)}...`);
+
+    // ✅ Make HTTP call with proper headers
+    this.http.get<any[]>(`${this.apiUrl}/transactions/buyer/${buyerId}`, { 
+      headers: headers 
+    }).subscribe({
       next: (data) => {
-        console.log('✅ Loaded buyer transactions:', data);
-        const buyerTransactions: BuyerTransaction[] = data.map(t => ({
+        console.log('✅ API call successful. Data:', data);
+        
+        const completedTransactions = data.filter(t => {
+          const isCompleted = t.transactionStatus === 'Completed';
+          const hasFinalPrice = t.finalPrice != null && t.finalPrice > 0;
+          return isCompleted && hasFinalPrice;
+        });
+
+        const buyerTransactions: BuyerTransaction[] = completedTransactions.map(t => ({
           id: t.id,
           sellerId: t.sellerId,
           sellerName: t.sellerName,
-          submittedApplianceID: '',
+          submittedApplianceID: (t as any).submittedApplianceID || t.id || '',
           submittedDate: new Date(t.submittedDate),
           estimatedPrice: Number(t.estimatedPrice) || 0,
-          finalPrice: Number(t.finalPrice) || 0, // ✅ Always return a number (0 if null/undefined)
+          finalPrice: Number(t.finalPrice),
           initialNote: t.note || '',
           finalNote: t.note || '',
           transactionStatus: t.transactionStatus,
@@ -136,14 +161,28 @@ export class BuyerTransactionListComponent implements OnInit {
           model: t.model,
           modelName: t.modelName || '',
           imageUrl: t.image,
-          buyerBasePrice: t.finalPrice ? Number(t.finalPrice) : Number(t.estimatedPrice) || 0
+          buyerBasePrice: Number(t.finalPrice)
         }));
+
+        console.log(`✅ Displaying ${buyerTransactions.length} completed transactions`);
         this.transactions.set(buyerTransactions);
         this.loading.set(false);
       },
       error: (err) => {
-        console.error('❌ Error loading buyer transactions:', err);
-        this.error.set('Failed to load transactions. Please try again.');
+        console.error('❌ API Error details:', err);
+        console.error('❌ Error status:', err.status);
+        console.error('❌ Error message:', err.message);
+        
+        if (err.status === 401) {
+          this.error.set('Authentication failed. Please log in again.');
+          localStorage.removeItem('buyer_user');
+          localStorage.removeItem('buyer_token');
+        } else if (err.status === 403) {
+          this.error.set('Access denied. You can only view your own transactions.');
+        } else {
+          this.error.set('Failed to load transactions. Please try again.');
+        }
+        
         this.loading.set(false);
       }
     });
@@ -210,6 +249,10 @@ export class BuyerTransactionListComponent implements OnInit {
     });
 
     return filtered;
+  });
+
+  filteredTransactions = computed(() => {
+    return this.filtered();
   });
 
   totalPages = computed(() =>

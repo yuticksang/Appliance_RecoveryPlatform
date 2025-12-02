@@ -1512,77 +1512,100 @@ export const deleteTransaction = async (req: Request, res: Response) => {
 
 /**
  * Get all transactions for a specific buyer
- * Shows transactions where this buyer won (has the highest offer)
+ * Shows only completed transactions with final prices
  */
 export const getTransactionsByBuyer = async (req: Request, res: Response) => {
   try {
     const { buyerId } = req.params;
     const authUser = (req as any).user;
 
-    // ✅ Security check: Buyers can only view their own transactions
+    console.log('🔍 Fetching completed transactions for buyer:', buyerId);
+    console.log('🔑 Auth user:', authUser);
+
+    // ✅ Security check
     if (authUser.userType === 'buyer') {
-      const userCheckResult = await pool.query(
-        `SELECT buyer_id FROM users WHERE "userID" = $1 AND user_type = 'buyer'`,
-        [authUser.userId]
-      );
-
-      if (userCheckResult.rows.length === 0) {
-        return res.status(403).json({ message: 'Unauthorized access' });
-      }
-
-      const userBuyerId = userCheckResult.rows[0].buyer_id;
-
-      if (userBuyerId !== buyerId) {
+      if (authUser.buyerId !== buyerId && authUser.buyer_id !== buyerId) {
         return res.status(403).json({ message: 'You can only view your own transactions' });
       }
+    } else if (authUser.userType !== 'admin') {
+      return res.status(403).json({ message: 'Unauthorized access' });
     }
 
-    // ✅ Fetch transactions where this buyer won
-    const result = await pool.query(
-      `SELECT
-        t."transactionID" as id,
-        t."sellerID" as "sellerId",
-        t."buyerID" as "buyerId",
-        COALESCE(u.name, 'Unknown') as "sellerName",
-        sa."submittedApplianceID",
-        sa."submissionDate" as "submittedDate",
-        COALESCE(sa."initialOfferPrice", 0) as "estimatedPrice",
-        sa."finalOfferPrice" as "finalPrice",
-        sa."initialScore" as "initialScore",
-        sa."finalScore" as "finalScore",
-        t."transactionStatus",
-        t."createdAt",
-        t."updatedAt",
-        t."paymentDueDate",
-        t."rejectionReason",
-        t."responseDeadline",
-        COALESCE(i."itemStatus", 'Awaiting Pick Up') as "itemStatus",
-        i."updatedAt" as "itemStatusUpdatedAt",
-        COALESCE(b."brandName", 'Unknown') as brand,
-        COALESCE(c."categoryName", 'Unknown') as category,
-        COALESCE(a."modelCode", 'N/A') as model,
-        COALESCE(a."modelName", 'N/A') as "modelName",
-        COALESCE(a.image_url, '') as "imageUrl"
-      FROM "Transaction" t
-      INNER JOIN "SubmittedAppliance" sa ON t."submittedApplianceID" = sa."submittedApplianceID"
-      LEFT JOIN users u ON t."sellerID" = u.seller_id
-      LEFT JOIN "ItemStatus" i ON t."transactionID" = i."transactionID"
-      LEFT JOIN "Appliance" a ON sa."applianceID" = a."applianceID"
-      LEFT JOIN "Brand" b ON a."brandID" = b."brandID"
-      LEFT JOIN "Category" c ON a."categoryID" = c."categoryID"
-      WHERE t."buyerID" = $1
-      AND t."transactionStatus" IN ('Awaiting Confirmation', 'Confirmed', 'Completed')
-      ORDER BY sa."submissionDate" DESC`,
-      [buyerId]
-    );
+    // ✅ CORRECTED QUERY - Use Transaction table with proper JOINs
+const result = await pool.query(`
+  SELECT
+    t."transactionID" AS id,
+    t."sellerID" AS "sellerId",
+    t."buyerID" AS "buyerId",
 
-    console.log(`📊 Found ${result.rows.length} transactions for buyer ${buyerId}`);
+    -- Seller user info via users.seller_id
+    u."name" AS "sellerName",
+    u."email" AS "sellerEmail",
+    u."phone" AS "sellerPhone",
+
+    sa."submittedApplianceID",
+    sa."submissionDate" AS "submittedDate",
+    COALESCE(sa."initialOfferPrice", 0) AS "estimatedPrice",
+    sa."finalOfferPrice" AS "finalPrice",
+    sa."finalScore" AS note,
+
+    t."transactionStatus",
+    i."itemStatus",
+    i."updatedAt" AS "itemStatusUpdatedAt",
+
+    b."brandName" AS brand,
+    c."categoryName" AS category,
+    a."modelCode" AS model,
+    a."modelName" AS "modelName",
+    a."image_url" AS image
+
+  FROM "Transaction" t
+  INNER JOIN "SubmittedAppliance" sa 
+      ON t."submittedApplianceID" = sa."submittedApplianceID"
+
+  LEFT JOIN "users" u 
+      ON u."seller_id" = t."sellerID"
+
+  LEFT JOIN "Appliance" a 
+      ON sa."applianceID" = a."applianceID"
+
+  LEFT JOIN "Brand" b 
+      ON a."brandID" = b."brandID"
+
+  LEFT JOIN "Category" c 
+      ON a."categoryID" = c."categoryID"
+
+  LEFT JOIN "ItemStatus" i
+      ON i."transactionID" = t."transactionID"
+
+  WHERE t."buyerID" = $1
+  ORDER BY sa."submissionDate" DESC;
+`, [buyerId]);
+
+
+
+    console.log(`✅ Found ${result.rows.length} completed transactions for buyer ${buyerId}`);
+
+    if (result.rows.length === 0) {
+      console.log('📝 No completed transactions found - this is normal if buyer has no completed purchases');
+    }
+
     res.json(result.rows);
-  } catch (error) {
-    console.error('❌ Error fetching transactions by buyer:', error);
-    res.status(500).json({ 
-      message: 'Failed to fetch transactions', 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+
+  } catch (error: any) {
+    console.error('❌ Database error in getTransactionsByBuyer:', error);
+    console.error('❌ Error details:', {
+      message: error?.message || 'Unknown error',
+      stack: error?.stack,
+      code: error?.code,
+      detail: error?.detail
+      
+    });
+
+    res.status(500).json({
+      message: 'Failed to fetch transactions',
+      error: error?.message || 'Database error',
+      details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
     });
   }
 };

@@ -88,7 +88,25 @@ console.log('Cron job scheduled: Auto-cancellation runs daily at midnight');
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
-app.use(cors());
+
+app.use(cors({
+  origin: ['http://localhost:4200'], // your Angular dev URL
+  credentials: true,
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'Access-Control-Allow-Headers'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+}));
+
+// Handle preflight requests globally
+app.options(/^\/.*$/, cors({
+  origin: ['http://localhost:4200'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+}));
+
 app.use(morgan('dev'));
 // Increase payload limit for photo uploads (50MB)
 app.use(express.json({ limit: '50mb' }));
