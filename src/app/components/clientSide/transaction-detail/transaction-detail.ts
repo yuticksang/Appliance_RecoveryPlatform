@@ -246,6 +246,41 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     return this.transaction?.transactionStatus === 'Pending Payment';
   }
 
+  // Check if seller can cancel transaction
+  // Sellers can cancel during certain statuses only
+  canCancelTransaction(): boolean {
+    if (!this.transaction) {
+      console.log('🚫 canCancelTransaction: No transaction found');
+      return false;
+    }
+
+    // Statuses where cancellation is allowed
+    const allowedStatuses = [
+      'Under Review',      // Initial submission - can cancel
+      'Pending Payment'   // Accepted offer - can cancel before payment
+    ];
+
+    // Statuses where cancellation is NOT allowed
+    const disallowedStatuses = [
+      'Awaiting Confirmation',  // Already reviewed by admin - must accept or reject instead
+      'Cancelled',              // Already cancelled
+      'Completed',              // Already completed
+      'Returned',                // Already returned
+      'Rejected'          
+    ];
+
+    const canCancel = allowedStatuses.includes(this.transaction.transactionStatus);
+
+    console.log('🔍 canCancelTransaction:', {
+      status: this.transaction.transactionStatus,
+      canCancel: canCancel,
+      allowedStatuses: allowedStatuses,
+      disallowedStatuses: disallowedStatuses
+    });
+
+    return canCancel;
+  }
+
   // Check if item is in Awaiting Pick Up status (editable)
   get isAwaitingPickUp(): boolean {
     return this.transaction?.itemStatus === 'Awaiting Pick Up';
@@ -570,12 +605,13 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
       if (this.hasBeenReviewed) {
         this.afterReview = {
           estimatedPrice: data.finalPrice || data.estimatedPrice || 0,
-          brand: data.brand,
-          model: data.model,
-          category: data.category,
-          modelName: data.modelName,
-          score: data.finalScore || data.initialScore || 0, // TODO: Will be fetched from other team's API
-          note: data.note || '' // Note
+          // Use final appliance details (admin's correction) if available, otherwise use original
+          brand: data.finalBrand || data.brand,
+          model: data.finalModel || data.model,
+          category: data.finalCategory || data.category,
+          modelName: data.finalModelName || data.modelName,
+          score: data.finalScore || data.initialScore || 0,
+          note: data.note || ''
         };
       }
     } else {
@@ -764,11 +800,23 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     this.showCancelConfirmModal = false;
     this.loading = true;
 
-    // Call API to update transaction status to "Cancelled" and item status to "Awaiting Return"
+    // Determine item status based on current transaction status
+    // If "Under Review", keep "Awaiting Pick Up" since item hasn't been picked up yet
+    // Otherwise, set to "Awaiting Return"
+    const itemStatus = this.transaction.transactionStatus === 'Under Review'
+      ? 'Awaiting Pick Up'
+      : 'Awaiting Return';
+
+    console.log('🔄 Cancelling transaction:', {
+      currentStatus: this.transaction.transactionStatus,
+      newItemStatus: itemStatus
+    });
+
+    // Call API to update transaction status to "Cancelled"
     this.transactionService.updateTransactionStatus(
       this.transactionId,
       'Cancelled',
-      'Awaiting Return'
+      itemStatus
     ).subscribe({
       next: (updatedTransaction) => {
         console.log('✅ Transaction cancelled successfully:', updatedTransaction);
