@@ -11,6 +11,8 @@ import profileRoutes from './routes/profile';
 import buyerRoutes from './routes/buyer';
 import scoringConfigRoutes from './routes/scoringConfig';
 import transactionRoutes from './routes/transaction';
+import dashboardRoutes from './routes/dashboard';
+import transactionReportRoutes from './routes/transactionReport';
 import cronRoutes from './routes/cron';
 import dbPool from './config/database';
 import questionnaireRouter from './routes/questionnaire';
@@ -45,7 +47,25 @@ console.log('✅ Cron job scheduled: Auto-cancellation runs every 2 minutes');
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
-app.use(cors());
+
+app.use(cors({
+  origin: ['http://localhost:4200'], // your Angular dev URL
+  credentials: true,
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'Access-Control-Allow-Headers'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+}));
+
+// Handle preflight requests globally
+app.options(/^\/.*$/, cors({
+  origin: ['http://localhost:4200'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+}));
+
 app.use(morgan('dev'));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -64,6 +84,8 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/cron', cronRoutes);
 app.use('/api/notifications', notificationRoutes);
 console.log('📢 Notification routes registered successfully');
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/transactionReport', transactionReportRoutes);
 
 // Health route
 app.get('/health', (req, res) => res.json({ ok: true, message: 'Server is running' }));

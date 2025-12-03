@@ -423,3 +423,33 @@ $blue-2: #1a73e8;
   margin-bottom: 10px;
   margin-right: 50px;
 }
+
+// ...existing code...
+
+@media print {
+    // Hide layout components
+    app-sidebar,
+    app-navbar,
+    .sidebar,
+    .navbar,
+    .sidebar-container,
+    .nav-container {
+        display: none !important;
+        width: 0 !important;
+    }
+
+    // Make main content full width
+    .main-content,
+    .content-wrapper,
+    .page-content {
+        margin-left: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+    }
+
+    // Ensure colors print
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}

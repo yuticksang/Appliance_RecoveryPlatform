@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import pool from '../config/database'
 import {
   getTransactionsBySeller,
   getAllTransactions,
@@ -36,11 +37,56 @@ const upload = multer({
 
 const router = Router();
 
+// ⚠️ TEMPORARY DEBUG ROUTE - Add before router.use(verifyToken)
+router.get('/debug/buyer/:buyerId', async (req, res) => {
+  try {
+    const { buyerId } = req.params;
+    console.log('🧪 DEBUG: Checking data for buyer:', buyerId);
+
+    // Check Transaction table for this buyer
+    const transactionCheck = await pool.query(
+      `SELECT 
+        COUNT(*) as total_transactions,
+        COUNT(CASE WHEN "transactionStatus" = 'Completed' THEN 1 END) as completed_transactions,
+        STRING_AGG(DISTINCT "transactionStatus", ', ') as all_statuses
+       FROM "Transaction" WHERE "buyerID" = $1`,
+      [buyerId]
+    );
+
+    // Check SubmittedAppliance table linked to these transactions
+    const applianceCheck = await pool.query(
+      `SELECT 
+        COUNT(*) as total_appliances,
+        COUNT(CASE WHEN sa."finalOfferPrice" IS NOT NULL THEN 1 END) as with_final_price,
+        AVG(sa."finalOfferPrice") as avg_final_price
+       FROM "Transaction" t
+       INNER JOIN "SubmittedAppliance" sa ON t."submittedApplianceID" = sa."submittedApplianceID"
+       WHERE t."buyerID" = $1`,
+      [buyerId]
+    );
+
+    res.json({
+      buyerId,
+      transactions: transactionCheck.rows[0],
+      appliances: applianceCheck.rows[0]
+    });
+
+  } catch (error: any) {
+    console.error('🧪 DEBUG Error:', error);
+    res.status(500).json({
+      error: error?.message || 'Unknown error',
+      code: error?.code,
+      detail: error?.detail,
+      stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+    });
+  }
+});
+
 // All routes require authentication
 router.use(verifyToken);
 
-// ✅ MOVE THIS UP - Before /:id route
-router.get('/buyer/:buyerId', verifyToken, getTransactionsByBuyer);
+// ✅ SPECIFIC routes FIRST - buyer route
+router.get('/buyer/:buyerId', getTransactionsByBuyer);
 
 // Get transactions for a specific seller
 router.get('/seller/:sellerId', getTransactionsBySeller);
@@ -49,7 +95,7 @@ router.get('/seller/:sellerId', getTransactionsBySeller);
 router.get('/', getAllTransactions);
 
 // Get condition options by group IDs
-router.get('/condition-options-by-groups', verifyToken, getConditionOptionsByGroupIds);
+router.get('/condition-options-by-groups', getConditionOptionsByGroupIds);
 
 // ✅ Generic routes go AFTER specific ones
 // Get single transaction by ID
@@ -60,14 +106,14 @@ router.post('/', createTransaction);
 
 // Update transaction status
 router.put('/:id/status', updateTransactionStatus);
-  
+
 // Upload admin photos to Supabase Storage
 router.post('/:id/photos', upload.array('photos', 10), uploadAdminPhotos);
 
 // Update customer information (seller edit when Awaiting Pick Up)
 router.put('/:id/customer-info', updateCustomerInfo);
 
-// Update submission details (seller edit when Awaiting Pick Up)
+// Update submission details (seller edit when Awaiting Pick Up)  
 router.put('/:id/submission', updateSubmissionDetails);
 
 // Update transaction (full edit - admin)

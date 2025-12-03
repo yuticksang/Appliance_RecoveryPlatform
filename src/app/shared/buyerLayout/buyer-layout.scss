@@ -1,4 +1,4 @@
-/* Buyer Layout - Combined Sidebar + Main Content */
+/* Admin/Buyer Layout - Combined Sidebar + Main Content */
 $Space: 'Space Grotesk', sans-serif;
 $blue-2: #1a73e8;
 
@@ -11,13 +11,15 @@ $blue-2: #1a73e8;
   height: 100vh;
   width: 250px;
   // background: #f8f7f7;
-  padding: 8px 10px;
+  padding: 10px 20px;
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow-y: auto; 
   overflow-x: hidden;
   transition:  width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  
 
   &.collapsed {
     width: 80px;
@@ -29,6 +31,7 @@ $blue-2: #1a73e8;
 
     .sidebar-btn {
       margin-right: 15px;
+      
     }
 
     .nav-text {
@@ -41,6 +44,10 @@ $blue-2: #1a73e8;
      .fa-chevron-down {
       display: none;
     }
+
+    
+
+    
   }
   &::-webkit-scrollbar {
     display: none;
@@ -52,12 +59,12 @@ $blue-2: #1a73e8;
 .sidebar .logo {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: space-between; 
   gap: 8px;
   margin-bottom: 8px;
   font-weight: 600;
   font-size: 16px;
-  width: 100%;
+  width: 100%; 
 }
 
 .sidebar .logo-icon {
@@ -88,10 +95,10 @@ $blue-2: #1a73e8;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-left: auto;
+  margin-left: auto; // Push to the right
   margin-top: 7px;
 
-  &:hover {
+  &:hover { // ADD THIS
       color: $blue-2;
     }
 
@@ -100,7 +107,7 @@ $blue-2: #1a73e8;
     transition: transform 0.3s ease;
     margin-top: 2px;
 
-    &.rotate-180 {
+    &.rotate-180 { // ADD THIS
       transform: rotate(180deg);
     }
   }
@@ -124,27 +131,38 @@ $blue-2: #1a73e8;
   text-decoration: none;
   border-left: 3px solid transparent;
 
+
   i:first-child {
-    font-size: 22px;
+    font-size: 22px; // Match icon size with nav-item
     min-width: 22px;
   }
 
   .nav-text {
     margin-left: 2px;
     margin-top: 2px;
+   
+    
   }
 
-  &:hover {
+  &.dropdown {
+    gap: 0; 
+    display: block; 
+    padding: 0; 
+  }
+
+  &:hover { 
      color: $blue-2;
      transform: translateX(5px);
   }
 
-  &.active {
+  &.active { 
+    
     color: $blue-2;
+    
   }
 }
 
-.sidebar .appliances-toggle {
+.sidebar .appliances-toggle {  
   width: 100%;
   display: flex;
   align-items: center;
@@ -160,8 +178,10 @@ $blue-2: #1a73e8;
   background: none;
   border-left: 3px solid transparent;
 
+
+ 
   i:first-child {
-    font-size: 22px;
+    font-size: 22px; // Match icon size with nav-item
     min-width: 22px;
   }
 
@@ -173,6 +193,7 @@ $blue-2: #1a73e8;
   .nav-text {
     margin-left: 2px;
     margin-top: 2px;
+    
   }
 
   &.active,
@@ -185,18 +206,22 @@ $blue-2: #1a73e8;
     .fa-chevron-down {
     font-size: 15px;
     transition: transform 0.3s ease;
-
+   
+    
     &.rotate-180 {
       transform: rotate(180deg);
     }
   }
+
 }
 
 .sidebar.collapsed .nav-item:hover {
   transform: none !important;
 }
 
+
 .sidebar .nav-item.active {
+  
   color: $blue-2;
 }
 
@@ -209,14 +234,53 @@ $blue-2: #1a73e8;
   align-items: flex-start;
   padding: 10px 0px;
   margin-bottom: -10px;
-  border-left: none;
+  border-left: none; 
+  
+  
+  
+}
+
+.sidebar .dropdown-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  padding: 12px 8px;
+  font-size: 15px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  color: #333;
+  text-decoration: none;
+  border: none;
+  background: none;
+
+  &:hover {
+
+    transform: translateX(5px);
+  }
+
+  &.active {
+   
+    color: $blue-2;
+  }
+
+  i {
+    font-size: 12px;
+    transition: transform 0.3s ease;
+  }
+
+  &[aria-expanded="true"] i {
+    transform: rotate(180deg);
+  }
 }
 
 .sidebar .drop-menu {
+  
   width: 100%;
   border: none;
   background: transparent;
-  padding: 0;
+  padding: 0 0;
+  
   margin: 0;
   list-style: none;
   overflow: hidden;
@@ -226,7 +290,7 @@ $blue-2: #1a73e8;
   transition: max-height 0.3s ease-out, opacity 0.2s ease-out, visibility 0.3s ease-out;
 
  &.open {
-    max-height: 500px;
+    max-height: 500px; // A value larger than the dropdown's content
     opacity: 1;
     visibility: visible;
     transition: max-height 0.4s ease-in, opacity 0.3s ease-in 0.1s, visibility 0s linear 0.1s;;
@@ -234,23 +298,26 @@ $blue-2: #1a73e8;
 }
 
 .sidebar .menu-item {
-  padding: 8px 8px 8px 65px;
+  padding: 8px 8px 8px 55px;
   font-size: 14px;
   color: #666;
   border-radius: 8px;
-  transition: all 0.3s ease;
+  transition: all 0.3s ease; // Keep only for hover effects
   margin-bottom: 2px;
   text-decoration: none;
   display: block;
-
+  
+  
   &:hover {
     color: $blue-2;
     transform: translateX(5px);
   }
 
   &.active-dropdown {
+   
     color: $blue-2;
     font-weight: 500;
+    
   }
 }
 
@@ -272,7 +339,18 @@ $blue-2: #1a73e8;
 
   &:nth-child(1) { animation-delay: 0.1s; }
   &:nth-child(2) { animation-delay: 0.15s; }
+  &:nth-child(3) { animation-delay: 0.2s; }
+  &:nth-child(4) { animation-delay: 0.25s; }
+  &:nth-child(5) { animation-delay: 0.3s; }
+  &:nth-child(6) { animation-delay: 0.35s; }
+  &:nth-child(7) { animation-delay: 0.4s; }
 }
+
+.sidebar .dropdown-divider {
+  margin: 8px 16px;
+  border-color: #e0e0e0;
+}
+
 
 .sidebar .logout-btn {
    margin-top: auto;
@@ -286,33 +364,35 @@ $blue-2: #1a73e8;
   position: relative;
   text-decoration: none;
   border: none;
-  background-color: transparent;
-  background: transparent;
+  background-color: transparent; 
+  background: transparent; 
   color: #333;
-  border-radius: 8px;
-  transition: all 0.3s ease;
+  border-radius: 8px; 
+  transition: all 0.3s ease; 
+  
 
   i {
-    font-size: 22px;
+    font-size: 22px; // Match icon size
     min-width: 22px;
   }
 
-  .nav-text {
+  .nav-text { // ADD THIS
     white-space: nowrap;
     transition: opacity 0.3s ease, width 0.3s ease;
   }
 
   &:hover {
     color: $blue-2;
-    transform: translateX(5px);
+    transform: translateX(5px); 
   }
 }
+
 
 /* Main Content Area */
 .main-content {
   font-family: $Space;
   margin-left: 300px;
-  padding: 30px 30px;
+  padding: 20px 30px 50px 20px;
   transition: margin-left 0.3s ease, padding 0.3s ease;
 
    &.expanded {
@@ -333,7 +413,7 @@ $blue-2: #1a73e8;
   display: flex;
   justify-content: right;
   align-items: center;
-  margin-bottom: 30px;
+  margin-bottom: 10px;
   border-bottom: #d1d1d1 1px solid;
 }
 

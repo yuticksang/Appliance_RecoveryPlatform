@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { EditScore } from './edit-score/edit-score';
 import { Condition, ConditionGroup, Category, ScoringConfigurationService } from './scoring-configuration.service';
 import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
+import { AlertService } from '../../../services/alert.service';
 
 
 
@@ -19,6 +20,7 @@ type SortDir = 'asc' | 'desc';
 export class ScoringConfiguration implements OnInit {
 
   private scoringConfigService = inject(ScoringConfigurationService);
+  private alertService = inject(AlertService);
 
   // Data signals
   rows = signal<ConditionGroup[]>([]);
@@ -154,8 +156,8 @@ export class ScoringConfiguration implements OnInit {
       .subscribe({
        next: () => {
           this.loadConditionGroup(); // Reload the list
-          //const message = updatedAdmin.password ? 'Admin and password updated successfully' : 'Admin updated successfully';
-          //this.alertService.success(message);
+          const message =  `Condition Score ${event.conditionID} updated successfully.`;
+          this.alertService.success(message);
 
           this.closeEditModal();
         },

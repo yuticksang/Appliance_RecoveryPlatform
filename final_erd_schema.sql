@@ -282,14 +282,11 @@ CREATE TABLE "SubmittedAppliance" (
     "sellerID" VARCHAR(20) NOT NULL,
     "applianceID" VARCHAR(20),
     "addressID" VARCHAR(20),
-    "scoreID" VARCHAR(20),
     "submissionDate" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    "initialFunctionalStatus" VARCHAR(100),
-    "initialPhysicalCondition" VARCHAR(100),
-    "finalFunctionalStatus" VARCHAR(100),
-    "finalPhysicalCondition" VARCHAR(100),
     "initialOfferPrice" DECIMAL(10,2),
     "finalOfferPrice" DECIMAL(10,2),
+    "initialScore" DECIMAL(10,2),
+    "finalScore" DECIMAL(10,2),
     note TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY ("sellerID") REFERENCES users("userID") ON DELETE CASCADE,
@@ -323,6 +320,11 @@ CREATE TABLE "ConditionSelected" (
     "conditionID" VARCHAR(20) NOT NULL,
     "submittedApplianceID" VARCHAR(20) NOT NULL,
     "isChecked" BOOLEAN DEFAULT false,
+    "selectedBy" character varying(20) COLLATE pg_catalog."default" DEFAULT 'seller'::character varying,
+    "selectedAt" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    "textValue" text COLLATE pg_catalog."default",
+    "groupID" character varying(10) COLLATE pg_catalog."default",
+    score numeric,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY ("submittedApplianceID") REFERENCES "SubmittedAppliance"("submittedApplianceID") ON DELETE CASCADE,
     FOREIGN KEY ("conditionID") REFERENCES "ConditionOption"("conditionID") ON DELETE CASCADE
@@ -330,23 +332,6 @@ CREATE TABLE "ConditionSelected" (
 
 CREATE INDEX idx_condition_selected_submittedApplianceID ON "ConditionSelected"("submittedApplianceID");
 
--- =====================================================
--- STEP 17: Create Score table
--- =====================================================
-
-CREATE TABLE "Score" (
-    "scoreID" VARCHAR(20) PRIMARY KEY DEFAULT ('SCO' || LPAD(nextval('score_id_seq')::text, 3, '0')),
-    "submittedApplianceID" VARCHAR(20) NOT NULL,
-    "functionalityScore" DECIMAL(5,2),
-    "physicalScore" DECIMAL(5,2),
-    "componentScore" DECIMAL(5,2),
-    "totalScore" DECIMAL(5,2),
-    classification VARCHAR(50),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY ("submittedApplianceID") REFERENCES "SubmittedAppliance"("submittedApplianceID") ON DELETE CASCADE
-);
-
-CREATE INDEX idx_score_submittedApplianceID ON "Score"("submittedApplianceID");
 
 
 -- =====================================================

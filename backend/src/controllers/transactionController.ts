@@ -1603,32 +1603,26 @@ export const deleteTransaction = async (req: Request, res: Response) => {
 
 /**
  * Get all transactions for a specific buyer
- * Shows transactions where this buyer won (has the highest offer)
+ * Shows only completed transactions with final prices
  */
 export const getTransactionsByBuyer = async (req: Request, res: Response) => {
   try {
     const { buyerId } = req.params;
     const authUser = (req as any).user;
 
-    // ✅ Security check: Buyers can only view their own transactions
+    console.log('🔍 Fetching completed transactions for buyer:', buyerId);
+    console.log('🔑 Auth user:', authUser);
+
+    // ✅ Security check
     if (authUser.userType === 'buyer') {
-      const userCheckResult = await pool.query(
-        `SELECT buyer_id FROM users WHERE "userID" = $1 AND user_type = 'buyer'`,
-        [authUser.userId]
-      );
-
-      if (userCheckResult.rows.length === 0) {
-        return res.status(403).json({ message: 'Unauthorized access' });
-      }
-
-      const userBuyerId = userCheckResult.rows[0].buyer_id;
-
-      if (userBuyerId !== buyerId) {
+      if (authUser.buyerId !== buyerId && authUser.buyer_id !== buyerId) {
         return res.status(403).json({ message: 'You can only view your own transactions' });
       }
+    } else if (authUser.userType !== 'admin') {
+      return res.status(403).json({ message: 'Unauthorized access' });
     }
 
-    // ✅ Fetch transactions where this buyer won
+    // Fetch transactions for the buyer
     const result = await pool.query(
       `SELECT
         t."transactionID" as id,
@@ -1677,13 +1671,22 @@ export const getTransactionsByBuyer = async (req: Request, res: Response) => {
       [buyerId]
     );
 
-    console.log(`📊 Found ${result.rows.length} transactions for buyer ${buyerId}`);
     res.json(result.rows);
-  } catch (error) {
-    console.error('❌ Error fetching transactions by buyer:', error);
-    res.status(500).json({ 
-      message: 'Failed to fetch transactions', 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+
+  } catch (error: any) {
+    console.error('❌ Database error in getTransactionsByBuyer:', error);
+    console.error('❌ Error details:', {
+      message: error?.message || 'Unknown error',
+      stack: error?.stack,
+      code: error?.code,
+      detail: error?.detail
+      
+    });
+
+    res.status(500).json({
+      message: 'Failed to fetch transactions',
+      error: error?.message || 'Database error',
+      details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
     });
   }
 };

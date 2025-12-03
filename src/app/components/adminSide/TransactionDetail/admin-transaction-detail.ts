@@ -115,7 +115,7 @@ export class AdminTransactionDetailComponent implements OnInit {
 
         const mappedData = {
           ...data,
-          sellerPhone: data.sellerPhone || data.addressPhone || 'N/A',
+          addressPhone: data.addressPhone || data.sellerPhone || 'N/A',
           pickupAddress: data.pickupAddress || 'N/A',
           city: data.city || '',
           state: data.state || '',

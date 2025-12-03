@@ -1,42 +1,50 @@
 <main class="transactions-page">
   <div class="transactions-container">
-    <div class="page-head">
+    <!-- Page Header -->
+    <div class="page-header">
       <h1 class="page-title">My Transactions</h1>
       <app-breadcrumb></app-breadcrumb>
     </div>
 
+
     <!-- Toolbar -->
     <div class="toolbar">
       <div class="toolbar-left">
-        <button class="clear-btn" (click)="clearFilters()">Clear Filters</button>
+        <button class="add-btn clear-btn" (click)="clearFilters()">
+          Clear Filters
+        </button>
       </div>
+
       <div class="toolbar-right">
+
         <!-- Category Filter -->
         <div class="select-wrapper">
-          <select [ngModel]="selectedCategory()" (ngModelChange)="selectedCategory.set($event); onFilterChange()">
+          <select [value]="selectedCategory()"
+            (change)="selectedCategory.set($any($event.target).value); onFilterChange()">
             <option value="all">All Categories</option>
-            <option *ngFor="let cat of uniqueCategories()" [value]="cat">{{ cat }}</option>
+            <option *ngFor="let cat of uniqueCategories()" [value]="cat">
+              {{ cat }}
+            </option>
           </select>
         </div>
 
         <!-- Brand Filter -->
         <div class="select-wrapper">
-          <select [ngModel]="selectedBrand()" (ngModelChange)="selectedBrand.set($event); onFilterChange()">
+          <select [value]="selectedBrand()" (change)="selectedBrand.set($any($event.target).value); onFilterChange()">
             <option value="all">All Brands</option>
-            <option *ngFor="let brand of uniqueBrands()" [value]="brand">{{ brand }}</option>
+            <option *ngFor="let b of uniqueBrands()" [value]="b">{{ b }}</option>
           </select>
         </div>
 
-        <!-- Min Price -->
-        <div class="price-input">
-          <input type="number" placeholder="Min Price" [value]="minPrice() ?? ''"
-            (input)="onMinPriceChange($any($event.target).value)" min="0" step="0.01" />
-        </div>
+        <!-- Price Range -->
+        <div class="price-filter">
+          <input type="number" placeholder="Min Price" class="price-input" [value]="minPrice() || ''"
+            (input)="onMinPriceChange($any($event.target).value)" />
 
-        <!-- Max Price -->
-        <div class="price-input">
-          <input type="number" placeholder="Max Price" [value]="maxPrice() ?? ''"
-            (input)="onMaxPriceChange($any($event.target).value)" min="0" step="0.01" />
+          <span class="price-separator">-</span>
+
+          <input type="number" placeholder="Max Price" class="price-input" [value]="maxPrice() || ''"
+            (input)="onMaxPriceChange($any($event.target).value)" />
         </div>
 
         <!-- Search -->
@@ -44,36 +52,51 @@
           <input type="text" placeholder="Search..." [value]="search()"
             (input)="search.set($any($event.target).value); onSearchChange()" />
         </div>
+
       </div>
     </div>
 
-    <!-- Loading state -->
-    <div *ngIf="loading()" class="loading">Loading transactions...</div>
 
-    <!-- Error state -->
-    <div *ngIf="error()" class="error-message">{{ error() }}</div>
+    <!-- Loading State -->
+    <div *ngIf="loading()" class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Loading transactions...</p>
+    </div>
 
-    <!-- Table -->
-    <div class="table-wrap" *ngIf="!loading() && !error()">
+    <!-- Error State -->
+    <div *ngIf="error()" class="error-state">
+      <p>{{ error() }}</p>
+    </div>
+
+    <div class="table-wrap">
       <table class="grid">
         <thead>
           <tr>
             <th class="narrow">#</th>
             <th class="non-sortable">Image</th>
-            <th (click)="setSort('category')" class="sortable">
-              Category <span class="sort-icon">{{ getSortIcon('category') }}</span>
-            </th>
-            <th (click)="setSort('brand')" class="sortable">
-              Brand <span class="sort-icon">{{ getSortIcon('brand') }}</span>
-            </th>
+
+
+
             <th (click)="setSort('model')" class="sortable">
-              Model <span class="sort-icon">{{ getSortIcon('model') }}</span>
+              Model Code <span class="sort">{{ getSortIcon('model') }}</span>
+            </th>
+
+            <th (click)="setSort('modelName')" class="sortable">
+              Model Name <span class="sort">{{ getSortIcon('modelName') }}</span>
+            </th>
+            <th (click)="setSort('category')" class="sortable">
+              Category <span class="sort">{{ getSortIcon('category') }}</span>
+            </th>
+
+            <th (click)="setSort('brand')" class="sortable">
+              Brand <span class="sort">{{ getSortIcon('brand') }}</span>
             </th>
             <th (click)="setSort('finalPrice')" class="sortable">
-              Final Price <span class="sort-icon">{{ getSortIcon('finalPrice') }}</span>
+              Final Price <span class="sort">{{ getSortIcon('finalPrice') }}</span>
             </th>
+
             <th (click)="setSort('submittedDate')" class="sortable">
-              Submitted Date <span class="sort-icon">{{ getSortIcon('submittedDate') }}</span>
+              Submitted Date <span class="sort">{{ getSortIcon('submittedDate') }}</span>
             </th>
           </tr>
         </thead>
@@ -95,41 +118,40 @@
             <td>
               @if (t.finalPrice && t.finalPrice > 0) {
                 {{ formatPrice(t.finalPrice) }}
-              } @else if (t.estimatedPrice && t.estimatedPrice > 0) {
-                {{ formatPrice(t.estimatedPrice) }}
-                <small class="text-muted">(Estimated)</small>
-              } @else {
-                <span class="text-muted">Pending</span>
-              }
+              </span>
             </td>
+
             <td>{{ formatDate(t.submittedDate) }}</td>
+          </tr>
+
+          <tr *ngIf="paged().length === 0">
+            <td colspan="8" class="no-data">No transactions found</td>
           </tr>
         </tbody>
       </table>
-
-      <!-- Empty State -->
-      <div *ngIf="paged().length === 0" class="empty-state">
-        <p>No transactions found.</p>
-      </div>
     </div>
 
-    <!-- Pager -->
+    <!-- Pagination -->
     <div class="pager" *ngIf="!loading() && !error() && paged().length > 0">
-      <button class="page-btn" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1">‹</button>
+      <div class="pagination-controls">
+        <button class="pagination-btn" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1">‹</button>
 
-      <button class="page-btn" *ngFor="let p of pageNumbers()"
-        [class.active]="p === currentPage()"
-        [disabled]="p === -1"
-        (click)="p !== -1 && goToPage(p)">
-        {{ p === -1 ? '...' : p }}
-      </button>
+        <button class="pagination-btn" *ngFor="let p of pageNumbers()" [class.active]="p === currentPage()"
+          [class.disabled]="p === -1" (click)="p !== -1 && goToPage(p)">
+          {{ p === -1 ? '...' : p }}
+        </button>
 
-      <button class="page-btn" (click)="goToPage(currentPage() + 1)"
-        [disabled]="currentPage() === totalPages()">›</button>
+        <button class="pagination-btn" (click)="goToPage(currentPage() + 1)"
+          [disabled]="currentPage() === totalPages()">›</button>
+      </div>
 
-      <div class="page-size">
-        <select [ngModel]="itemsPerPage()" (ngModelChange)="itemsPerPage.set(+$event); onItemsPerPageChange()">
-          <option *ngFor="let n of itemsPerPageOptions" [value]="n">{{ n }}</option>
+      <div class="items-per-page">
+        <select class="page-size-select" [ngModel]="itemsPerPage()"
+          (ngModelChange)="itemsPerPage.set(+($event)); onItemsPerPageChange()">
+
+          <option *ngFor="let n of itemsPerPageOptions" [value]="n">
+            {{ n }}
+          </option>
         </select>
         <span>/Page</span>
       </div>

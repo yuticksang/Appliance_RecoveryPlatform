@@ -129,6 +129,11 @@ export class AuthService {
   }
 
   setAuthData(response: any) {
+    // Clear ALL existing tokens first to prevent conflicts
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('token');
+    localStorage.removeItem('buyer_token');
+
     // Store in localStorage (seller-specific keys)
     localStorage.setItem('token', response.token);
     localStorage.setItem('user', JSON.stringify(response.user));

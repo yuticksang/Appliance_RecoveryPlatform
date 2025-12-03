@@ -96,7 +96,7 @@ export const login = async (req: Request, res: Response) => {
   try {
     const { emailOrUsername, password } = req.body;
 
-    console.log('ê Login attempt:', { emailOrUsername });
+    console.log('ÔøΩ Login attempt:', { emailOrUsername });
 
     if (!emailOrUsername || !password) {
       console.log(' Missing credentials');
@@ -145,7 +145,7 @@ export const login = async (req: Request, res: Response) => {
       console.log(' Invalid password');
       return res.status(401).json({ message: 'Invalid password. Please try again.' });
     }
-    console.log('§ User found:', {
+    console.log('ÔøΩ User found:', {
       username: user.username,
       admin_id: user.admin_id,
       user_type: user.user_type,
@@ -256,7 +256,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
-    console.log('ê Password reset requested for:', email);
+    console.log('ÔøΩ Password reset requested for:', email);
 
     // Check if user exists
     const result = await pool.query(
@@ -307,7 +307,7 @@ export const resetPassword = async (req: Request, res: Response) => {
   try {
     const { token, newPassword } = req.body;
 
-    console.log('ê Password reset attempt with token');
+    console.log('ÔøΩ Password reset attempt with token');
 
     if (!newPassword || newPassword.length < 6) {
       return res.status(400).json({
@@ -366,7 +366,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
   try {
     const { token } = req.params;
 
-    console.log('ç Verifying email with token:', token);
+    console.log('ÔøΩ Verifying email with token:', token);
 
     // Find valid token
     const tokenResult = await pool.query(
@@ -516,7 +516,7 @@ export const resendVerificationEmail = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
 
-    console.log('ß Resend verification requested for:', email);
+    console.log('ÔøΩ Resend verification requested for:', email);
 
     if (!email) {
       return res.status(400).json({ message: 'Email is required' });
@@ -585,7 +585,7 @@ export const googleLogin = async (req: Request, res: Response) => {
   try {
     const { idToken } = req.body;
 
-    console.log('ê Google login attempt with token:', idToken ? 'Token received' : 'No token');
+    console.log('Google login attempt with token:', idToken ? 'Token received' : 'No token');
 
     if (!idToken) {
       return res.status(400).json({ message: 'ID token is required' });
@@ -594,7 +594,7 @@ export const googleLogin = async (req: Request, res: Response) => {
     // Initialize Google OAuth client with your Client ID
     const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-    console.log('ë Verifying Google token with Client ID:', process.env.GOOGLE_CLIENT_ID);
+    console.log('ÔøΩ Verifying Google token with Client ID:', process.env.GOOGLE_CLIENT_ID);
 
     // Verify the Google ID token
     const ticket = await client.verifyIdToken({
@@ -611,7 +611,7 @@ export const googleLogin = async (req: Request, res: Response) => {
 
     const { email, name, sub: googleId, email_verified } = payload;
 
-    console.log('ê Google login attempt:', { email, name });
+    console.log('Google login attempt:', { email, name });
 
     // Check if user exists with this email
     let userResult = await pool.query(
@@ -623,7 +623,7 @@ export const googleLogin = async (req: Request, res: Response) => {
 
     if (userResult.rows.length === 0) {
       // User doesn't exist, create new user
-      console.log('ù Creating new user from Google login');
+      console.log('Creating new user from Google login');
 
       // Generate username from email or name
       const baseUsername = (email.split('@')[0] || name?.toLowerCase().replace(/\s+/g, '') || 'user').substring(0, 20);
@@ -669,44 +669,50 @@ export const googleLogin = async (req: Request, res: Response) => {
       console.log(' Existing user logged in with Google');
     }
 
-    // Update last login
-    await pool.query(
-      'UPDATE users SET last_login = NOW() WHERE "userID" = $1',
-      [user.userID]
-    );
+    if (user.user_status !== 'ACTIVE') {
+      return res.status(401).json({
+        message: 'Your account has been deactivated. Please contact support.'
+      });
+    }
+    
+      // Update last login
+      await pool.query(
+        'UPDATE users SET last_login = NOW() WHERE "userID" = $1',
+        [user.userID]
+      );
 
-    // Generate JWT token
-    const jwtPayload: JwtPayload = {
-      userId: user.userID,
-      email: user.email,
-      username: user.username,
-      userType: user.user_type,
-      buyerId: user.buyer_id || null,
-      sellerId: user.seller_id || null,
-      adminId: user.admin_id || null
-    };
-
-    const token = jwt.sign(jwtPayload, process.env.JWT_SECRET as string, {
-      expiresIn: '7d'
-    });
-
-    res.json({
-      message: 'Google login successful',
-      token,
-      user: {
-        id: user.userID,
+      // Generate JWT token
+      const jwtPayload: JwtPayload = {
+        userId: user.userID,
         email: user.email,
-        name: user.name,
         username: user.username,
         userType: user.user_type,
-        sellerId: user.seller_id || null,
         buyerId: user.buyer_id || null,
-        adminId: user.admin_id || null,
-        phone: user.phone
-      }
-    });
-  } catch (error) {
-    console.error('Google login error:', error);
-    res.status(500).json({ message: 'Google login failed', error: error instanceof Error ? error.message : 'Unknown error' });
-  }
-};
+        sellerId: user.seller_id || null,
+        adminId: user.admin_id || null
+      };
+
+      const token = jwt.sign(jwtPayload, process.env.JWT_SECRET as string, {
+        expiresIn: '7d'
+      });
+
+      res.json({
+        message: 'Google login successful',
+        token,
+        user: {
+          id: user.userID,
+          email: user.email,
+          name: user.name,
+          username: user.username,
+          userType: user.user_type,
+          sellerId: user.seller_id || null,
+          buyerId: user.buyer_id || null,
+          adminId: user.admin_id || null,
+          phone: user.phone
+        }
+      });
+    } catch (error) {
+      console.error('Google login error:', error);
+      res.status(500).json({ message: 'Google login failed', error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  };
