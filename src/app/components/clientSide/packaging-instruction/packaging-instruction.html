@@ -8,84 +8,33 @@
     </span>
   </div>
   <h1 class="title">Packaging Instructions</h1>
-    <p class="details">Prepare your appliance for pickup</p>
-  <section class="instruction-card">
-    <p class="card-intro">
+  <p class="details">Prepare your appliance for pickup</p>
+
+  <!-- Loading state -->
+  @if (loading()) {
+    <div class="loading-container">
+      <p>Loading packaging instructions...</p>
+    </div>
+  }
+
+  <!-- Instructions loaded -->
+  @if (!loading()) {
+    <section class="instruction-card">
+      <p class="card-intro">
         <strong>Packaging Instructions:</strong> Please follow these comprehensive steps to ensure your appliance is safely prepared for pickup. Proper packaging protects your appliance during transit and helps us provide an accurate valuation.
-    </p>
+      </p>
 
-    <div class="section-divider">
-      <h2 class="section-title">Safety First</h2>
-      <ul class="steps-list">
-        <li><strong>Disconnect Power:</strong> Unplug the appliance from the electrical outlet at least 24 hours before pickup.</li>
-        <li><strong>Turn Off Water/Gas:</strong> For appliances with water connections (washing machines, dishwashers, refrigerators with ice makers) or gas connections (dryers, ovens), shut off and disconnect all supply lines.</li>
-        <li><strong>Allow Cooling:</strong> Let appliances cool completely if they generate heat (ovens, dryers, water heaters).</li>
-        <li><strong>Defrost:</strong> Refrigerators and freezers must be fully defrosted and dried to prevent water leakage during transit.</li>
-      </ul>
-    </div>
-
-    <div class="section-divider">
-      <h2 class="section-title">Preparation Steps</h2>
-      <ul class="steps-list">
-        <li><strong>Clean Thoroughly:</strong> Wipe down all interior and exterior surfaces. Remove any food residue, lint, or debris.</li>
-        <li><strong>Drain All Water:</strong> Empty water tanks, drain hoses, and remove all water from the system. Tip the appliance gently to drain residual water if needed.</li>
-        <li><strong>Remove Loose Parts:</strong> Take out all removable components such as:
-          <ul class="sub-list">
-            <li>Shelves, drawers, and racks (refrigerators)</li>
-            <li>Lint traps and exhaust hoses (dryers)</li>
-            <li>Detergent dispensers (washing machines)</li>
-            <li>Glass trays and turntables (microwaves)</li>
-            <li>Knobs, control panels (if easily removable)</li>
+      <!-- Dynamic sections loaded from database -->
+      @for (sectionName of sectionNames(); track sectionName) {
+        <div class="section-divider">
+          <h2 class="section-title">{{ sectionName }}</h2>
+          <ul class="steps-list">
+            @for (step of getStepsForSection(sectionName); track step.id) {
+              <li>{{ step.instruction }}</li>
+            }
           </ul>
-        </li>
-        <li><strong>Secure Internal Components:</strong> For parts that cannot be removed, secure them with tape or padding to prevent movement.</li>
-      </ul>
-    </div>
-
-    <div class="section-divider">
-      <h2 class="section-title">Packaging Guidelines</h2>
-      <ul class="steps-list">
-        <li><strong>Protect Fragile Parts:</strong> Wrap glass doors, control panels, displays, and delicate components with bubble wrap or soft padding material.</li>
-        <li><strong>Secure Doors and Lids:</strong> Use strong packing tape or rope to secure all doors, lids, and access panels to prevent them from opening during transport.</li>
-        <li><strong>Protect Corners:</strong> Add corner protectors or extra padding to vulnerable edges and corners.</li>
-        <li><strong>Wrap Cables and Hoses:</strong> Coil power cords, hoses, and cables neatly. Tape them to the back of the appliance or place them in a labeled bag attached to the unit.</li>
-        <li><strong>Removable Parts:</strong> Place all removed components in a sturdy plastic bag or small box. Label clearly and tape securely to the main appliance.</li>
-      </ul>
-    </div>
-
-    <div class="section-divider">
-      <h2 class="section-title">Documentation and Labeling</h2>
-      <ul class="steps-list">
-        <li><strong>Print Recovery Slip:</strong> Print your recovery slip and place it in a clear plastic sleeve or ziplock bag.</li>
-        <li><strong>Attach Documentation:</strong> Securely tape the recovery slip to the front or top of the appliance where it's clearly visible.</li>
-        <li><strong>Include Accessories:</strong> If you have original manuals, remote controls, or warranty cards, place them with the recovery slip.</li>
-        <li><strong>Label Fragile Items:</strong> Clearly mark the appliance with "FRAGILE" and "THIS SIDE UP" labels if applicable.</li>
-        <li><strong>Note Special Instructions:</strong> If there are any specific handling requirements, write them clearly on the recovery slip.</li>
-      </ul>
-    </div>
-
-    <div class="section-divider">
-      <h2 class="section-title">Final Checklist</h2>
-      <ul class="checklist">
-        <li>Appliance is unplugged and all connections are disconnected</li>
-        <li>Unit is completely dry (no water inside or outside)</li>
-        <li>All removable parts are secured or packaged separately</li>
-        <li>Doors, lids, and panels are taped shut</li>
-        <li>Fragile components are wrapped and protected</li>
-        <li>Cables and hoses are coiled and secured</li>
-        <li>Recovery slip is clearly visible on the appliance</li>
-        <li>Appliance is positioned for easy access at pickup location</li>
-      </ul>
-    </div>
-
-    <div class="important-note">
-      <strong>Important Notes:</strong>
-      <ul>
-        <li><strong>Heavy Items:</strong> Large appliances are heavy. Do not attempt to move them yourself. Our pickup team will handle the transportation.</li>
-        <li><strong>Pickup Access:</strong> Ensure the appliance is positioned where our team can easily access it on the scheduled pickup date.</li>
-        <li><strong>Incomplete Preparation:</strong> Appliances that are not properly prepared (e.g., still contain water, not cleaned, or improperly secured) may affect the valuation or cause pickup delays.</li>
-        <li><strong>Working Condition:</strong> The condition assessment provided in your questionnaire will be verified by our team. After verification, you will be notified of the final offer price based on the actual condition of your appliance.</li>
-      </ul>
-    </div>
+        </div>
+      }
     </section>
+  }
 </div>

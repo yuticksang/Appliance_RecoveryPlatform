@@ -96,6 +96,10 @@ export const routes: Routes = [
           {
             path: 'markdown-list',
             loadComponent: () => import('./components/adminSide/markdownList/markdown-list').then(m => m.MarkdownListComponent)
+          },
+          {
+            path: 'packaging-instructions',
+            loadComponent: () => import('./components/adminSide/manage-packaging-instructions/manage-packaging-instructions').then(m => m.ManagePackagingInstructionsComponent)
           }
         ]
       },

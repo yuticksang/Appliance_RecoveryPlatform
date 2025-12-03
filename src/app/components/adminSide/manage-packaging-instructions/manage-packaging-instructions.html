@@ -1,0 +1,200 @@
+<main class="packaging-page">
+  <div class="packaging-container">
+    <div class="page-head">
+      <h1 class="page-title">Packaging Instructions</h1>
+      <app-breadcrumb></app-breadcrumb>
+    </div>
+
+    <!-- toolbar -->
+    <div class="toolbar">
+      <button class="btn-primary" (click)="openCreateModal()">+ NEW INSTRUCTION</button>
+
+      <div class="toolbar-right">
+        <!-- Category Filter -->
+        <div class="select-wrapper">
+          <select [ngModel]="selectedCategoryFilter()" (ngModelChange)="onCategoryFilterChange($event)">
+            <option [ngValue]="null">All Categories</option>
+            @for (category of categories(); track category.id) {
+              <option [ngValue]="category.id.toString()">{{ category.name }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Section Filter -->
+        <div class="select-wrapper">
+          <select [ngModel]="selectedSectionFilter()" (ngModelChange)="onSectionFilterChange($event)">
+            <option value="">All Sections</option>
+            @for (section of uniqueSections; track section) {
+              <option [value]="section">{{ section }}</option>
+            }
+          </select>
+        </div>
+
+        <button class="btn-secondary" (click)="clearFilters()">Clear Filters</button>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    @if (loading()) {
+      <div class="loading">Loading packaging instructions...</div>
+    }
+
+    <!-- Error state -->
+    @if (error()) {
+      <div class="error-message">Failed to load packaging instructions</div>
+    }
+
+    <!-- Instructions table -->
+    @if (!loading() && !error()) {
+      <div class="table-wrap">
+        <table class="grid">
+          <thead>
+            <tr>
+              <th class="narrow">#</th>
+              <th>Category</th>
+              <th>Section</th>
+              <th>Instruction</th>
+              <th>Order</th>
+              <th>Status</th>
+              <th class="actions">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            @if (filteredInstructions.length === 0) {
+              <tr>
+                <td colspan="7" class="no-data">
+                  No packaging instructions found. Click "New Instruction" to create one.
+                </td>
+              </tr>
+            }
+            @for (instruction of pagedInstructions; track instruction.instructionID; let i = $index) {
+              <tr [class.inactive-row]="!instruction.isActive">
+                <td class="narrow">{{ (currentPage() - 1) * itemsPerPage() + i + 1 }}</td>
+                <td>
+                  <span class="category-badge" [class.default-category]="instruction.categoryID === '0'">
+                    {{ getCategoryName(instruction.categoryID) }}
+                  </span>
+                </td>
+                <td class="section-name">{{ instruction.sectionName }}</td>
+                <td class="instruction-text">{{ instruction.instruction }}</td>
+                <td class="display-order">{{ instruction.displayOrder }}</td>
+                <td>
+                  <span class="badge" [ngClass]="instruction.isActive ? 'badge-active' : 'badge-inactive'">
+                    <span class="dot"></span> {{ instruction.isActive ? 'Active' : 'Inactive' }}
+                  </span>
+                </td>
+                <td class="actions">
+                  <button class="icon" (click)="openEditModal(instruction)" title="Edit">
+                    <img src="assets/icons/edit.png" alt="Edit" class="action-icon">
+                  </button>
+                  <button class="icon" (click)="toggleActive(instruction)" [title]="instruction.isActive ? 'Deactivate' : 'Activate'">
+                    <img [src]="instruction.isActive ? 'assets/icons/deactivate.png' : 'assets/icons/activate.png'" alt="Toggle Status" class="action-icon">
+                  </button>
+                  <button class="icon" (click)="deleteInstruction(instruction)" title="Delete">
+                    <img src="assets/icons/delete.png" alt="Delete" class="action-icon">
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pager -->
+      @if (filteredInstructions.length > 0) {
+        <div class="pager">
+          <button class="page-btn" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1">‹</button>
+
+          @for (p of getPageNumbers(); track $index) {
+            @if (p === -1) {
+              <span class="page-dots">...</span>
+            } @else {
+              <button class="page-btn" [class.active]="p === currentPage()" (click)="goToPage(p)">{{ p }}</button>
+            }
+          }
+
+          <button class="page-btn" (click)="goToPage(currentPage() + 1)" [disabled]="currentPage() === totalPages">›</button>
+
+          <div class="page-size">
+            <select [ngModel]="itemsPerPage()" (ngModelChange)="setPageSize($event)">
+              @for (n of itemsPerPageOptions; track n) {
+                <option [value]="n">{{ n }}</option>
+              }
+            </select>
+            <span>/Page</span>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</main>
+
+<!-- Modal for Create/Edit -->
+@if (showModal()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ modalMode() === 'create' ? 'Add New Instruction' : 'Edit Instruction' }}</h2>
+        <button class="modal-close" (click)="closeModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <form>
+          <!-- Category Selection -->
+          <div class="form-group">
+            <label for="categoryId">Category <span class="required">*</span></label>
+            <select id="categoryId" [(ngModel)]="formData.categoryId" name="categoryId" required>
+              @for (category of categories(); track category.id) {
+                <option [ngValue]="category.id.toString()">{{ category.name }}</option>
+              }
+            </select>
+            <small class="help-text">Select a category for the packaging instructions</small>
+          </div>
+
+          <!-- Display Order -->
+          <div class="form-group">
+            <label for="displayOrder">Display Order <span class="required">*</span></label>
+            <input type="number" id="displayOrder" [(ngModel)]="formData.displayOrder" name="displayOrder" min="1" required>
+            <small class="help-text">Order of this instruction (determines display sequence)</small>
+          </div>
+
+          <!-- Section Name -->
+          <div class="form-group">
+            <label for="sectionName">Section Name <span class="required">*</span></label>
+            <input type="text" id="sectionName" [(ngModel)]="formData.sectionName" name="sectionName"
+                   list="commonSections" placeholder="e.g., Safety First" required>
+            <datalist id="commonSections">
+              @for (section of commonSections; track section) {
+                <option [value]="section">{{ section }}</option>
+              }
+            </datalist>
+            <small class="help-text">Choose from common sections or type your own</small>
+          </div>
+
+          <!-- Instruction Text -->
+          <div class="form-group">
+            <label for="instruction">Instruction Text <span class="required">*</span></label>
+            <textarea id="instruction" [(ngModel)]="formData.instruction" name="instruction"
+                      rows="4" placeholder="Enter the instruction text..." required></textarea>
+          </div>
+
+          <!-- Active Status -->
+          <div class="form-group checkbox-group">
+            <label>
+              <input type="checkbox" [(ngModel)]="formData.isActive" name="isActive">
+              <span>Active (visible to users)</span>
+            </label>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="closeModal()">Cancel</button>
+        <button class="btn-confirm" (click)="saveInstruction()">
+          {{ modalMode() === 'create' ? 'Create' : 'Update' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
