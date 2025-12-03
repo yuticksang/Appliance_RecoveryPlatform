@@ -545,7 +545,7 @@ $Space: 'Space Grotesk', sans-serif;
 }
 
 .status-review {
-  background: linear-gradient(135deg, #fef5e7 0%, #fde68a 100%);
+  background: linear-gradient(135deg, #fefcbf 0%, #faf089 100%);
   color: #9c4221;
 }
 
@@ -571,7 +571,7 @@ $Space: 'Space Grotesk', sans-serif;
 }
 
 .item-awaiting {
-  background: linear-gradient(135deg, #fef5e7 0%, #fde68a 100%);
+  background: linear-gradient(135deg, #fefcbf 0%, #faf089 100%);
   color: #744210;
 }
 
@@ -586,8 +586,8 @@ $Space: 'Space Grotesk', sans-serif;
 }
 
 .item-awaiting-return {
-  background: linear-gradient(135deg, #feebc8 0%, #fbd38d 100%);
-  color: #9c4221;
+  background: linear-gradient(135deg, #fefcbf 0%, #faf089 100%);
+  color: #991b1b;
 }
 
 /* Content Grid */
@@ -1919,7 +1919,7 @@ $Space: 'Space Grotesk', sans-serif;
   display: flex;
   align-items: center;
   gap: 1rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
 
   &:hover {

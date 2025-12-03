@@ -576,7 +576,7 @@ export class AdminTransactionDetailComponent implements OnInit {
 
     this.transactionService.updateTransaction(txn.id, updateData).subscribe({
       next: () => {
-        this.alertService.success('Transaction updated successfully with score: ' + finalScore);
+        this.alertService.success('Transaction updated successfully ');
         this.editMode.set(false);
         this.uploadedFiles = {};
         this.uploadedFilePreviews = {};
@@ -836,11 +836,38 @@ export class AdminTransactionDetailComponent implements OnInit {
   }
 
   // Open photo lightbox with specific photo array
-  openPhotoLightbox(photoArray: string[], index: number): void {
-    this.photos = photoArray;
-    this.lightboxPhotoIndex = index;
-    this.showPhotoLightbox = true;
+ openPhotoLightbox(photoArray: string[], index: number): void {
+  console.log('====== LIGHTBOX OPENING ======');
+  console.log('📸 Photo array received:', photoArray);
+  console.log('📸 Photo array length:', photoArray?.length);
+  console.log('📸 Index:', index);
+  console.log('📸 Photo at index:', photoArray?.[index]);
+  
+  if (!photoArray || photoArray.length === 0) {
+    console.error('❌ No photos provided to lightbox');
+    return;
   }
+  
+  if (index < 0 || index >= photoArray.length) {
+    console.error('❌ Invalid photo index:', index, 'Array length:', photoArray.length);
+    return;
+  }
+  
+  this.photos = photoArray;
+  this.lightboxPhotoIndex = index;
+  this.showPhotoLightbox = true;
+  this.lightboxZoomLevel = 1;
+  
+  // ✅ Prevent body scroll
+  document.body.style.overflow = 'hidden';
+  
+  console.log('✅ Lightbox opened successfully');
+  console.log('   - photos array:', this.photos);
+  console.log('   - index:', this.lightboxPhotoIndex);
+  console.log('   - current photo:', this.photos[this.lightboxPhotoIndex]);
+  console.log('==============================');
+}
+
 
   // Open photo lightbox
   openLightbox(index: number): void {
@@ -984,14 +1011,18 @@ export class AdminTransactionDetailComponent implements OnInit {
   closeLightbox(): void {
     this.showPhotoLightbox = false;
     this.lightboxZoomLevel = 1;
+    
+    // ✅ Restore body scroll
+    document.body.style.overflow = '';
+    
+    console.log('❌ Lightbox closed');
   }
-
-  // Zoom in photo
-  zoomIn(): void {
-    if (this.lightboxZoomLevel < this.maxZoom) {
-      this.lightboxZoomLevel = Math.min(this.lightboxZoomLevel + 0.5, this.maxZoom);
+    // Zoom in photo
+    zoomIn(): void {
+      if (this.lightboxZoomLevel < this.maxZoom) {
+        this.lightboxZoomLevel = Math.min(this.lightboxZoomLevel + 0.5, this.maxZoom);
+      }
     }
-  }
 
   // Zoom out photo
   zoomOut(): void {

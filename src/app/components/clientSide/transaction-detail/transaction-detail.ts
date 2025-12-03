@@ -312,23 +312,41 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   }
 
   // Open photo lightbox
-  openLightbox(index: number): void {
-    // Find the file_upload group to get the correct photos array
-    const fileUploadGroupId = this.getConditionGroupIds().find(groupId => this.isFileUploadGroup(groupId));
-
-    if (fileUploadGroupId) {
-      // Use photos from the file_upload condition group
-      this.photos = this.getSellerPhotosForGroup(fileUploadGroupId);
-    }
-
-    this.lightboxPhotoIndex = index;
-    this.showPhotoLightbox = true;
+  openLightbox(index: number, photoType: 'seller' | 'admin' = 'seller'): void {
+  console.log('📸 Opening lightbox:', photoType, 'photos at index:', index);
+  
+  // ✅ Choose the correct photo array based on photoType parameter
+  if (photoType === 'admin') {
+    this.photos = this.adminPhotos || [];
+  } else {
+    this.photos = this.sellerPhotos || [];
   }
-
-  // Close photo lightbox
+  
+  console.log('📸 Photos loaded:', this.photos.length);
+  
+  if (this.photos.length === 0) {
+    console.warn('⚠️ No photos available');
+    return;
+  }
+  
+  if (index < 0 || index >= this.photos.length) {
+    console.warn('⚠️ Invalid index:', index, 'Max:', this.photos.length - 1);
+    index = 0; // Fallback to first photo
+  }
+  
+  this.lightboxPhotoIndex = index;
+  this.showPhotoLightbox = true;
+  this.lightboxZoomLevel = 1;
+  document.body.style.overflow = 'hidden';
+  
+  console.log('✅ Lightbox opened with', this.photos.length, 'photos at index', index);
+}
+  // update closeLightbox to restore scroll:
   closeLightbox(): void {
     this.showPhotoLightbox = false;
-    this.lightboxZoomLevel = 1; // Reset zoom when closing
+    this.lightboxZoomLevel = 1;
+    document.body.style.overflow = '';
+    console.log('❌ Lightbox closed');
   }
 
   // Zoom in photo
@@ -374,7 +392,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     // Set breadcrumbs
     this.breadcrumbService.setBreadcrumbs([
       { label: 'Transactions', url: '/transactions' },
-      { label: 'Transaction Detail' }
+      { label: 'Transaction Detail'} 
     ]);
 
     // Get transaction ID from route
@@ -501,6 +519,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
           finalPrice: data.finalPrice,
           note: data.note || '', // Note from backend
           responseDeadline: data.responseDeadline || data.response_deadline,
+          paymentDueDate: data.paymentDueDate,
           cancellationReason: data.cancellationReason
         };
 
@@ -533,14 +552,14 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
           this.minPickupDate = originalDate.toISOString().split('T')[0];
         }
 
-        // Load seller-submitted photos from backend (not the catalog image)
-        if (data.photos && data.photos.length > 0) {
-          this.photos = data.photos;
-          this.selectedPhotoIndex = 0;
-        } else {
-          // No photos submitted by seller
-          this.photos = [];
-        }
+        this.sellerPhotos = data.sellerPhotos || data.photos || [];
+        this.adminPhotos = data.adminPhotos || [];
+
+        console.log('📸 Photos loaded in loadTransactionDetail:', {
+          sellerPhotos: this.sellerPhotos.length,
+          adminPhotos: this.adminPhotos.length
+        });
+
 
         // Load REAL appliance details
         this.loadRealDetails(data);
@@ -578,16 +597,15 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     this.sellerPhotos = data.sellerPhotos || [];
     this.adminPhotos = data.adminPhotos || [];
 
-    console.log('🔍 Loaded conditionGroups:', this.conditionGroups);
-    console.log('🔍 Loaded conditionGroupNames:', this.conditionGroupNames);
-    console.log('🔍 Loaded sellerConditions:', this.sellerConditions);
-    console.log('🔍 Loaded adminConditions:', this.adminConditions);
-    console.log('🔍 Initial Score (seller):', data.initialScore);
-    console.log('🔍 Final Score (admin):', data.finalScore);
-
+    console.log('Loaded conditionGroups:', this.conditionGroups);
+    console.log('Loaded conditionGroupNames:', this.conditionGroupNames);
+    console.log('Loaded sellerConditions:', this.sellerConditions);
+    console.log('Loaded adminConditions:', this.adminConditions);
+    console.log('Loaded initialScore:', data.initialScore);
+    console.log('Loaded finalScore:', data.finalScore);
     // Check if admin has reviewed (adminConditions exist or finalPrice exists)
     this.hasBeenReviewed = !!(Object.keys(this.adminConditions).length > 0 || data.finalPrice);
-    console.log('🔍 Has been reviewed:', this.hasBeenReviewed, '(adminConditions:', Object.keys(this.adminConditions).length, 'finalPrice:', data.finalPrice, ')');
+    console.log('Loaded hasBeenReviewed:', this.hasBeenReviewed, '(adminConditions:', Object.keys(this.adminConditions).length, 'finalPrice:', data.finalPrice, ')');
 
     // If awaiting confirmation or has been reviewed, show before/after review comparison
     if (this.isAwaitingConfirmation || this.hasBeenReviewed) {
@@ -667,6 +685,13 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   }
 
   viewRecoverySlip(): void {
+    // Update breadcrumb to show full path
+    this.breadcrumbService.setBreadcrumbs([
+      { label: 'Transactions', url: '/transactions' },
+      { label: 'Transaction Detail', url: `/transaction-detail/${this.transactionId}` },
+      { label: 'Recovery Slip' } // Current page (no URL)
+    ]);
+
     this.router.navigate(['/recovery-slip', this.transactionId], {
       state: { fromTransactionId: this.transactionId }
     });
@@ -674,6 +699,13 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   }
 
   viewPackagingInstruction(): void {
+    // Update breadcrumb to show full path
+    this.breadcrumbService.setBreadcrumbs([
+      { label: 'Transactions', url: '/transactions' },
+      { label: 'Transaction Detail', url: `/transaction-detail/${this.transactionId}` },
+      { label: 'Packaging Guide' } // Current page (no URL)
+    ]);
+
     this.router.navigate(['/packaging-instruction'], {
       state: { fromTransactionId: this.transactionId }
     });
