@@ -92,22 +92,23 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: ['http://localhost:4200'], // your Angular dev URL
+  origin: ['http://localhost:4200'],
   credentials: true,
   allowedHeaders: [
     'Content-Type',
     'Authorization',
     'Access-Control-Allow-Headers'
   ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'] // ✅ add PATCH
 }));
 
 // Handle preflight requests globally
 app.options(/^\/.*$/, cors({
   origin: ['http://localhost:4200'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'] // ✅ add PATCH
 }));
+
 
 app.use(morgan('dev'));
 // Increase payload limit for photo uploads (50MB)
@@ -123,7 +124,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/buyer', buyerRoutes);
 app.use('/api', profileRoutes);
 app.use('/api/scoring-config', scoringConfigRoutes);
-app.use('/api', questionnaireRouter); 
+app.use('/api', questionnaireRouter);
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/cron', cronRoutes);
