@@ -74,27 +74,24 @@
           <tr>
             <th class="narrow">#</th>
             <th class="non-sortable">Image</th>
-
-
-
-            <th (click)="setSort('model')" class="sortable">
-              Model Code <span class="sort">{{ getSortIcon('model') }}</span>
-            </th>
-
-            <th (click)="setSort('modelName')" class="sortable">
-              Model Name <span class="sort">{{ getSortIcon('modelName') }}</span>
-            </th>
+            
+            <!-- ✅ Match the order with tbody -->
             <th (click)="setSort('category')" class="sortable">
               Category <span class="sort">{{ getSortIcon('category') }}</span>
             </th>
-
+            
             <th (click)="setSort('brand')" class="sortable">
               Brand <span class="sort">{{ getSortIcon('brand') }}</span>
             </th>
+            
+            <th (click)="setSort('model')" class="sortable">
+              Model <span class="sort">{{ getSortIcon('model') }}</span>
+            </th>
+            
             <th (click)="setSort('finalPrice')" class="sortable">
               Final Price <span class="sort">{{ getSortIcon('finalPrice') }}</span>
             </th>
-
+            
             <th (click)="setSort('submittedDate')" class="sortable">
               Submitted Date <span class="sort">{{ getSortIcon('submittedDate') }}</span>
             </th>
@@ -104,28 +101,40 @@
         <tbody>
           <tr *ngFor="let t of paged(); let i = index">
             <td class="narrow">{{ (currentPage() - 1) * itemsPerPage() + i + 1 }}</td>
+            
+            <!-- Image -->
             <td class="image-cell">
-              <!-- ✅ Use finalImageUrl if available, otherwise use original -->
-              <img [src]="getImageSrc(t.finalImageUrl || t.imageUrl)" alt="{{ t.finalModelName || t.modelName }}" class="appliance-image">
+              <img [src]="getImageSrc(t.finalImageUrl || t.imageUrl)" 
+                   alt="{{ t.finalModelName || t.modelName }}" 
+                   class="appliance-image">
             </td>
-            <!-- ✅ Display final category/brand/model if available -->
+            
+            <!-- Category -->
             <td>{{ t.finalCategory || t.category }}</td>
+            
+            <!-- Brand -->
             <td>{{ t.finalBrand || t.brand }}</td>
+            
+            <!-- Model (with model name below) -->
             <td>
               <div>{{ t.finalModel || t.model }}</div>
               <div class="model-name">{{ t.finalModelName || t.modelName }}</div>
             </td>
+            
+            <!-- Final Price -->
             <td>
-              @if (t.finalPrice && t.finalPrice > 0) {
+              <span *ngIf="t.finalPrice && t.finalPrice > 0">
                 {{ formatPrice(t.finalPrice) }}
               </span>
+              <span *ngIf="!t.finalPrice || t.finalPrice === 0">-</span>
             </td>
-
+            
+            <!-- Submitted Date -->
             <td>{{ formatDate(t.submittedDate) }}</td>
           </tr>
 
           <tr *ngIf="paged().length === 0">
-            <td colspan="8" class="no-data">No transactions found</td>
+            <td colspan="7" class="no-data">No transactions found</td>
           </tr>
         </tbody>
       </table>

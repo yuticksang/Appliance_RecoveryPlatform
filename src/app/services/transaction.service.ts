@@ -416,15 +416,9 @@ export class TransactionService {
    * Get transactions for a specific buyer (transactions they won)
    * @param buyerId - The buyer ID (e.g., 'B001', 'B002')
    */
-  getTransactionsByBuyer(buyerId: string): Observable<any[]> {
-    // ✅ Get buyer token from localStorage directly
-    const token = localStorage.getItem('buyer_token');
-    
-    if (!token) {
-      console.log('❌ No buyer token found');
-      throw new Error('No authentication token found');
-    }
-    
+  getTransactionsByBuyer(buyerId: string): Observable<Transaction[]> {
+    const token = this.getAuthToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
 
     return this.http.get<Transaction[]>(`${this.apiUrl}/transactions/buyer/${buyerId}`, { headers })
       .pipe(
@@ -459,6 +453,5 @@ export class TransactionService {
           return of([]);
         })
       );
-   
   }
 }
