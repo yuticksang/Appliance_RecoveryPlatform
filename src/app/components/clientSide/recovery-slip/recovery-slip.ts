@@ -3,12 +3,14 @@ import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AuthService } from '../../../services/auth.service';
+import { BreadcrumbService } from '../../../services/breadcrumb.service';
+import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 @Component({
   selector: 'app-recovery-slip',
-  imports: [CommonModule],
+  imports: [CommonModule, BreadcrumbComponent],
   templateUrl: './recovery-slip.html',
   styleUrls: ['./recovery-slip.scss']
 })
@@ -19,6 +21,7 @@ export class RecoverySlipComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private http = inject(HttpClient);
   private auth = inject(AuthService);
+  private breadcrumbService = inject(BreadcrumbService);
 
   transactionId: string | number = '';
   loading = true;
@@ -48,6 +51,14 @@ export class RecoverySlipComponent implements OnInit {
     // Get transaction ID from route params
     this.route.params.subscribe(params => {
       this.transactionId = params['id'];
+
+      //Set breadcrumbs with clickable Transaction Detail link
+      this.breadcrumbService.setBreadcrumbs([
+        { label: 'Transactions', url: '/transactions' },
+        { label: 'Transaction Detail', url: `/transaction-detail/${this.transactionId}` },
+        { label: 'Recovery Slip' } // Current page (no URL)
+      ]);
+
       if (this.transactionId) {
         this.loadRecoverySlipData();
       } else {

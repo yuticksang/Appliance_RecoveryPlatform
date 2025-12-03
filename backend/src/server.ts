@@ -33,8 +33,8 @@ dbPool.connect()
   })
   .catch(err => console.error('❌ Database connection error:', err));
 
-// ✅ SIMPLIFIED CRON JOB - Uses shared function from cronController
-cron.schedule('*/2 * * * *', async () => {
+// ✅ SIMPLIFIED CRON JOB - Uses shared function from cronController, */2 * * * *
+cron.schedule('0 0 * * *', async () => {
   console.log('⏰ Running scheduled auto-cancellation check...');
   try {
     const result = await executeAutoCancellation();
