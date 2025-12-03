@@ -89,7 +89,8 @@ CREATE SEQUENCE condition_option_id_seq START WITH 1;
 CREATE SEQUENCE notification_id_seq START WITH 1;
 
 -- =====================================================
--- STEP 3: Create users table (unified for all user types)
+-- STEP 3: Create 
+ table (unified for all user types)
 -- =====================================================
 
 CREATE TABLE users (

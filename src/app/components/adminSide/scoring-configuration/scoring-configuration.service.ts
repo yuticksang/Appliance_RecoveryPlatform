@@ -49,12 +49,11 @@ export class ScoringConfigurationService {
     }
 
     updateConditionScore(categoryID: string, conditionID: string, newScoreValue: number): Observable<ApiResponse>{
-        return this.http.put<ApiResponse>(`${this.baseUrl}/scoring-config/${categoryID}/${conditionID}`, { newScoreValue });
+        return this.http.put<ApiResponse>(`${this.baseUrl}/scoring-config/condition/${categoryID}/${conditionID}`, { newScoreValue });
     }
 
-
-   
-    
-
+    updateWeightPercentage(categoryID: string, conditionGroupID: string, newWeightPercentage: number): Observable<ApiResponse>{
+        return this.http.put<ApiResponse>(`${this.baseUrl}/scoring-config/weight/${categoryID}/${conditionGroupID}`, { newWeightPercentage });
+    }
 
 }

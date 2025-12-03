@@ -1,110 +1,143 @@
-
 <main class="admins-page">
   <div class="admins-container">
     <div class="page-head">
-      <h1 class="page-title">Scoring Configuration ({{selectedCategoryName()}})</h1>
+      <h1 class="page-title">Scoring Configuration ({{ selectedCategoryName() }})</h1>
       <app-breadcrumb></app-breadcrumb>
     </div>
-    
 
-   
     <div *ngIf="isLoading()" class="loading">Loading admins...</div>
-    
-    
+
     <div *ngIf="error()" class="error-message">{{ error() }}</div>
-    
-  
 
     <div class="toolbar">
-      <div class="toolbar-left">
-      </div>
+      <div class="toolbar-left"></div>
       <div class="toolbar-right">
-        <select class="appliance-dropdown" [ngModel]="selectedCategoryID()" (ngModelChange)="onCategoryChange($event)">
-          <option *ngFor="let category of categories()" [value]="category.categoryID">{{ category.categoryName }}</option>
-          
+        <select
+          class="appliance-dropdown"
+          [ngModel]="selectedCategoryID()"
+          (ngModelChange)="onCategoryChange($event)"
+        >
+          <option *ngFor="let category of categories()" [value]="category.categoryID">
+            {{ category.categoryName }}
+          </option>
         </select>
         <div class="search">
-          <input type="text" [ngModel]="search()" (ngModelChange)="resetOnSearch($event)" placeholder="Search...">
+          <input
+            type="text"
+            [ngModel]="search()"
+            (ngModelChange)="resetOnSearch($event)"
+            placeholder="Search..."
+          />
         </div>
       </div>
     </div>
 
     <div *ngFor="let group of filteredRows()" class="table-card">
-        <div class="info-box">
-          <div class="info-left">
-            <span class="info-label">{{group.criteriaName}}</span>
-          </div>
-          <div class="info-right">
-          
-            <button class="icon-btn menu-btn">⋮</button>
-          </div>
+      <div class="info-box">
+        <div class="info-left">
+          <span class="info-label">{{ group.criteriaName }}</span>
         </div>
+        <div class="group-actions">
+          <button class="icon-btn edit-btn"  (click)="openEditWeightModal(group)" title="Edit Group">
+            <i class="ri-pencil-line"></i>
+          </button>
+        </div>
+      </div>
 
       <div class="table-wrap">
-        
         <table class="grid">
           <thead>
             <tr>
               <th class="narrow">#</th>
-              <th class="sortable col-id">
-                ID <i class="ri-filter-line"></i>
-              </th>
-              <th class="col-image">
-                Image 
-              </th>
-              <th class="sortable col-condition">
-                Condition 
-              </th>
-              <th class="sortable col-score-value">
-                Score Value <i class="ri-filter-line"></i>
-              </th>
+              <th class="sortable col-id">ID <i class="ri-filter-line"></i></th>
+              <th class="col-image">Image</th>
+              <th class="sortable col-condition">Condition</th>
+              <th class="sortable col-score-value">Score Value <i class="ri-filter-line"></i></th>
               <th class="actions">Actions</th>
             </tr>
           </thead>
 
           <tbody>
             <tr *ngFor="let condition of getPageSlice(group); let i = index">
-              <td class="narrow">{{ (getCurrentPage(group.groupID)-1) * itemsPerPage() + i + 1 }}</td>
+              <td class="narrow">
+                {{ (getCurrentPage(group.groupID) - 1) * itemsPerPage() + i + 1 }}
+              </td>
               <td>{{ condition.code }}</td>
-              <td>{{ condition.image }}</td>
+              <td class="image-col">
+                @if(condition.image) {
+                <img [src]="getImageUrl(condition.image)" alt="Condition" class="condition-image" />
+                } @else {
+                <div class="no-image"><i class="ri-image-line"></i></div>
+                }
+              </td>
               <td>{{ condition.description }}</td>
               <td>{{ condition.scoreValue }}</td>
               <td class="actions">
                 <button class="icon" title="Edit" (click)="openEditModal(condition, group)">
-                  <img src="assets/icons/edit.png" alt="Edit" class="action-icon">
+                  <img src="assets/icons/edit.png" alt="Edit" class="action-icon" />
                 </button>
               </td>
             </tr>
           </tbody>
         </table>
-
       </div>
       <div class="pager">
-        <button class="page-btn" (click)="goToPage(group.groupID, getCurrentPage(group.groupID) - 1)" [disabled]="getCurrentPage(group.groupID) === 1">‹</button>
+        <button
+          class="page-btn"
+          (click)="goToPage(group.groupID, getCurrentPage(group.groupID) - 1)"
+          [disabled]="getCurrentPage(group.groupID) === 1"
+        >
+          ‹
+        </button>
 
-        <button class="page-btn" *ngFor="let page of getPageNumbers(group)" (click)="goToPage(group.groupID, page)" [class.active]="page === getCurrentPage(group.groupID)">{{ page }}</button>
+        <button
+          class="page-btn"
+          *ngFor="let page of getPageNumbers(group)"
+          (click)="goToPage(group.groupID, page)"
+          [class.active]="page === getCurrentPage(group.groupID)"
+        >
+          {{ page }}
+        </button>
 
-        <button class="page-btn" (click)="goToPage(group.groupID, getCurrentPage(group.groupID) + 1)" [disabled]="getCurrentPage(group.groupID) === getTotalPages(group)">›</button>
+        <button
+          class="page-btn"
+          (click)="goToPage(group.groupID, getCurrentPage(group.groupID) + 1)"
+          [disabled]="getCurrentPage(group.groupID) === getTotalPages(group)"
+        >
+          ›
+        </button>
 
         <div class="page-size">
           <select [ngModel]="itemsPerPage()" (ngModelChange)="setPageSize($event)">
-            <option *ngFor="let option of itemsPerPageOptions" [value]="option">{{ option }}</option>
+            <option *ngFor="let option of itemsPerPageOptions" [value]="option">
+              {{ option }}
+            </option>
           </select>
           <span>/Page</span>
         </div>
       </div>
     </div>
-   
   </div>
 </main>
 
 @if (showEditModal() && selectedRow() && selectedConditionGroup()){
-<app-edit-score 
+<app-edit-score
   [condition]="selectedRow()!"
   [conditionGroup]="selectedConditionGroup()!"
   [categoryName]="selectedCategoryName()"
   (close)="closeEditModal()"
-  (save)="saveScore($event)">
+  (save)="saveScore($event)"
+>
 </app-edit-score>
+}
+
+@if (showEditWeightModal() && selectedConditionGroup()){
+<app-edit-weightPercentage
+  [conditionGroup]="selectedConditionGroup()!"
+  [categoryName]="selectedCategoryName()"
+  (close)="closeEditWeightModal()"
+  (save)="saveWeightPercentage($event)"
+>
+</app-edit-weightPercentage>
 }
 
