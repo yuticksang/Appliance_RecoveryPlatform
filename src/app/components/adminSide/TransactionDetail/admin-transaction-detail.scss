@@ -142,7 +142,7 @@ $Space: 'Space Grotesk', sans-serif;
     }
   }
 
-  // ✅ FIX INSPECTION ITEMS
+  // INSPECTION ITEMS
   .inspection-item {
     overflow: hidden;
 
@@ -187,7 +187,7 @@ $Space: 'Space Grotesk', sans-serif;
     }
   }
 
-  // ✅ FIX EDIT INPUTS
+  // EDIT INPUTS
   .edit-select,
   .edit-input,
   .edit-textarea {
@@ -202,7 +202,7 @@ $Space: 'Space Grotesk', sans-serif;
     word-break: break-word;
   }
 
-  // ✅ FIX CHECKBOX OPTIONS
+  // CHECKBOX OPTIONS
   .checkbox-options {
     overflow-y: auto;
   }
@@ -224,7 +224,7 @@ $Space: 'Space Grotesk', sans-serif;
     }
   }
 
-  // ✅ FIX DEADLINE WARNING
+  // DEADLINE WARNING
   .deadline-warning {
     overflow: hidden;
     word-wrap: break-word;
@@ -244,7 +244,7 @@ $Space: 'Space Grotesk', sans-serif;
     }
   }
 
-  // ✅ FIX RIGHT COLUMN
+  // RIGHT COLUMN
   .right-column {
     overflow: hidden;
   }
@@ -1028,8 +1028,8 @@ $Space: 'Space Grotesk', sans-serif;
 }
 
 .item-unresponded {
-  background: linear-gradient(135deg, #fbd38d 0%, #f6ad55 100%);
-  color: #7c2d12;
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
+  color: #4a5568;
 }
 
 .item-awaiting-return {
@@ -1638,7 +1638,7 @@ $Space: 'Space Grotesk', sans-serif;
         }
 
         .price-value {
-          font-size: 28px;
+          font-size: 40px;
           font-weight: 700;
           color: #2d3748;
 
@@ -1796,7 +1796,6 @@ $Space: 'Space Grotesk', sans-serif;
   grid-column: 1 / -1;
   margin-top: 1rem;
   padding-top: 1.5rem;
-  border-top: 2px solid #e2e8f0;
 }
 
 .photos-comparison-section-inline {
@@ -2131,5 +2130,75 @@ $Space: 'Space Grotesk', sans-serif;
 
   .deadline-separator {
     display: none;
+  }
+}
+// Auto cancellation info banner styles
+.system-cancellation-info {
+  margin-bottom: 2rem;
+}
+
+.cancellation-banner {
+  background: #fef9e7;
+  border: 1px solid #f7dc6f;
+  border-left: 4px solid #f39c12;
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.banner-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.banner-content {
+  flex: 1;
+  
+  h4 {
+    color: #7d6608;
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  
+  p {
+    color: #5d4e07;
+    margin: 0.25rem 0;
+    line-height: 1.4;
+    font-size: 0.9rem;
+    
+    strong {
+      font-weight: 600;
+      color: #4a3c06;
+    }
+  }
+  
+  p:last-child {
+    margin-bottom: 0;
+  }
+}
+// Responsive design
+@media (max-width: 768px) {
+  .cancellation-banner {
+    padding: 1rem;
+    gap: 0.75rem;
+    
+    .banner-icon {
+      font-size: 1.25rem;
+    }
+    
+    .banner-content {
+      h4 {
+        font-size: 0.9rem;
+      }
+      
+      p {
+        font-size: 0.85rem;
+      }
+    }
   }
 }

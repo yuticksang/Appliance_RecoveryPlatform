@@ -104,18 +104,21 @@
         <tbody>
           <tr *ngFor="let t of paged(); let i = index">
             <td class="narrow">{{ (currentPage() - 1) * itemsPerPage() + i + 1 }}</td>
-
-            <td class="image-col">
-              <div class="image-cell">
-                <img [src]="getImageSrc(t.imageUrl)" [alt]="t.modelName" class="appliance-image" />
-              </div>
+            <td class="image-cell">
+              <!-- ✅ Use finalImageUrl if available, otherwise use original -->
+              <img [src]="getImageSrc(t.finalImageUrl || t.imageUrl)" alt="{{ t.finalModelName || t.modelName }}"
+                class="appliance-image">
             </td>
-            <td>{{ t.model }}</td>
-            <td>{{ t.modelName }}</td>
-            <td>{{ t.category }}</td>
-            <td>{{ t.brand }}</td>
+            <!-- ✅ Display final category/brand/model if available -->
+            <td>{{ t.finalCategory || t.category }}</td>
+            <td>{{ t.finalBrand || t.brand }}</td>
             <td>
-              <span style="font-weight:600; color:#059669">
+              <div>{{ t.finalModel || t.model }}</div>
+              <div class="model-name">{{ t.finalModelName || t.modelName }}</div>
+            </td>
+            <td> <span style="font-weight:600; color:#059669">
+
+                @if (t.finalPrice && t.finalPrice > 0)
                 {{ formatPrice(t.finalPrice) }}
               </span>
             </td>

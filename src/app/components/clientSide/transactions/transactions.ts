@@ -6,6 +6,8 @@ import { Subscription } from 'rxjs';
 import { filter, take } from 'rxjs/operators';
 import { TransactionService, Transaction } from '../../../services/transaction.service';
 import { AuthService } from '../../../services/auth.service';
+import { NotificationService } from '../../../services/notification.service';
+
 
 @Component({
   selector: 'app-transactions',
@@ -17,6 +19,7 @@ import { AuthService } from '../../../services/auth.service';
 export class TransactionsComponent implements OnInit, OnDestroy {
   private transactionService = inject(TransactionService);
   private authService = inject(AuthService);
+  private notificationService = inject(NotificationService);
   private router = inject(Router);
 
   transactions: Transaction[] = [];
@@ -51,20 +54,21 @@ export class TransactionsComponent implements OnInit, OnDestroy {
     return this.sortDirection === 'asc' ? '↑' : '↓';
   }
 
-  ngOnInit(): void {
-    // Wait for auth to be ready before loading transactions
-    // Use filter + take(1) to only trigger once when user is available
-    this.authSubscription = this.authService.currentUser$
-      .pipe(
-        filter(user => user !== null && user.userType === 'seller'),
-        take(1) // Only take the first emission, then auto-unsubscribe
-      )
-      .subscribe(() => {
-        this.loadSellerTransactions();
-      });
-  }
+ngOnInit(): void {
+  this.authSubscription = this.authService.currentUser$
+    .pipe(
+      filter(user => user !== null && user.userType === 'seller'),
+      take(1)
+    )
+    .subscribe((user) => {
+      this.notificationService.initializeForUser();
+      this.loadSellerTransactions();
+    });
+}
 
   ngOnDestroy(): void {
+    // ✅ Cleanup notification service when component is destroyed
+    this.notificationService.destroy();
     // Cleanup subscription (though take(1) auto-unsubscribes)
     this.authSubscription?.unsubscribe();
   }
