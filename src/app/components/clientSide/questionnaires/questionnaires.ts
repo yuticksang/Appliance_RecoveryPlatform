@@ -489,16 +489,59 @@ export class QuestionnairesComponent implements OnInit{
   toggleChecklistOption(groupId: string, optionId: string) {
     this.selectedAnswers.update(current => {
       const currentList = (current[groupId] || []) as string[];
-      if (currentList.includes(optionId)) {
-        return {
-          ...current,
-          [groupId]: currentList.filter(id => id !== optionId)
-        };
+
+      // Find the group to check if this option is "None"
+      const group = this.conditionGroups().find(g => g.groupID === groupId);
+      if (!group) return current;
+
+      // Find the clicked option
+      const clickedOption = group.options.find(opt => opt.id === optionId);
+      if (!clickedOption) return current;
+
+      // Check if the clicked option is "None" (case-insensitive check in description or code)
+      const isNoneOption = clickedOption.description.toLowerCase().includes('none') ||
+                           clickedOption.code.toLowerCase().includes('none');
+
+      // Find the "None" option in this group
+      const noneOption = group.options.find(opt =>
+        opt.description.toLowerCase().includes('none') ||
+        opt.code.toLowerCase().includes('none')
+      );
+      const noneOptionId = noneOption?.id;
+
+      // If clicking "None"
+      if (isNoneOption) {
+        if (currentList.includes(optionId)) {
+          // Uncheck "None"
+          return {
+            ...current,
+            [groupId]: currentList.filter(id => id !== optionId)
+          };
+        } else {
+          // Check "None" and clear all other selections
+          return {
+            ...current,
+            [groupId]: [optionId]
+          };
+        }
       } else {
-        return {
-          ...current,
-          [groupId]: [...currentList, optionId]
-        };
+        // Clicking any other option
+        if (currentList.includes(optionId)) {
+          // Unchecking this option
+          return {
+            ...current,
+            [groupId]: currentList.filter(id => id !== optionId)
+          };
+        } else {
+          // Checking this option - remove "None" if it was selected
+          const newList = noneOptionId
+            ? currentList.filter(id => id !== noneOptionId)
+            : currentList;
+          return {
+            ...current,
+            [groupId]: [...newList, optionId]
+          };
+        }
       }
     });
     this.onAnswerChange();
