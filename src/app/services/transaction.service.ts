@@ -27,6 +27,7 @@ export interface Transaction {
   estimatedPrice?: number;
   finalPrice?: number;
   note?: string; // Note
+  paymentDueDate?: string;
   responseDeadline?: string; // Response deadline date for seller to respond to offer
   cancellationReason?: 'seller' | 'system' | null; 
 }
@@ -73,7 +74,7 @@ export class TransactionService {
           return transactions.map(t => ({
             id: t.id || t.transactionID,
             sellerId: t.sellerId || t.sellerID,
-            buyerId: t.buyerId || t.buyerID, // ✅ ADD THIS LINE
+            buyerId: t.buyerId || t.buyerID,
             sellerName: t.sellerName || 'Unknown',
             image: t.image || t.imageUrl || 'assets/image/placeholder-appliance.png',
             brand: t.brand || '',
@@ -91,7 +92,8 @@ export class TransactionService {
             estimatedPrice: t.estimatedPrice || t.initialOfferPrice || 0,
             finalPrice: t.finalPrice || t.finalOfferPrice,
             note: t.note || '',
-            responseDeadline: t.responseDeadline || t.response_deadline
+            responseDeadline: t.responseDeadline || t.response_deadline,
+            cancellationReason: t.cancellationReason || null
           }));
         }),
         catchError(error => {
@@ -132,7 +134,8 @@ export class TransactionService {
             estimatedPrice: t.estimatedPrice || t.initialOfferPrice || 0,
             finalPrice: t.finalPrice || t.finalOfferPrice,
             note: t.note || '',
-            responseDeadline: t.responseDeadline || t.response_deadline
+            responseDeadline: t.responseDeadline || t.response_deadline,
+            cancellationReason: t.cancellationReason
           }));
         }),
         catchError(error => {
@@ -413,7 +416,8 @@ export class TransactionService {
             estimatedPrice: t.estimatedPrice || t.initialOfferPrice || 0,
             finalPrice: t.finalPrice || t.finalOfferPrice || 0,
             note: t.note || '',
-            responseDeadline: t.responseDeadline || t.response_deadline
+            responseDeadline: t.responseDeadline || t.response_deadline,
+            cancellationReason: t.cancellationReason
           }));
         }),
         catchError(error => {

@@ -500,7 +500,8 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
           estimatedPrice: data.estimatedPrice,
           finalPrice: data.finalPrice,
           note: data.note || '', // Note from backend
-          responseDeadline: data.responseDeadline || data.response_deadline
+          responseDeadline: data.responseDeadline || data.response_deadline,
+          cancellationReason: data.cancellationReason
         };
 
         console.log('🔍 Transaction object after mapping:', {
@@ -1241,7 +1242,7 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     return this.daysUntilDeadline <= 3 && !this.isDeadlineExpired();
   }
 
-  // Format date for display
+  // Update existing formatDate method to handle both deadlines
   formatDate(dateStr: string): string {
     if (!dateStr) return 'N/A';
     const date = new Date(dateStr);
@@ -1263,4 +1264,33 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     }
     return 'normal';
   }
+
+    // ========== PAYMENT DUE DATE METHODS (NEW) ==========
+
+  // Calculate days until payment due date
+  get daysUntilPaymentDue(): number {
+    if (!this.transaction?.paymentDueDate) return 0;
+
+    const now = new Date();
+    const dueDate = new Date(this.transaction.paymentDueDate);
+    const timeDifference = dueDate.getTime() - now.getTime();
+    const daysDifference = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
+
+    return Math.max(0, daysDifference);
+  }
+
+  // Check if payment due date has passed
+  isPaymentDueDateExpired(): boolean {
+    if (!this.transaction?.paymentDueDate) return false;
+
+    const now = new Date();
+    const dueDate = new Date(this.transaction.paymentDueDate);
+    return now > dueDate;
+  }
+
+  // Check if payment due date is approaching (≤ 3 days)
+  isPaymentDueDateApproaching(): boolean {
+    return this.daysUntilPaymentDue <= 3 && !this.isPaymentDueDateExpired();
+  }
 }
+

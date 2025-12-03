@@ -244,6 +244,74 @@ $Space: 'Space Grotesk', sans-serif;
     }
   }
 
+  // Payment Due Date Variant (blue theme instead of default blue)
+.deadline-warning.payment-due {
+  border-left-color: #3b82f6;
+  background: #eff6ff;
+
+  .deadline-icon {
+    background: #dbeafe;
+
+    svg {
+      stroke: #3b82f6;
+    }
+  }
+
+  .deadline-title {
+    color: #1e40af;
+  }
+
+  .days-remaining {
+    color: #2563eb;
+  }
+
+  // Warning state (≤ 3 days)
+  &.deadline-approaching {
+    border-left-color: #f59e0b;
+    background: #fffbeb;
+
+    .deadline-icon {
+      background: #fef3c7;
+
+      svg {
+        stroke: #f59e0b;
+      }
+    }
+
+    .deadline-title {
+      color: #92400e;
+    }
+
+    .days-remaining {
+      color: #d97706;
+      font-weight: 700;
+    }
+  }
+
+  // Expired state
+  &.deadline-expired {
+    border-left-color: #ef4444;
+    background: #fef2f2;
+
+    .deadline-icon {
+      background: #fee2e2;
+
+      svg {
+        stroke: #ef4444;
+        animation: shake 0.5s ease-in-out;
+      }
+    }
+
+    .deadline-title {
+      color: #991b1b;
+    }
+
+    .days-remaining {
+      color: #dc2626;
+      font-weight: 700;
+    }
+  }
+
   // RIGHT COLUMN
   .right-column {
     overflow: hidden;
@@ -2202,3 +2270,29 @@ $Space: 'Space Grotesk', sans-serif;
     }
   }
 }
+// Add this after your existing .system-cancellation-info styles
+
+.cancellation-banner.seller {
+  border-left-color: #3b82f6; // Blue for seller cancellation
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+
+  .banner-icon {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  }
+
+  .banner-content {
+    h4 {
+      color: #1e40af;
+    }
+
+    p {
+      color: #1e3a8a;
+
+      strong {
+        color: #1e40af;
+      }
+    }
+  }
+}
+}
+

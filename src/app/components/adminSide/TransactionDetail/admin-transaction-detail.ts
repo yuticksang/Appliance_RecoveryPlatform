@@ -1119,4 +1119,33 @@ export class AdminTransactionDetailComponent implements OnInit {
     return 'normal';
   }
 
+  // ========== PAYMENT DUE DATE METHODS (NEW) ==========
+
+  // Calculate days until payment due date
+  get daysUntilPaymentDue(): number {
+    const txn = this.transaction();
+    if (!txn?.paymentDueDate) return 0;
+
+    const now = new Date();
+    const dueDate = new Date(txn.paymentDueDate);
+    const timeDifference = dueDate.getTime() - now.getTime();
+    const daysDifference = Math.ceil(timeDifference / (1000 * 60 * 60 * 24));
+
+    return Math.max(0, daysDifference);
+  }
+
+  // Check if payment due date has passed
+  isPaymentDueDateExpired(): boolean {
+    const txn = this.transaction();
+    if (!txn?.paymentDueDate) return false;
+
+    const now = new Date();
+    const dueDate = new Date(txn.paymentDueDate);
+    return now > dueDate;
+  }
+
+  // Check if payment due date is approaching (≤ 3 days)
+  isPaymentDueDateApproaching(): boolean {
+    return this.daysUntilPaymentDue <= 3 && !this.isPaymentDueDateExpired();
+  }
 }
