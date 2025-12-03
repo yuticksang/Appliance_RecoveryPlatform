@@ -35,9 +35,11 @@ export const getAddresses = async (req: AuthRequest, res: Response) => {
       state: row.state,
       city: row.city,
       zip: row.zipCode,
-      pickup: row.pickupAddress
+      pickup: row.pickupAddress,
+      isDefault: row.isDefault  // ← MISSING FIELD - now added!
     }));
 
+    console.log('📍 Returning addresses:', addresses);
     res.json(addresses);
   } catch (error) {
     console.error('Get addresses error:', error);
