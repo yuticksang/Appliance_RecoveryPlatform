@@ -49,7 +49,7 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: ['http://localhost:4200'], // your Angular dev URL
+  origin: ['http://localhost:4200'],
   credentials: true,
   allowedHeaders: [
     'Content-Type',
@@ -65,6 +65,7 @@ app.options(/^\/.*$/, cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 }));
+
 
 app.use(morgan('dev'));
 app.use(express.json({ limit: '50mb' }));
@@ -84,6 +85,7 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/cron', cronRoutes);
 app.use('/api/notifications', notificationRoutes);
 console.log('📢 Notification routes registered successfully');
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/transactionReport', transactionReportRoutes);
 
