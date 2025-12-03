@@ -651,11 +651,18 @@ export class QuestionnairesComponent implements OnInit{
         }));
 
         console.log('Mapped Addresses:', list);
+        console.log('Default address:', list.find(a => a.isDefault));
         this.addresses.set(list);
 
-        // Auto-set first as default
+        // Force change detection to update defaultAddress computed signal
+        this.cdr.markForCheck();
+
+        // Auto-set first as default ONLY if NO default exists
         if (list.length && !list.some(a => a.isDefault)) {
+          console.log('No default found, setting first address as default');
           this.setDefaultAndSave(list[0].id!);
+        } else {
+          console.log('Default address already exists:', list.find(a => a.isDefault)?.id);
         }
       },
       error: (err) => {
@@ -808,15 +815,21 @@ export class QuestionnairesComponent implements OnInit{
     const user = this.currentUser();
     if (!user) return;
 
+    console.log('Setting default address:', addressId, 'for user:', user.id);
+
     this.auth.setDefaultAddress(user.id, addressId).subscribe({
       next: () => {
+        console.log('✅ Default address set successfully on backend');
         this.addresses.update(list =>
           list.map(a => ({ ...a, isDefault: a.id === addressId }))
         );
+        console.log('Updated addresses in frontend:', this.addresses());
+        console.log('New default address:', this.defaultAddress());
+        this.cdr.markForCheck();
       },
       error: (err) => {
-        console.error('Set default failed:', err);
-        this.alertService.error('Failed to set default');
+        console.error('❌ Set default failed:', err);
+        this.alertService.error('Failed to set default address');
       }
     });
   }
