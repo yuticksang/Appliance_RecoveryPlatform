@@ -28,6 +28,26 @@
           </select>
         </div>
 
+        <!-- Transaction Status Dropdown -->
+        <div class="filter-dropdown">
+          <select
+            [(ngModel)]="selectedTransactionStatus"
+            (change)="onTransactionStatusChange()">
+            <option value="">Select Transaction Status</option>
+            <option *ngFor="let status of transactionStatuses" [value]="status">{{ status }}</option>
+          </select>
+        </div>
+
+        <!-- Item Status Dropdown -->
+        <div class="filter-dropdown">
+          <select
+            [(ngModel)]="selectedItemStatus"
+            (change)="onItemStatusChange()">
+            <option value="">Select Item Status</option>
+            <option *ngFor="let status of itemStatuses" [value]="status">{{ status }}</option>
+          </select>
+        </div>
+
         <!-- Search Box -->
         <div class="search-box">
           <input

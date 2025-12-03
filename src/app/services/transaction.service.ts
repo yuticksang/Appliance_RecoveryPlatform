@@ -15,13 +15,20 @@ export interface Transaction {
   category: string;
   model: string;
   modelName: string;
+  finalBrand?: string;
+  finalCategory?: string;
+  finalModel?: string;
+  finalModelName?: string;
+  finalImageUrl?: string;
   transactionStatus: 'Pending Payment' | 'Completed' | 'Returned' | 'Rejected' | 'Cancelled' | 'Awaiting Confirmation' | 'Under Review' | 'Picked Up' | 'Confirmed';
   itemStatus: 'Picked Up' | 'Returned' | 'Awaiting Picked Up' | 'Awaiting Pick Up' | 'Pending Further Action' | 'Unresponded' | 'Awaiting Return';
   submittedDate: Date;
+  updatedAt?: Date;
   estimatedPrice?: number;
   finalPrice?: number;
   note?: string; // Note
   responseDeadline?: string; // Response deadline date for seller to respond to offer
+  cancellationReason?: 'seller' | 'system' | null; 
 }
 
 @Injectable({
@@ -73,6 +80,11 @@ export class TransactionService {
             category: t.category || '',
             model: t.model || '',
             modelName: t.modelName || t.model_name || '',
+            finalBrand: t.finalBrand,
+            finalCategory: t.finalCategory,
+            finalModel: t.finalModel,
+            finalModelName: t.finalModelName,
+            finalImageUrl: t.finalImageUrl,
             transactionStatus: t.transactionStatus || t.transaction_status || 'Under Review',
             itemStatus: t.itemStatus || t.item_status || 'Awaiting Pick Up',
             submittedDate: new Date(t.submittedDate || t.submissionDate || t.createdAt),
@@ -109,6 +121,11 @@ export class TransactionService {
             category: t.category || '',
             model: t.model || '',
             modelName: t.modelName || t.model_name || '',
+            finalBrand: t.finalBrand,
+            finalCategory: t.finalCategory,
+            finalModel: t.finalModel,
+            finalModelName: t.finalModelName,
+            finalImageUrl: t.finalImageUrl,
             transactionStatus: t.transactionStatus || t.transaction_status || 'Under Review',
             itemStatus: t.itemStatus || t.item_status || 'Awaiting Pick Up',
             submittedDate: new Date(t.submittedDate || t.submissionDate || t.createdAt),
@@ -385,6 +402,11 @@ export class TransactionService {
             category: t.category || '',
             model: t.model || '',
             modelName: t.modelName || t.model_name || '',
+            finalBrand: t.finalBrand,
+            finalCategory: t.finalCategory,
+            finalModel: t.finalModel,
+            finalModelName: t.finalModelName,
+            finalImageUrl: t.finalImageUrl,
             transactionStatus: t.transactionStatus || t.transaction_status || 'Under Review',
             itemStatus: t.itemStatus || t.item_status || 'Awaiting Pick Up',
             submittedDate: new Date(t.submittedDate || t.submissionDate || t.createdAt),

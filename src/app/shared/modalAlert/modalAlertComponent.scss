@@ -1,0 +1,118 @@
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(2px);
+}
+
+.modal-container {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+  width: 90%;
+  animation: modalIn 0.2s ease-out;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.modal-header {
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e5e7eb;
+
+  &.header-warning {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+  }
+  &.header-info {
+    background: linear-gradient(135deg, #dbeafe, #93c5fd);
+  }
+  &.header-success {
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  }
+  &.header-error {
+    background: linear-gradient(135deg, #fecaca, #fca5a5);
+  }
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+  color: #1f2937;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 0.5rem;
+  border-radius: 6px;
+
+  &:hover { background-color: rgba(0, 0, 0, 0.1); }
+}
+
+.modal-body {
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+
+.modal-icon {
+  margin: 0 auto 1.5rem;
+  
+  &.icon-warning { color: #f59e0b; }
+  &.icon-info { color: #3b82f6; }
+  &.icon-success { color: #10b981; }
+  &.icon-error { color: #ef4444; }
+}
+
+.modal-message {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #4b5563;
+  white-space: pre-line;
+}
+
+.modal-footer {
+  padding: 1rem 1.5rem 1.5rem;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+
+  &.btn-secondary {
+    background-color: #f3f4f6;
+    color: #374151;
+    &:hover { background-color: #e5e7eb; }
+  }
+
+  &.btn-primary { background-color: #3b82f6; color: white; }
+  &.btn-warning { background-color: #f59e0b; color: white; }
+  &.btn-info { background-color: #3b82f6; color: white; }
+  &.btn-success { background-color: #10b981; color: white; }
+  &.btn-error { background-color: #ef4444; color: white; }
+}

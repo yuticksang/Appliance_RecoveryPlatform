@@ -11,7 +11,8 @@ import {
   uploadAdminPhotos,
   getConditionOptionsByGroupIds,
   deleteTransaction,
-  getTransactionsByBuyer
+  getTransactionsByBuyer,
+  triggerSystemCancellation
 } from '../controllers/transactionController';
 import { verifyToken } from '../middleware/authMiddleware';
 import multer from 'multer';
@@ -74,5 +75,8 @@ router.put('/:id', updateTransaction);
 
 // Delete transaction (admin only)
 router.delete('/:id', deleteTransaction);
+
+// Manual system cancellation (admin only)
+router.post('/:id/system-cancel', verifyToken, triggerSystemCancellation);
 
 export default router;
