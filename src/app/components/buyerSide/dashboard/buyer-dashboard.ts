@@ -1,5 +1,5 @@
 import { Component, Inject, PLATFORM_ID, OnInit, inject, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { RouterOutlet, Router } from '@angular/router';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartOptions, ChartType } from 'chart.js';
@@ -98,6 +98,7 @@ export class BuyerDashboardComponent implements OnInit {
   private alertService = inject(AlertService);
   private authService = inject(AuthService);
   private dashboardService = inject(buyerDashboardService);
+  private router = inject(Router);
 
   barChartColors = {
     category: '#4ECDC4', // Teal for category
@@ -311,6 +312,10 @@ export class BuyerDashboardComponent implements OnInit {
   switchTimeRange(range: 'weekly' | 'monthly' | 'yearly'): void {
     this.activeTimeRange = range;
     this.loadTimeSeriesData();
+  }
+
+  goToTransactionsPage(): void {
+    this.router.navigate(['/buyer/transactions']);
   }
 
   formatCurrency(amount: number | string, currency: string = 'MYR'): string {
