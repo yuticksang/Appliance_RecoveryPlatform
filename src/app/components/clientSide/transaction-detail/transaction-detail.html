@@ -59,10 +59,10 @@
       </div>
     </div>
 
-    <!-- Cancellation Button for Pending Payment (Case 5) -->
-    <div *ngIf="isPendingPayment"
-         class="decision-section cancellation-section"
-         [class.hidden]="!isHeaderVisible">
+
+    <!-- Cancellation Button - Available for all non-final statuses -->
+    <div *ngIf="canCancelTransaction()"
+         class="decision-section cancellation-section">
         <div class="decision-content">
           <div class="decision-header">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -156,6 +156,38 @@
           </svg>
         </button>
       </div>
+    </div>
+
+      <!-- Auto Cancelled - Show different messages based on who cancelled -->
+    <div *ngIf="transaction.transactionStatus === 'Cancelled'" class="system-cancellation-info">
+    <!-- ✅ System Cancellation -->
+    <div *ngIf="transaction.cancellationReason === 'system'" class="cancellation-banner system">
+      <div class="banner-icon">⚠️</div>
+      <div class="banner-content">
+        <h4>Transaction Cancelled by System</h4>
+        <p><strong>Reason:</strong> No response received within the required deadline</p>
+        <p><strong>Next Steps:</strong> Kindly contact our admin for further assistance.</p>
+      </div>
+    </div>
+
+    <!-- ✅ Seller Cancellation -->
+    <div *ngIf="transaction.cancellationReason === 'seller'" class="cancellation-banner seller">
+      <div class="banner-icon">📦</div>
+      <div class="banner-content">
+        <h4>Transaction Cancelled</h4>
+        <p><strong>Reason:</strong> You cancelled this transaction</p>
+        <p><strong>Next Steps:</strong> We will arrange to return your appliance within 7 days.</p>
+      </div>
+    </div>
+
+    <!-- ✅ Fallback for older records without cancellationReason -->
+    <div *ngIf="!transaction.cancellationReason" class="cancellation-banner">
+      <div class="banner-icon">⚠️</div>
+      <div class="banner-content">
+        <h4>Transaction Cancelled</h4>
+        <p>This transaction has been cancelled.</p>
+      </div>
+    </div>
     </div>
 
     <!-- Main Content Grid -->
@@ -777,9 +809,9 @@
   <!-- Cancel Transaction Confirmation Modal -->
   <div *ngIf="showCancelConfirmModal" class="modal-overlay" (click)="cancelCancellation()">
     <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-icon warning-icon">
+      <!-- <div class="modal-icon warning-icon">
         <span class="emoji">⚠️</span>
-      </div>
+      </div> -->
       <h3 class="modal-title">Cancel This Transaction?</h3>
       <p class="modal-message">
         Are you sure you want to cancel? The appliance will be returned to you.

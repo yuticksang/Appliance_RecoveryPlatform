@@ -15,7 +15,7 @@ interface BuyerTransaction {
   submittedApplianceID: string;
   submittedDate: Date;
   estimatedPrice: number;
-  finalPrice?: number; // ✅ CHANGE from 'number' to 'number | undefined' or 'number?'
+  finalPrice?: number;
   initialNote: string;
   finalNote: string;
   transactionStatus: string;
@@ -30,9 +30,15 @@ interface BuyerTransaction {
   modelName: string;
   imageUrl: string;
   buyerBasePrice: number;
+  // ✅ ADD FINAL FIELDS
+  finalBrand?: string;
+  finalCategory?: string;
+  finalModel?: string;
+  finalModelName?: string;
+  finalImageUrl?: string;
 }
 
-type SortKey = 'id' | 'sellerId' | 'sellerName' | 'submittedDate' | 'finalPrice' | 'buyerBasePrice' | 'category' | 'brand' | 'model';
+type SortKey = 'id' | 'sellerId' | 'sellerName' | 'submittedDate' | 'finalPrice' | 'buyerBasePrice' | 'category' | 'brand' | 'model' | 'modelName';
 type SortDir = 'asc' | 'desc';
 
 @Component({
@@ -47,7 +53,7 @@ export class BuyerTransactionListComponent implements OnInit {
   private alertService = inject(AlertService);
   private auth = inject(AuthService);
   private router = inject(Router);
-  private transactionService = inject(TransactionService); // ✅ ADD THIS
+  private transactionService = inject(TransactionService);
   private apiUrl = 'http://localhost:3000/api';
 
   // State
@@ -79,11 +85,9 @@ export class BuyerTransactionListComponent implements OnInit {
     this.loading.set(true);
     this.error.set('');
 
-    // ✅ Check buyer_user instead of currentUser
     const buyerUserStr = localStorage.getItem('buyer_user');
     
     if (!buyerUserStr) {
-      console.log('❌ No buyer_user found in localStorage');
       this.error.set('Buyer not logged in. Please log in again.');
       this.loading.set(false);
       return;
@@ -92,37 +96,63 @@ export class BuyerTransactionListComponent implements OnInit {
     let buyerUser;
     try {
       buyerUser = JSON.parse(buyerUserStr);
-      console.log('👤 Parsed buyer user:', buyerUser);
     } catch (e) {
-      console.log('❌ Error parsing buyer user JSON:', e);
       this.error.set('Invalid buyer data. Please log in again.');
       this.loading.set(false);
       return;
     }
 
-    const buyerId = buyerUser?.buyerId;
-    console.log('🆔 Extracted buyerId:', buyerId);
+    const buyerId = buyerUser?.buyerId || buyerUser?.id;
     
     if (!buyerId) {
-      console.log('❌ No buyerId found. Buyer user object:', buyerUser);
-      this.error.set('Buyer ID not found. Please log in as a buyer.');
+      this.error.set('Buyer ID not found.');
       this.loading.set(false);
       return;
     }
 
-    console.log('🔍 Fetching transactions for buyer:', buyerId);
+    // ✅ GET TOKEN FROM localStorage DIRECTLY
+    const token = localStorage.getItem('buyer_token');
+    console.log('🔑 Found token from localStorage:', token ? 'Token exists (length: ' + token.length + ')' : 'No token found');
+    
+    if (!token) {
+      console.log('❌ No authentication token found in localStorage');
+      this.error.set('Authentication token missing. Please log in again.');
+      this.loading.set(false);
+      return;
+    }
 
-    this.transactionService.getTransactionsByBuyer(buyerId).subscribe({
+    console.log('🔍 Making API call for buyer:', buyerId);
+
+    // ✅ FIXED: Use HttpHeaders constructor properly
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
+
+    console.log('📤 Request headers created');
+    console.log('📤 Authorization header:', `Bearer ${token.substring(0, 20)}...`);
+
+    // ✅ Make HTTP call with proper headers
+    this.http.get<any[]>(`${this.apiUrl}/transactions/buyer/${buyerId}`, { 
+      headers: headers 
+    }).subscribe({
       next: (data) => {
-        console.log('✅ Loaded buyer transactions:', data);
-        const buyerTransactions: BuyerTransaction[] = data.map(t => ({
+        console.log('✅ API call successful. Data:', data);
+        
+        const completedTransactions = data.filter(t => {
+          const isCompleted = t.transactionStatus === 'Completed';
+          const hasFinalPrice = t.finalPrice != null && t.finalPrice > 0;
+          return isCompleted && hasFinalPrice;
+        });
+
+        const buyerTransactions: BuyerTransaction[] = completedTransactions.map(t => ({
           id: t.id,
           sellerId: t.sellerId,
           sellerName: t.sellerName,
-          submittedApplianceID: '',
+          submittedApplianceID: (t as any).submittedApplianceID || t.id || '',
           submittedDate: new Date(t.submittedDate),
           estimatedPrice: Number(t.estimatedPrice) || 0,
-          finalPrice: Number(t.finalPrice) || 0, // ✅ Always return a number (0 if null/undefined)
+          finalPrice: Number(t.finalPrice) || 0,
           initialNote: t.note || '',
           finalNote: t.note || '',
           transactionStatus: t.transactionStatus,
@@ -136,30 +166,60 @@ export class BuyerTransactionListComponent implements OnInit {
           model: t.model,
           modelName: t.modelName || '',
           imageUrl: t.image,
-          buyerBasePrice: t.finalPrice ? Number(t.finalPrice) : Number(t.estimatedPrice) || 0
+          buyerBasePrice: t.finalPrice ? Number(t.finalPrice) : Number(t.estimatedPrice) || 0,
+          // ✅ MAP FINAL FIELDS FROM BACKEND
+          finalBrand: t.finalBrand,
+          finalCategory: t.finalCategory,
+          finalModel: t.finalModel,
+          finalModelName: t.finalModelName,
+          finalImageUrl: t.finalImageUrl
         }));
+
+        console.log(`✅ Displaying ${buyerTransactions.length} completed transactions`);
         this.transactions.set(buyerTransactions);
         this.loading.set(false);
       },
       error: (err) => {
-        console.error('❌ Error loading buyer transactions:', err);
-        this.error.set('Failed to load transactions. Please try again.');
+        console.error('❌ API Error details:', err);
+        console.error('❌ Error status:', err.status);
+        console.error('❌ Error message:', err.message);
+        
+        if (err.status === 401) {
+          this.error.set('Authentication failed. Please log in again.');
+          localStorage.removeItem('buyer_user');
+          localStorage.removeItem('buyer_token');
+        } else if (err.status === 403) {
+          this.error.set('Access denied. You can only view your own transactions.');
+        } else {
+          this.error.set('Failed to load transactions. Please try again.');
+        }
+        
         this.loading.set(false);
       }
     });
   }
 
-  // Computed values
+  // ✅ UPDATE: Use final fields if available
   uniqueCategories = computed(() => {
-    const categories = [...new Set(this.transactions().map(t => t.category))];
-    return categories.filter(c => c).sort();
+    const cats = new Set<string>();
+    this.transactions().forEach(t => {
+      const category = t.finalCategory || t.category; // Use final if available
+      if (category) cats.add(category);
+    });
+    return Array.from(cats).sort();
   });
 
+  // ✅ UPDATE: Use final fields if available
   uniqueBrands = computed(() => {
-    const brands = [...new Set(this.transactions().map(t => t.brand))];
-    return brands.filter(b => b).sort();
+    const brands = new Set<string>();
+    this.transactions().forEach(t => {
+      const brand = t.finalBrand || t.brand; // Use final if available
+      if (brand) brands.add(brand);
+    });
+    return Array.from(brands).sort();
   });
 
+  // ✅ UPDATE: Filter using final fields
   filtered = computed(() => {
     const searchTerm = this.search().toLowerCase();
     const category = this.selectedCategory();
@@ -168,17 +228,19 @@ export class BuyerTransactionListComponent implements OnInit {
     const max = this.maxPrice();
 
     let filtered = this.transactions().filter(t => {
+      // ✅ Search in final fields if available
       const matchesSearch = !searchTerm ||
         t.id.toLowerCase().includes(searchTerm) ||
         t.sellerId.toLowerCase().includes(searchTerm) ||
         t.sellerName.toLowerCase().includes(searchTerm) ||
-        t.category.toLowerCase().includes(searchTerm) ||
-        t.brand.toLowerCase().includes(searchTerm) ||
-        t.model.toLowerCase().includes(searchTerm) ||
-        t.modelName.toLowerCase().includes(searchTerm);
+        (t.finalCategory || t.category).toLowerCase().includes(searchTerm) ||
+        (t.finalBrand || t.brand).toLowerCase().includes(searchTerm) ||
+        (t.finalModel || t.model).toLowerCase().includes(searchTerm) ||
+        (t.finalModelName || t.modelName).toLowerCase().includes(searchTerm);
 
-      const matchesCategory = category === 'all' || t.category === category;
-      const matchesBrand = brand === 'all' || t.brand === brand;
+      // ✅ Filter by final fields if available
+      const matchesCategory = category === 'all' || (t.finalCategory || t.category) === category;
+      const matchesBrand = brand === 'all' || (t.finalBrand || t.brand) === brand;
 
       const price = t.finalPrice || 0;
       const matchesMinPrice = min === null || price >= min;
@@ -199,6 +261,18 @@ export class BuyerTransactionListComponent implements OnInit {
       } else if (key === 'submittedDate') {
         av = new Date(a[key]).getTime();
         bv = new Date(b[key]).getTime();
+      } else if (key === 'category') {
+        // ✅ Sort by final category if available
+        av = (a.finalCategory || a.category || '').toLowerCase();
+        bv = (b.finalCategory || b.category || '').toLowerCase();
+      } else if (key === 'brand') {
+        // ✅ Sort by final brand if available
+        av = (a.finalBrand || a.brand || '').toLowerCase();
+        bv = (b.finalBrand || b.brand || '').toLowerCase();
+      } else if (key === 'model') {
+        // ✅ Sort by final model if available
+        av = (a.finalModel || a.model || '').toLowerCase();
+        bv = (b.finalModel || b.model || '').toLowerCase();
       } else {
         av = (a[key] ?? '').toString().toLowerCase();
         bv = (b[key] ?? '').toString().toLowerCase();
@@ -212,6 +286,10 @@ export class BuyerTransactionListComponent implements OnInit {
     return filtered;
   });
 
+  filteredTransactions = computed(() => {
+    return this.filtered();
+  });
+
   totalPages = computed(() =>
     Math.ceil(this.filtered().length / this.itemsPerPage())
   );
@@ -220,35 +298,6 @@ export class BuyerTransactionListComponent implements OnInit {
     const start = (this.currentPage() - 1) * this.itemsPerPage();
     return this.filtered().slice(start, start + this.itemsPerPage());
   });
-
-  // API calls
-  // loadTransactions() {
-  //   this.loading.set(true);
-  //   this.error.set('');
-
-  //   const buyerId = this.auth.getBuyerId();
-  
-  //   if (!buyerId) {
-  //     this.error.set('Buyer ID not found. Please log in again.');
-  //     this.loading.set(false);
-  //     return;
-  //   }
-
-  //   console.log('🔍 Fetching transactions for buyer:', buyerId);
-
-  //   this.transactionService.getTransactionsByBuyer(buyerId).subscribe({
-  //     next: (data) => {
-  //       console.log('✅ Loaded buyer transactions:', data);
-  //       this.transactions.set(data);
-  //       this.loading.set(false);
-  //     },
-  //     error: (err) => {
-  //       console.error('❌ Error loading buyer transactions:', err);
-  //       this.error.set('Failed to load transactions. Please try again.');
-  //       this.loading.set(false);
-  //     }
-  //   });
-  // }
 
   // Methods
   setSort(key: SortKey) {

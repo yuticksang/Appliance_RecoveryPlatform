@@ -115,7 +115,7 @@ export class AdminTransactionDetailComponent implements OnInit {
 
         const mappedData = {
           ...data,
-          sellerPhone: data.sellerPhone || data.addressPhone || 'N/A',
+          addressPhone: data.addressPhone || data.sellerPhone || 'N/A',
           pickupAddress: data.pickupAddress || 'N/A',
           city: data.city || '',
           state: data.state || '',
@@ -567,11 +567,12 @@ export class AdminTransactionDetailComponent implements OnInit {
       modelName: selectedAppliance?.modelName || '',
       note: this.note,
       adminConditions: adminConditions,
-      finalScore: finalScore,      // ✅ Add score
-      finalPrice: finalPrice        // ✅ Add price
+      finalScore: finalScore,
+      finalPrice: finalPrice,
+      finalApplianceID: selectedAppliance?.applianceID || null
     };
 
-    console.log('📤 Sending update data with score:', updateData);
+    console.log('📤 Sending update data with score and finalApplianceID:', updateData);
 
     this.transactionService.updateTransaction(txn.id, updateData).subscribe({
       next: () => {
@@ -668,6 +669,20 @@ export class AdminTransactionDetailComponent implements OnInit {
     const hasAdminConditions = txn.adminConditions && Object.keys(txn.adminConditions).length > 0;
     const hasLegacyConditions = txn.conditionGroups && Object.keys(txn.conditionGroups).length > 0;
     return hasSellerConditions || hasAdminConditions || hasLegacyConditions;
+  }
+
+    // Check if admin has changed any appliance details
+  hasApplianceChanges(): boolean {
+    const txn = this.transaction();
+    if (!txn) return false;
+
+    // Check if any final appliance field differs from original
+    const categoryChanged = txn.finalCategory && txn.finalCategory !== txn.category;
+    const brandChanged = txn.finalBrand && txn.finalBrand !== txn.brand;
+    const modelNameChanged = txn.finalModelName && txn.finalModelName !== txn.modelName;
+    const modelCodeChanged = txn.finalModel && txn.finalModel !== txn.model;
+
+    return categoryChanged || brandChanged || modelNameChanged || modelCodeChanged;
   }
 
   // Helper to check if admin has reviewed (has any admin conditions)

@@ -116,7 +116,7 @@ export class RecoverySlipComponent implements OnInit {
         category: data.category || 'N/A',
         brand: data.brand || 'N/A',
         model: data.modelName || data.model || 'N/A',
-        tradeValue: `RM ${parseFloat(data.finalPrice || data.estimatedPrice || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        tradeValue: `RM ${parseFloat(data.initialOfferPrice || data.estimatedPrice || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
         initialScore: parseFloat(data.initialScore) || 0,
         dynamicAnswers: data.dynamicAnswers || []
       },

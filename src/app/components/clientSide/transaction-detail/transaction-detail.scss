@@ -587,7 +587,7 @@ $Space: 'Space Grotesk', sans-serif;
 
 .item-awaiting-return {
   background: linear-gradient(135deg, #feebc8 0%, #fbd38d 100%);
-  color: #991b1b;
+  color: #9c4221;
 }
 
 /* Content Grid */
@@ -1919,7 +1919,7 @@ $Space: 'Space Grotesk', sans-serif;
   display: flex;
   align-items: center;
   gap: 1rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
 
   &:hover {
@@ -2080,5 +2080,79 @@ $Space: 'Space Grotesk', sans-serif;
 
   .deadline-separator {
     display: none;
+  }
+}
+
+// System Cancellation Alert - matching the image design
+.system-cancellation-info {
+  margin-bottom: 2rem;
+}
+
+.cancellation-banner {
+  background: #fef9e7; // Light yellow/cream background
+  border: 1px solid #f7dc6f; // Soft yellow border
+  border-left: 4px solid #f39c12; // Orange left border accent
+  border-radius: 8px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); // Subtle shadow
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.banner-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  margin-top: 0.1rem; // Slight alignment adjustment
+}
+
+.banner-content {
+  flex: 1;
+  
+  h4 {
+    color: #7d6608; // Dark yellow-brown for heading
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  
+  p {
+    color: #5d4e07; // Darker yellow-brown for text
+    margin: 0.25rem 0;
+    line-height: 1.4;
+    font-size: 0.9rem;
+    
+    strong {
+      font-weight: 600;
+      color: #4a3c06; // Even darker for bold text
+    }
+  }
+  
+  p:last-child {
+    margin-bottom: 0;
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .cancellation-banner {
+    padding: 1rem;
+    gap: 0.75rem;
+    
+    .banner-icon {
+      font-size: 1.25rem;
+    }
+    
+    .banner-content {
+      h4 {
+        font-size: 0.9rem;
+      }
+      
+      p {
+        font-size: 0.85rem;
+      }
+    }
   }
 }

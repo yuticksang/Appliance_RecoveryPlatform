@@ -59,11 +59,18 @@ export const getTransactionsBySeller = async (req: Request, res: Response) => {
         t."responseDeadline",
         i."itemStatus",
         i."updatedAt" as "itemStatusUpdatedAt",
+        -- ORIGINAL appliance (seller's submission)
         b."brandName" as brand,
         c."categoryName" as category,
         a."modelCode" as model,
         a."modelName" as "modelName",
-        a.image_url as "imageUrl"
+        a.image_url as "imageUrl",
+        -- FINAL appliance (admin's correction - use this if exists)
+        COALESCE(fb."brandName", b."brandName") as "finalBrand",
+        COALESCE(fc."categoryName", c."categoryName") as "finalCategory",
+        COALESCE(fa."modelCode", a."modelCode") as "finalModel",
+        COALESCE(fa."modelName", a."modelName") as "finalModelName",
+        COALESCE(fa.image_url, a.image_url) as "finalImageUrl"
       FROM "Transaction" t
       INNER JOIN "SubmittedAppliance" sa ON t."submittedApplianceID" = sa."submittedApplianceID"
       LEFT JOIN users u ON t."sellerID" = u.seller_id
@@ -71,6 +78,9 @@ export const getTransactionsBySeller = async (req: Request, res: Response) => {
       LEFT JOIN "Appliance" a ON sa."applianceID" = a."applianceID"
       LEFT JOIN "Brand" b ON a."brandID" = b."brandID"
       LEFT JOIN "Category" c ON a."categoryID" = c."categoryID"
+      LEFT JOIN "Appliance" fa ON sa."finalApplianceID" = fa."applianceID"
+      LEFT JOIN "Brand" fb ON fa."brandID" = fb."brandID"
+      LEFT JOIN "Category" fc ON fa."categoryID" = fc."categoryID"
       WHERE t."sellerID" = $1
       ORDER BY sa."submissionDate" DESC`,
       [sellerId]
@@ -105,14 +115,22 @@ export const getAllTransactions = async (_req: Request, res: Response) => {
         t."updatedAt",
         t."paymentDueDate",
         t."rejectionReason",
+        t."cancellationReason",
         t."responseDeadline",
         i."itemStatus",
         i."updatedAt" as "itemStatusUpdatedAt",
+        -- ORIGINAL appliance
         b."brandName" as brand,
         c."categoryName" as category,
         a."modelCode" as model,
         a."modelName" as "modelName",
-        a.image_url as "imageUrl"
+        a.image_url as "imageUrl",
+        -- FINAL appliance (use this for display)
+        COALESCE(fb."brandName", b."brandName") as "finalBrand",
+        COALESCE(fc."categoryName", c."categoryName") as "finalCategory",
+        COALESCE(fa."modelCode", a."modelCode") as "finalModel",
+        COALESCE(fa."modelName", a."modelName") as "finalModelName",
+        COALESCE(fa.image_url, a.image_url) as "finalImageUrl"
       FROM "Transaction" t
       INNER JOIN "SubmittedAppliance" sa ON t."submittedApplianceID" = sa."submittedApplianceID"
       LEFT JOIN users u ON t."sellerID" = u.seller_id
@@ -120,6 +138,9 @@ export const getAllTransactions = async (_req: Request, res: Response) => {
       LEFT JOIN "Appliance" a ON sa."applianceID" = a."applianceID"
       LEFT JOIN "Brand" b ON a."brandID" = b."brandID"
       LEFT JOIN "Category" c ON a."categoryID" = c."categoryID"
+      LEFT JOIN "Appliance" fa ON sa."finalApplianceID" = fa."applianceID"
+      LEFT JOIN "Brand" fb ON fa."brandID" = fb."brandID"
+      LEFT JOIN "Category" fc ON fa."categoryID" = fc."categoryID"
       ORDER BY sa."submissionDate" DESC`
     );
 
@@ -156,8 +177,10 @@ export const getTransactionById = async (req: Request, res: Response) => {
         t."paymentDueDate",
         t."responseDeadline",
         t."rejectionReason",
+        t."cancellationReason",
         COALESCE(i."itemStatus", 'Awaiting Pick Up') as "itemStatus",
         i."updatedAt" as "itemStatusUpdatedAt",
+        -- Original appliance (seller's submission)
         COALESCE(b."brandName", 'Unknown') as brand,
         b."brandID" as "brandId",
         COALESCE(c."categoryName", 'Unknown') as category,
@@ -166,6 +189,12 @@ export const getTransactionById = async (req: Request, res: Response) => {
         a."applianceID" as "modelId",
         COALESCE(a."modelName", 'N/A') as "modelName",
         COALESCE(a.image_url, '') as "imageUrl",
+        -- Final appliance (admin's correction, if changed)
+        COALESCE(fb."brandName", b."brandName", 'Unknown') as "finalBrand",
+        COALESCE(fc."categoryName", c."categoryName", 'Unknown') as "finalCategory",
+        COALESCE(fa."modelCode", a."modelCode", 'N/A') as "finalModel",
+        COALESCE(fa."modelName", a."modelName", 'N/A') as "finalModelName",
+        -- Pickup details
         p."addressID" as "addressId",
         COALESCE(p."snapshotReceiverName", 'N/A') as "addressName",
         COALESCE(p."snapshotPhoneNum", 'N/A') as "addressPhone",
@@ -179,9 +208,14 @@ export const getTransactionById = async (req: Request, res: Response) => {
       INNER JOIN "SubmittedAppliance" sa ON t."submittedApplianceID" = sa."submittedApplianceID"
       LEFT JOIN users u ON t."sellerID" = u.seller_id
       LEFT JOIN "ItemStatus" i ON t."transactionID" = i."transactionID"
+      -- Original appliance joins
       LEFT JOIN "Appliance" a ON sa."applianceID" = a."applianceID"
       LEFT JOIN "Brand" b ON a."brandID" = b."brandID"
       LEFT JOIN "Category" c ON a."categoryID" = c."categoryID"
+      -- Final appliance joins (admin's correction)
+      LEFT JOIN "Appliance" fa ON sa."finalApplianceID" = fa."applianceID"
+      LEFT JOIN "Brand" fb ON fa."brandID" = fb."brandID"
+      LEFT JOIN "Category" fc ON fa."categoryID" = fc."categoryID"
       LEFT JOIN "Pickup" p ON sa."submittedApplianceID" = p."submittedApplianceID"
       WHERE t."transactionID" = $1`,
       [id]
@@ -472,11 +506,10 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
 
     console.log('📝 Updating transaction:', { id, transactionStatus, itemStatus });
 
-    // Update transaction status with automatic deadline setting
+    // Update transaction status with cancellation reason
     if (transactionStatus) {
       console.log('📝 Updating transaction status to:', transactionStatus);
 
-      // Determine which deadlines to set based on status
       let updateQuery = '';
       let queryParams: any[] = [];
 
@@ -514,6 +547,16 @@ export const updateTransactionStatus = async (req: Request, res: Response) => {
          RETURNING *`;
         queryParams = [transactionStatus, id];
         console.log('📅 Setting paymentDueDate to 14 days from now');
+      } else if (transactionStatus === 'Cancelled') {
+        // ✅ NEW: Set cancellationReason to 'seller' for seller-initiated cancellation
+        updateQuery = `UPDATE "Transaction"
+         SET "transactionStatus" = $1, 
+             "cancellationReason" = 'seller',
+             "updatedAt" = NOW()
+         WHERE "transactionID" = $2
+         RETURNING *`;
+        queryParams = [transactionStatus, id];
+        console.log('🔄 Setting cancellationReason to seller');
       } else {
         // For other statuses, just update the status
         updateQuery = `UPDATE "Transaction"
@@ -817,7 +860,9 @@ export const updateTransaction = async (req: Request, res: Response) => {
       // Photo uploads from admin (base64 data URLs)
       photos,
       // Final score from admin review
-      finalScore
+      finalScore,
+      // Final appliance ID selected by admin (if category/brand/model changed)
+      finalApplianceID
     } = req.body;
 
     console.log('Updating transaction with full data:', { id, transactionStatus, itemStatus, adminConditions, hasPhotos: !!photos, photoCount: photos?.length, finalScore });
@@ -938,9 +983,12 @@ export const updateTransaction = async (req: Request, res: Response) => {
       console.log(`📊 Updating finalScore to ${finalScore}`);
     }
 
-    if (applianceID) {
-      updateFields.push(`"applianceID" = $${paramIndex++}`);
-      updateValues.push(applianceID);
+    // Save finalApplianceID if admin changed the appliance details
+    // DO NOT update applianceID - keep the original seller's submission
+    if (finalApplianceID) {
+      updateFields.push(`"finalApplianceID" = $${paramIndex++}`);
+      updateValues.push(finalApplianceID);
+      console.log(`🔄 Updating finalApplianceID to ${finalApplianceID} (keeping original applianceID unchanged)`);
     }
 
     if (updateFields.length > 0) {
@@ -1553,29 +1601,23 @@ export const deleteTransaction = async (req: Request, res: Response) => {
 
 /**
  * Get all transactions for a specific buyer
- * Shows transactions where this buyer won (has the highest offer)
+ * Shows only completed transactions with final prices
  */
 export const getTransactionsByBuyer = async (req: Request, res: Response) => {
   try {
     const { buyerId } = req.params;
     const authUser = (req as any).user;
 
-    // ✅ Security check: Buyers can only view their own transactions
+    console.log('🔍 Fetching completed transactions for buyer:', buyerId);
+    console.log('🔑 Auth user:', authUser);
+
+    // ✅ Security check
     if (authUser.userType === 'buyer') {
-      const userCheckResult = await pool.query(
-        `SELECT buyer_id FROM users WHERE "userID" = $1 AND user_type = 'buyer'`,
-        [authUser.userId]
-      );
-
-      if (userCheckResult.rows.length === 0) {
-        return res.status(403).json({ message: 'Unauthorized access' });
-      }
-
-      const userBuyerId = userCheckResult.rows[0].buyer_id;
-
-      if (userBuyerId !== buyerId) {
+      if (authUser.buyerId !== buyerId && authUser.buyer_id !== buyerId) {
         return res.status(403).json({ message: 'You can only view your own transactions' });
       }
+    } else if (authUser.userType !== 'admin') {
+      return res.status(403).json({ message: 'Unauthorized access' });
     }
 
     // ✅ Fetch transactions where this buyer won
@@ -1599,11 +1641,18 @@ export const getTransactionsByBuyer = async (req: Request, res: Response) => {
         t."responseDeadline",
         COALESCE(i."itemStatus", 'Awaiting Pick Up') as "itemStatus",
         i."updatedAt" as "itemStatusUpdatedAt",
+       -- ORIGINAL appliance
         COALESCE(b."brandName", 'Unknown') as brand,
         COALESCE(c."categoryName", 'Unknown') as category,
         COALESCE(a."modelCode", 'N/A') as model,
         COALESCE(a."modelName", 'N/A') as "modelName",
-        COALESCE(a.image_url, '') as "imageUrl"
+        COALESCE(a.image_url, '') as "imageUrl",
+        -- FINAL appliance (use this for display)
+        COALESCE(fb."brandName", b."brandName", 'Unknown') as "finalBrand",
+        COALESCE(fc."categoryName", c."categoryName", 'Unknown') as "finalCategory",
+        COALESCE(fa."modelCode", a."modelCode", 'N/A') as "finalModel",
+        COALESCE(fa."modelName", a."modelName", 'N/A') as "finalModelName",
+        COALESCE(fa.image_url, a.image_url, '') as "finalImageUrl"
       FROM "Transaction" t
       INNER JOIN "SubmittedAppliance" sa ON t."submittedApplianceID" = sa."submittedApplianceID"
       LEFT JOIN users u ON t."sellerID" = u.seller_id
@@ -1611,19 +1660,165 @@ export const getTransactionsByBuyer = async (req: Request, res: Response) => {
       LEFT JOIN "Appliance" a ON sa."applianceID" = a."applianceID"
       LEFT JOIN "Brand" b ON a."brandID" = b."brandID"
       LEFT JOIN "Category" c ON a."categoryID" = c."categoryID"
+      LEFT JOIN "Appliance" fa ON sa."finalApplianceID" = fa."applianceID"
+      LEFT JOIN "Brand" fb ON fa."brandID" = fb."brandID"
+      LEFT JOIN "Category" fc ON fa."categoryID" = fc."categoryID"
       WHERE t."buyerID" = $1
       AND t."transactionStatus" IN ('Awaiting Confirmation', 'Confirmed', 'Completed')
       ORDER BY sa."submissionDate" DESC`,
       [buyerId]
     );
 
-    console.log(`📊 Found ${result.rows.length} transactions for buyer ${buyerId}`);
     res.json(result.rows);
-  } catch (error) {
-    console.error('❌ Error fetching transactions by buyer:', error);
-    res.status(500).json({ 
-      message: 'Failed to fetch transactions', 
-      error: error instanceof Error ? error.message : 'Unknown error' 
+
+  } catch (error: any) {
+    console.error('❌ Database error in getTransactionsByBuyer:', error);
+    console.error('❌ Error details:', {
+      message: error?.message || 'Unknown error',
+      stack: error?.stack,
+      code: error?.code,
+      detail: error?.detail
+      
     });
+
+    res.status(500).json({
+      message: 'Failed to fetch transactions',
+      error: error?.message || 'Database error',
+      details: process.env.NODE_ENV === 'development' ? error?.stack : undefined
+    });
+  }
+};
+
+/**
+ * System cancellation of transaction (automated process)
+ * Called when deadlines are exceeded or other system triggers
+ */
+export const systemCancelTransaction = async (transactionId: string, reason: string) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    console.log(`🤖 System cancelling transaction ${transactionId}, reason: ${reason}`);
+
+    // First, get the sellerID with a SELECT query
+    const selectResult = await client.query(
+      `SELECT "sellerID" FROM "Transaction" WHERE "transactionID" = $1`,
+      [transactionId]
+    );
+
+    if (selectResult.rows.length === 0) {
+      throw new Error('Transaction not found');
+    }
+
+    const { sellerID } = selectResult.rows[0];
+
+    // ✅ Then update the transaction status (no RETURNING)
+    const updateResult = await client.query(
+      `UPDATE "Transaction"
+       SET "transactionStatus" = 'Cancelled', 
+           "cancellationReason" = 'system',
+           "rejectionReason" = $1,
+           "updatedAt" = NOW()
+       WHERE "transactionID" = $2`,
+      [reason, transactionId]
+    );
+
+    if (updateResult.rowCount === 0) {
+      throw new Error('Failed to update transaction');
+    }
+
+    // Update item status
+    await client.query(
+      `UPDATE "ItemStatus"
+       SET "itemStatus" = 'Unresponded', "updatedAt" = NOW()
+       WHERE "transactionID" = $1`,
+      [transactionId]
+    );
+
+    // Insert notification
+    await client.query(
+      `INSERT INTO "Notification" ("sellerID", "message", "dateSent")
+       VALUES ($1, $2, NOW())`,
+      [sellerID, `🚨 Transaction ${transactionId} has been cancelled by the system due to no response within the deadline. Please contact our admin for assistance.`]
+    );
+
+    await client.query('COMMIT');
+
+    console.log(`✅ Transaction ${transactionId} cancelled by system successfully`);
+
+    return { success: true, transactionId, sellerID };
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error(`❌ Error in system cancellation for transaction ${transactionId}:`, error);
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+/**
+ * API endpoint for manual system cancellation (admin trigger)
+ */
+export const triggerSystemCancellation = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    const authUser = (req as any).user;
+
+    // Only admins can trigger system cancellation
+    if (authUser.userType !== 'admin' && authUser.userType !== 'superadmin') {
+      return res.status(403).json({ message: 'Unauthorized. Only admins can trigger system cancellation.' });
+    }
+
+    const result = await systemCancelTransaction(id, reason || 'Manual system cancellation by admin');
+
+    res.json({
+      message: 'Transaction cancelled by system successfully',
+      ...result
+    });
+
+  } catch (error) {
+    console.error('❌ Error triggering system cancellation:', error);
+    res.status(500).json({
+      message: 'Failed to cancel transaction',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
+/**
+ * Check for expired transactions (scheduled job)
+ */
+export const checkExpiredTransactions = async () => {
+  try {
+    console.log('🕒 Checking for expired transactions...');
+
+    // Find transactions with expired response deadlines
+    const expiredResult = await pool.query(
+      `SELECT t."transactionID", t."sellerID", t."responseDeadline"
+       FROM "Transaction" t
+       WHERE t."transactionStatus" = 'Awaiting Confirmation'
+       AND t."responseDeadline" < NOW()
+       AND t."responseDeadline" IS NOT NULL`
+    );
+
+    console.log(`Found ${expiredResult.rows.length} expired transactions`);
+
+    for (const transaction of expiredResult.rows) {
+      const { transactionID, responseDeadline } = transaction;
+      const daysOverdue = Math.floor((Date.now() - new Date(responseDeadline).getTime()) / (1000 * 60 * 60 * 24));
+      
+      await systemCancelTransaction(
+        transactionID, 
+        `Response deadline exceeded by ${daysOverdue} day(s). Automatic cancellation due to no response from seller.`
+      );
+    }
+
+    return expiredResult.rows.length;
+
+  } catch (error) {
+    console.error('❌ Error checking expired transactions:', error);
+    throw error;
   }
 };

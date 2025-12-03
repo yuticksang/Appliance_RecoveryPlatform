@@ -25,8 +25,8 @@
 
     <div class="form-section">
       <label class="question">Appliance Category</label>
-      <select class="form-select" [(ngModel)]="applianceTypeId" (ngModelChange)="onCategoryChange()">
-        <option value="">Select appliance category</option>
+      <select class="form-select" [(ngModel)]="applianceTypeId" (ngModelChange)="onCategoryChange()" [disabled]="loadingCategories">
+        <option value="">{{ loadingCategories ? 'Loading categories...' : 'Select appliance category' }}</option>
         <option *ngFor="let category of applianceTypes" [value]="category.id">{{ category.name }}</option>
       </select>
     </div>
@@ -43,8 +43,8 @@
     <!-- Brand -->
     <div class="form-section">
       <label class="question">Brand <span class="required"></span></label>
-      <select class="form-select" [(ngModel)]="selectedBrandId" (ngModelChange)="onBrandChange()">
-        <option value="">Select brand</option>
+      <select class="form-select" [(ngModel)]="selectedBrandId" (ngModelChange)="onBrandChange()" [disabled]="loadingBrands">
+        <option value="">{{ loadingBrands ? 'Loading brands...' : 'Select brand' }}</option>
         <option *ngFor="let brand of brands" [value]="brand.id">{{ brand.name }}</option>
       </select>
     </div>
@@ -53,8 +53,8 @@
     <!-- Model -->
     <div class="form-section">
       <label class="question">Model <span class="required"></span></label>
-      <select class="form-select" [(ngModel)]="selectedModelId">
-        <option value="">Select model</option>
+      <select class="form-select" [(ngModel)]="selectedModelId" [disabled]="loadingModels || !selectedBrandId">
+        <option value="">{{ loadingModels ? 'Loading models...' : 'Select model' }}</option>
         <option *ngFor="let model of models" [value]="model.id">{{ model.name }}</option>
       </select>
     </div>
@@ -69,7 +69,7 @@
 
   <!-- Step 3 -->
   <div *ngIf="currentStep === 3" class="form-container">
-    <h3 class="step-title">Step 3: Appliance Condition</h3>
+    <h3 class="step-title">Step 3: Enter Appliance Condition</h3>
 
     <!-- DYNAMIC QUESTIONS -->
     <div *ngFor="let group of conditionGroups()" class="question-section">
@@ -81,10 +81,10 @@
       <!-- SINGLE CHOICE -->
       <div *ngIf="group.type === 'radio'" class="form-section">
         <select class="form-select"
-                [ngModel]="getAnswer(group.groupID)"
+                [ngModel]="getAnswer(group.groupID) || ''"
                 (ngModelChange)="updateAnswer(group.groupID, $event)">
-          <option [ngValue]="null">Select an option</option>
-          <option *ngFor="let opt of group.options" [ngValue]="opt.id">
+          <option value="">Select an option</option>
+          <option *ngFor="let opt of group.options" [value]="opt.id">
             {{ opt.description }}
           </option>
         </select>

@@ -5,11 +5,12 @@
       <app-breadcrumb></app-breadcrumb>
     </div>
 
-    <!-- Toolbar -->
+    <!-- toolbar (same structure as price list) -->
     <div class="toolbar">
       <div class="toolbar-left">
         <button class="clear-btn" (click)="clearFilters()">Clear Filters</button>
       </div>
+
       <div class="toolbar-right">
         <!-- Category Filter -->
         <div class="select-wrapper">
@@ -23,20 +24,20 @@
         <div class="select-wrapper">
           <select [ngModel]="selectedBrand()" (ngModelChange)="selectedBrand.set($event); onFilterChange()">
             <option value="all">All Brands</option>
-            <option *ngFor="let brand of uniqueBrands()" [value]="brand">{{ brand }}</option>
+            <option *ngFor="let b of uniqueBrands()" [value]="b">{{ b }}</option>
           </select>
         </div>
 
         <!-- Min Price -->
-        <div class="price-input">
-          <input type="number" placeholder="Min Price" [value]="minPrice() ?? ''"
-            (input)="onMinPriceChange($any($event.target).value)" min="0" step="0.01" />
+        <div class="price-filter">
+          <input type="number" placeholder="Min Price" [ngModel]="minPrice()"
+            (ngModelChange)="minPrice.set($event ? +$event : null); onFilterChange()" />
         </div>
 
         <!-- Max Price -->
-        <div class="price-input">
-          <input type="number" placeholder="Max Price" [value]="maxPrice() ?? ''"
-            (input)="onMaxPriceChange($any($event.target).value)" min="0" step="0.01" />
+        <div class="price-filter">
+          <input type="number" placeholder="Max Price" [ngModel]="maxPrice()"
+            (ngModelChange)="maxPrice.set($event ? +$event : null); onFilterChange()" />
         </div>
 
         <!-- Search -->
@@ -47,31 +48,37 @@
       </div>
     </div>
 
-    <!-- Loading state -->
     <div *ngIf="loading()" class="loading">Loading transactions...</div>
-
-    <!-- Error state -->
     <div *ngIf="error()" class="error-message">{{ error() }}</div>
 
-    <!-- Table -->
+    <!-- table (match price list classes) -->
     <div class="table-wrap" *ngIf="!loading() && !error()">
       <table class="grid">
         <thead>
           <tr>
             <th class="narrow">#</th>
             <th class="non-sortable">Image</th>
+
+            <th (click)="setSort('model')" class="sortable">
+              Model Code <span class="sort-icon">{{ getSortIcon('model') }}</span>
+            </th>
+
+            <th (click)="setSort('modelName')" class="sortable">
+              Model Name <span class="sort-icon">{{ getSortIcon('modelName') }}</span>
+            </th>
+
             <th (click)="setSort('category')" class="sortable">
               Category <span class="sort-icon">{{ getSortIcon('category') }}</span>
             </th>
+
             <th (click)="setSort('brand')" class="sortable">
               Brand <span class="sort-icon">{{ getSortIcon('brand') }}</span>
             </th>
-            <th (click)="setSort('model')" class="sortable">
-              Model <span class="sort-icon">{{ getSortIcon('model') }}</span>
-            </th>
+
             <th (click)="setSort('finalPrice')" class="sortable">
               Final Price <span class="sort-icon">{{ getSortIcon('finalPrice') }}</span>
             </th>
+
             <th (click)="setSort('submittedDate')" class="sortable">
               Submitted Date <span class="sort-icon">{{ getSortIcon('submittedDate') }}</span>
             </th>
@@ -81,44 +88,49 @@
         <tbody>
           <tr *ngFor="let t of paged(); let i = index">
             <td class="narrow">{{ (currentPage() - 1) * itemsPerPage() + i + 1 }}</td>
-            <td class="image-cell">
-              <img [src]="getImageSrc(t.imageUrl)" alt="{{ t.modelName }}" class="appliance-image">
-            </td>
-            <td>{{ t.category }}</td>
-            <td>{{ t.brand }}</td>
+
+            <!-- Image (prefer finalImageUrl) -->
             <td>
-              <div>{{ t.model }}</div>
-              <div class="model-name">{{ t.modelName }}</div>
+              <div class="image-cell">
+                <img [src]="getImageSrc(t.finalImageUrl || t.imageUrl)"
+                  [alt]="(t.finalModelName || t.modelName) || 'Appliance'" class="appliance-image" />
+              </div>
             </td>
-            <td>
-              @if (t.finalPrice && t.finalPrice > 0) {
-                {{ formatPrice(t.finalPrice) }}
-              } @else if (t.estimatedPrice && t.estimatedPrice > 0) {
-                {{ formatPrice(t.estimatedPrice) }}
-                <small class="text-muted">(Estimated)</small>
-              } @else {
-                <span class="text-muted">Pending</span>
-              }
+
+            <!-- Model Code (prefer finalModel) -->
+            <td>{{ t.finalModel || t.model }}</td>
+
+            <!-- Model Name (prefer finalModelName) -->
+            <td>{{ t.finalModelName || t.modelName }}</td>
+
+            <!-- Category (prefer finalCategory) -->
+            <td>{{ t.finalCategory || t.category }}</td>
+
+            <!-- Brand (prefer finalBrand) -->
+            <td>{{ t.finalBrand || t.brand }}</td>
+
+            <!-- Final Price -->
+            <td class="price-cell">
+              {{ formatPrice(t.finalPrice) }}
             </td>
+
+            <!-- Submitted Date -->
             <td>{{ formatDate(t.submittedDate) }}</td>
           </tr>
         </tbody>
       </table>
 
-      <!-- Empty State -->
       <div *ngIf="paged().length === 0" class="empty-state">
         <p>No transactions found.</p>
       </div>
     </div>
 
-    <!-- Pager -->
+    <!-- pager (same as price list) -->
     <div class="pager" *ngIf="!loading() && !error() && paged().length > 0">
       <button class="page-btn" (click)="goToPage(currentPage() - 1)" [disabled]="currentPage() === 1">‹</button>
 
-      <button class="page-btn" *ngFor="let p of pageNumbers()"
-        [class.active]="p === currentPage()"
-        [disabled]="p === -1"
-        (click)="p !== -1 && goToPage(p)">
+      <button class="page-btn" *ngFor="let p of pageNumbers()" [class.active]="p === currentPage()"
+        [disabled]="p === -1" (click)="p !== -1 && goToPage(p)">
         {{ p === -1 ? '...' : p }}
       </button>
 
