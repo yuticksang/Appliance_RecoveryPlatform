@@ -14,6 +14,7 @@ export interface Transaction {
   brand: string;
   submittedApplianceID?: string; // ADD THIS LINE
   category: string;
+  categoryId?: number; // Category ID for fetching packaging instructions
   model: string;
   modelName: string;
   finalBrand?: string;
