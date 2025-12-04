@@ -1,37 +1,41 @@
+<div class="packaging-instruction-container">
   <div class="packaging-content">
-    <!-- ✅ Title and Description ABOVE breadcrumb -->
     <div class="page-header">
       <h1 class="page-title">Packaging Instructions</h1>
     </div>
 
-    <!-- ✅ Breadcrumb below title -->
     <app-breadcrumb></app-breadcrumb>
 
-  <!-- Loading state -->
-  @if (loading()) {
-    <div class="loading-container">
-      <p>Loading packaging instructions...</p>
-    </div>
-  }
+    @if (loading()) {
+      <div class="loading-container">
+        <p>Loading packaging instructions...</p>
+      </div>
+    }
 
-  <!-- Instructions loaded -->
-  @if (!loading()) {
-    <section class="instruction-card">
-      <p class="card-intro">
-        <strong>Packaging Instructions:</strong> Please follow these comprehensive steps to ensure your appliance is safely prepared for pickup. Proper packaging protects your appliance during transit and helps us provide an accurate valuation.
-      </p>
+    @if (!loading()) {
+      <section class="instruction-card">
+        <p class="card-intro">
+          <strong>Packaging Instructions:</strong> Please follow these comprehensive steps to ensure your appliance is safely prepared for pickup. Proper packaging protects your appliance during transit and helps us provide an accurate valuation.
+        </p>
 
-      <!-- Dynamic sections loaded from database -->
-      @for (sectionName of sectionNames(); track sectionName) {
-        <div class="section-divider">
-          <h2 class="section-title">{{ sectionName }}</h2>
-          <ul class="steps-list">
-            @for (step of getStepsForSection(sectionName); track step.id) {
-              <li>{{ step.instruction }}</li>
-            }
-          </ul>
+        @for (sectionName of sectionNames(); track sectionName; let i = $index) {
+          <div class="instruction-section">
+            <h3>
+              <span class="step-icon">{{ i + 1 }}</span>
+              {{ sectionName }}
+            </h3>
+            <ul class="instruction-list">
+              @for (step of getStepsForSection(sectionName); track step.id) {
+                <li>{{ step.instruction }}</li>
+              }
+            </ul>
+          </div>
+        }
+
+        <div class="final-note" *ngIf="isDefault()">
+          <p><strong>Note:</strong> Showing default instructions while category-specific steps are unavailable.</p>
         </div>
-      }
-    </section>
-  }
+      </section>
+    }
+  </div>
 </div>

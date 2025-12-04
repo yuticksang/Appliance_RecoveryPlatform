@@ -9,6 +9,14 @@ $Space: 'Space Grotesk', sans-serif;
   font-family: $Space;
 }
 
+.packaging-page {
+  background: #fff;
+}
+
+.packaging-container {
+  max-width: 1400px;
+}
+
 .page-head {
   display: grid;
   gap: 6px;
@@ -77,6 +85,7 @@ $Space: 'Space Grotesk', sans-serif;
   .toolbar-right {
     display: flex;
     gap: 10px;
+    align-items: center;
   }
 
   .select-wrapper {
@@ -125,6 +134,8 @@ $Space: 'Space Grotesk', sans-serif;
   background: white;
   border: 1px solid $line;
   border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  margin-top: 12px;
 }
 
 .grid {
@@ -190,6 +201,7 @@ $Space: 'Space Grotesk', sans-serif;
     &.instruction-text {
       max-width: 400px;
       line-height: 1.5;
+      color: #111827;
     }
 
     &.icon-cell {
@@ -251,6 +263,10 @@ $Space: 'Space Grotesk', sans-serif;
     background: white;
   }
 
+  tbody tr:hover {
+    background: #f3f4f6;
+  }
+
   tbody tr:last-child td {
     border-bottom: none;
   }
@@ -267,7 +283,8 @@ $Space: 'Space Grotesk', sans-serif;
   color: #1e40af;
   border-radius: 12px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
+  text-transform: capitalize;
 
   &.default-category {
     background: #fef3c7;

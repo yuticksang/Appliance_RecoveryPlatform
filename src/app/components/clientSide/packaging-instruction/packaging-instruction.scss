@@ -5,6 +5,14 @@
   min-height: 100vh;
   font-family: 'Space Grotesk', sans-serif;
 
+  .loading-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    color: #64748b;
+  }
+
   .packaging-content {
     max-width: 1400px;
     margin: 0 auto;
