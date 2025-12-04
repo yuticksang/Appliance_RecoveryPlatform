@@ -82,7 +82,7 @@ export class PackagingInstruction implements OnInit {
           next: (response) => {
             console.log('✅ Packaging instructions loaded:', response);
             this.packagingSections.set(response.sections);
-            this.sectionNames.set(Object.keys(response.sections));
+            this.sectionNames.set(this.sortSectionsByDisplayOrder(response.sections));
             this.isDefault.set(response.isDefault);
             this.loading.set(false);
           },
@@ -104,7 +104,7 @@ export class PackagingInstruction implements OnInit {
     this.packagingService.getPackagingInstructions(0).subscribe({
       next: (response) => {
         this.packagingSections.set(response.sections);
-        this.sectionNames.set(Object.keys(response.sections));
+        this.sectionNames.set(this.sortSectionsByDisplayOrder(response.sections));
         this.isDefault.set(true);
         this.loading.set(false);
       },
@@ -112,6 +112,15 @@ export class PackagingInstruction implements OnInit {
         console.error('❌ Error loading default instructions:', error);
         this.loading.set(false);
       }
+    });
+  }
+
+  // Helper to sort section names by the minimum displayOrder of their steps
+  private sortSectionsByDisplayOrder(sections: PackagingSection): string[] {
+    return Object.keys(sections).sort((a, b) => {
+      const minOrderA = Math.min(...sections[a].map(step => step.displayOrder));
+      const minOrderB = Math.min(...sections[b].map(step => step.displayOrder));
+      return minOrderA - minOrderB;
     });
   }
 
