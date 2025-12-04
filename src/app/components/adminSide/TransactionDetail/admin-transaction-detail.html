@@ -90,86 +90,31 @@
       </div>
     </div>
 
-<!-- Deadline Warning -->
-<div class="deadline-warning" 
-     *ngIf="transaction()?.responseDeadline && transaction()?.transactionStatus === 'Awaiting Confirmation'"
-     [class.deadline-expired]="isDeadlineExpired()"
-     [class.deadline-approaching]="isDeadlineApproaching()">
-  <div class="deadline-icon">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <circle cx="12" cy="12" r="10"/>
-      <path d="M12 6v6l4 2"/>
-    </svg>
-  </div>
-  <div class="deadline-content">
-    <div class="deadline-title">Response Deadline</div>
-    <div class="deadline-info">
-      <span class="deadline-date">{{ transaction()?.responseDeadline ? formatDate(transaction()?.responseDeadline) : 'N/A' }}</span>
-      <span class="deadline-separator">•</span>
-      <span class="days-remaining">{{ daysUntilDeadline }} {{ daysUntilDeadline === 1 ? 'day' : 'days' }} remaining</span>
-    </div>
-  </div>
-</div> 
-
-<div class="deadline-warning payment-due" 
-     *ngIf="transaction()?.paymentDueDate && transaction()?.transactionStatus === 'Pending Payment'"
-     [class.deadline-expired]="isPaymentDueDateExpired()"
-     [class.deadline-approaching]="isPaymentDueDateApproaching()">
-  <div class="deadline-icon">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-      <line x1="16" y1="2" x2="16" y2="6"/>
-      <line x1="8" y1="2" x2="8" y2="6"/>
-      <line x1="3" y1="10" x2="21" y2="10"/>
-      <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/>
-    </svg>
-  </div>
-  <div class="deadline-content">
-    <div class="deadline-title">Payment Due Date</div>
-    <div class="deadline-info">
-      <span class="deadline-date">{{ transaction()?.paymentDueDate ? formatDate(transaction()?.paymentDueDate) : 'N/A' }}</span>
-      <span class="deadline-separator">•</span>
-      <span class="days-remaining">{{ daysUntilPaymentDue }} {{ daysUntilPaymentDue === 1 ? 'day' : 'days' }} remaining</span>
-    </div>
-  </div>
-</div>
-      <!-- Auto Cancelled - Show different messages based on who cancelled -->
-<ng-container *ngIf="transaction()?.transactionStatus === 'Cancelled'">
-  <!-- System Cancellation -->
-  <div *ngIf="transaction()?.cancellationReason === 'system'" class="system-cancellation-info">
-    <div class="cancellation-banner system">
-      <div class="banner-icon">⚠️</div>
-      <div class="banner-content">
-        <h4>Transaction Cancelled by System</h4>
-        <p><strong>Reason:</strong> No response received within the required deadline</p>
-        <p><strong>Next Steps:</strong> Kindly contact our admin for further assistance.</p>
+    <!-- Deadline Warning -->
+    <div class="deadline-warning" *ngIf="transaction()?.responseDeadline && transaction()?.transactionStatus === 'Awaiting Confirmation'"
+         [class.deadline-expired]="isDeadlineExpired()"
+         [class.deadline-approaching]="isDeadlineApproaching()">
+      <div class="deadline-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 6v6l4 2"/>
+        </svg>
+      </div>
+    </div>  
+      <!-- Auto Cancelled by system -->
+    <div *ngIf="transaction()?.transactionStatus === 'Cancelled'" class="system-cancellation-info">
+      <div class="cancellation-banner">
+        <div class="banner-icon">⚠️</div>
+        <div class="banner-content">
+          <h4>Transaction Cancelled by System</h4>
+          <p><strong>Reason:</strong> No response received within the required deadline</p>
+          <!-- <p *ngIf="transaction()?.updatedAt"><strong>Date Cancelled:</strong> {{ transaction()?.updatedAt | date:'medium' }}</p> -->
+          <p><strong>Next Steps:</strong> Kindly contact our admin for further assistance.</p>
+        </div>
       </div>
     </div>
-  </div>
+    
 
-  <!-- Seller Cancellation -->
-  <div *ngIf="transaction()?.cancellationReason === 'seller'" class="system-cancellation-info">
-    <div class="cancellation-banner seller">
-      <div class="banner-icon">📦</div>
-      <div class="banner-content">
-        <h4>Transaction Cancelled by Seller</h4>
-        <p><strong>Reason:</strong> Seller cancelled this transaction</p>
-        <p><strong>Next Steps:</strong> Appliance will be returned to seller within 7 days.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Fallback for older records without cancellationReason -->
-  <div *ngIf="!transaction()?.cancellationReason" class="system-cancellation-info">
-    <div class="cancellation-banner">
-      <div class="banner-icon">⚠️</div>
-      <div class="banner-content">
-        <h4>Transaction Cancelled</h4>
-        <p>This transaction has been cancelled.</p>
-      </div>
-    </div>
-  </div>
-</ng-container>
     <!-- Main Content Grid -->
     <div class="content-grid">
       <!-- Left Column - Customer Info -->
@@ -211,27 +156,27 @@
 
           <!-- VIEW MODE: Before/After Comparison -->
           <ng-container *ngIf="!editMode()">
-            <!-- Column Headers -->
-            <!-- ✅ Only show two columns if admin has reviewed -->
-            <div class="review-columns-header" [class.single-column]="!hasAdminConditions()">
-              <div class="header-label">{{ hasAdminConditions() ? 'BEFORE REVIEW' : 'SELLER SUBMISSION' }}</div>
-              <div class="header-label after" *ngIf="hasAdminConditions()">AFTER REVIEW</div>
+            <!-- Column Headers (always show) -->
+            <div class="review-columns-header">
+              <div class="header-label">BEFORE REVIEW</div>
+              <div class="header-label after">AFTER REVIEW</div>
             </div>
+
+            <!-- ========================================== -->
+            <!-- APPLIANCE INFORMATION                      -->
+            <!-- ========================================== -->
 
             <!-- PRICE -->
             <div class="inspection-item">
               <h4 class="inspection-label">PRICE</h4>
-              <!-- ✅ Single column if not reviewed -->
-              <div class="inspection-columns" [class.single-column]="!hasAdminConditions()">
-                <!-- Before (Seller's price) -->
+              <div class="inspection-columns">
                 <div class="column-content">
                   <div class="price-display">
                     <span class="price-label">RM</span>
                     <span class="price-value">{{ (transaction()?.estimatedPrice | number:'1.2-2') || '0.00' }}</span>
                   </div>
                 </div>
-                <!-- After (Admin's price) - Only show if reviewed -->
-                <div class="column-content" *ngIf="hasAdminConditions()">
+                <div class="column-content">
                   <div class="price-display">
                     <span class="price-label">RM</span>
                     <span class="price-value" [class.changed]="transaction()?.finalPrice && transaction()?.finalPrice !== transaction()?.estimatedPrice">
@@ -245,11 +190,11 @@
             <!-- BRAND -->
             <div class="inspection-item">
               <h4 class="inspection-label">BRAND</h4>
-              <div class="inspection-columns" [class.single-column]="!hasAdminConditions()">
+              <div class="inspection-columns">
                 <div class="column-content">
                   <p class="condition-text">{{ transaction()?.brand || 'N/A' }}</p>
                 </div>
-                <div class="column-content" *ngIf="hasAdminConditions()">
+                <div class="column-content">
                   <p class="condition-text" [class.changed]="transaction()?.finalBrand && transaction()?.finalBrand !== transaction()?.brand">
                     {{ transaction()?.finalBrand || transaction()?.brand || 'N/A' }}
                   </p>
@@ -260,11 +205,11 @@
             <!-- MODEL NAME -->
             <div class="inspection-item">
               <h4 class="inspection-label">MODEL NAME</h4>
-              <div class="inspection-columns" [class.single-column]="!hasAdminConditions()">
+              <div class="inspection-columns">
                 <div class="column-content">
                   <p class="condition-text">{{ transaction()?.modelName || 'N/A' }}</p>
                 </div>
-                <div class="column-content" *ngIf="hasAdminConditions()">
+                <div class="column-content">
                   <p class="condition-text" [class.changed]="transaction()?.finalModelName && transaction()?.finalModelName !== transaction()?.modelName">
                     {{ transaction()?.finalModelName || transaction()?.modelName || 'N/A' }}
                   </p>
@@ -275,11 +220,11 @@
             <!-- MODEL CODE -->
             <div class="inspection-item">
               <h4 class="inspection-label">MODEL CODE</h4>
-              <div class="inspection-columns" [class.single-column]="!hasAdminConditions()">
+              <div class="inspection-columns">
                 <div class="column-content">
                   <p class="condition-text">{{ transaction()?.model || 'N/A' }}</p>
                 </div>
-                <div class="column-content" *ngIf="hasAdminConditions()">
+                <div class="column-content">
                   <p class="condition-text" [class.changed]="transaction()?.finalModel && transaction()?.finalModel !== transaction()?.model">
                     {{ transaction()?.finalModel || transaction()?.model || 'N/A' }}
                   </p>
@@ -290,11 +235,11 @@
             <!-- CATEGORY -->
             <div class="inspection-item">
               <h4 class="inspection-label">CATEGORY</h4>
-              <div class="inspection-columns" [class.single-column]="!hasAdminConditions()">
+              <div class="inspection-columns">
                 <div class="column-content">
                   <p class="condition-text">{{ transaction()?.category || 'N/A' }}</p>
                 </div>
-                <div class="column-content" *ngIf="hasAdminConditions()">
+                <div class="column-content">
                   <p class="condition-text" [class.changed]="transaction()?.finalCategory && transaction()?.finalCategory !== transaction()?.category">
                     {{ transaction()?.finalCategory || transaction()?.category || 'N/A' }}
                   </p>
@@ -305,13 +250,13 @@
             <!-- SCORE -->
             <div class="inspection-item">
               <h4 class="inspection-label">SCORE</h4>
-              <div class="inspection-columns" [class.single-column]="!hasAdminConditions()">
+              <div class="inspection-columns">
                 <div class="column-content">
                   <div class="price-display">
                     <span class="price-value">{{ transaction()?.initialScore || '0' }}</span>
                   </div>
                 </div>
-                <div class="column-content" *ngIf="hasAdminConditions()">
+                <div class="column-content">
                   <div class="price-display">
                     <span class="price-value" [class.changed]="transaction()?.finalScore && transaction()?.finalScore !== transaction()?.initialScore">
                       {{ transaction()?.finalScore || transaction()?.initialScore || '0' }}
@@ -321,12 +266,15 @@
               </div>
             </div>
 
-            <!-- Continue with condition groups... -->
+            <!-- ========================================== -->
+            <!-- CONDITION ASSESSMENT                       -->
+            <!-- ========================================== -->
+            <!-- Continue with your existing condition groups... -->
             <ng-container *ngFor="let group of getConditionGroupsWithData()">
-              <!-- Condition groups with single/double column based on hasAdminConditions() -->
+              <!-- Radio, dropdown, checkbox, image types -->
               <div class="inspection-item" *ngIf="group.question_type !== 'textarea' && group.question_type !== 'file_upload'">
                 <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
-                <div class="inspection-columns" [class.single-column]="!hasAdminConditions()">
+                <div class="inspection-columns">
                   <!-- Before (Seller's submission) -->
                   <div class="column-content">
                     <ng-container *ngIf="transaction()?.sellerConditions?.[group.groupID]; else noSellerValue">
@@ -351,8 +299,8 @@
                     </ng-template>
                   </div>
 
-                  <!-- After (Admin's review) - Only show if reviewed -->
-                  <div class="column-content" *ngIf="hasAdminConditions()">
+                  <!-- After (Admin's review) -->
+                  <div class="column-content">
                     <ng-container *ngIf="transaction()?.adminConditions?.[group.groupID]; else showSellerAsConfirmed">
                       <!-- Check if array (checkbox) or string (radio/dropdown/image) -->
                       <ul class="condition-list" *ngIf="Array.isArray(transaction()?.adminConditions?.[group.groupID]); else singleAdminValue">
@@ -401,11 +349,11 @@
               <!-- Textarea type groups (Notes) -->
               <div class="inspection-item" *ngIf="group.question_type === 'textarea'">
                 <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
-                <div class="inspection-columns" [class.single-column]="!hasAdminConditions()">
+                <div class="inspection-columns">
                   <div class="column-content">
                     <p class="note-text">{{ transaction()?.sellerConditions?.[group.groupID] || 'N/A' }}</p>
                   </div>
-                  <div class="column-content" *ngIf="hasAdminConditions()">
+                  <div class="column-content">
                     <p class="note-text" [class.changed]="transaction()?.adminConditions?.[group.groupID] && transaction()?.adminConditions?.[group.groupID] !== transaction()?.sellerConditions?.[group.groupID]">
                       {{ transaction()?.adminConditions?.[group.groupID] || transaction()?.sellerConditions?.[group.groupID] || 'N/A' }}
                     </p>
@@ -621,9 +569,7 @@
               </div>
             </ng-container>
           </ng-container>
-
         </div>
-        <!-- END inspection-section -->
 
         <!-- Note Section (if needed) -->
         <div class="note-section" *ngIf="transaction()?.note && !editMode()">
@@ -631,11 +577,8 @@
           <p class="note-value">{{ transaction()?.note }}</p>
         </div>
       </div>
-      <!-- END right-column -->
     </div>
-    <!-- END content-grid -->
   </div>
-  <!-- END detail-container -->
 
   <!-- Error State -->
   <div *ngIf="!loading() && !transaction()" class="error-container">

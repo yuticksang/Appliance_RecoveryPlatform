@@ -58,7 +58,7 @@ $Space: 'Space Grotesk', sans-serif;
   padding: 0;
   position: relative;
 
-  // ✅ All overflow fixes
+  // ✅ ADD OVERFLOW FIXES TO ALL TEXT ELEMENTS
   * {
     box-sizing: border-box;
   }
@@ -70,6 +70,7 @@ $Space: 'Space Grotesk', sans-serif;
     max-width: 100%;
   }
 
+  // ✅ FIX INFO SECTIONS
   .info-section {
     overflow: hidden;
 
@@ -87,6 +88,7 @@ $Space: 'Space Grotesk', sans-serif;
     }
   }
 
+  // ✅ FIX DETAIL ITEMS
   .detail-item {
     overflow: hidden;
 
@@ -104,6 +106,7 @@ $Space: 'Space Grotesk', sans-serif;
     }
   }
 
+  // ✅ FIX NOTE SECTIONS (MAIN FIX FOR YOUR ISSUE)
   .note-section {
     overflow: hidden;
 
@@ -139,6 +142,7 @@ $Space: 'Space Grotesk', sans-serif;
     }
   }
 
+  // INSPECTION ITEMS
   .inspection-item {
     overflow: hidden;
 
@@ -183,6 +187,7 @@ $Space: 'Space Grotesk', sans-serif;
     }
   }
 
+  // EDIT INPUTS
   .edit-select,
   .edit-input,
   .edit-textarea {
@@ -197,6 +202,7 @@ $Space: 'Space Grotesk', sans-serif;
     word-break: break-word;
   }
 
+  // CHECKBOX OPTIONS
   .checkbox-options {
     overflow-y: auto;
   }
@@ -218,6 +224,7 @@ $Space: 'Space Grotesk', sans-serif;
     }
   }
 
+  // DEADLINE WARNING
   .deadline-warning {
     overflow: hidden;
     word-wrap: break-word;
@@ -237,6 +244,7 @@ $Space: 'Space Grotesk', sans-serif;
     }
   }
 
+  // RIGHT COLUMN
   .right-column {
     overflow: hidden;
   }
@@ -245,7 +253,7 @@ $Space: 'Space Grotesk', sans-serif;
     max-width: 100%;
     overflow: hidden;
   }
-} 
+}
 
 /* Page Header */
 .page-header {
@@ -2194,27 +2202,3 @@ $Space: 'Space Grotesk', sans-serif;
     }
   }
 }
-
-.cancellation-banner.seller {
-  border-left-color: #3b82f6; // Blue for seller cancellation
-  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
-
-  .banner-icon {
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  }
-
-  .banner-content {
-    h4 {
-      color: #1e40af;
-    }
-
-    p {
-      color: #1e3a8a;
-
-      strong {
-        color: #1e40af;
-      }
-    }
-  }
-}
-

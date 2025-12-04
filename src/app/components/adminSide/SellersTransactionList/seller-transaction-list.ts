@@ -142,7 +142,6 @@ export class SellerTransactionListComponent implements OnInit {
       filtered = filtered.filter(t =>
         t.id.toLowerCase().includes(query) ||
         t.sellerId.toLowerCase().includes(query) ||
-        (t.buyerId && t.buyerId.toLowerCase().includes(query)) ||
         (t.sellerName && t.sellerName.toLowerCase().includes(query)) ||
         t.brand.toLowerCase().includes(query) ||
         t.model.toLowerCase().includes(query) ||

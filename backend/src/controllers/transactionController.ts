@@ -57,7 +57,6 @@ export const getTransactionsBySeller = async (req: Request, res: Response) => {
         t."paymentDueDate",
         t."rejectionReason",
         t."responseDeadline",
-        t."cancellationReason",
         i."itemStatus",
         i."updatedAt" as "itemStatusUpdatedAt",
         -- ORIGINAL appliance (seller's submission)
@@ -225,7 +224,6 @@ export const getTransactionById = async (req: Request, res: Response) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Transaction not found' });
     }
-    
 
     const transaction = result.rows[0];
 
@@ -1622,7 +1620,7 @@ export const getTransactionsByBuyer = async (req: Request, res: Response) => {
       return res.status(403).json({ message: 'Unauthorized access' });
     }
 
-    // Fetch transactions for the buyer
+    // ✅ Fetch transactions where this buyer won
     const result = await pool.query(
       `SELECT
         t."transactionID" as id,

@@ -29,7 +29,6 @@ export interface Transaction {
   estimatedPrice?: number;
   finalPrice?: number;
   note?: string; // Note
-  paymentDueDate?: string;
   responseDeadline?: string; // Response deadline date for seller to respond to offer
   cancellationReason?: 'seller' | 'system' | null; 
 }
@@ -103,7 +102,7 @@ export class TransactionService {
           return transactions.map(t => ({
             id: t.id || t.transactionID,
             sellerId: t.sellerId || t.sellerID,
-            buyerId: t.buyerId || t.buyerID,
+            buyerId: t.buyerId || t.buyerID, // ✅ ADD THIS LINE
             sellerName: t.sellerName || 'Unknown',
             image: t.image || t.imageUrl || 'assets/image/placeholder-appliance.png',
             brand: t.brand || '',
@@ -121,8 +120,7 @@ export class TransactionService {
             estimatedPrice: t.estimatedPrice || t.initialOfferPrice || 0,
             finalPrice: t.finalPrice || t.finalOfferPrice,
             note: t.note || '',
-            responseDeadline: t.responseDeadline || t.response_deadline,
-            cancellationReason: t.cancellationReason || null
+            responseDeadline: t.responseDeadline || t.response_deadline
           }));
         }),
         catchError(error => {
@@ -163,8 +161,7 @@ export class TransactionService {
             estimatedPrice: t.estimatedPrice || t.initialOfferPrice || 0,
             finalPrice: t.finalPrice || t.finalOfferPrice,
             note: t.note || '',
-            responseDeadline: t.responseDeadline || t.response_deadline,
-            cancellationReason: t.cancellationReason
+            responseDeadline: t.responseDeadline || t.response_deadline
           }));
         }),
         catchError(error => {
@@ -417,9 +414,22 @@ export class TransactionService {
    * Get transactions for a specific buyer (transactions they won)
    * @param buyerId - The buyer ID (e.g., 'B001', 'B002')
    */
-  getTransactionsByBuyer(buyerId: string): Observable<Transaction[]> {
-    const token = this.getAuthToken();
-    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+  getTransactionsByBuyer(buyerId: string): Observable<any[]> {
+    // ✅ Get buyer token from localStorage directly
+    const token = localStorage.getItem('buyer_token');
+    
+    if (!token) {
+      console.log('❌ No buyer token found');
+      throw new Error('No authentication token found');
+    }
+
+    // ✅ Create headers properly
+    const headers = new HttpHeaders({
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    });
+
+    console.log('🔑 Making authenticated request with token:', token.substring(0, 20) + '...');
 
     return this.http.get<Transaction[]>(`${this.apiUrl}/transactions/buyer/${buyerId}`, { headers })
       .pipe(
@@ -445,8 +455,7 @@ export class TransactionService {
             estimatedPrice: t.estimatedPrice || t.initialOfferPrice || 0,
             finalPrice: t.finalPrice || t.finalOfferPrice || 0,
             note: t.note || '',
-            responseDeadline: t.responseDeadline || t.response_deadline,
-            cancellationReason: t.cancellationReason
+            responseDeadline: t.responseDeadline || t.response_deadline
           }));
         }),
         catchError(error => {
