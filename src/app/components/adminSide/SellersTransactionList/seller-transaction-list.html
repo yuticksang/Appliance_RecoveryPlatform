@@ -7,13 +7,16 @@
 
     <!-- Filters & Actions Bar -->
     <div class="filters-bar">
+      <div class="filters-left">
+        <button class="clear-btn" (click)="clearFilters()">Clear Filters</button>
+      </div>
       <div class="filters-right">
         <!-- Category Dropdown -->
         <div class="filter-dropdown">
           <select
             [(ngModel)]="selectedCategory"
             (change)="onCategoryChange()">
-            <option value="">Select a Category</option>
+            <option value="">All Categories</option>
             <option *ngFor="let cat of categories" [value]="cat">{{ cat }}</option>
           </select>
         </div>
@@ -23,7 +26,7 @@
           <select
             [(ngModel)]="selectedBrand"
             (change)="onBrandChange()">
-            <option value="">Select a Brand</option>
+            <option value="">All Brands</option>
             <option *ngFor="let brand of brands" [value]="brand">{{ brand }}</option>
           </select>
         </div>
@@ -33,7 +36,7 @@
           <select
             [(ngModel)]="selectedTransactionStatus"
             (change)="onTransactionStatusChange()">
-            <option value="">Select Transaction Status</option>
+            <option value="">All Transaction Statuses</option>
             <option *ngFor="let status of transactionStatuses" [value]="status">{{ status }}</option>
           </select>
         </div>
@@ -43,7 +46,7 @@
           <select
             [(ngModel)]="selectedItemStatus"
             (change)="onItemStatusChange()">
-            <option value="">Select Item Status</option>
+            <option value="">All Item Statuses</option>
             <option *ngFor="let status of itemStatuses" [value]="status">{{ status }}</option>
           </select>
         </div>

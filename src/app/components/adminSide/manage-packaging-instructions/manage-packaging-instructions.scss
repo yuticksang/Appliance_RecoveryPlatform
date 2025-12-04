@@ -58,17 +58,19 @@ $Space: 'Space Grotesk', sans-serif;
 
   .btn-secondary {
     height: 36px;
-    padding: 0 20px;
+    padding: 0 16px;
     border-radius: 8px;
     background: white;
     border: 1px solid $line;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
     color: $ink;
     transition: all 0.2s;
 
     &:hover {
       background: #f3f4f6;
+      border-color: $blue-2;
+      color: $blue-2;
     }
   }
 

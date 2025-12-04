@@ -73,6 +73,10 @@ $blue-2: #1a73e8;
   flex-wrap: wrap;
 }
 
+.filters-left {
+  flex: 1;
+}
+
 .filters-right {
   display: flex;
   gap: 10px;
@@ -102,6 +106,24 @@ $blue-2: #1a73e8;
       border-color: #99c8ff;
       box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
     }
+  }
+}
+
+.clear-btn {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 8px;
+  background: white;
+  border: 1px solid $line;
+  font-weight: 500;
+  cursor: pointer;
+  color: $ink;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #f3f4f6;
+    border-color: $blue-2;
+    color: $blue-2;
   }
 }
 
