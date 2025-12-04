@@ -56,6 +56,10 @@ export class ManagePackagingInstructionsComponent implements OnInit {
   showDeleteModal = signal<boolean>(false);
   instructionToDelete = signal<PackagingInstruction | null>(null);
 
+  // Sorting state
+  sortColumn = signal<string>('displayOrder');
+  sortDirection = signal<'asc' | 'desc'>('asc');
+
   // Form data
   formData = {
     categoryId: '0',
@@ -138,11 +142,34 @@ export class ManagePackagingInstructionsComponent implements OnInit {
       filtered = filtered.filter(i => i.sectionName === this.selectedSectionFilter());
     }
 
-    // Sort by category, section name, and display order
+    // Apply sorting
+    const column = this.sortColumn();
+    const direction = this.sortDirection();
+
     return filtered.sort((a, b) => {
-      if (a.categoryID !== b.categoryID) return a.categoryID.localeCompare(b.categoryID);
-      if (a.sectionName !== b.sectionName) return a.sectionName.localeCompare(b.sectionName);
-      return a.displayOrder - b.displayOrder;
+      let comparison = 0;
+
+      switch (column) {
+        case 'category':
+          comparison = a.categoryName.localeCompare(b.categoryName);
+          break;
+        case 'section':
+          comparison = a.sectionName.localeCompare(b.sectionName);
+          break;
+        case 'instruction':
+          comparison = a.instruction.localeCompare(b.instruction);
+          break;
+        case 'displayOrder':
+          comparison = a.displayOrder - b.displayOrder;
+          break;
+        case 'status':
+          comparison = (a.isActive === b.isActive) ? 0 : a.isActive ? -1 : 1;
+          break;
+        default:
+          comparison = 0;
+      }
+
+      return direction === 'asc' ? comparison : -comparison;
     });
   }
 
@@ -400,5 +427,24 @@ export class ManagePackagingInstructionsComponent implements OnInit {
     this.selectedCategoryFilter.set(null);
     this.selectedSectionFilter.set('');
     this.currentPage.set(1); // Reset to first page when clearing filters
+  }
+
+  // Sort by column
+  sortBy(column: string): void {
+    if (this.sortColumn() === column) {
+      // Toggle direction if same column
+      this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
+    } else {
+      // New column, default to ascending
+      this.sortColumn.set(column);
+      this.sortDirection.set('asc');
+    }
+    this.currentPage.set(1); // Reset to first page when sorting
+  }
+
+  // Get sort icon for column
+  getSortIcon(column: string): string {
+    if (this.sortColumn() !== column) return '';
+    return this.sortDirection() === 'asc' ? '↑' : '↓';
   }
 }

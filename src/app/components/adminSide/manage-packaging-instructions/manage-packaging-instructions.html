@@ -51,11 +51,21 @@
           <thead>
             <tr>
               <th class="narrow">#</th>
-              <th>Category</th>
-              <th>Section</th>
-              <th>Instruction</th>
-              <th>Order</th>
-              <th>Status</th>
+              <th class="sortable" (click)="sortBy('category')">
+                Category <span class="sort-icon">{{ getSortIcon('category') }}</span>
+              </th>
+              <th class="sortable" (click)="sortBy('section')">
+                Section <span class="sort-icon">{{ getSortIcon('section') }}</span>
+              </th>
+              <th class="sortable" (click)="sortBy('instruction')">
+                Instruction <span class="sort-icon">{{ getSortIcon('instruction') }}</span>
+              </th>
+              <th class="sortable" (click)="sortBy('displayOrder')">
+                Order <span class="sort-icon">{{ getSortIcon('displayOrder') }}</span>
+              </th>
+              <th class="sortable" (click)="sortBy('status')">
+                Status <span class="sort-icon">{{ getSortIcon('status') }}</span>
+              </th>
               <th class="actions">Actions</th>
             </tr>
           </thead>

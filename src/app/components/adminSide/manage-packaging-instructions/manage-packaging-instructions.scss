@@ -166,6 +166,24 @@ $Space: 'Space Grotesk', sans-serif;
     &.actions {
       text-align: left;
     }
+
+    &.sortable {
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s;
+
+      &:hover {
+        background: #f3f4f6;
+        color: $ink;
+      }
+
+      .sort-icon {
+        display: inline-block;
+        margin-left: 6px;
+        font-weight: 700;
+        font-size: 14px;
+      }
+    }
   }
 
   tbody td {
