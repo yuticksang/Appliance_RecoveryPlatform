@@ -12,7 +12,9 @@ import buyerRoutes from './routes/buyer';
 import scoringConfigRoutes from './routes/scoringConfig';
 import transactionRoutes from './routes/transaction';
 import dashboardRoutes from './routes/dashboard';
+import buyerDashboardRoutes from './routes/buyerDashboard';
 import transactionReportRoutes from './routes/transactionReport';
+import summaryReportRoutes from './routes/summaryReport';
 import cronRoutes from './routes/cron';
 import dbPool from './config/database';
 import questionnaireRouter from './routes/questionnaire';
@@ -87,7 +89,9 @@ app.use('/api/notifications', notificationRoutes);
 console.log('📢 Notification routes registered successfully');
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/buyerDashboard', buyerDashboardRoutes);
 app.use('/api/transactionReport', transactionReportRoutes);
+app.use('/api/summaryReport', summaryReportRoutes);
 
 // Health route
 app.get('/health', (req, res) => res.json({ ok: true, message: 'Server is running' }));

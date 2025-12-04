@@ -341,6 +341,11 @@ export class SellerTransactionListComponent implements OnInit {
   if (event) {
     event.stopPropagation(); // Prevent row click from firing
   }
+
+  if(transaction.transactionStatus !== 'Completed'){
+    this.alertService.error('Transaction report is only available for completed transactions.');
+    return;
+  }
   
   console.log('📊 Viewing report for transaction:', transaction.id);
   

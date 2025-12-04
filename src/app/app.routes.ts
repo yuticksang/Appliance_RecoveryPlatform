@@ -64,7 +64,7 @@ export const routes: Routes = [
       },
       {
         path: 'transactions/report/:id',
-        loadComponent: () => import('./components/adminSide/transaction-report/transaction-report').then(m => m.TransactionReportComponent)
+        loadComponent: () => import('./components/adminSide/transactionReport/transaction-report').then(m => m.TransactionReportComponent)
       },
       {
         path: 'appliances',
@@ -147,18 +147,15 @@ export const routes: Routes = [
             }
           ]
         },
-      // {
-      //   path: 'reporting',
-      //   loadComponent: () => import('./components/adminSide/reporting/reporting').then(m => m.ReportingComponent).catch(() => {
-      //     // Placeholder if not exists
-      //     return import('./components/adminSide/adminList/admin-list').then(m => m.AdminListComponent);
-      //   })
-      // },
+      {
+        path: 'reporting',
+        loadComponent: () => import('./components/adminSide/summaryReport/summary-report').then(m => m.SummaryReportComponent)
+      },
       {
          path: 'dashboard',
          loadComponent: () => import('./components/adminSide/dashboard/dashboard').then(m => m.Dashboard)
 
-       },
+      },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' } // Default redirect to dashboard
     ]
   },

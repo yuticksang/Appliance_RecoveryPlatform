@@ -14,6 +14,7 @@ interface LoginResponse {
     username: string;
     userType: 'admin' | 'seller' | 'buyer' | string;
     adminRole?: string | null;
+
   };
 }
 
