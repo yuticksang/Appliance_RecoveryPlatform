@@ -98,7 +98,7 @@
             <tbody>
               <tr *ngFor="let option of getPagedOptions(groupData.group.groupID); let i = index">
                 <td class="narrow">{{ getRowNumber(groupData.group.groupID, i) }}</td>
-                <td>{{ option.code }}</td>
+                <td>{{ option.displayCode || option.code }}</td>
                 <td *ngIf="groupData.group.question_type === 'image'" class="image-col">
                   <img *ngIf="option.image" [src]="getImageUrl(option.image)" alt="{{ option.description }}"
                     class="option-thumbnail" />
