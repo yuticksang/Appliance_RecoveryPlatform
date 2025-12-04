@@ -502,7 +502,7 @@
                 <ng-container *ngIf="isFileUploadGroup(groupId)">
                   <!-- If admin uploaded new photos, show admin photos -->
                   <div class="single-photo-display" *ngIf="getAdminPhotosForGroup(groupId).length > 0; else showSellerPhotosAfterReview">
-                    <div class="single-photo-container" (click)="openLightbox(adminPhotoIndex)">
+                    <div class="single-photo-container" (click)="openLightbox(adminPhotoIndex, 'admin')">
                       <img [src]="getAdminPhotosForGroup(groupId)[adminPhotoIndex]"
                            [alt]="'Admin photo ' + (adminPhotoIndex + 1)"
                            class="single-photo-image clickable">

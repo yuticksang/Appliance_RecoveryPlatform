@@ -311,14 +311,19 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Open photo lightbox
-  openLightbox(index: number): void {
+  // Open photo lightbox (supports seller/admin photo sources)
+  openLightbox(index: number, source: 'seller' | 'admin' = 'seller'): void {
     // Find the file_upload group to get the correct photos array
     const fileUploadGroupId = this.getConditionGroupIds().find(groupId => this.isFileUploadGroup(groupId));
 
     if (fileUploadGroupId) {
-      // Use photos from the file_upload condition group
-      this.photos = this.getSellerPhotosForGroup(fileUploadGroupId);
+      // Use photos from the appropriate source for the file_upload condition group
+      this.photos = source === 'admin'
+        ? this.getAdminPhotosForGroup(fileUploadGroupId)
+        : this.getSellerPhotosForGroup(fileUploadGroupId);
+    } else {
+      // Fallback to flat photo arrays
+      this.photos = source === 'admin' ? this.adminPhotos : this.sellerPhotos;
     }
 
     this.lightboxPhotoIndex = index;
