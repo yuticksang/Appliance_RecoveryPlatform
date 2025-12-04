@@ -80,7 +80,10 @@
             <td>{{ r.applianceID }}</td>
             <td>
               <div class="image-cell">
-                <img [src]="getImageSrc(r.image_url)" [alt]="r.modelName" class="appliance-image">
+                <img
+                  [src]="getImageSrc(r.image_url, r.categoryID, r.categoryName)"
+                  [alt]="r.modelName"
+                  class="appliance-image">
               </div>
             </td>
             <td>{{ r.modelCode }}</td>
