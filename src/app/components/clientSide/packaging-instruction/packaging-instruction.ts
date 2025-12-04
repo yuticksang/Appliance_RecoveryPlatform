@@ -6,7 +6,7 @@ import { TransactionService } from '../../../services/transaction.service';
 
 @Component({
   selector: 'app-packaging-instruction',
-  imports: [CommonModule],
+  imports: [CommonModule, BreadcrumbComponent],
   templateUrl: './packaging-instruction.html',
   styleUrl: './packaging-instruction.scss',
 })

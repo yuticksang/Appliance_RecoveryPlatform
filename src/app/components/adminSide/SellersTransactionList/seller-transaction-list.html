@@ -113,9 +113,9 @@
             <td class="transaction-id">{{ transaction.id }}</td>
             <td>{{ transaction.sellerId }}</td>
             <td>{{ transaction.buyerId || 'N/A' }}</td>
-            <td>{{ transaction.category }}</td>
-            <td>{{ transaction.brand }}</td>
-            <td>{{ transaction.model }}</td>
+            <td>{{ transaction.finalCategory || transaction.category }}</td>
+            <td>{{ transaction.finalBrand || transaction.brand }}</td>
+            <td>{{ transaction.finalModel || transaction.model }}</td>
             <td>
               <span
                 class="status-badge"
