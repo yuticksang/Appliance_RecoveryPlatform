@@ -52,6 +52,10 @@ export class ManagePackagingInstructionsComponent implements OnInit {
   modalMode = signal<'create' | 'edit'>('create');
   editingInstruction = signal<PackagingInstruction | null>(null);
 
+  // Delete confirmation modal
+  showDeleteModal = signal<boolean>(false);
+  instructionToDelete = signal<PackagingInstruction | null>(null);
+
   // Form data
   formData = {
     categoryId: '0',
@@ -324,16 +328,28 @@ export class ManagePackagingInstructionsComponent implements OnInit {
     });
   }
 
-  // Delete instruction
-  deleteInstruction(instruction: PackagingInstruction): void {
-    const confirmMessage = `Are you sure you want to delete this instruction?\n\nCategory: ${instruction.categoryName}\nSection: ${instruction.sectionName}\nStep: ${instruction.stepNumber}`;
+  // Open delete confirmation modal
+  openDeleteModal(instruction: PackagingInstruction): void {
+    this.instructionToDelete.set(instruction);
+    this.showDeleteModal.set(true);
+  }
 
-    if (!confirm(confirmMessage)) return;
+  // Close delete confirmation modal
+  closeDeleteModal(): void {
+    this.showDeleteModal.set(false);
+    this.instructionToDelete.set(null);
+  }
+
+  // Delete instruction (called after confirmation)
+  confirmDelete(): void {
+    const instruction = this.instructionToDelete();
+    if (!instruction) return;
 
     this.packagingService.deletePackagingInstruction(instruction.instructionID).subscribe({
       next: () => {
         this.alertService.success('Packaging instruction deleted successfully');
         this.loadInstructions();
+        this.closeDeleteModal();
       },
       error: (err) => {
         console.error('Failed to delete instruction:', err);

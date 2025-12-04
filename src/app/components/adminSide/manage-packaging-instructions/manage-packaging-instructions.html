@@ -72,11 +72,11 @@
               <tr [class.inactive-row]="!instruction.isActive">
                 <td class="narrow">{{ (currentPage() - 1) * itemsPerPage() + i + 1 }}</td>
                 <td>
-                  <span class="category-badge" [class.default-category]="instruction.categoryID === '0'">
+                  <span class="instruction-text" [class.default-category]="instruction.categoryID === '0'">
                     {{ getCategoryName(instruction.categoryID) }}
                   </span>
                 </td>
-                <td class="section-name">{{ instruction.sectionName }}</td>
+                <td class="instruction-text">{{ instruction.sectionName }}</td>
                 <td class="instruction-text">{{ instruction.instruction }}</td>
                 <td class="display-order">{{ instruction.displayOrder }}</td>
                 <td>
@@ -91,7 +91,7 @@
                   <button class="icon" (click)="toggleActive(instruction)" [title]="instruction.isActive ? 'Deactivate' : 'Activate'">
                     <img [src]="instruction.isActive ? 'assets/icons/deactivate.png' : 'assets/icons/activate.png'" alt="Toggle Status" class="action-icon">
                   </button>
-                  <button class="icon" (click)="deleteInstruction(instruction)" title="Delete">
+                  <button class="icon" (click)="openDeleteModal(instruction)" title="Delete">
                     <img src="assets/icons/delete.png" alt="Delete" class="action-icon">
                   </button>
                 </td>
@@ -194,6 +194,46 @@
         <button class="btn-confirm" (click)="saveInstruction()">
           {{ modalMode() === 'create' ? 'Create' : 'Update' }}
         </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Delete Confirmation Modal -->
+@if (showDeleteModal() && instructionToDelete()) {
+  <div class="modal-overlay" (click)="closeDeleteModal()">
+    <div class="modal-content delete-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header delete-header">
+        <div class="delete-icon-wrapper">
+          <span class="warning-icon">⚠️</span>
+          <h2>Delete Packaging Instruction</h2>
+        </div>
+        <button class="modal-close" (click)="closeDeleteModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="delete-info">
+          <div class="info-row">
+            <span class="info-label">Category:</span>
+            <span class="info-value">{{ instructionToDelete()!.categoryName }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Section:</span>
+            <span class="info-value">{{ instructionToDelete()!.sectionName }}</span>
+          </div>
+        </div>
+
+        <div class="warning-message">
+          <p class="warning-text">This will permanently remove this instruction from the system.</p>
+          <p class="warning-text">Users will no longer see this guidance during the packaging process.</p>
+        </div>
+
+        <p class="confirmation-question">Are you sure you want to delete this instruction?</p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="closeDeleteModal()">Cancel</button>
+        <button class="btn-delete" (click)="confirmDelete()">Delete</button>
       </div>
     </div>
   </div>
