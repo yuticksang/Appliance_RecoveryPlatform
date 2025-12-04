@@ -115,15 +115,6 @@ export class PackagingInstruction implements OnInit {
     });
   }
 
-  goBackToTransaction(): void {
-    if (this.fromTransactionId) {
-      this.router.navigate(['/transaction-detail', this.fromTransactionId]);
-    } else {
-      // Fallback: go to transactions list if no ID
-      this.router.navigate(['/transactions']);
-    }
-  }
-
   // Helper to get steps for a section
   getStepsForSection(sectionName: string) {
     return this.packagingSections()[sectionName] || [];

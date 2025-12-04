@@ -7,31 +7,27 @@
   align-items: center;
   font-family: 'Space Grotesk', sans-serif;
 
-    .top-actions {
+    .page-head {
         align-self: flex-start;
-        color: #475569;
-        text-decoration: none;
-        font-weight: 600;
-        margin-bottom: 1rem;
-        font-size: 0.9rem;
+        width: 100%;
+        display: grid;
+        gap: 6px;
+        margin-bottom: 14px;
 
-        &:hover {
-            color: #0284c7;
-            text-decoration: underline;
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: #111827;
         }
     }
 
-    .title {
-        color: #334155;
-        text-align: center;
-        font-size: 1.8rem;
-        margin-bottom: 0.5rem;
-    }
-
     .details {
-        text-align: center;
-        color: #475569;
+        align-self: flex-start;
+        width: 100%;
+        color: #6b7280;
         margin-bottom: 1.5rem;
+        font-size: 15px;
+        text-align: center;
     }
 
     .instruction-card {
