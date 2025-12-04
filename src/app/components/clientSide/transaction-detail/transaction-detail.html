@@ -7,40 +7,67 @@
 
   <!-- Transaction Detail Content -->
   <div *ngIf="!loading && transaction" class="detail-container">
+  
     <!-- Action Buttons for Awaiting Confirmation (Sticky - Outside Header) -->
     <div *ngIf="isAwaitingConfirmation"
          class="decision-section"
          [class.hidden]="!isHeaderVisible">
-        <div class="decision-content">
-          <div class="decision-header">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M12 6v6l4 2"/>
-            </svg>
-            <div>
-              <h3>Review Required</h3>
-              <p>Please review the offer and make your decision</p>
-            </div>
-          </div>
-          <div class="decision-actions">
-            <button class="btn-reject" (click)="rejectOffer()">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10 0C4.5 0 0 4.5 0 10s4.5 10 10 10 10-4.5 10-10S15.5 0 10 0zm5 13.6L13.6 15 10 11.4 6.4 15 5 13.6 8.6 10 5 6.4 6.4 5 10 8.6 13.6 5 15 6.4 11.4 10 15 13.6z"/>
-              </svg>
-              Reject Offer & Return Appliance
-            </button>
-            <button class="btn-accept" (click)="acceptOffer()">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10 0C4.5 0 0 4.5 0 10s4.5 10 10 10 10-4.5 10-10S15.5 0 10 0zm-2 15l-5-5 1.4-1.4L8 12.2l7.6-7.6L17 6l-9 9z"/>
-              </svg>
-              Accept Offer
-            </button>
+      <div class="decision-content">
+        <div class="decision-header">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 6v6l4 2"/>
+          </svg>
+          <div>
+            <h3>Review Required</h3>
+            <p>Please review the offer and make your decision</p>
           </div>
         </div>
+        <div class="decision-actions">
+          <button class="btn-reject" (click)="rejectOffer()">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 0C4.5 0 0 4.5 0 10s4.5 10 10 10 10-4.5 10-10S15.5 0 10 0zm5 13.6L13.6 15 10 11.4 6.4 15 5 13.6 8.6 10 5 6.4 6.4 5 10 8.6 13.6 5 15 6.4 11.4 10 15 13.6z"/>
+            </svg>
+            Reject Offer & Return Appliance
+          </button>
+          <button class="btn-accept" (click)="acceptOffer()">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 0C4.5 0 0 4.5 0 10s4.5 10 10 10 10-4.5 10-10S15.5 0 10 0zm-2 15l-5-5 1.4-1.4L8 12.2l7.6-7.6L17 6l-9 9z"/>
+            </svg>
+            Accept Offer
+          </button>
+        </div>
+      </div>
     </div>
 
-    <!-- Deadline Warning -->
-    <div class="deadline-warning" *ngIf="transaction?.responseDeadline && isAwaitingConfirmation"
+    <!-- Cancellation Button -->
+    <div *ngIf="canCancelTransaction()" class="decision-section cancellation-section">
+      <div class="decision-content">
+        <div class="decision-header">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+          <div>
+            <h3>Want to Cancel?</h3>
+            <p>You can cancel this transaction and return the appliance</p>
+          </div>
+        </div>
+        <div class="decision-actions">
+          <button class="btn-cancel-transaction" (click)="cancelTransaction()">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 0C4.5 0 0 4.5 0 10s4.5 10 10 10 10-4.5 10-10S15.5 0 10 0zm5 13.6L13.6 15 10 11.4 6.4 15 5 13.6 8.6 10 5 6.4 6.4 5 10 8.6 13.6 5 15 6.4 11.4 10 15 13.6z"/>
+            </svg>
+            Cancel Transaction
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Response Deadline Warning -->
+    <div class="deadline-warning" 
+         *ngIf="transaction?.responseDeadline && isAwaitingConfirmation"
          [class.deadline-expired]="isDeadlineExpired()"
          [class.deadline-approaching]="isDeadlineApproaching()">
       <div class="deadline-icon">
@@ -59,36 +86,9 @@
       </div>
     </div>
 
-
-    <!-- Cancellation Button - Available for all non-final statuses -->
-    <div *ngIf="canCancelTransaction()"
-         class="decision-section cancellation-section">
-        <div class="decision-content">
-          <div class="decision-header">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <line x1="15" y1="9" x2="9" y2="15"/>
-              <line x1="9" y1="9" x2="15" y2="15"/>
-            </svg>
-            <div>
-              <h3>Want to Cancel?</h3>
-              <p>You can cancel this transaction and return the appliance</p>
-            </div>
-          </div>
-          <div class="decision-actions">
-            <button class="btn-cancel-transaction" (click)="cancelTransaction()">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10 0C4.5 0 0 4.5 0 10s4.5 10 10 10 10-4.5 10-10S15.5 0 10 0zm5 13.6L13.6 15 10 11.4 6.4 15 5 13.6 8.6 10 5 6.4 6.4 5 10 8.6 13.6 5 15 6.4 11.4 10 15 13.6z"/>
-              </svg>
-              Cancel Transaction
-            </button>
-          </div>
-        </div>
-    </div>
-
-    <!-- Header -->
+    <!-- ✅ Header Section -->
     <div class="detail-header">
-      <!-- .Title, Breadcrumb, and Status in one row -->
+      <!-- Title, Breadcrumb, and Status in one row -->
       <div class="title-breadcrumb-status-row">
         <div class="title-breadcrumb-section">
           <h1 class="page-title">Appliance Information</h1>
@@ -103,6 +103,30 @@
             <span class="status-badge item-status" [ngClass]="getItemStatusClass(transaction.itemStatus)">
               {{ transaction.itemStatus }}
             </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ✅ Payment Due Date Warning - MOVED INSIDE detail-header -->
+      <div class="deadline-warning payment-due" 
+           *ngIf="transaction.transactionStatus === 'Pending Payment' && transaction.paymentDueDate"
+           [class.deadline-expired]="isPaymentDueDateExpired()"
+           [class.deadline-approaching]="isPaymentDueDateApproaching()">
+        <div class="deadline-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+            <path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01M16 18h.01"/>
+          </svg>
+        </div>
+        <div class="deadline-content">
+          <div class="deadline-title">Payment Due Date</div>
+          <div class="deadline-info">
+            <span class="deadline-date">{{ transaction.paymentDueDate ? formatDate(transaction.paymentDueDate) : 'N/A' }}</span>
+            <span class="deadline-separator">•</span>
+            <span class="days-remaining">{{ daysUntilPaymentDue }} {{ daysUntilPaymentDue === 1 ? 'day' : 'days' }} remaining</span>
           </div>
         </div>
       </div>
@@ -156,39 +180,45 @@
           </svg>
         </button>
       </div>
-    </div>
+    </div> <!-- ✅ CLOSE detail-header HERE -->
 
-      <!-- Auto Cancelled - Show different messages based on who cancelled -->
-    <div *ngIf="transaction.transactionStatus === 'Cancelled'" class="system-cancellation-info">
-    <!-- ✅ System Cancellation -->
-    <div *ngIf="transaction.cancellationReason === 'system'" class="cancellation-banner system">
-      <div class="banner-icon">⚠️</div>
-      <div class="banner-content">
-        <h4>Transaction Cancelled by System</h4>
-        <p><strong>Reason:</strong> No response received within the required deadline</p>
-        <p><strong>Next Steps:</strong> Kindly contact our admin for further assistance.</p>
+    <!-- Auto Cancelled Section -->
+    <ng-container *ngIf="transaction.transactionStatus === 'Cancelled'">
+      <!-- ✅ System Cancellation -->
+      <div *ngIf="transaction.cancellationReason === 'system'" class="system-cancellation-info">
+        <div class="cancellation-banner system">
+          <div class="banner-icon">⚠️</div>
+          <div class="banner-content">
+            <h4>Transaction Cancelled by System</h4>
+            <p><strong>Reason:</strong> No response received within the required deadline</p>
+            <p><strong>Next Steps:</strong> Kindly contact our admin for further assistance.</p>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- ✅ Seller Cancellation -->
-    <div *ngIf="transaction.cancellationReason === 'seller'" class="cancellation-banner seller">
-      <div class="banner-icon">📦</div>
-      <div class="banner-content">
-        <h4>Transaction Cancelled</h4>
-        <p><strong>Reason:</strong> You cancelled this transaction</p>
-        <p><strong>Next Steps:</strong> We will arrange to return your appliance within 7 days.</p>
+      <!-- ✅ Seller Cancellation -->
+      <div *ngIf="transaction.cancellationReason === 'seller'" class="system-cancellation-info">
+        <div class="cancellation-banner seller">
+          <div class="banner-icon">📦</div>
+          <div class="banner-content">
+            <h4>Transaction Cancelled</h4>
+            <p><strong>Reason:</strong> You cancelled this transaction</p>
+            <p><strong>Next Steps:</strong> We will arrange to return your appliance within 7 days.</p>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- ✅ Fallback for older records without cancellationReason -->
-    <div *ngIf="!transaction.cancellationReason" class="cancellation-banner">
-      <div class="banner-icon">⚠️</div>
-      <div class="banner-content">
-        <h4>Transaction Cancelled</h4>
-        <p>This transaction has been cancelled.</p>
+      <!-- ✅ Fallback for older records without cancellationReason -->
+      <div *ngIf="!transaction.cancellationReason" class="system-cancellation-info">
+        <div class="cancellation-banner">
+          <div class="banner-icon">⚠️</div>
+          <div class="banner-content">
+            <h4>Transaction Cancelled</h4>
+            <p>This transaction has been cancelled.</p>
+          </div>
+        </div>
       </div>
-    </div>
-    </div>
+    </ng-container>
 
     <!-- Main Content Grid -->
     <div class="content-grid">
@@ -393,7 +423,7 @@
                 <!-- If it's a file upload group (photo URLs) -->
                 <ng-container *ngIf="isFileUploadGroup(groupId)">
                   <div class="single-photo-display" *ngIf="getSellerPhotosForGroup(groupId).length > 0; else noPhotosBeforeReview">
-                    <div class="single-photo-container" (click)="openLightbox(sellerPhotoIndex)">
+                    <div class="single-photo-container" (click)="openLightbox(sellerPhotoIndex, 'seller')">
                       <img [src]="getSellerPhotosForGroup(groupId)[sellerPhotoIndex]"
                            [alt]="'Seller photo ' + (sellerPhotoIndex + 1)"
                            class="single-photo-image clickable">
@@ -502,11 +532,7 @@
                 <ng-container *ngIf="isFileUploadGroup(groupId)">
                   <!-- If admin uploaded new photos, show admin photos -->
                   <div class="single-photo-display" *ngIf="getAdminPhotosForGroup(groupId).length > 0; else showSellerPhotosAfterReview">
-                    <div class="single-photo-container" (click)="openLightbox(adminPhotoIndex)">
-                      <img [src]="getAdminPhotosForGroup(groupId)[adminPhotoIndex]"
-                           [alt]="'Admin photo ' + (adminPhotoIndex + 1)"
-                           class="single-photo-image clickable">
-
+                    <div class="single-photo-container" (click)="openLightbox(adminPhotoIndex, 'admin')">
                       <div class="photo-zoom-hint">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <circle cx="11" cy="11" r="8"/>
@@ -542,7 +568,7 @@
                   <!-- If admin didn't upload new photos, show seller's photos -->
                   <ng-template #showSellerPhotosAfterReview>
                     <div class="single-photo-display" *ngIf="getSellerPhotosForGroup(groupId).length > 0; else noPhotosAfterReview">
-                      <div class="single-photo-container" (click)="openLightbox(sellerPhotoIndex)">
+                      <div class="single-photo-container" (click)="openLightbox(sellerPhotoIndex, 'seller')">
                         <img [src]="getSellerPhotosForGroup(groupId)[sellerPhotoIndex]"
                              [alt]="'Seller photo ' + (sellerPhotoIndex + 1)"
                              class="single-photo-image clickable">
@@ -664,7 +690,7 @@
               <!-- If it's a file upload group (photo URLs) -->
               <ng-container *ngIf="isFileUploadGroup(groupId)">
                 <div class="single-photo-display" *ngIf="getSellerPhotosForGroup(groupId).length > 0; else noPhotosRegular">
-                  <div class="single-photo-container" (click)="openLightbox(sellerPhotoIndex)">
+                  <div class="single-photo-container" (click)="openLightbox(sellerPhotoIndex, 'seller')">
                     <img [src]="getSellerPhotosForGroup(groupId)[sellerPhotoIndex]"
                          [alt]="'Seller photo ' + (sellerPhotoIndex + 1)"
                          class="single-photo-image clickable">
@@ -745,99 +771,87 @@
     <button class="btn-back" (click)="goBack()">Go Back to Transactions</button>
   </div>
 
-  <!-- Accept Confirmation Modal -->
-  <div *ngIf="showAcceptConfirmModal" class="modal-overlay" (click)="cancelAcceptConfirm()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-icon accept-icon">
-        <span class="emoji">😊💰</span>
-      </div>
-      <h3 class="modal-title">Confirm The Offer?</h3>
-      <div class="modal-actions">
-        <button class="btn-modal-secondary" (click)="cancelAcceptConfirm()">BACK</button>
-        <button class="btn-modal-primary accept" (click)="confirmAcceptOffer()">CONFIRM</button>
-      </div>
+<!-- Accept Confirmation Modal -->
+<div *ngIf="showAcceptConfirmModal" class="modal-overlay" (click)="cancelAcceptConfirm()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <h3 class="modal-title">Confirm The Offer?</h3>
+    <p class="modal-message">
+      Are you sure you want to accept this offer? You will receive payment within 7 days.
+    </p>
+    <div class="modal-actions">
+      <button class="btn-modal-secondary" (click)="cancelAcceptConfirm()">BACK</button>
+      <button class="btn-modal-primary accept" (click)="confirmAcceptOffer()">CONFIRM</button>
     </div>
   </div>
+</div>
 
-  <!-- Accept Success Modal -->
-  <div *ngIf="showAcceptSuccessModal" class="modal-overlay" (click)="closeAcceptSuccess()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-icon success-icon">
-        <span class="emoji">🎉🎁</span>
-      </div>
-      <h3 class="modal-title success">OFFER CONFIRM!</h3>
-      <p class="modal-message">
-        Thank you for confirming the offer price. We will make payment to you
-        <strong>WITHIN 7 DAYS</strong>. Kindly check your profile about your bank details.
-      </p>
-      <div class="modal-actions">
-        <button class="btn-modal-primary accept" (click)="closeAcceptSuccess()">OK</button>
-      </div>
+<!-- Accept Success Modal -->
+<div *ngIf="showAcceptSuccessModal" class="modal-overlay" (click)="closeAcceptSuccess()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <h3 class="modal-title success">OFFER CONFIRMED!</h3>
+    <p class="modal-message">
+      Thank you for confirming the offer price. We will make payment to you
+      <strong>WITHIN 14 DAYS</strong>. Kindly check your profile about your bank details.
+    </p>
+    <div class="modal-actions">
+      <button class="btn-modal-primary accept" (click)="closeAcceptSuccess()">OK</button>
     </div>
   </div>
+</div>
 
-  <!-- Reject Confirmation Modal -->
-  <div *ngIf="showRejectConfirmModal" class="modal-overlay" (click)="cancelRejectConfirm()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-icon reject-icon">
-        <span class="emoji">😟💸</span>
-      </div>
-      <h3 class="modal-title">Are You Sure to Reject Offer?</h3>
-      <div class="modal-actions">
-        <button class="btn-modal-secondary" (click)="cancelRejectConfirm()">BACK</button>
-        <button class="btn-modal-primary reject" (click)="confirmRejectOffer()">CONFIRM</button>
-      </div>
+<!-- Reject Confirmation Modal -->
+<div *ngIf="showRejectConfirmModal" class="modal-overlay" (click)="cancelRejectConfirm()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <h3 class="modal-title">Are You Sure to Reject Offer?</h3>
+    <p class="modal-message">
+      Your appliance will be returned to you within 7 days.
+    </p>
+    <div class="modal-actions">
+      <button class="btn-modal-secondary" (click)="cancelRejectConfirm()">BACK</button>
+      <button class="btn-modal-primary reject" (click)="confirmRejectOffer()">CONFIRM</button>
     </div>
   </div>
+</div>
 
-  <!-- Reject Success Modal -->
-  <div *ngIf="showRejectSuccessModal" class="modal-overlay" (click)="closeRejectSuccess()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-icon warning-icon">
-        <span class="emoji">😔📦</span>
-      </div>
-      <h3 class="modal-title warning">You have rejected the offer.</h3>
-      <p class="modal-message">
-        We will return your appliance <strong>WITHIN 7 DAYS</strong>.
-      </p>
-      <div class="modal-actions">
-        <button class="btn-modal-primary reject" (click)="closeRejectSuccess()">OK</button>
-      </div>
+<!-- Reject Success Modal -->
+<div *ngIf="showRejectSuccessModal" class="modal-overlay" (click)="closeRejectSuccess()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <h3 class="modal-title warning">You have rejected the offer.</h3>
+    <p class="modal-message">
+      We will return your appliance <strong>WITHIN 7 DAYS</strong>.
+    </p>
+    <div class="modal-actions">
+      <button class="btn-modal-primary reject" (click)="closeRejectSuccess()">OK</button>
     </div>
   </div>
+</div>
 
-  <!-- Cancel Transaction Confirmation Modal -->
-  <div *ngIf="showCancelConfirmModal" class="modal-overlay" (click)="cancelCancellation()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <!-- <div class="modal-icon warning-icon">
-        <span class="emoji">⚠️</span>
-      </div> -->
-      <h3 class="modal-title">Cancel This Transaction?</h3>
-      <p class="modal-message">
-        Are you sure you want to cancel? The appliance will be returned to you.
-      </p>
-      <div class="modal-actions">
-        <button class="btn-modal-secondary" (click)="cancelCancellation()">BACK</button>
-        <button class="btn-modal-primary reject" (click)="confirmCancellation()">YES, CANCEL</button>
-      </div>
+<!-- Cancel Transaction Confirmation Modal -->
+<div *ngIf="showCancelConfirmModal" class="modal-overlay" (click)="cancelCancellation()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <h3 class="modal-title">Cancel This Transaction?</h3>
+    <p class="modal-message">
+      Are you sure you want to cancel? The appliance will be returned to you.
+    </p>
+    <div class="modal-actions">
+      <button class="btn-modal-secondary" (click)="cancelCancellation()">BACK</button>
+      <button class="btn-modal-primary reject" (click)="confirmCancellation()">YES, CANCEL</button>
     </div>
   </div>
+</div>
 
-  <!-- Cancel Success Modal -->
-  <div *ngIf="showCancelSuccessModal" class="modal-overlay" (click)="closeCancelSuccess()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-icon warning-icon">
-        <span class="emoji">📦</span>
-      </div>
-      <h3 class="modal-title warning">Transaction Cancelled</h3>
-      <p class="modal-message">
-        Your transaction has been cancelled. We will arrange to return your appliance <strong>WITHIN 7 DAYS</strong>.
-      </p>
-      <div class="modal-actions">
-        <button class="btn-modal-primary reject" (click)="closeCancelSuccess()">OK</button>
-      </div>
+<!-- Cancel Success Modal -->
+<div *ngIf="showCancelSuccessModal" class="modal-overlay" (click)="closeCancelSuccess()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <h3 class="modal-title warning">Transaction Cancelled</h3>
+    <p class="modal-message">
+      Your transaction has been cancelled. We will arrange to return your appliance <strong>WITHIN 7 DAYS</strong>.
+    </p>
+    <div class="modal-actions">
+      <button class="btn-modal-primary reject" (click)="closeCancelSuccess()">OK</button>
     </div>
   </div>
+</div>
 
   <!-- Photo Lightbox Modal -->
   <div *ngIf="showPhotoLightbox" class="lightbox-overlay" (click)="closeLightbox()">

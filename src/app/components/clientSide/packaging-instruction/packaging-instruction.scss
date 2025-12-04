@@ -1,232 +1,214 @@
-.packaging-instruction-container{
+.packaging-instruction-container {
   position: relative;
-  padding: 2rem;
+  padding: 2rem 0;
   background-color: #f8fafc;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  min-height: 100vh;
   font-family: 'Space Grotesk', sans-serif;
 
-    .top-actions {
-        align-self: flex-start;
-        color: #475569;
-        text-decoration: none;
+  .packaging-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  // ✅ Page header (title above breadcrumb) - matches transaction-detail
+  .page-header {
+    margin-bottom: 1rem;
+
+    .page-title {
+      color: #1e293b;
+      font-size: 2rem;
+      font-weight: 600;
+      margin: 0 0 0.5rem 0;
+      line-height: 1.2;
+    }
+
+    .page-subtitle {
+      color: #64748b;
+      font-size: 1rem;
+      margin: 0;
+      line-height: 1.5;
+    }
+  }
+
+  // ✅ Breadcrumb styling
+  app-breadcrumb {
+    display: block;
+    margin-bottom: 2rem;
+  }
+
+  .instruction-card {
+    max-width: 900px;
+    width: 100%;
+    background: white;
+    border-radius: 12px;
+    padding: 2.5rem;
+    margin: 80px auto 80px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+
+    .card-intro {
+      font-size: 1rem;
+      color: #475569;
+      line-height: 1.7;
+      margin-bottom: 2rem;
+
+      strong {
+        color: #1e293b;
         font-weight: 600;
+      }
+    }
+
+    .section-divider {
+      margin: 2.5rem 0;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .instruction-section {
+      margin-bottom: 2rem;
+
+      h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1e40af;
         margin-bottom: 1rem;
-        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
 
-        &:hover {
-            color: #0284c7;
-            text-decoration: underline;
+        .step-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+          border-radius: 50%;
+          color: #1e40af;
+          font-size: 1rem;
+          font-weight: 700;
         }
+      }
+
+      .instruction-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+
+        li {
+          padding: 0.875rem 1rem;
+          margin-bottom: 0.75rem;
+          background: #f8fafc;
+          border-radius: 8px;
+          border-left: 3px solid #3b82f6;
+          font-size: 0.95rem;
+          color: #334155;
+          line-height: 1.6;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background: #eff6ff;
+            border-left-color: #1e40af;
+            transform: translateX(4px);
+          }
+
+          &:last-child {
+            margin-bottom: 0;
+          }
+
+          strong {
+            color: #1e293b;
+            font-weight: 600;
+          }
+        }
+      }
+
+      .safety-warning {
+        margin-top: 1rem;
+        padding: 1rem 1.25rem;
+        background: #fef2f2;
+        border-left: 3px solid #ef4444;
+        border-radius: 8px;
+
+        p {
+          margin: 0;
+          font-size: 0.9rem;
+          color: #991b1b;
+          line-height: 1.6;
+
+          strong {
+            font-weight: 700;
+            color: #7f1d1d;
+          }
+        }
+      }
     }
 
-    .title {
-        color: #334155;
-        text-align: center;
-        font-size: 1.8rem;
-        margin-bottom: 0.5rem;
+    .final-note {
+      margin-top: 2rem;
+      padding: 1.5rem;
+      background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+      border-radius: 12px;
+      text-align: center;
+
+      p {
+        margin: 0;
+        font-size: 1rem;
+        color: #065f46;
+        font-weight: 500;
+        line-height: 1.6;
+
+        strong {
+          font-weight: 700;
+          color: #064e3b;
+        }
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 1rem 0;
+
+    .packaging-content {
+      padding: 0 1rem;
     }
 
-    .details {
-        text-align: center;
-        color: #475569;
-        margin-bottom: 1.5rem;
+    .page-header {
+      .page-title {
+        font-size: 1.5rem;
+      }
+
+      .page-subtitle {
+        font-size: 0.9rem;
+      }
     }
 
     .instruction-card {
-        max-width: 900px;
-        margin: 2rem auto;
-        background: #ffffff;
-        border-radius: 12px;
-        padding: 2rem 2.5rem;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, .1);
-        font-family: 'Space Grotesk', sans-serif;
+      padding: 1.5rem;
 
-        .card-intro {
-            margin: 0 0 2rem;
-            font-size: 1.05rem;
-            line-height: 1.6;
-            color: #334155;
-            padding: 1rem;
-            background-color: #f0f9ff;
-            border-left: 4px solid #0284c7;
-            border-radius: 6px;
+      .instruction-section {
+        h3 {
+          font-size: 1.1rem;
+
+          .step-icon {
+            width: 28px;
+            height: 28px;
+            font-size: 0.9rem;
+          }
         }
 
-        .section-divider {
-            margin-bottom: 2.5rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid #e2e8f0;
-
-            &:last-of-type {
-                border-bottom: none;
-                padding-bottom: 0;
-            }
+        .instruction-list li {
+          font-size: 0.875rem;
+          padding: 0.75rem 0.875rem;
         }
+      }
 
-        .section-title {
-            font-size: 1.3rem;
-            font-weight: 700;
-            color: #1e293b;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+      .final-note {
+        padding: 1.25rem;
+
+        p {
+          font-size: 0.9rem;
         }
-
-        .steps-list {
-            margin: 0;
-            padding-left: 1.5rem;
-            line-height: 1.8;
-            color: #475569;
-            list-style: none;
-
-            li {
-                margin-bottom: 1rem;
-                position: relative;
-                padding-left: 0.5rem;
-
-                &:before {
-                    content: "•";
-                    position: absolute;
-                    left: -1rem;
-                    color: #0284c7;
-                    font-weight: bold;
-                    font-size: 1.2rem;
-                }
-
-                &:last-child {
-                    margin-bottom: 0;
-                }
-
-                strong {
-                    color: #1e293b;
-                    font-weight: 600;
-                }
-            }
-
-            .sub-list {
-                margin-top: 0.5rem;
-                padding-left: 1.5rem;
-                list-style: disc;
-                color: #64748b;
-
-                li {
-                    margin-bottom: 0.5rem;
-                    padding-left: 0;
-
-                    &:before {
-                        content: none;
-                    }
-                }
-            }
-        }
-
-        .checklist {
-            margin: 0;
-            padding-left: 0;
-            list-style: none;
-
-            li {
-                margin-bottom: 0.75rem;
-                padding: 0.75rem 1rem;
-                background-color: #f8fafc;
-                border-radius: 6px;
-                border-left: 3px solid #10b981;
-                color: #475569;
-                position: relative;
-                padding-left: 2.5rem;
-
-                &:before {
-                    content: "✓";
-                    position: absolute;
-                    left: 1rem;
-                    color: #10b981;
-                    font-weight: bold;
-                    font-size: 1.1rem;
-                }
-
-                &:last-child {
-                    margin-bottom: 0;
-                }
-            }
-        }
-
-        .important-note {
-            margin-top: 2rem;
-            padding: 1.5rem;
-            background-color: #fef2f2;
-            border-left: 4px solid #ef4444;
-            border-radius: 6px;
-
-            strong {
-                display: block;
-                margin-bottom: 1rem;
-                font-size: 1.1rem;
-                color: #991b1b;
-            }
-
-            ul {
-                margin: 0;
-                padding-left: 1.5rem;
-                list-style: none;
-                color: #7f1d1d;
-
-                li {
-                    margin-bottom: 0.75rem;
-                    position: relative;
-                    padding-left: 0.5rem;
-
-                    &:before {
-                        content: "⚠";
-                        position: absolute;
-                        left: -1.5rem;
-                        font-size: 1rem;
-                    }
-
-                    &:last-child {
-                        margin-bottom: 0;
-                    }
-
-                    strong {
-                        display: inline;
-                        color: #991b1b;
-                        font-weight: 600;
-                        font-size: 1rem;
-                        margin-bottom: 0;
-                    }
-                }
-            }
-        }
-
-        /* Mobile adjustments */
-        @media (max-width: 600px) {
-            margin: 1.5rem 1rem;
-            padding: 1.5rem 1.25rem;
-
-            .section-title {
-                font-size: 1.1rem;
-            }
-
-            .steps-list li {
-                font-size: 0.95rem;
-            }
-
-            .important-note,
-            .help-section {
-                padding: 1rem;
-            }
-        }
-        }
-
-}
-
-
-@media (max-width: 768px) {
-  .top-actions {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
+      }
+    }
   }
 }
