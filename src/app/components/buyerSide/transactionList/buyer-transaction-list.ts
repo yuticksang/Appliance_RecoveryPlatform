@@ -85,6 +85,7 @@ export class BuyerTransactionListComponent implements OnInit {
     this.loading.set(true);
     this.error.set('');
 
+    // ✅ Get buyer info
     const buyerUserStr = localStorage.getItem('buyer_user');
     
     if (!buyerUserStr) {

@@ -264,12 +264,37 @@ export const submitQuestionnaire = async (req: AuthRequest, res: Response) => {
     console.log('� Parsed Question Answers:', questionAnswers);
 
     // Get seller_id from users table
+    console.log('🔍 Looking for user with ID:', userId);
     const userRes = await client.query(
-      'SELECT seller_id FROM users WHERE "userID" = $1',
+      'SELECT seller_id, user_type, username, email FROM users WHERE "userID" = $1',
       [userId]
     );
-    if (!userRes.rows[0]?.seller_id) throw new Error('User not found');
-    const sellerId = userRes.rows[0].seller_id;
+
+    console.log('📋 User query result:', userRes.rows);
+
+    if (!userRes.rows[0]) {
+      console.error('❌ User not found in database for userID:', userId);
+      throw new Error('User not found');
+    }
+
+    const user = userRes.rows[0];
+    console.log('👤 Found user:', { username: user.username, email: user.email, userType: user.user_type, sellerId: user.seller_id });
+
+    // Check if user is a seller
+    if (user.user_type !== 'seller') {
+      console.warn('⚠️ User is not a seller. User type:', user.user_type);
+      return res.status(403).json({
+        message: 'Only sellers can submit appliances for trade-in. Please login with a seller account.'
+      });
+    }
+
+    if (!user.seller_id) {
+      console.error('❌ Seller ID is null for user:', userId);
+      throw new Error('Seller ID not found for this user');
+    }
+
+    const sellerId = user.seller_id;
+    console.log('✅ Seller ID found:', sellerId);
 
     // ─────────────────────────────────────────────────────────
     // EXTRACT SPECIFIC FIELDS FROM DYNAMIC ANSWERS

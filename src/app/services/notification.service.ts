@@ -31,6 +31,9 @@ export class NotificationService {
   private intervalSubscription?: Subscription;
   private serviceStarted = false;
 
+  // ✅ ADD: Track which notifications have been shown in this session
+  private shownNotificationIds = new Set<string>();
+
   constructor() {
     console.log('📢 NotificationService created (waiting for initialization)');
   }
@@ -59,18 +62,16 @@ export class NotificationService {
   }
 
   private startNotificationChecks(): void {
-    console.log('⏰ Setting up notification check interval (every 30 seconds)');
+    console.log('⏰ Setting up notification check interval (every 10 seconds)');
     
-    // Check for new notifications every 30 seconds
-    this.intervalSubscription = interval(30000).subscribe(() => {
+    // ✅ IMMEDIATE CHECK (don't wait 2 seconds)
+    console.log('🔍 Running initial notification check...');
+    this.checkForNewNotifications();
+
+    // Check for new notifications every 10 seconds
+    this.intervalSubscription = interval(10000).subscribe(() => {
       this.checkForNewNotifications();
     });
-
-    // Initial check after 2 seconds (give time for auth to fully load)
-    setTimeout(() => {
-      console.log('🔍 Running initial notification check...');
-      this.checkForNewNotifications();
-    }, 2000);
   }
 
   public destroy(): void {
@@ -79,11 +80,12 @@ export class NotificationService {
       this.intervalSubscription.unsubscribe();
       this.intervalSubscription = undefined;
       this.serviceStarted = false;
+      // ✅ Clear shown notifications tracking
+      this.shownNotificationIds.clear();
     }
   }
 
   private checkForNewNotifications(): void {
-    // ✅ Use AuthService method consistently
     const user = this.auth.getCurrentUser();
     
     if (!user) {
@@ -102,9 +104,19 @@ export class NotificationService {
 
     this.getNotifications().subscribe({
       next: (notifications) => {
-        if (notifications.length > 0) {
-          console.log(`📢 Found ${notifications.length} notifications for seller ${user.id}`);
-          notifications.forEach(notification => {
+        // ✅ FILTER: Only show notifications that haven't been shown in this session
+        const newNotifications = notifications.filter(n => {
+          const alreadyShown = this.shownNotificationIds.has(n.id);
+          if (!alreadyShown) {
+            this.shownNotificationIds.add(n.id);
+            return true;
+          }
+          return false;
+        });
+
+        if (newNotifications.length > 0) {
+          console.log(`📢 Found ${newNotifications.length} NEW notifications for seller ${user.id}`);
+          newNotifications.forEach(notification => {
             this.showSystemCancellationAlert(notification);
           });
         } else {
@@ -116,7 +128,6 @@ export class NotificationService {
       error: (error) => {
         console.error('❌ Error checking notifications:', error);
         
-        // If it's an auth error, stop the service
         if (error.status === 401 || error.status === 403) {
           console.log('🛑 Authentication error - stopping notification service');
           this.destroy();
@@ -132,22 +143,35 @@ export class NotificationService {
   }
 
   private showSystemCancellationAlert(notification: SystemNotification): void {
-    // ✅ Use AuthService method consistently
     const user = this.auth.getCurrentUser();
     
     if (user?.userType === 'seller') {
-      console.log(`🚨 Showing cancellation alert to seller: ${notification.message.substring(0, 50)}...`);
+      console.log(`📢 Showing cancellation alert: ${notification.message.substring(0, 50)}...`);
       
       this.alertService.showModal({
         type: 'warning',
-        title: '⚠️ Transaction Cancelled by System',
+        title: 'Transaction Cancelled by System',
         message: notification.message,
         confirmText: 'I Understand',
         showCancel: false,
         onConfirm: () => {
           console.log('✅ Seller acknowledged system cancellation notification');
+          // ✅ Mark as read in backend after user acknowledges
+          this.markAsRead(notification.id).subscribe({
+            next: () => console.log(`✅ Notification ${notification.id} marked as read`),
+            error: (err) => console.error(`❌ Failed to mark notification as read:`, err)
+          });
         }
       });
     }
+  }
+
+  // ✅ ADD: Mark notification as read
+  markAsRead(notificationId: string): Observable<any> {
+    return this.http.patch(
+      `${this.apiUrl}/notifications/${notificationId}/read`, 
+      {}, 
+      { headers: this.auth.getAuthHeaders() }
+    );
   }
 }
