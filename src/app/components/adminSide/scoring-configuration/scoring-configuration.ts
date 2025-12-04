@@ -2,15 +2,18 @@ import { Component, computed, signal, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EditScore } from './edit-score/edit-score';
-import {EditWeightPercentage} from './edit-weightPercentage/edit-weightPercentage';
-import { Condition, ConditionGroup, Category, ScoringConfigurationService } from './scoring-configuration.service';
+import { EditWeightPercentage } from './edit-weightPercentage/edit-weightPercentage';
+import {
+  Condition,
+  ConditionGroup,
+  Category,
+  ScoringConfigurationService,
+} from './scoring-configuration.service';
 import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
 import { AlertService } from '../../../services/alert.service';
-import { ConfigService } from "../../../services/config.service";
+import { ConfigService } from '../../../services/config.service';
 
-
-
-type SortKey = 'adminId' | 'score' ;
+type SortKey = 'adminId' | 'score';
 type SortDir = 'asc' | 'desc';
 
 @Component({
@@ -20,7 +23,6 @@ type SortDir = 'asc' | 'desc';
   styleUrl: './scoring-configuration.scss',
 })
 export class ScoringConfiguration implements OnInit {
-
   private scoringConfigService = inject(ScoringConfigurationService);
   private alertService = inject(AlertService);
   private configService = inject(ConfigService);
@@ -35,10 +37,10 @@ export class ScoringConfiguration implements OnInit {
   //categotyID selected
   selectedCategoryID = signal<string>('');
 
-  // Pagination & sorting 
+  // Pagination & sorting
   itemsPerPageOptions = [3, 5, 10, 20];
   itemsPerPage = signal<number>(3);
-  currentPage = signal<{[groupID: string]: number}>({});
+  currentPage = signal<{ [groupID: string]: number }>({});
 
   sortKey = signal<SortKey>('adminId');
   sortDir = signal<SortDir>('asc');
@@ -48,75 +50,70 @@ export class ScoringConfiguration implements OnInit {
   showEditWeightModal = signal<boolean>(false);
   selectedRow = signal<Condition | null>(null);
   selectedConditionGroup = signal<ConditionGroup | null>(null);
+  othersConditionGroup = signal<ConditionGroup[] | null>(null);
 
   selectedCategoryName = computed(() => {
     const categoryID = this.selectedCategoryID();
-    const category = this.categories().find(c => c.categoryID === categoryID);
+    const category = this.categories().find((c) => c.categoryID === categoryID);
     return category ? category.categoryName : 'Unknown';
-  })
+  });
 
   filteredRows = computed(() => {
-
     const q = this.search().trim().toLowerCase();
     const groups = this.rows();
     const key = this.sortKey();
     const dir = this.sortDir();
 
-    return groups.map(group =>{
-      let filteredConditions = group.conditions.filter(r =>
-        !q ||
-        r.code.toLowerCase().includes(q) ||
-        r.description.toLowerCase().includes(q) ||
-        r.scoreValue.toString().toLowerCase().includes(q) ||
-        group.criteriaName.toLowerCase().includes(q)
-      );
+    return groups
+      .map((group) => {
+        let filteredConditions = group.conditions.filter(
+          (r) =>
+            !q ||
+            r.code.toLowerCase().includes(q) ||
+            r.description.toLowerCase().includes(q) ||
+            r.scoreValue.toString().toLowerCase().includes(q) ||
+            group.criteriaName.toLowerCase().includes(q)
+        );
 
-      filteredConditions.sort((a: any, b: any) => {
-        const av = (a[key] ?? '').toString().toLowerCase();
-        const bv = (b[key] ?? '').toString().toLowerCase();
-        if (av < bv) return dir === 'asc' ? -1 : 1;
-        if (av > bv) return dir === 'asc' ? 1 : -1;
-        return 0;
-      });
+        filteredConditions.sort((a: any, b: any) => {
+          const av = (a[key] ?? '').toString().toLowerCase();
+          const bv = (b[key] ?? '').toString().toLowerCase();
+          if (av < bv) return dir === 'asc' ? -1 : 1;
+          if (av > bv) return dir === 'asc' ? 1 : -1;
+          return 0;
+        });
 
-      return {
-        ...group,
-        conditions: filteredConditions
-      };
-    }).filter(group => group.conditions.length > 0 || !q);
-   
+        return {
+          ...group,
+          conditions: filteredConditions,
+        };
+      })
+      .filter((group) => group.conditions.length > 0 || !q);
   });
 
-
   ngOnInit() {
-   
     this.loadCategories();
-
   }
 
   loadCategories(): void {
-    this.scoringConfigService.getCategories()
-      .subscribe({
-        next: (response) =>{
-          if(response.success){
-              this.categories.set(response.data);
-              if (response.data.length > 0 && !this.selectedCategoryID()) {
-                this.selectedCategoryID.set(response.data[0].categoryID);
-              }
+    this.scoringConfigService.getCategories().subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.categories.set(response.data);
+          if (response.data.length > 0 && !this.selectedCategoryID()) {
+            this.selectedCategoryID.set(response.data[0].categoryID);
+          }
 
-              this.loadConditionGroup();
-
-              }else{
-                this.error.set(response.message || 'Failed to load categories');
-              }
-                this.isLoading.set(false);
-              },
-              error: (err) => {
-                console.error('Error loading categories:', err);      
-              }
-
-            });
-
+          this.loadConditionGroup();
+        } else {
+          this.error.set(response.message || 'Failed to load categories');
+        }
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Error loading categories:', err);
+      },
+    });
   }
 
   loadConditionGroup(): void {
@@ -126,103 +123,110 @@ export class ScoringConfiguration implements OnInit {
     const categoryID = this.selectedCategoryID();
     console.log('Loading condition groups for categoryID:', categoryID);
 
-    this.scoringConfigService.getConditionGroupByCategory(categoryID)
-      .subscribe({
-        next: (response) =>{
-          if(response.success){
-            this.rows.set(response.data);
+    this.scoringConfigService.getConditionGroupByCategory(categoryID).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.rows.set(response.data);
 
-            const page : {[groupID: string]: number} = {};
-            (response.data).forEach((g: ConditionGroup) => {
-              page[g.groupID] = 1;
-            });
-            this.currentPage.set(page);
-          
-          }else{
-            this.error.set(response.message || 'Failed to load data');
-          }
-          this.isLoading.set(false);
-        },
-        error: (err) => {
-          console.error('Error loading criteria:', err);
-          this.error.set('Error loading data: ' + err.message);
-          this.isLoading.set(false);
+          const page: { [groupID: string]: number } = {};
+          response.data.forEach((g: ConditionGroup) => {
+            page[g.groupID] = 1;
+          });
+          this.currentPage.set(page);
+        } else {
+          this.error.set(response.message || 'Failed to load data');
         }
-
-      });
-    
-      
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Error loading criteria:', err);
+        this.error.set('Error loading data: ' + err.message);
+        this.isLoading.set(false);
+      },
+    });
   }
 
-  saveScore(event: {categoryID: string, conditionID: string, newScoreValue: number}): void {
+  saveScore(event: { categoryID: string; conditionID: string; newScoreValue: number }): void {
     this.isLoading.set(true);
 
-    this.scoringConfigService.updateConditionScore(event.categoryID, event.conditionID, event.newScoreValue)
+    this.scoringConfigService
+      .updateConditionScore(event.categoryID, event.conditionID, event.newScoreValue)
       .subscribe({
-       next: () => {
+        next: () => {
           this.loadConditionGroup(); // Reload the list
-          const message =  `Condition Score ${event.conditionID} updated successfully.`;
+          const message = `Condition Score ${event.conditionID} updated successfully.`;
           this.alertService.success(message);
           this.isLoading.set(false);
           this.closeEditModal();
         },
         error: (err) => {
           console.error('Update admin error:', err);
-          this.alertService.error('Failed to update admin: ' + (err.error?.message || 'Unknown error'));
-        }
-        });
+          this.alertService.error(
+            'Failed to update admin: ' + (err.error?.message || 'Unknown error')
+          );
+        },
+      });
   }
 
-  saveWeightPercentage(event: {conditionGroupID: string, categoryID: string, newWeightPercentage: number}): void {
+  saveWeightPercentage(event: {updates: { conditionGroupID: string; categoryID: string; newWeightPercentage: number }[]}): void {
     this.isLoading.set(true);
-    this.scoringConfigService.updateWeightPercentage(event.categoryID, event.conditionGroupID, event.newWeightPercentage)
-      .subscribe({
-       next: () => {
-          this.loadConditionGroup(); // Reload the list
-          const message =  `Weight Percentage for Group ${event.conditionGroupID} updated successfully.`;
-          this.alertService.success(message);
-          this.closeEditWeightModal();
-          this.isLoading.set(false);
+
+    const updates = event.updates;
+    let completed = 0;
+    let hasError = false;
+
+    updates.forEach((update) => {
+      this.scoringConfigService.updateWeightPercentage(update.categoryID, update.conditionGroupID, update.newWeightPercentage).subscribe({
+        next: () => {
+          completed++;
+          if (completed === updates.length && !hasError) {
+            this.loadConditionGroup(); // Reload the list
+            const message = `Weight Percentage for Group ${update.conditionGroupID} updated successfully.`;
+            this.alertService.success(message);
+            this.closeEditWeightModal();
+            this.isLoading.set(false);
+          }
         },
         error: (err) => {
-          console.error('Update weight percentage error:', err);  
-          this.alertService.error('Failed to update weight percentage: ' + (err.error?.message || 'Unknown error'));
+          hasError = true;
+          console.error('Update weight percentage error:', err);
+          this.alertService.error(
+            'Failed to update weight percentage: ' + (err.error?.message || 'Unknown error')
+          );
           this.isLoading.set(false);
-        }
-        });
+        },
+      });
+    });
   }
 
-  getTotalPages(group: ConditionGroup): number{
+  getTotalPages(group: ConditionGroup): number {
     return Math.max(1, Math.ceil(group.conditions.length / this.itemsPerPage()));
   }
-   
 
   getPageNumbers(group: ConditionGroup) {
-    return Array.from({ length: this.getTotalPages(group)}, (_, i) => i + 1);
+    return Array.from({ length: this.getTotalPages(group) }, (_, i) => i + 1);
   }
 
   getPageSlice(group: ConditionGroup): Condition[] {
     const currentPage = this.currentPage()[group.groupID] || 1;
-    const start = (currentPage -1) * this.itemsPerPage();
+    const start = (currentPage - 1) * this.itemsPerPage();
     return group.conditions.slice(start, start + this.itemsPerPage());
   }
-  
-  
+
   goToPage(groupID: string, page: number): void {
-    const group = this.filteredRows().find(g => g.groupID === groupID);
+    const group = this.filteredRows().find((g) => g.groupID === groupID);
     if (!group) return;
 
     const totalPages = this.getTotalPages(group);
-    if(page < 1 || page > totalPages) return;
+    if (page < 1 || page > totalPages) return;
 
-    this.currentPage.update(pages => ({
+    this.currentPage.update((pages) => ({
       ...pages,
-      [groupID]: page
+      [groupID]: page,
     }));
-
   }
 
-  getCurrentPage(groupID: string) : number {
+  getCurrentPage(groupID: string): number {
     return this.currentPage()[groupID] || 1;
   }
 
@@ -238,26 +242,25 @@ export class ScoringConfiguration implements OnInit {
 
   resetOnSearch(v: string): void {
     this.search.set(v);
-    const pages: {[groupID: string]: number} = {};
-    this.filteredRows().forEach(g => {
+    const pages: { [groupID: string]: number } = {};
+    this.filteredRows().forEach((g) => {
       pages[g.groupID] = 1;
-    })
+    });
     this.currentPage.set(pages);
   }
 
-  onCategoryChange(categoryID: string): void{
+  onCategoryChange(categoryID: string): void {
     this.selectedCategoryID.set(categoryID);
     this.loadConditionGroup();
     this.search.set('');
-
   }
 
   setPageSize(n: number) {
     this.itemsPerPage.set(n);
-    const pages: {[groupID: string]: number} = {};
-    this.filteredRows().forEach(g => {
+    const pages: { [groupID: string]: number } = {};
+    this.filteredRows().forEach((g) => {
       pages[g.groupID] = 1;
-    })
+    });
     this.currentPage.set(pages);
   }
 
@@ -273,8 +276,7 @@ export class ScoringConfiguration implements OnInit {
     this.showEditModal.set(false);
   }
 
-  openEditWeightModal(group: ConditionGroup) {
-    this.selectedConditionGroup.set(group);
+  openEditWeightModal() {
     this.showEditWeightModal.set(true);
   }
 
@@ -286,5 +288,4 @@ export class ScoringConfiguration implements OnInit {
   refresh(): void {
     this.loadConditionGroup();
   }
-
 }

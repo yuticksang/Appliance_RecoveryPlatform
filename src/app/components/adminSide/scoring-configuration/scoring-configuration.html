@@ -38,7 +38,7 @@
           <span class="info-label">{{ group.criteriaName }}</span>
         </div>
         <div class="group-actions">
-          <button class="icon-btn edit-btn"  (click)="openEditWeightModal(group)" title="Edit Group">
+          <button class="icon-btn edit-btn"  (click)="openEditWeightModal()" title="Edit Group">
             <i class="ri-pencil-line"></i>
           </button>
         </div>
@@ -131,12 +131,13 @@
 </app-edit-score>
 }
 
-@if (showEditWeightModal() && selectedConditionGroup()){
+@if (showEditWeightModal() && rows()){
 <app-edit-weightPercentage
-  [conditionGroup]="selectedConditionGroup()!"
+  [conditionGroup]="rows()"
   [categoryName]="selectedCategoryName()"
   (close)="closeEditWeightModal()"
   (save)="saveWeightPercentage($event)"
+ 
 >
 </app-edit-weightPercentage>
 }
