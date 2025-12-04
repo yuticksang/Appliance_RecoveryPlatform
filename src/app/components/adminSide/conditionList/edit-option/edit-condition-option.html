@@ -30,9 +30,6 @@
         <!-- Image Preview -->
         <div *ngIf="imagePreviewUrl || currentImageUrl" class="image-preview">
           <img [src]="imagePreviewUrl || getImageUrl(currentImageUrl)" alt="Preview" />
-          <button type="button" class="remove-image-btn" (click)="removeImage()" title="Remove image">
-            <i class="ri-close-circle-fill"></i>
-          </button>
         </div>
 
         <input id="image" type="file" accept="image/*" (change)="onFileSelect($event)">
@@ -78,9 +75,6 @@
           </li>
           <li *ngIf="selectedFile">
             Image: Will be updated (new image selected)
-          </li>
-          <li *ngIf="removeCurrentImage">
-            Image: Will be removed
           </li>
           <li *ngIf="!areSetsEqual(selectedCategories, originalSelectedCategories)">
             Categories: Updated ({{ selectedCategories.size }} selected)

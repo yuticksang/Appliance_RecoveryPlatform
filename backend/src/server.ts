@@ -18,8 +18,9 @@ import summaryReportRoutes from './routes/summaryReport';
 import cronRoutes from './routes/cron';
 import dbPool from './config/database';
 import questionnaireRouter from './routes/questionnaire';
+import packagingInstructionRoutes from './routes/packagingInstruction';
+import notificationRoutes from './routes/notification';
 import { executeAutoCancellation } from './controllers/cronController';
-const notificationRoutes = require('./routes/notification').default;
 
 dotenv.config();
 const app = express();
@@ -82,7 +83,8 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/buyer', buyerRoutes);
 app.use('/api', profileRoutes);
 app.use('/api/scoring-config', scoringConfigRoutes);
-app.use('/api', questionnaireRouter); 
+app.use('/api', questionnaireRouter);
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/cron', cronRoutes);
 app.use('/api/notifications', notificationRoutes);
@@ -92,6 +94,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/buyerDashboard', buyerDashboardRoutes);
 app.use('/api/transactionReport', transactionReportRoutes);
 app.use('/api/summaryReport', summaryReportRoutes);
+app.use('/api', packagingInstructionRoutes);
 
 // Health route
 app.get('/health', (req, res) => res.json({ ok: true, message: 'Server is running' }));

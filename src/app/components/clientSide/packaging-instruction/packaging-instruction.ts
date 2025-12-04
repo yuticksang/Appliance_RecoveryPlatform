@@ -1,6 +1,8 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { PackagingInstructionService, PackagingSection } from '../../../services/packaging-instruction.service';
+import { TransactionService } from '../../../services/transaction.service';
 import { BreadcrumbService } from '../../../services/breadcrumb.service';
 import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
 
@@ -13,9 +15,18 @@ import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
 export class PackagingInstruction implements OnInit {
   private router = inject(Router);
   private breadcrumbService = inject(BreadcrumbService);
+  private packagingService = inject(PackagingInstructionService);
+  private transactionService = inject(TransactionService);
 
   // Read the transactionId from navigation state
   private fromTransactionId: string | number | null = null;
+
+  // Packaging instructions data
+  packagingSections = signal<PackagingSection>({});
+  sectionNames = signal<string[]>([]);
+  loading = signal<boolean>(true);
+  categoryId = signal<number>(0);
+  isDefault = signal<boolean>(false);
 
   constructor() {
     // Access navigation state
@@ -30,7 +41,12 @@ export class PackagingInstruction implements OnInit {
     }
   }
 
-    ngOnInit(): void {
+  ngOnInit(): void {
+    this.setupBreadcrumbs();
+    this.loadPackagingInstructions();
+  }
+
+  private setupBreadcrumbs(): void {
     if (this.fromTransactionId) {
       // Set breadcrumbs with clickable Transaction Detail link
       this.breadcrumbService.setBreadcrumbs([
@@ -47,13 +63,69 @@ export class PackagingInstruction implements OnInit {
     }
   }
 
-  goBackToTransaction(): void {
-    if (this.fromTransactionId) {
-      this.router.navigate(['/transaction-detail', this.fromTransactionId]);
-    } else {
-      // Fallback: go to transactions list if no ID
-      this.router.navigate(['/transactions']);
+  private loadPackagingInstructions(): void {
+    if (!this.fromTransactionId) {
+      console.warn('No transaction ID found, loading default instructions');
+      this.loadDefaultInstructions();
+      return;
     }
+
+    // First, get the transaction to find out the category
+    this.transactionService.getTransactionById(this.fromTransactionId).subscribe({
+      next: (transaction) => {
+        console.log('📦 Transaction loaded, categoryId:', transaction.categoryId);
+        const categoryId = transaction.categoryId || 0;
+        this.categoryId.set(categoryId);
+
+        // Now fetch packaging instructions for this category
+        this.packagingService.getPackagingInstructions(categoryId).subscribe({
+          next: (response) => {
+            console.log('✅ Packaging instructions loaded:', response);
+            this.packagingSections.set(response.sections);
+            this.sectionNames.set(this.sortSectionsByDisplayOrder(response.sections));
+            this.isDefault.set(response.isDefault);
+            this.loading.set(false);
+          },
+          error: (error) => {
+            console.error('❌ Error loading packaging instructions:', error);
+            this.loadDefaultInstructions();
+          }
+        });
+      },
+      error: (error) => {
+        console.error('❌ Error loading transaction:', error);
+        this.loadDefaultInstructions();
+      }
+    });
   }
 
+  private loadDefaultInstructions(): void {
+    // Fallback to default instructions (categoryId = 0)
+    this.packagingService.getPackagingInstructions(0).subscribe({
+      next: (response) => {
+        this.packagingSections.set(response.sections);
+        this.sectionNames.set(this.sortSectionsByDisplayOrder(response.sections));
+        this.isDefault.set(true);
+        this.loading.set(false);
+      },
+      error: (error) => {
+        console.error('❌ Error loading default instructions:', error);
+        this.loading.set(false);
+      }
+    });
+  }
+
+  // Helper to sort section names by the minimum displayOrder of their steps
+  private sortSectionsByDisplayOrder(sections: PackagingSection): string[] {
+    return Object.keys(sections).sort((a, b) => {
+      const minOrderA = Math.min(...sections[a].map(step => step.displayOrder));
+      const minOrderB = Math.min(...sections[b].map(step => step.displayOrder));
+      return minOrderA - minOrderB;
+    });
+  }
+
+  // Helper to get steps for a section
+  getStepsForSection(sectionName: string) {
+    return this.packagingSections()[sectionName] || [];
+  }
 }

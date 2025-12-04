@@ -1,90 +1,35 @@
 <div class="packaging-instruction-container">
-  <div class="packaging-content">
-    <!-- ✅ Title and Description ABOVE breadcrumb -->
-    <div class="page-header">
-      <h1 class="page-title">Packaging Instructions</h1>
-    </div>
-
-    <!-- ✅ Breadcrumb below title -->
+  <div class="page-head">
     <app-breadcrumb></app-breadcrumb>
-
-    <!-- Instruction Card -->
-    <section class="instruction-card">
-      <div class="card-intro">
-        <strong>Packaging Instructions:</strong> Please follow these comprehensive steps to ensure your appliance is safely prepared for pickup. Proper packaging protects your appliance during transit and helps us provide an accurate valuation.
-      </div>
-
-      <div class="section-divider"></div>
-
-      <!-- Safety First Section -->
-      <div class="instruction-section">
-        <h3>
-          <span class="step-icon">1</span>
-          Safety First
-        </h3>
-        <ul class="instruction-list">
-          <li><strong>Disconnect Power:</strong> Unplug the appliance from the electrical outlet at least 24 hours before pickup.</li>
-          <li><strong>Turn Off Water/Gas:</strong> For appliances with water connections (washing machines, dishwashers, refrigerators with ice makers) or gas connections (dryers, ovens), shut off and disconnect all supply lines.</li>
-          <li><strong>Allow Cooling:</strong> Let appliances cool completely if they generate heat (ovens, dryers, water heaters).</li>
-          <li><strong>Defrost:</strong> Refrigerators and freezers must be fully defrosted and dried to prevent water leakage during transit.</li>
-        </ul>
-      </div>
-
-      <div class="section-divider"></div>
-
-      <!-- Preparation Steps Section -->
-      <div class="instruction-section">
-        <h3>
-          <span class="step-icon">2</span>
-          Preparation Steps
-        </h3>
-        <ul class="instruction-list">
-          <li><strong>Clean Thoroughly:</strong> Wipe down all interior and exterior surfaces. Remove any food residue, lint, or debris.</li>
-          <li><strong>Remove Accessories:</strong> Take out all removable parts like shelves, racks, drawers, and trays. Wrap them separately or secure them inside the appliance.</li>
-          <li><strong>Secure Moving Parts:</strong> Tape down doors, lids, and any moving components to prevent damage during transport.</li>
-          <li><strong>Drain Water:</strong> Ensure all water is drained from washing machines, dishwashers, and water heaters. Check drain hoses and filters.</li>
-        </ul>
-      </div>
-
-      <div class="section-divider"></div>
-
-      <!-- Protective Packaging Section -->
-      <div class="instruction-section">
-        <h3>
-          <span class="step-icon">3</span>
-          Protective Packaging
-        </h3>
-        <ul class="instruction-list">
-          <li><strong>Corner Protection:</strong> Use foam padding or cardboard on all corners to prevent dents and scratches.</li>
-          <li><strong>Wrap the Appliance:</strong> Cover the entire appliance with moving blankets, bubble wrap, or protective plastic sheeting.</li>
-          <li><strong>Secure with Tape:</strong> Use strong packing tape to hold protective materials in place, but avoid taping directly onto painted or delicate surfaces.</li>
-          <li><strong>Label Fragile Areas:</strong> Mark any particularly delicate parts (glass doors, control panels) with "FRAGILE" labels.</li>
-        </ul>
-        
-        <div class="safety-warning">
-          <p><strong>⚠️ Important:</strong> Do not use duct tape directly on the appliance surface as it may leave residue or damage the finish.</p>
-        </div>
-      </div>
-
-      <div class="section-divider"></div>
-
-      <!-- Final Preparation Section -->
-      <div class="instruction-section">
-        <h3>
-          <span class="step-icon">4</span>
-          Final Preparation
-        </h3>
-        <ul class="instruction-list">
-          <li><strong>Clear Pathway:</strong> Ensure there is a clear path from the appliance location to the pickup point. Remove obstacles, rugs, and any tripping hazards.</li>
-          <li><strong>Measure Doorways:</strong> Verify that the appliance can fit through all doorways and hallways. Remove doors if necessary.</li>
-          <li><strong>Accessibility:</strong> The appliance should be easily accessible on the pickup date. If it's in a basement or upper floor, inform us in advance.</li>
-          <li><strong>Documentation:</strong> Have your recovery slip and any relevant documents ready for the pickup team.</li>
-        </ul>
-      </div>
-
-      <div class="final-note">
-        <p><strong>📦 Ready for Pickup!</strong> Once you've completed these steps, your appliance is ready for our recovery team. Thank you for helping us ensure a smooth and safe pickup process!</p>
-      </div>
-    </section>
   </div>
+  <h1 class="page-title">Packaging Instructions</h1>
+  <p class="details">Prepare your appliance for pickup</p>
+
+  <!-- Loading state -->
+  @if (loading()) {
+    <div class="loading-container">
+      <p>Loading packaging instructions...</p>
+    </div>
+  }
+
+  <!-- Instructions loaded -->
+  @if (!loading()) {
+    <section class="instruction-card">
+      <p class="card-intro">
+        <strong>Packaging Instructions:</strong> Please follow these comprehensive steps to ensure your appliance is safely prepared for pickup. Proper packaging protects your appliance during transit and helps us provide an accurate valuation.
+      </p>
+
+      <!-- Dynamic sections loaded from database -->
+      @for (sectionName of sectionNames(); track sectionName) {
+        <div class="section-divider">
+          <h2 class="section-title">{{ sectionName }}</h2>
+          <ul class="steps-list">
+            @for (step of getStepsForSection(sectionName); track step.id) {
+              <li>{{ step.instruction }}</li>
+            }
+          </ul>
+        </div>
+      }
+    </section>
+  }
 </div>

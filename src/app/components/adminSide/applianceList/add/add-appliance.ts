@@ -28,6 +28,7 @@ export class AddApplianceComponent implements OnInit {
   addApplianceForm: FormGroup;
   selectedImageFile: File | null = null;
   imagePreview: string | null = null;
+  removeImage = false;
 
   constructor(private fb: FormBuilder) {
     this.addApplianceForm = this.fb.group({
@@ -40,8 +41,15 @@ export class AddApplianceComponent implements OnInit {
   }
 
   ngOnInit() {
-    console.log('Categories:', this.categories);
-    console.log('Brands:', this.brands);
+    this.categoryID?.valueChanges.subscribe((newCategoryId) => {
+      if (this.selectedImageFile) return;
+      if (!newCategoryId) {
+        this.imagePreview = null;
+        return;
+      }
+      const defaultForCategory = this.getDefaultImageForCategory(newCategoryId);
+      this.imagePreview = defaultForCategory;
+    });
   }
 
   get modelCode() { return this.addApplianceForm.get('modelCode'); }
@@ -54,6 +62,7 @@ export class AddApplianceComponent implements OnInit {
     const file = event.target.files[0];
     if (file) {
       this.selectedImageFile = file;
+      this.removeImage = false;
 
       // Create preview
       const reader = new FileReader();
@@ -62,6 +71,13 @@ export class AddApplianceComponent implements OnInit {
       };
       reader.readAsDataURL(file);
     }
+  }
+
+  onRemoveImage() {
+    this.selectedImageFile = null;
+    this.removeImage = true;
+    const fallback = this.categoryID?.value ? this.getDefaultImageForCategory(this.categoryID?.value) : null;
+    this.imagePreview = fallback;
   }
 
   onClose() {
@@ -82,5 +98,27 @@ export class AddApplianceComponent implements OnInit {
       this.applianceAdded.emit(newAppliance);
       this.onClose();
     }
+  }
+
+  private getDefaultImageForCategory(categoryID?: string): string {
+    const resolvedName = this.getCategoryName(categoryID || '').toLowerCase();
+
+    const categoryImageMap: { keywords: string[]; src: string }[] = [
+      { keywords: ['air conditioner', 'aircon'], src: 'assets/image/appliances/air-conditioner-default.png' },
+      { keywords: ['microwave'], src: 'assets/image/appliances/microwave-default.png' },
+      { keywords: ['fridge', 'refrigerator'], src: 'assets/image/appliances/refrigerator-default.png' },
+      { keywords: ['washing machine', 'washer'], src: 'assets/image/appliances/washing-machine-default.png' }
+    ];
+
+    const match = categoryImageMap.find(entry =>
+      entry.keywords.some(keyword => resolvedName.includes(keyword))
+    );
+
+    return match?.src || 'assets/image/appliances/washing-machine-default.png';
+  }
+
+  private getCategoryName(categoryID: string): string {
+    const category = this.categories.find(c => c.categoryID === categoryID);
+    return category ? category.categoryName : '';
   }
 }
