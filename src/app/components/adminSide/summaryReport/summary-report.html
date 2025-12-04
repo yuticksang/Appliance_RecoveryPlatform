@@ -1,0 +1,232 @@
+<div class="page-head">
+      <h1 class="page-title">Summary Report</h1>
+      <app-breadcrumb></app-breadcrumb>
+</div>
+
+<div class="main-container" (click)="closeAllCalendars($event)">
+  
+  <!-- UI Container -->
+  <div class="picker-card" (click)="$event.stopPropagation()">
+    
+    <!-- Start Date Input -->
+    <div class="input-group">
+      <label>Start Date</label>
+      <div (click)="toggleStartCalendar()" class="input-box">
+        <span [class.placeholder]="!startDate()">
+          {{ (startDate() | date:'dd-MM-yyyy') || 'DD-MM-YYYY' }}
+        </span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="calendar-icon"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+      </div>
+
+      <!-- Start Date Calendar Dropdown -->
+      @if (isStartOpen()) {
+        <div class="calendar-popup">
+          <ng-container *ngTemplateOutlet="calendarTemplate; context: { $implicit: 'start' }"></ng-container>
+        </div>
+      }
+    </div>
+
+    <!-- End Date Input -->
+    <div class="input-group">
+      <label>End Date</label>
+      <div (click)="toggleEndCalendar()" class="input-box">
+        <span [class.placeholder]="!endDate()">
+          {{ (endDate() | date:'dd-MM-yyyy') || 'DD-MM-YYYY' }}
+        </span>
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="calendar-icon"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
+      </div>
+
+      <!-- End Date Calendar Dropdown -->
+      @if (isEndOpen()) {
+        <div class="calendar-popup">
+          <ng-container *ngTemplateOutlet="calendarTemplate; context: { $implicit: 'end' }"></ng-container>
+        </div>
+      }
+    </div>
+
+    <!-- Buttons -->
+    <div class="action-buttons"> 
+      <!-- Generate Button -->
+      <button (click)="handleGenerate()" class="btn-primary">Generate</button>
+      
+      <!-- Reset Button -->
+      <button (click)="handleReset()" class="btn-secondary">Reset</button>
+    </div>
+
+  </div>
+  
+  @if (loading()) {
+    <div class="loading-container">
+        <p>Generating report...</p>
+    </div>
+    }
+
+    <!-- Error State -->
+    @if (error()) {
+    <div class="error-container">
+        <p>{{ error() }}</p>
+    </div>
+    }
+
+     @if (noData() && !loading()) {
+        <div class="no-data-container">
+            <div class="no-data-icon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="12" y1="18" x2="12" y2="12"></line>
+                    <line x1="9" y1="15" x2="15" y2="15"></line>
+                </svg>
+            </div>
+            <h3 class="no-data-title">No Transactions Found</h3>
+            <p class="no-data-message">
+                There are no transactions recorded between 
+                <strong>{{ formatDisplayDate(reportData()!.dateRange.startDate) }}</strong> 
+                and 
+                <strong>{{ formatDisplayDate(reportData()!.dateRange.endDate) }}</strong>.
+            </p>
+            <p class="no-data-hint">Try selecting a different date range.</p>
+        </div>
+    }
+
+  <!-- Demo Output Area -->
+  @if (reportData() && !loading() && !noData()) {
+    <div class="report-card">
+        <button class="export-btn" (click)="exportReport()">Export</button>
+        <div class="header-section">
+            <div class="title-row">
+                <h1>Appliance Recovery Performance - Summary</h1>
+                <div class="company-name">Easy Recovery</div>
+            </div>
+
+            <div class="meta-grid">
+                <div class="meta-col-left">
+                     <div class="logo-area">
+                    <img src="../../../../assets/image/EzRecover_Icon.png" alt="App Logo" class="app-logo">
+                    </div>
+                    <div class="meta-left">
+                       <span class="meta-label">Reporting Period:</span> 
+                        <span>({{formatDisplayDate(reportData()!.dateRange.startDate)}} - {{formatDisplayDate(reportData()!.dateRange.endDate)}})</span>
+                    </div>
+                </div>
+                <div class="meta-col-right" style="text-align: right;">
+                    <div class="meta-item"><strong>Generated On :</strong> {{generatedDate | date:'dd/MM/yyyy'}} at {{generatedDate | date:'hh:mm:ss a'}}</div>
+                    <div class="meta-item"><strong>Generated By :</strong> {{generatedBy}}</div>
+                </div>
+            </div>
+        </div>
+<hr style="border-top: 1px solid #000; margin-bottom: 10px;">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Submissions</th>
+                        <th>Completed</th>
+                        <th>Avg Score</th>
+                        <th>Total Value</th>
+                        <th>Avg Value/Unit</th>
+                        <th>Completion Rate</th>
+                        <th>Avg Processing (Days)</th>
+                        
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (category of reportData()!.categories; track category.categoryID) {
+                    <tr>
+                        <td>{{ category.categoryName }}</td>
+                        <td>{{ category.submissions }}</td>
+                        <td>{{ category.completed }}</td>
+                        <td>{{ category.avgScore | number:'1.2-2' }}</td>
+                        <td>{{ formatCurrency(category.totalValue) }}</td>
+                        <td>{{ formatCurrency(category.avgValuePerUnit) }}</td>
+                        <td>{{ formatPercentage(category.completionRate) }}</td>
+                        <td>{{ formatDays(category.avgProcessingDays) }}</td>
+                       
+                    </tr>
+                   }
+                </tbody>
+                <tfoot>
+                    <tr class="totals-row">
+                        <td><strong>Totals:</strong></td>
+                        <td>{{ reportData()!.totals.submissions }}</td>
+                        <td>{{ reportData()!.totals.completed }}</td>
+                        <td>{{ reportData()!.totals.avgScore | number:'1.2-2' }}</td>
+                        <td>{{ formatCurrency(reportData()!.totals.totalValue) }}</td>
+                        <td>{{ formatCurrency(reportData()!.totals.avgValuePerUnit) }}</td>
+                        <td>{{ formatPercentage(reportData()!.totals.completionRate) }}</td>
+                        <td>{{ formatDays(reportData()!.totals.avgProcessingDays) }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+       
+
+        <div class="report-footer">
+            <div class="confidential">This report is confidential and intended for internal use only. For questions or additional analysis, contact the Platform Analytics Team.</div>
+            <div class="copyright">&copy; 2025 Appliance Recovery Platform. All rights reserved.</div>
+        </div>
+
+        <div class="footer-bar">
+             {{ reportData()!.recordCount }} Records Selected
+        </div>
+
+    </div>
+  }
+
+</div>
+
+<!-- Reusable Calendar Template -->
+<ng-template #calendarTemplate let-type>
+  <!-- Header Navigation -->
+  <div class="calendar-header">
+    <div class="nav-group">
+      <button (click)="handlePrevMonth()" class="nav-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <span class="nav-label month-label">{{ months[viewMonth()] | slice:0:3 }}</span>
+      <button (click)="handleNextMonth()" class="nav-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+    </div>
+    <div class="nav-group">
+      <button (click)="handlePrevYear()" class="nav-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <span class="nav-label year-label">{{ viewYear() }}</span>
+      <button (click)="handleNextYear()" class="nav-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Days Header -->
+  <div class="days-header">
+    @for (day of daysShort; track $index) {
+      <div class="day-name">{{ day }}</div>
+    }
+  </div>
+
+  <!-- Calendar Grid -->
+  <div class="days-grid">
+    @for (empty of emptySlots(); track $index) {
+      <div class="empty-slot"></div>
+    }
+    @for (day of daysInMonth(); track day) {
+      <button
+        (click)="handleDateClick(day)"
+        class="day-cell"
+        [class]="getDayClass(day)"
+      >
+        {{ day }}
+      </button>
+    }
+  </div>
+
+  <!-- Footer Actions -->
+  <div class="calendar-footer">
+    <button (click)="handleCancel()" class="footer-btn">Cancel</button>
+    <button (click)="handleOk(type)" class="footer-btn">OK</button>
+  </div>
+</ng-template>

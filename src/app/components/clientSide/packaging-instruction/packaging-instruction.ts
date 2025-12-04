@@ -3,15 +3,18 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { PackagingInstructionService, PackagingSection } from '../../../services/packaging-instruction.service';
 import { TransactionService } from '../../../services/transaction.service';
+import { BreadcrumbService } from '../../../services/breadcrumb.service';
+import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
 
 @Component({
   selector: 'app-packaging-instruction',
-  imports: [CommonModule],
+  imports: [CommonModule, BreadcrumbComponent],
   templateUrl: './packaging-instruction.html',
   styleUrl: './packaging-instruction.scss',
 })
 export class PackagingInstruction implements OnInit {
   private router = inject(Router);
+  private breadcrumbService = inject(BreadcrumbService);
   private packagingService = inject(PackagingInstructionService);
   private transactionService = inject(TransactionService);
 
@@ -39,7 +42,25 @@ export class PackagingInstruction implements OnInit {
   }
 
   ngOnInit(): void {
+    this.setupBreadcrumbs();
     this.loadPackagingInstructions();
+  }
+
+  private setupBreadcrumbs(): void {
+    if (this.fromTransactionId) {
+      // Set breadcrumbs with clickable Transaction Detail link
+      this.breadcrumbService.setBreadcrumbs([
+        { label: 'Transactions', url: '/transactions' },
+        { label: 'Transaction Detail', url: `/transaction-detail/${this.fromTransactionId}` },
+        { label: 'Packaging Guide' } // Current page (no URL)
+      ]);
+    } else {
+      // Fallback if accessed directly (no transaction context)
+      this.breadcrumbService.setBreadcrumbs([
+        { label: 'Transactions', url: '/transactions' },
+        { label: 'Packaging Guide' }
+      ]);
+    }
   }
 
   private loadPackagingInstructions(): void {

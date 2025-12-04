@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { AlertService } from '../../../services/alert.service';
 import { AuthService } from '../../../../auth/auth-service';
 import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
+import { BreadcrumbService } from '../../../services/breadcrumb.service';
 import { TransactionService } from '../../../services/transaction.service';
 
 interface BuyerTransaction {
@@ -53,6 +54,7 @@ export class BuyerTransactionListComponent implements OnInit {
   private alertService = inject(AlertService);
   private auth = inject(AuthService);
   private router = inject(Router);
+  private breadcrumbService = inject(BreadcrumbService);
   private transactionService = inject(TransactionService);
   private apiUrl = 'http://localhost:3000/api';
 
@@ -78,6 +80,10 @@ export class BuyerTransactionListComponent implements OnInit {
   sortDir = signal<SortDir>('desc');
 
   ngOnInit(): void {
+    this.breadcrumbService.setBreadcrumbs([
+      { label: 'Dashboard', url: '/buyer/dashboard' },
+      { label: 'Transactions' }
+    ]);
     this.loadTransactions();
   }
 

@@ -70,6 +70,35 @@ export const updateConditionScore = async (req: Request, res: Response) => {
     }
 }
 
+export const updateWeightPercentage = async (req: Request, res: Response) => {
+
+    try{
+
+        const {categoryID, conditionGroupID} = req.params;
+        const {newWeightPercentage} = req.body;
+
+        const query =  `UPDATE "Category_ConditionGroup" 
+                        SET "weightPercentage" = $1
+                        WHERE "groupID" = $2
+                        AND "categoryID" = $3;`;
+
+        const result = await pool.query(query, [newWeightPercentage, conditionGroupID, categoryID]);
+
+        console.log('Rows updated:', result.rowCount);
+        res.status(200).json({
+            success: true,
+            data: result.rows[0]
+        });
+    }catch (error) {
+        console.error('Error updating condition score:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update condition score',
+            error: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
+}
+
 export const getAllConditionGroup = async (req: Request, res: Response) => {
 
     try{

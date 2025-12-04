@@ -12,13 +12,15 @@ import buyerRoutes from './routes/buyer';
 import scoringConfigRoutes from './routes/scoringConfig';
 import transactionRoutes from './routes/transaction';
 import dashboardRoutes from './routes/dashboard';
+import buyerDashboardRoutes from './routes/buyerDashboard';
 import transactionReportRoutes from './routes/transactionReport';
+import summaryReportRoutes from './routes/summaryReport';
 import cronRoutes from './routes/cron';
 import dbPool from './config/database';
 import questionnaireRouter from './routes/questionnaire';
 import packagingInstructionRoutes from './routes/packagingInstruction';
+import notificationRoutes from './routes/notification';
 import { executeAutoCancellation } from './controllers/cronController';
-const notificationRoutes = require('./routes/notification').default;
 
 dotenv.config();
 const app = express();
@@ -89,7 +91,9 @@ app.use('/api/notifications', notificationRoutes);
 console.log('📢 Notification routes registered successfully');
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/buyerDashboard', buyerDashboardRoutes);
 app.use('/api/transactionReport', transactionReportRoutes);
+app.use('/api/summaryReport', summaryReportRoutes);
 app.use('/api', packagingInstructionRoutes);
 
 // Health route

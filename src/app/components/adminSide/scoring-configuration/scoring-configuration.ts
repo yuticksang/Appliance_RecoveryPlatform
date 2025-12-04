@@ -2,9 +2,11 @@ import { Component, computed, signal, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { EditScore } from './edit-score/edit-score';
+import {EditWeightPercentage} from './edit-weightPercentage/edit-weightPercentage';
 import { Condition, ConditionGroup, Category, ScoringConfigurationService } from './scoring-configuration.service';
 import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
 import { AlertService } from '../../../services/alert.service';
+import { ConfigService } from "../../../services/config.service";
 
 
 
@@ -13,7 +15,7 @@ type SortDir = 'asc' | 'desc';
 
 @Component({
   selector: 'app-scoring-configuration',
-  imports: [CommonModule, FormsModule, EditScore, BreadcrumbComponent],
+  imports: [CommonModule, FormsModule, EditScore, EditWeightPercentage, BreadcrumbComponent],
   templateUrl: './scoring-configuration.html',
   styleUrl: './scoring-configuration.scss',
 })
@@ -21,6 +23,8 @@ export class ScoringConfiguration implements OnInit {
 
   private scoringConfigService = inject(ScoringConfigurationService);
   private alertService = inject(AlertService);
+  private configService = inject(ConfigService);
+  private apiUrl = this.configService.apiBaseUrl;
 
   // Data signals
   rows = signal<ConditionGroup[]>([]);
@@ -41,6 +45,7 @@ export class ScoringConfiguration implements OnInit {
   search = signal<string>('');
 
   showEditModal = signal<boolean>(false);
+  showEditWeightModal = signal<boolean>(false);
   selectedRow = signal<Condition | null>(null);
   selectedConditionGroup = signal<ConditionGroup | null>(null);
 
@@ -158,12 +163,31 @@ export class ScoringConfiguration implements OnInit {
           this.loadConditionGroup(); // Reload the list
           const message =  `Condition Score ${event.conditionID} updated successfully.`;
           this.alertService.success(message);
-
+          this.isLoading.set(false);
           this.closeEditModal();
         },
         error: (err) => {
           console.error('Update admin error:', err);
-          //this.alertService.error('Failed to update admin: ' + (err.error?.message || 'Unknown error'));
+          this.alertService.error('Failed to update admin: ' + (err.error?.message || 'Unknown error'));
+        }
+        });
+  }
+
+  saveWeightPercentage(event: {conditionGroupID: string, categoryID: string, newWeightPercentage: number}): void {
+    this.isLoading.set(true);
+    this.scoringConfigService.updateWeightPercentage(event.categoryID, event.conditionGroupID, event.newWeightPercentage)
+      .subscribe({
+       next: () => {
+          this.loadConditionGroup(); // Reload the list
+          const message =  `Weight Percentage for Group ${event.conditionGroupID} updated successfully.`;
+          this.alertService.success(message);
+          this.closeEditWeightModal();
+          this.isLoading.set(false);
+        },
+        error: (err) => {
+          console.error('Update weight percentage error:', err);  
+          this.alertService.error('Failed to update weight percentage: ' + (err.error?.message || 'Unknown error'));
+          this.isLoading.set(false);
         }
         });
   }
@@ -202,6 +226,16 @@ export class ScoringConfiguration implements OnInit {
     return this.currentPage()[groupID] || 1;
   }
 
+  getImageUrl(imagePath: string | null): string {
+    if (!imagePath) return '';
+    // If it's already a full URL, return as-is
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    // Otherwise, prepend the API URL
+    return `${this.apiUrl.replace('/api', '')}${imagePath}`;
+  }
+
   resetOnSearch(v: string): void {
     this.search.set(v);
     const pages: {[groupID: string]: number} = {};
@@ -237,6 +271,16 @@ export class ScoringConfiguration implements OnInit {
     this.selectedRow.set(null);
     this.selectedConditionGroup.set(null);
     this.showEditModal.set(false);
+  }
+
+  openEditWeightModal(group: ConditionGroup) {
+    this.selectedConditionGroup.set(group);
+    this.showEditWeightModal.set(true);
+  }
+
+  closeEditWeightModal() {
+    this.selectedConditionGroup.set(null);
+    this.showEditWeightModal.set(false);
   }
 
   refresh(): void {

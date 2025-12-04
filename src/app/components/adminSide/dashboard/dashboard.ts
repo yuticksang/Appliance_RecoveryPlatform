@@ -1,5 +1,6 @@
 import { Component, Inject, PLATFORM_ID, OnInit, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { Router } from '@angular/router';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartOptions, ChartType } from 'chart.js';
@@ -60,6 +61,7 @@ interface BrandRecoveredData {
 interface ConditionData {
   condition: string;
   percentage: number;
+  count: number;
   
 }
 
@@ -93,26 +95,39 @@ export class Dashboard implements OnInit {
   totalActiveTransactions = signal<number>(0);
   totalPayout = signal<number>(0);
   totalAppliancesRecovered = signal<number>(0);
-
+  // percentage change signals
+  appliancesChange = signal<number>(0);
+  payoutChange = signal<number>(0);
+  transactionsChange = signal<number>(0);
+  usersChange = signal<number>(0);
+  
+  //charts state
   activeGraphTab: string = 'appliance';
   activeBarTab: string = 'category';
   activeTimeRange: string = 'monthly';
+
+  //orders table data
   recentOrders = signal<Order[]>([]);
+
+  //charts data
   timeSeriesData = signal<TimeSeriesData[]>([]);
   categoryData = signal<CategoryRecoveredData[]>([]);
+  avgScore = signal<number>(0);
   brandData = signal<BrandRecoveredData[]>([]);
   conditionData = signal<ConditionData[]>([]);
+  conditionColors = signal<{[key:string]: string}>({});
+
+  //top 5 recovered models data
   top5RecoveredModels = signal<getTop5RecoveredModel[]>([]);
 
-  
   constructor(@Inject(PLATFORM_ID) private platformId: Object) {
       this.isBrowser = isPlatformBrowser(this.platformId);
   }
 
   private alertService = inject(AlertService);
   private dashboardService = inject(DashboardService);
+  private router = inject(Router);
 
-  
   barChartColors = {
     category: '#4ECDC4',  // Teal for category
     brand: '#E8B3E8'      // Purple for brand
@@ -137,7 +152,8 @@ export class Dashboard implements OnInit {
     this.dashboardService.getTotalPayout().subscribe({
       next: (response) =>{
         if (response.success) {
-          this.totalPayout.set(response.data.recoveryValue);
+          this.totalPayout.set(response.data.totalValue);
+          this.payoutChange.set(response.data.percentageChange ?? 0);
         }
       },
       error: (err) => {
@@ -148,7 +164,8 @@ export class Dashboard implements OnInit {
     this.dashboardService.getAppliancesRecovered().subscribe({
       next: (response) =>{
         if (response.success) {
-          this.totalAppliancesRecovered.set(response.data.appliances_recovered);
+          this.totalAppliancesRecovered.set(response.data.totalCount);
+          this.appliancesChange.set(response.data.percentageChange ?? 0);
         }
       },      
       error: (err) => {
@@ -159,7 +176,8 @@ export class Dashboard implements OnInit {
     this.dashboardService.getActiveUsers().subscribe({
       next: (response) =>{
         if (response.success) {
-          this.totalActiveUsers.set(response.data.total_active_sellers);
+          this.totalActiveUsers.set(response.data.totalCount);
+          this.usersChange.set(response.data.percentageChange ?? 0);
         }
       },      
       error: (err) => {
@@ -170,7 +188,8 @@ export class Dashboard implements OnInit {
     this.dashboardService.getActiveTransactions().subscribe({
       next: (response) =>{
         if (response.success) { 
-          this.totalActiveTransactions.set(response.data.active_transactions);
+          this.totalActiveTransactions.set(response.data.totalCount);
+          this.transactionsChange.set(response.data.percentageChange ?? 0);
         }
       },      
       error: (err) => {
@@ -223,6 +242,7 @@ export class Dashboard implements OnInit {
 
         if (response.success) { 
           this.conditionData.set(response.data);
+          this.avgScore.set(response.averageScore);
           this.updatePieChart();
         } 
 
@@ -310,45 +330,8 @@ export class Dashboard implements OnInit {
     maintainAspectRatio: false,
      plugins: {
       legend: {
-        display: true,
-        position: 'right',
-        labels: {
-          usePointStyle: true,
-          padding: 30,
-          font: {
-            size: 13
-          },
-          boxWidth: 10,
-          boxHeight: 10,
-          textAlign: 'left',
-          generateLabels: (chart) => {
-            const data = chart.data;
-            if (data.labels && data.datasets.length) {
-              return data.labels.map((label, i) => {
-                const dataset = data.datasets[0];
-                const value = dataset.data[i];
-                return {
-                  text: `${label}: ${value}%`,
-                  fillStyle: Array.isArray(dataset.backgroundColor) 
-                    ? dataset.backgroundColor[i] 
-                    : dataset.backgroundColor,
-                  hidden: false,
-                  index: i
-                };
-              });
-            }
-            return [];
-          }
-        },
-        align: 'center', 
+        display: false,
       },
-      tooltip: {
-        callbacks: {
-          label: function(context) {
-            return context.label + ': ' + context.parsed + '%';
-          }
-        }
-      }
     },
     layout: {
       padding: {
@@ -359,16 +342,7 @@ export class Dashboard implements OnInit {
       }
     },
     cutout: '60%'
-
   };
-
-
-  // CHART UPDATE METHODS
-  updateAllCharts(): void {
-    this.updateLineChart();
-    this.updateBarChart();
-    this.updatePieChart();
-  }
 
   updateLineChart() : void {
     const timeData = this.timeSeriesData();
@@ -409,7 +383,7 @@ export class Dashboard implements OnInit {
             beginAtZero: true,
             ticks: {
               callback: function(value) {
-                return 'RM ' + value.toLocaleString();
+                return  value.toLocaleString();
               }
             },
             grid: {
@@ -492,16 +466,21 @@ export class Dashboard implements OnInit {
       'Poor': '#FF6B6B'        // Red
     };
     const conditions = this.conditionData();
-    const colors = conditions.map(c => conditionColors[c.condition] || '#CCCCCC');
+    this.conditionColors.set(conditionColors);
+
+    const backgroundColor = conditions.map(c => this.conditionColors()[c.condition] || '#CCCCCC');
     this.pieChartData = {
-      labels: conditions.map(c => c.condition),
-      datasets: [{
-        data: conditions.map(c => c.percentage),
-        backgroundColor: colors, 
-        borderWidth: 0,
-        hoverOffset: 10
-      }]
-    };
+    labels: conditions.map(item => item.condition),
+    datasets: [{
+      data: conditions.map(item => item.percentage),
+      backgroundColor: backgroundColor,
+      borderWidth: 0
+    }]
+  };
+  }
+
+  goToTransactionsPage(): void {
+    this.router.navigate(['/admin/transactions']);
   }
 
   //switch between tabs (Appliance Recovered and Recovery Value)
@@ -521,10 +500,35 @@ export class Dashboard implements OnInit {
   }
 
   formatCurrency(amount: number | string, currency: string = 'MYR'): string {
-  const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
-  if (isNaN(numAmount)) return `${currency === 'MYR' ? 'RM' : '$'} 0.00`;
-  return `${currency === 'MYR' ? 'RM' : '$'} ${numAmount.toFixed(2)}`;
-}
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    if (isNaN(numAmount)) return `${currency === 'MYR' ? 'RM' : '$'} 0.00`;
+    return `${currency === 'MYR' ? 'RM' : '$'} ${numAmount.toFixed(2)}`;
+    
+  }
+
+  formatChange(value: number | string | null | undefined): string {
+   if (value === null || value === undefined) {
+    return '+0.00%';
+    }
+    
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    
+    if (isNaN(numValue)) {
+      return '+0.00%';
+    }
+    
+    if (numValue >= 0) {
+      return `+${numValue.toFixed(2)}%`;
+    }
+    return `${numValue.toFixed(2)}%`;
+  }
+
+  formatPercentage(value: number | string): string {
+    const numPercentage = typeof value === 'string' ? parseFloat(value) : value;
+    if (isNaN(numPercentage)) return '0%';
+    return `${numPercentage.toFixed(2)}%`;
+  }
+
 
   formatDate(dateString: string | Date): string {
     const date = new Date(dateString);
@@ -535,8 +539,22 @@ export class Dashboard implements OnInit {
     });
   }
 
+  isPositiveChange(value: number | string | null | undefined): boolean {
+    if (value === null || value === undefined) {
+      return true;
+    }
+    
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
+    
+    if (isNaN(numValue)) {
+      return true;
+    }
+    
+    return numValue >= 0;
+}
+
   getStatusClass(status: string): string {
-    return `status-${status.toLowerCase()}`;
+    return `status-${status.toLowerCase().replace(/\s+/g, '-')}`;
   }
   
   getTimeRangeLabel(): string {
@@ -547,5 +565,12 @@ export class Dashboard implements OnInit {
       return this.activeBarTab.charAt(0).toUpperCase() + this.activeBarTab.slice(1);
   }
 
+  getConditionColor(condition: string){
+    return this.conditionColors()[condition] || '#CCCCCC';
+  }
+
+  getTotalItems(): number {
+    return this.conditionData().reduce((sum, item) => sum + (item.count || 0), 0);
+  }
 
 }

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AlertService } from '../../../services/alert.service';
 import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
+import { BreadcrumbService } from '../../../services/breadcrumb.service';
 
 
 interface ConditionOption {
@@ -42,6 +43,7 @@ interface Category {
 export class BuyerMarkdownListComponent implements OnInit {
   private http = inject(HttpClient);
   private alertService = inject(AlertService);
+  private breadcrumbService = inject(BreadcrumbService);
   private apiUrl = 'http://localhost:3000/api';
 
   // State
@@ -70,6 +72,11 @@ export class BuyerMarkdownListComponent implements OnInit {
   itemsPerPageOptions = [10, 20, 30, 50];
 
   ngOnInit() {
+    this.breadcrumbService.setBreadcrumbs([
+      { label: 'Dashboard', url: '/buyer/dashboard' },
+      { label: 'Appliances', url: '/buyer/appliances' },
+      { label: 'Condition Markdown' }
+    ]);
     this.loadConditionGroups();
     this.loadConditionOptions();
     this.loadCategories();

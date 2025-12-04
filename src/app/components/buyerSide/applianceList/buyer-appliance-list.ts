@@ -5,6 +5,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { AlertService } from '../../../services/alert.service';
 import { AuthService } from '../../../../auth/auth-service';
 import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
+import { BreadcrumbService } from '../../../services/breadcrumb.service';
 
 
 interface Category {
@@ -58,6 +59,7 @@ export class BuyerApplianceListComponent implements OnInit {
   private http = inject(HttpClient);
   private alertService = inject(AlertService);
   private auth = inject(AuthService);
+  private breadcrumbService = inject(BreadcrumbService);
   private apiUrl = 'http://localhost:3000/api';
 
   // State
@@ -94,6 +96,10 @@ export class BuyerApplianceListComponent implements OnInit {
   sortDir = signal<SortDir>('asc');
 
   ngOnInit() {
+    this.breadcrumbService.setBreadcrumbs([
+      { label: 'Dashboard', url: '/buyer/dashboard' },
+      { label: 'Appliances' }
+    ]);
     this.loadCategories();
     this.loadBrands();
     this.loadAppliances();

@@ -176,6 +176,16 @@ export class SellerTransactionListComponent implements OnInit {
     this.applyFilters();
   }
 
+  clearFilters(): void {
+    this.selectedCategory = '';
+    this.selectedBrand = '';
+    this.selectedTransactionStatus = '';
+    this.selectedItemStatus = '';
+    this.searchQuery = '';
+    this.currentPage = 1;
+    this.applyFilters();
+  }
+
   sortBy(column: string): void {
     // Toggle direction if clicking the same column, otherwise reset to ascending
     if (this.sortColumn === column) {
@@ -340,6 +350,11 @@ export class SellerTransactionListComponent implements OnInit {
   viewReport(transaction: Transaction, event?: Event): void {
   if (event) {
     event.stopPropagation(); // Prevent row click from firing
+  }
+
+  if(transaction.transactionStatus !== 'Completed'){
+    this.alertService.error('Transaction report is only available for completed transactions.');
+    return;
   }
   
   console.log('📊 Viewing report for transaction:', transaction.id);

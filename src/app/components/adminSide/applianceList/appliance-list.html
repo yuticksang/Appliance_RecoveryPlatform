@@ -13,7 +13,7 @@
         <!-- Category Filter -->
         <div class="filter-dropdown">
           <select [ngModel]="selectedCategory()" (ngModelChange)="onCategoryChange($event)">
-            <option value="">Select a Category</option>
+            <option value="">All Categories</option>
             <option *ngFor="let cat of categories()" [value]="cat.categoryID">
               {{ cat.categoryName }}
             </option>
@@ -23,7 +23,7 @@
         <!-- Brand Filter -->
         <div class="filter-dropdown">
           <select [ngModel]="selectedBrand()" (ngModelChange)="onBrandChange($event)">
-            <option value="">Select a Brand</option>
+            <option value="">All Brands</option>
             <option *ngFor="let brand of brands()" [value]="brand.brandID">
               {{ brand.brandName }}
             </option>

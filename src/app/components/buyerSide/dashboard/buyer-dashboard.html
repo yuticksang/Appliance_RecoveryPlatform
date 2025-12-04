@@ -1,0 +1,186 @@
+<div class="page-head">
+  <h1 class="page-title">Overview</h1>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-value">{{ totalAppliancesRecovered() }}</div>
+
+    <div class="stat-footer">
+      <div class="stat-label">Total Recovered</div>
+      <div class="stat-change">
+        <span
+          class="change-badge"
+          [ngClass]="isPositiveChange(appliancesChange()) ? 'positive' : 'negative'"
+        >
+          {{ formatChange(appliancesChange()) }}
+          <i
+            class="bi"
+            [ngClass]="
+              isPositiveChange(appliancesChange()) ? 'bi-arrow-up-right' : 'bi-arrow-down-right'
+            "
+            style="font-size: 10px"
+          ></i>
+        </span>
+        <span class="change-suffix">From last month</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-value">RM {{ totalPayout() }}</div>
+    <div class="stat-footer">
+      <div class="stat-label">Total Payouts</div>
+      <div class="stat-change">
+        <span
+          class="change-badge"
+          [ngClass]="isPositiveChange(payoutChange()) ? 'positive' : 'negative'"
+        >
+          {{ formatChange(payoutChange()) }}
+          <i
+            class="bi"
+            [ngClass]="
+              isPositiveChange(payoutChange()) ? 'bi-arrow-up-right' : 'bi-arrow-down-right'
+            "
+            style="font-size: 10px"
+          ></i>
+        </span>
+        <span class="change-suffix">From last month</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-value">{{ totalActiveTransactions() }}</div>
+    <div class="stat-footer">
+      <div class="stat-label">Active Transactions</div>
+      <div class="stat-change">
+        <span
+          class="change-badge"
+          [ngClass]="isPositiveChange(transactionsChange()) ? 'positive' : 'negative'"
+        >
+          {{ formatChange(transactionsChange()) }}
+          <i
+            class="bi"
+            [ngClass]="
+              isPositiveChange(transactionsChange()) ? 'bi-arrow-up-right' : 'bi-arrow-down-right'
+            "
+            style="font-size: 10px"
+          ></i>
+        </span>
+        <span class="change-suffix">From last month</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CHARTS TOP SECTION -->
+<div class="chart-and-panel-container">
+  <!-- Line Chart Area -->
+  <div class="chart-section">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-tabs">
+          <button
+            class="chart-tab"
+            [class.active]="activeGraphTab === 'appliance'"
+            (click)="switchGraphTab('appliance')"
+          >
+            Appliance Recovered
+          </button>
+          <button
+            class="chart-tab"
+            [class.active]="activeGraphTab === 'recoveryValue'"
+            (click)="switchGraphTab('recoveryValue')"
+          >
+            Recovery Value
+          </button>
+        </div>
+        <div class="chart-controls">
+          <div class="custom-dropdown">
+            <button class="dropdown-trigger">
+              {{ getTimeRangeLabel() }} <i class="bi bi-chevron-down"></i>
+            </button>
+            <div class="dropdown-content">
+              <a (click)="switchTimeRange('weekly')">Weekly</a>
+              <a (click)="switchTimeRange('monthly')">Monthly</a>
+            </div>
+          </div>
+          <button class="btn"><i class="bi bi-three-dots"></i></button>
+        </div>
+      </div>
+      <div class="chart-body">
+        <!-- Empty State -->
+        @if (!hasTimeSeriesData()) {
+        <div class="empty-chart-state">
+          <div class="empty-icon">
+            <i class="bi bi-bar-chart-line"></i>
+          </div>
+          <h3 class="empty-title">No Data Available</h3>
+          <p class="empty-description">
+            Complete your first transaction to see your recovery trends here.
+          </p>
+        </div>
+        } @else {
+        <!-- Chart Canvas -->
+        @if (isBrowser) {
+        <canvas baseChart [data]="lineChartData" [options]="lineChartOptions" type="line"> </canvas>
+        } }
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RECENT ORDERS SECTION -->
+<div class="recent-orders-section">
+  <div class="recent-orders-card">
+    <div class="orders-header">
+      <div class="orders-title">On-going Transactions</div>
+      <div class="orders-controls">
+        <button class="view-all-btn" (click)="goToTransactionsPage()">
+          View All Transactions <i class="bi bi-arrow-right"></i>
+        </button>
+        <button class="btn"><i class="bi bi-three-dots"></i></button>
+      </div>
+    </div>
+
+    <div class="orders-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Transaction ID</th>
+            <th>Appliance</th>
+            <th>Offer Price</th>
+            <th>Date</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (order of recentOrders(); track order.transactionID){
+          <tr>
+            <td>#{{ order.transactionID }}</td>
+            <td>{{ order.modelName }}</td>
+            <td class="offer-price-cell">
+              <span class="initial-price">{{ formatCurrency(order.initialOfferPrice) }}</span>
+              @if (order.finalOfferPrice && order.finalOfferPrice > 0) {
+              <span class="price-arrow">→</span>
+              <span
+                class="final-price"
+                [ngClass]="getPriceChangeClass(order.initialOfferPrice, order.finalOfferPrice)">
+                {{ formatCurrency(order.finalOfferPrice) }}
+              </span>
+              }
+            </td>
+            <td>{{ formatDate(order.createdAt) }}</td>
+            <td>
+              <span class="status" [ngClass]="getStatusClass(order.transactionStatus)">{{
+                order.transactionStatus
+              }}</span>
+            </td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
