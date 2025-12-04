@@ -17,6 +17,8 @@ import cronRoutes from './routes/cron';
 import dbPool from './config/database';
 import questionnaireRouter from './routes/questionnaire';
 import packagingInstructionRoutes from './routes/packagingInstruction';
+import { executeAutoCancellation } from './controllers/cronController';
+const notificationRoutes = require('./routes/notification').default;
 
 dotenv.config();
 const app = express();
@@ -25,67 +27,22 @@ const PORT = process.env.PORT || 3000;
 // Test database connection on startup
 dbPool.connect()
   .then(client => {
-    console.log('Connected to EasyRecovery DB');
+    console.log('✅ Connected to EasyRecovery DB');
     client.release();
   })
-  .catch(err => console.error('Database connection error:', err));
+  .catch(err => console.error('❌ Database connection error:', err));
 
-// Setup automatic cron job for auto-cancellation
-// Runs every day at midnight (00:00)
-cron.schedule('0 0 * * *', async () => {
-  console.log('Running scheduled auto-cancellation check...');
+// ✅ SIMPLIFIED CRON JOB - Uses shared function from cronController
+cron.schedule('*/2 * * * *', async () => {
+  console.log('⏰ Running scheduled auto-cancellation check...');
   try {
-    // Case 3: Cancel transactions where responseDeadline has passed
-    const case3Result = await dbPool.query(
-      `UPDATE "Transaction" t
-       SET "transactionStatus" = 'Cancelled', "updatedAt" = NOW()
-       WHERE t."transactionStatus" = 'Awaiting Confirmation'
-       AND t."responseDeadline" IS NOT NULL
-       AND t."responseDeadline" < NOW()
-       RETURNING t."transactionID"`
-    );
-
-    if (case3Result.rows.length > 0) {
-      const case3TxnIds = case3Result.rows.map(row => row.transactionID);
-      await dbPool.query(
-        `UPDATE "ItemStatus"
-         SET "itemStatus" = 'Unresponded', "updatedAt" = NOW()
-         WHERE "transactionID" = ANY($1::varchar[])`,
-        [case3TxnIds]
-      );
-      console.log(`Case 3: Cancelled ${case3Result.rows.length} transactions (no response to offer)`);
-    }
-
-    // Case 4: Cancel transactions where item is "Awaiting Pick Up" for more than 14 days
-    const case4Result = await dbPool.query(
-      `UPDATE "Transaction" t
-       SET "transactionStatus" = 'Cancelled', "updatedAt" = NOW()
-       FROM "ItemStatus" i
-       WHERE t."transactionID" = i."transactionID"
-       AND i."itemStatus" = 'Awaiting Pick Up'
-       AND i."updatedAt" < NOW() - INTERVAL '14 days'
-       AND t."transactionStatus" NOT IN ('Cancelled', 'Completed', 'Rejected')
-       RETURNING t."transactionID"`
-    );
-
-    if (case4Result.rows.length > 0) {
-      const case4TxnIds = case4Result.rows.map(row => row.transactionID);
-      await dbPool.query(
-        `UPDATE "ItemStatus"
-         SET "itemStatus" = 'Unresponded', "updatedAt" = NOW()
-         WHERE "transactionID" = ANY($1::varchar[])`,
-        [case4TxnIds]
-      );
-      console.log(`Case 4: Cancelled ${case4Result.rows.length} transactions (no pickup response)`);
-    }
-
-    const total = case3Result.rows.length + case4Result.rows.length;
-    console.log(`Auto-cancellation complete. Total cancelled: ${total}`);
+    const result = await executeAutoCancellation();
+    console.log(`🤖 Auto-cancellation complete. Total cancelled: ${result.totalCancelled} transactions`);
   } catch (error) {
-    console.error('Error in scheduled auto-cancellation:', error);
+    console.error('❌ Error in scheduled auto-cancellation:', error);
   }
 });
-console.log('Cron job scheduled: Auto-cancellation runs daily at midnight');
+console.log('✅ Cron job scheduled: Auto-cancellation runs every 2 minutes');
 
 // Middlewares
 app.use(helmet({
@@ -93,7 +50,7 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: ['http://localhost:4200'], // your Angular dev URL
+  origin: ['http://localhost:4200'],
   credentials: true,
   allowedHeaders: [
     'Content-Type',
@@ -110,12 +67,12 @@ app.options(/^\/.*$/, cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 }));
 
+
 app.use(morgan('dev'));
-// Increase payload limit for photo uploads (50MB)
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Serve uploaded files statically (must be before API routes)
+// Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // API routes
@@ -128,6 +85,9 @@ app.use('/api', questionnaireRouter);
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/cron', cronRoutes);
+app.use('/api/notifications', notificationRoutes);
+console.log('📢 Notification routes registered successfully');
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/transactionReport', transactionReportRoutes);
 app.use('/api', packagingInstructionRoutes);
@@ -135,11 +95,10 @@ app.use('/api', packagingInstructionRoutes);
 // Health route
 app.get('/health', (req, res) => res.json({ ok: true, message: 'Server is running' }));
 
-// Serve Angular frontend (when built) - using CommonJS __dirname
+// Serve Angular frontend
 const clientPath = path.join(__dirname, '../../dist/easyrecovery');
 app.use(express.static(clientPath));
-// Use regex pattern instead of * for Express 5.x compatibility - exclude /api and /uploads
 app.get(/^\/(?!api|uploads).*/, (req, res) => res.sendFile(path.join(clientPath, 'index.html')));
 
 // Start server
-app.listen(PORT, () => console.log(`Running at http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running at http://localhost:${PORT}`));

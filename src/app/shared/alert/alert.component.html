@@ -4,7 +4,8 @@
     class="alert"
     [class.alert-success]="alert.type === 'success'"
     [class.alert-error]="alert.type === 'error'"
-    [class.alert-info]="alert.type === 'info'">
+    [class.alert-info]="alert.type === 'info'"
+    [class.alert-warning]="alert.type === 'warning'">
     <span class="alert-message">{{ alert.message }}</span>
     <button class="alert-close" (click)="close(alert.id)">×</button>
   </div>

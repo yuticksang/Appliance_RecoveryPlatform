@@ -3,29 +3,11 @@ $ink: #111827;
 $muted: #6b7280;
 $brand: #cfe7f5;
 $blue-2: #1a73e8;
-$success: #10b981;
-$warning: #f59e0b;
-$danger: #ef4444;
-$info: #3b82f6;
 $Space: 'Space Grotesk', sans-serif;
 
-* {
-  font-family: $Space;
-}
+* { font-family: $Space; }
 
-/* PAGE CONTAINER — match Appliance page */
-.transactions-page {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.transactions-container {
-  position: relative;
-}
-
-/* HEADER — match Appliance header layout */
-.page-header {
+.page-head {
   display: grid;
   gap: 6px;
   margin-bottom: 14px;
@@ -39,19 +21,9 @@ $Space: 'Space Grotesk', sans-serif;
   .breadcrumb {
     font-size: 15px;
     color: $muted;
-
-    span {
-      color: $ink;
-    }
   }
 }
 
-/* TOOLBAR (Filters Section) — FULLY converted to Appliance Style */
-.filters-section {
-  @extend .toolbar;
-}
-
-/* Override using Appliance toolbar styling */
 .toolbar {
   display: flex;
   align-items: center;
@@ -62,67 +34,63 @@ $Space: 'Space Grotesk', sans-serif;
   .toolbar-left {
     display: flex;
     gap: 10px;
-  }
 
-  .clear-btn {
-    height: 36px;
-    padding: 0 16px;
-    border: 1px solid $line;
-    border-radius: 8px;
-    background: white;
-    color: $ink;
-    cursor: pointer;
-    font-weight: 500;
-    transition: all 0.2s;
+    .clear-btn {
+      height: 36px;
+      padding: 0 16px;
+      border: 1px solid $line;
+      border-radius: 8px;
+      background: white;
+      color: $ink;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
 
-    &:hover {
-      background: #f3f4f6;
-      border-color: $blue-2;
-      color: $blue-2;
+      &:hover {
+        background: #f3f4f6;
+        border-color: $blue-2;
+        color: $blue-2;
+      }
     }
   }
-
 
   .toolbar-right {
     display: flex;
     gap: 10px;
-    align-items: center;
+    margin-left: auto;
   }
 
-  /* Dropdowns — same as Appliance select */
-  .select-wrapper select {
-    height: 36px;
-    border: 1px solid $line;
-    border-radius: 8px;
-    padding: 0 12px;
-    padding-right: 40px;
-    min-width: 180px;
-    background: white;
-    cursor: pointer;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 16px center;
-    appearance: none;
-
-    &:focus {
-      outline: none;
-      border-color: #99c8ff;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
-    }
-  }
-
-  /* Price filters */
-  .price-filter {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-
-    .price-input {
+  .select-wrapper {
+    select {
       height: 36px;
       border: 1px solid $line;
       border-radius: 8px;
       padding: 0 12px;
-      width: 110px;
+      padding-right: 40px;
+      min-width: 180px;
+      background: white;
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      appearance: none;
+
+      &:focus {
+        outline: none;
+        border-color: #99c8ff;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+      }
+    }
+  }
+
+  .price-filter {
+    input {
+      height: 36px;
+      border: 1px solid $line;
+      border-radius: 8px;
+      padding: 0 12px;
+      width: 140px;
+      background: white;
 
       &:focus {
         outline: none;
@@ -130,36 +98,43 @@ $Space: 'Space Grotesk', sans-serif;
         box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
       }
 
-      &::placeholder {
-        color: $muted;
-      }
-    }
-
-    .price-separator {
-      color: $muted;
-      font-weight: 600;
+      &::placeholder { color: $muted; }
     }
   }
 
-  /* Search bar */
-  .search input {
-    height: 36px;
-    border: 1px solid $line;
-    border-radius: 8px;
-    padding: 0 12px;
-    min-width: 180px;
+  .search {
+    position: relative;
 
-    &:focus {
-      outline: none;
-      border-color: #99c8ff;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+    input {
+      height: 36px;
+      border: 1px solid $line;
+      border-radius: 8px;
+      padding: 0 32px 0 12px;
+      width: 260px;
+
+      &:focus {
+        outline: none;
+        border-color: #99c8ff;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
+      }
     }
   }
 }
 
-/* TABLE — fully apply Appliance styling */
-.table-container {
-  @extend .table-wrap;
+.loading {
+  padding: 40px;
+  text-align: center;
+  color: $muted;
+  font-size: 16px;
+}
+
+.error-message {
+  padding: 20px;
+  background: #fef2f2;
+  border: 1px solid #f3d1d1;
+  border-radius: 8px;
+  color: #7f1d1d;
+  text-align: center;
 }
 
 .table-wrap {
@@ -167,11 +142,6 @@ $Space: 'Space Grotesk', sans-serif;
   border-radius: 10px;
   overflow-x: auto;
   overflow-y: hidden;
-}
-
-/* GRID TABLE FORMAT from Appliance */
-.data-table {
-  @extend .grid;
 }
 
 .grid {
@@ -190,26 +160,20 @@ $Space: 'Space Grotesk', sans-serif;
     padding: 20px 20px;
     white-space: nowrap;
 
-    &:last-child {
-      border-right: none;
-    }
-
-    &.narrow {
-      width: 56px;
-      text-align: center;
-    }
+    &:last-child { border-right: none; }
 
     &.sortable {
       cursor: pointer;
       user-select: none;
+      transition: all 0.2s;
 
-      .sort {
-        display: inline-block;
-        margin-left: 6px;
-        font-size: 14px;
-        opacity: 0.6;
+      &:hover {
+        background: #f3f4f6;
+        color: $ink;
       }
     }
+
+    .sort-icon { margin-left: 6px; color: #9ca3af; }
   }
 
   tbody td {
@@ -217,44 +181,39 @@ $Space: 'Space Grotesk', sans-serif;
     border-right: 1px solid $line;
     padding: 15px 20px;
 
-    &:last-child {
-      border-right: none;
-    }
+    &:last-child { border-right: none; }
+  }
 
-    &.narrow {
-      text-align: center;
-      color: $muted;
-    }
+  tbody tr:nth-child(even) { background: #f9fafb; }
+  tbody tr:nth-child(odd) { background: white; }
 
-    &.image-col .appliance-image {
+  .narrow { width: 56px; }
+
+  .image-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .appliance-image {
       width: 40px;
       height: 40px;
       object-fit: cover;
       border-radius: 6px;
       border: 1px solid $line;
     }
-
-    &.no-data {
-      text-align: center;
-      color: $muted;
-      padding: 40px;
-      font-style: italic;
-      border-right: none;
-    }
   }
 
-  tbody tr:nth-child(even) {
-    background: #f9fafb;
-  }
-
-  tbody tr:nth-child(odd) {
-    background: white;
+  .price-cell {
+    font-weight: 600;
+    color: #10b981;
   }
 }
 
-/* PAGINATION — match Appliance pager */
-.pagination-wrapper {
-  @extend .pager;
+.empty-state {
+  padding: 40px;
+  text-align: center;
+  color: $muted;
+  font-size: 16px;
 }
 
 .pager {
@@ -263,21 +222,17 @@ $Space: 'Space Grotesk', sans-serif;
   gap: 8px;
   margin-top: 14px;
 
-  .pagination-btn,
   .page-btn {
     min-width: 34px;
     height: 34px;
     border-radius: 8px;
     border: 1px solid $line;
     background: #fff;
-    font-size: 14px;
-    color: $ink;
-    cursor: pointer;
-    transition: all 0.2s;
 
-    &:hover:not(:disabled) {
+    &:hover {
       border: 2px solid $blue-2;
       font-weight: 700;
+      cursor: pointer;
     }
 
     &.active {
@@ -292,7 +247,6 @@ $Space: 'Space Grotesk', sans-serif;
     }
   }
 
-  .items-per-page,
   .page-size {
     margin-left: auto;
     display: inline-flex;
@@ -305,23 +259,34 @@ $Space: 'Space Grotesk', sans-serif;
       border: 1px solid $line;
       border-radius: 8px;
       padding: 0 8px;
-      cursor: pointer;
     }
   }
 }
 
-/* Responsive same as Appliance */
+// Responsive
 @media (max-width: 768px) {
-  .transactions-container {
-    padding: 16px;
-  }
+    .toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
 
-  .toolbar {
-    flex-direction: column;
-    align-items: stretch;
-  }
+        .toolbar-right {
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+    }
 
-  .table-wrap {
-    overflow-x: auto;
-  }
+    .table-wrap {
+        overflow-x: auto;
+    }
+
+    .grid {
+        min-width: 700px;
+    }
+
+    .pager {
+        flex-direction: column;
+        gap: 12px;
+        align-items: center;
+    }
 }

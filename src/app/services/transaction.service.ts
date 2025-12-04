@@ -17,13 +17,20 @@ export interface Transaction {
   categoryId?: number; // Category ID for fetching packaging instructions
   model: string;
   modelName: string;
+  finalBrand?: string;
+  finalCategory?: string;
+  finalModel?: string;
+  finalModelName?: string;
+  finalImageUrl?: string;
   transactionStatus: 'Pending Payment' | 'Completed' | 'Returned' | 'Rejected' | 'Cancelled' | 'Awaiting Confirmation' | 'Under Review' | 'Picked Up' | 'Confirmed';
   itemStatus: 'Picked Up' | 'Returned' | 'Awaiting Picked Up' | 'Awaiting Pick Up' | 'Pending Further Action' | 'Unresponded' | 'Awaiting Return';
   submittedDate: Date;
+  updatedAt?: Date;
   estimatedPrice?: number;
   finalPrice?: number;
   note?: string; // Note
   responseDeadline?: string; // Response deadline date for seller to respond to offer
+  cancellationReason?: 'seller' | 'system' | null; 
 }
 
 @Injectable({
@@ -102,6 +109,11 @@ export class TransactionService {
             category: t.category || '',
             model: t.model || '',
             modelName: t.modelName || t.model_name || '',
+            finalBrand: t.finalBrand,
+            finalCategory: t.finalCategory,
+            finalModel: t.finalModel,
+            finalModelName: t.finalModelName,
+            finalImageUrl: t.finalImageUrl,
             transactionStatus: t.transactionStatus || t.transaction_status || 'Under Review',
             itemStatus: t.itemStatus || t.item_status || 'Awaiting Pick Up',
             submittedDate: new Date(t.submittedDate || t.submissionDate || t.createdAt),
@@ -138,6 +150,11 @@ export class TransactionService {
             category: t.category || '',
             model: t.model || '',
             modelName: t.modelName || t.model_name || '',
+            finalBrand: t.finalBrand,
+            finalCategory: t.finalCategory,
+            finalModel: t.finalModel,
+            finalModelName: t.finalModelName,
+            finalImageUrl: t.finalImageUrl,
             transactionStatus: t.transactionStatus || t.transaction_status || 'Under Review',
             itemStatus: t.itemStatus || t.item_status || 'Awaiting Pick Up',
             submittedDate: new Date(t.submittedDate || t.submissionDate || t.createdAt),
@@ -414,8 +431,37 @@ export class TransactionService {
 
     console.log('🔑 Making authenticated request with token:', token.substring(0, 20) + '...');
 
-    return this.http.get<any[]>(`${this.apiUrl}/transactions/buyer/${buyerId}`, { 
-      headers: headers 
-    });
+    return this.http.get<Transaction[]>(`${this.apiUrl}/transactions/buyer/${buyerId}`, { headers })
+      .pipe(
+        map((transactions: any[]) => {
+          return transactions.map(t => ({
+            id: t.id || t.transactionID,
+            sellerId: t.sellerId || t.sellerID,
+            buyerId: t.buyerId || t.buyerID,
+            sellerName: t.sellerName || 'Unknown',
+            image: t.imageUrl || t.image || 'assets/image/placeholder-appliance.png',
+            brand: t.brand || '',
+            category: t.category || '',
+            model: t.model || '',
+            modelName: t.modelName || t.model_name || '',
+            finalBrand: t.finalBrand,
+            finalCategory: t.finalCategory,
+            finalModel: t.finalModel,
+            finalModelName: t.finalModelName,
+            finalImageUrl: t.finalImageUrl,
+            transactionStatus: t.transactionStatus || t.transaction_status || 'Under Review',
+            itemStatus: t.itemStatus || t.item_status || 'Awaiting Pick Up',
+            submittedDate: new Date(t.submittedDate || t.submissionDate || t.createdAt),
+            estimatedPrice: t.estimatedPrice || t.initialOfferPrice || 0,
+            finalPrice: t.finalPrice || t.finalOfferPrice || 0,
+            note: t.note || '',
+            responseDeadline: t.responseDeadline || t.response_deadline
+          }));
+        }),
+        catchError(error => {
+          console.error('Error fetching buyer transactions:', error);
+          return of([]);
+        })
+      );
   }
 }

@@ -125,27 +125,23 @@
             </td>
             <td>
               <div class="appliance-image">
-                <img [src]="transaction.image" [alt]="transaction.modelName" />
+                <img [src]="transaction.finalImageUrl || transaction.image" [alt]="transaction.finalModelName || transaction.modelName" />
               </div>
             </td>
-            <td>{{ transaction.brand }}</td>
+            <td>{{ transaction.finalBrand || transaction.brand }}</td>
             <td></td>
-            <td>{{ transaction.category }}</td>
+            <td>{{ transaction.finalCategory || transaction.category }}</td>
             <td></td>
-            <td>{{ transaction.model }}</td>
-            <td>{{ transaction.modelName }}</td>
+            <td>{{ transaction.finalModel || transaction.model }}</td>
+            <td>{{ transaction.finalModelName || transaction.modelName }}</td>
             <td class="submission-date">{{ transaction.submittedDate | date:'dd MMM yyyy' }}</td>
             <td>
-              <span
-                class="status-badge"
-                [ngClass]="getStatusClass(transaction.transactionStatus)">
+              <span class="status-badge" [ngClass]="getStatusClass(transaction.transactionStatus)">
                 {{ transaction.transactionStatus }}
               </span>
             </td>
             <td>
-              <span
-                class="status-badge"
-                [ngClass]="getItemStatusClass(transaction.itemStatus)">
+              <span class="status-badge" [ngClass]="getItemStatusClass(transaction.itemStatus)">
                 {{ transaction.itemStatus }}
               </span>
             </td>

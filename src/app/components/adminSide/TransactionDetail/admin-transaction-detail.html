@@ -100,15 +100,20 @@
           <path d="M12 6v6l4 2"/>
         </svg>
       </div>
-      <div class="deadline-content">
-        <div class="deadline-title">Response Deadline</div>
-        <div class="deadline-info">
-          <span class="deadline-date">{{ transaction()?.responseDeadline ? formatDate(transaction()!.responseDeadline) : 'N/A' }}</span>
-          <span class="deadline-separator">•</span>
-          <span class="days-remaining">{{ daysUntilDeadline }} {{ daysUntilDeadline === 1 ? 'day' : 'days' }} remaining</span>
+    </div>  
+      <!-- Auto Cancelled by system -->
+    <div *ngIf="transaction()?.transactionStatus === 'Cancelled'" class="system-cancellation-info">
+      <div class="cancellation-banner">
+        <div class="banner-icon">⚠️</div>
+        <div class="banner-content">
+          <h4>Transaction Cancelled by System</h4>
+          <p><strong>Reason:</strong> No response received within the required deadline</p>
+          <!-- <p *ngIf="transaction()?.updatedAt"><strong>Date Cancelled:</strong> {{ transaction()?.updatedAt | date:'medium' }}</p> -->
+          <p><strong>Next Steps:</strong> Kindly contact our admin for further assistance.</p>
         </div>
       </div>
     </div>
+    
 
     <!-- Main Content Grid -->
     <div class="content-grid">
@@ -140,114 +145,185 @@
         </div>
       </div>
 
-      <!-- Right Column - Appliance Information -->
+      <!-- Right Column - Only Inspection & Pricing Section -->
       <div class="right-column">
-        <div class="appliance-info-card">
-          <!-- ========================================== -->
-          <!-- SECTION 1: APPLIANCE INFORMATION          -->
-          <!-- Simple display - no before/after          -->
-          <!-- ========================================== -->
-          <div class="appliance-info-section">
-            <div class="details-grid">
-              <div class="detail-item">
-                <h4 class="detail-label">CATEGORY</h4>
-                <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.category || 'N/A' }}</p>
-                <select *ngIf="editMode()" class="edit-select" [(ngModel)]="selectedCategoryId" (ngModelChange)="onCategoryChange()">
-                  <option [ngValue]="null">Select category</option>
-                  <option *ngFor="let cat of categories" [ngValue]="cat.categoryID">{{ cat.categoryName }}</option>
-                </select>
-              </div>
-              <div class="detail-item">
-                <h4 class="detail-label">BRAND</h4>
-                <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.brand || 'N/A' }}</p>
-                <select *ngIf="editMode()" class="edit-select" [(ngModel)]="selectedBrandId" (ngModelChange)="onBrandChange()">
-                  <option [ngValue]="null">Select brand</option>
-                  <option *ngFor="let brand of brands" [ngValue]="brand.brandID">{{ brand.brandName }}</option>
-                </select>
-              </div>
-              <div class="detail-item">
-                <h4 class="detail-label">MODEL NAME</h4>
-                <p *ngIf="!editMode()" class="detail-value">{{ transaction()?.modelName || 'N/A' }}</p>
-                <select *ngIf="editMode()" class="edit-select" [(ngModel)]="selectedApplianceId" (ngModelChange)="onApplianceChange()">
-                  <option [ngValue]="null">Select model name</option>
-                  <option *ngFor="let appliance of filteredAppliances" [ngValue]="appliance.applianceID">
-                    {{ appliance.modelName }}
-                  </option>
-                </select>
-              </div>
-              <div class="detail-item">
-                <h4 class="detail-label">MODEL CODE</h4>
-                <p class="detail-value">{{ getSelectedModelCode() || transaction()?.model || 'N/A' }}</p>
+        <!-- ========================================== -->
+        <!-- SECTION 2: INSPECTION & PRICING           -->
+        <!-- ALWAYS show Before/After comparison       -->
+        <!-- ========================================== -->
+        <div class="inspection-section">
+          <h3 class="section-title">Inspection & Pricing</h3>
+
+          <!-- VIEW MODE: Before/After Comparison -->
+          <ng-container *ngIf="!editMode()">
+            <!-- Column Headers (always show) -->
+            <div class="review-columns-header">
+              <div class="header-label">BEFORE REVIEW</div>
+              <div class="header-label after">AFTER REVIEW</div>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- APPLIANCE INFORMATION                      -->
+            <!-- ========================================== -->
+
+            <!-- PRICE -->
+            <div class="inspection-item">
+              <h4 class="inspection-label">PRICE</h4>
+              <div class="inspection-columns">
+                <div class="column-content">
+                  <div class="price-display">
+                    <span class="price-label">RM</span>
+                    <span class="price-value">{{ (transaction()?.estimatedPrice | number:'1.2-2') || '0.00' }}</span>
+                  </div>
+                </div>
+                <div class="column-content">
+                  <div class="price-display">
+                    <span class="price-label">RM</span>
+                    <span class="price-value" [class.changed]="transaction()?.finalPrice && transaction()?.finalPrice !== transaction()?.estimatedPrice">
+                      {{ (transaction()?.finalPrice | number:'1.2-2') || (transaction()?.estimatedPrice | number:'1.2-2') || '0.00' }}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- ========================================== -->
-          <!-- SECTION 2: INSPECTION & PRICING           -->
-          <!-- Always show Before/After comparison       -->
-          <!-- ========================================== -->
-          <div class="inspection-section">
-            <h3 class="section-title">Inspection & Pricing</h3>
-
-            <!-- VIEW MODE: Before/After Comparison -->
-            <ng-container *ngIf="!editMode()">
-              <!-- Column Headers (only show when admin has reviewed to show comparison) -->
-              <div class="review-columns-header" *ngIf="hasAdminConditions()">
-                <div class="header-label">BEFORE REVIEW</div>
-                <div class="header-label after">AFTER REVIEW</div>
+            <!-- BRAND -->
+            <div class="inspection-item">
+              <h4 class="inspection-label">BRAND</h4>
+              <div class="inspection-columns">
+                <div class="column-content">
+                  <p class="condition-text">{{ transaction()?.brand || 'N/A' }}</p>
+                </div>
+                <div class="column-content">
+                  <p class="condition-text" [class.changed]="transaction()?.finalBrand && transaction()?.finalBrand !== transaction()?.brand">
+                    {{ transaction()?.finalBrand || transaction()?.brand || 'N/A' }}
+                  </p>
+                </div>
               </div>
+            </div>
 
-              <!-- Price Comparison -->
-              <div class="inspection-item">
-                <h4 class="inspection-label">PRICE</h4>
-                <div class="inspection-columns" [class.single-column]="!hasAdminConditions()">
-                  <div class="column-content">
-                    <div class="price-display">
-                      <span class="price-label">RM</span>
-                      <span class="price-value">{{ (transaction()?.estimatedPrice | number:'1.2-2') || '0.00' }}</span>
-                    </div>
+            <!-- MODEL NAME -->
+            <div class="inspection-item">
+              <h4 class="inspection-label">MODEL NAME</h4>
+              <div class="inspection-columns">
+                <div class="column-content">
+                  <p class="condition-text">{{ transaction()?.modelName || 'N/A' }}</p>
+                </div>
+                <div class="column-content">
+                  <p class="condition-text" [class.changed]="transaction()?.finalModelName && transaction()?.finalModelName !== transaction()?.modelName">
+                    {{ transaction()?.finalModelName || transaction()?.modelName || 'N/A' }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- MODEL CODE -->
+            <div class="inspection-item">
+              <h4 class="inspection-label">MODEL CODE</h4>
+              <div class="inspection-columns">
+                <div class="column-content">
+                  <p class="condition-text">{{ transaction()?.model || 'N/A' }}</p>
+                </div>
+                <div class="column-content">
+                  <p class="condition-text" [class.changed]="transaction()?.finalModel && transaction()?.finalModel !== transaction()?.model">
+                    {{ transaction()?.finalModel || transaction()?.model || 'N/A' }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- CATEGORY -->
+            <div class="inspection-item">
+              <h4 class="inspection-label">CATEGORY</h4>
+              <div class="inspection-columns">
+                <div class="column-content">
+                  <p class="condition-text">{{ transaction()?.category || 'N/A' }}</p>
+                </div>
+                <div class="column-content">
+                  <p class="condition-text" [class.changed]="transaction()?.finalCategory && transaction()?.finalCategory !== transaction()?.category">
+                    {{ transaction()?.finalCategory || transaction()?.category || 'N/A' }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <!-- SCORE -->
+            <div class="inspection-item">
+              <h4 class="inspection-label">SCORE</h4>
+              <div class="inspection-columns">
+                <div class="column-content">
+                  <div class="price-display">
+                    <span class="price-value">{{ transaction()?.initialScore || '0' }}</span>
                   </div>
-                  <div class="column-content" *ngIf="hasAdminConditions()">
-                    <div class="price-display">
-                      <span class="price-label">RM</span>
-                      <span class="price-value" [class.changed]="transaction()?.finalPrice && transaction()?.finalPrice !== transaction()?.estimatedPrice">
-                        {{ (transaction()?.finalPrice | number:'1.2-2') || (transaction()?.estimatedPrice | number:'1.2-2') || '0.00' }}
-                      </span>
-                    </div>
+                </div>
+                <div class="column-content">
+                  <div class="price-display">
+                    <span class="price-value" [class.changed]="transaction()?.finalScore && transaction()?.finalScore !== transaction()?.initialScore">
+                      {{ transaction()?.finalScore || transaction()?.initialScore || '0' }}
+                    </span>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <!-- Score Comparison -->
-              <div class="inspection-item">
-                <h4 class="inspection-label">SCORE</h4>
-                <div class="inspection-columns" [class.single-column]="!hasAdminConditions()">
+            <!-- ========================================== -->
+            <!-- CONDITION ASSESSMENT                       -->
+            <!-- ========================================== -->
+            <!-- Continue with your existing condition groups... -->
+            <ng-container *ngFor="let group of getConditionGroupsWithData()">
+              <!-- Radio, dropdown, checkbox, image types -->
+              <div class="inspection-item" *ngIf="group.question_type !== 'textarea' && group.question_type !== 'file_upload'">
+                <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
+                <div class="inspection-columns">
+                  <!-- Before (Seller's submission) -->
                   <div class="column-content">
-                    <div class="price-display">
-                      <span class="price-value">{{ transaction()?.initialScore || '0' }}</span>
-                    </div>
+                    <ng-container *ngIf="transaction()?.sellerConditions?.[group.groupID]; else noSellerValue">
+                      <!-- Check if array (checkbox) or string (radio/dropdown/image) -->
+                      <ul class="condition-list" *ngIf="Array.isArray(transaction()?.sellerConditions?.[group.groupID]); else singleSellerValue">
+                        <li *ngFor="let condition of transaction()?.sellerConditions?.[group.groupID]" class="condition-item">
+                          <span class="check-icon-circle" *ngIf="group.question_type === 'checkbox'">
+                            <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                              <circle cx="10" cy="10" r="10" fill="#718096"/>
+                              <path d="M6 10l3 3 5-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                          </span>
+                          <span class="condition-text">{{ condition }}</span>
+                        </li>
+                      </ul>
+                      <ng-template #singleSellerValue>
+                        <p class="note-text">{{ transaction()?.sellerConditions?.[group.groupID] }}</p>
+                      </ng-template>
+                    </ng-container>
+                    <ng-template #noSellerValue>
+                      <p class="note-text empty">N/A</p>
+                    </ng-template>
                   </div>
-                  <div class="column-content" *ngIf="hasAdminConditions()">
-                    <div class="price-display">
-                      <span class="price-value" [class.changed]="transaction()?.finalScore && transaction()?.finalScore !== transaction()?.initialScore">
-                        {{ transaction()?.finalScore || transaction()?.initialScore || '0' }}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
 
-              <!-- All Condition Groups in display_order (only show groups with submitted data) -->
-              <ng-container *ngFor="let group of getConditionGroupsWithData()">
-                <!-- Radio, dropdown, checkbox, image types -->
-                <div class="inspection-item" *ngIf="group.question_type !== 'textarea' && group.question_type !== 'file_upload'">
-                  <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
-                  <div class="inspection-columns" [class.single-column]="!hasAdminConditions()">
-                    <!-- Before (Seller's submission) -->
-                    <div class="column-content">
-                      <ng-container *ngIf="transaction()?.sellerConditions?.[group.groupID]; else noSellerValue">
-                        <!-- Check if array (checkbox) or string (radio/dropdown/image) -->
-                        <ul class="condition-list" *ngIf="Array.isArray(transaction()?.sellerConditions?.[group.groupID]); else singleSellerValue">
+                  <!-- After (Admin's review) -->
+                  <div class="column-content">
+                    <ng-container *ngIf="transaction()?.adminConditions?.[group.groupID]; else showSellerAsConfirmed">
+                      <!-- Check if array (checkbox) or string (radio/dropdown/image) -->
+                      <ul class="condition-list" *ngIf="Array.isArray(transaction()?.adminConditions?.[group.groupID]); else singleAdminValue">
+                        <li *ngFor="let condition of transaction()?.adminConditions?.[group.groupID]" class="condition-item">
+                          <span class="check-icon-circle" *ngIf="group.question_type === 'checkbox'">
+                            <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                              <circle cx="10" cy="10" r="10" [attr.fill]="isCheckboxItemAdded(group.groupID, condition) ? '#48bb78' : '#718096'"/>
+                              <path d="M6 10l3 3 5-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                          </span>
+                          <span class="condition-text">{{ condition }}</span>
+                        </li>
+                      </ul>
+                      <ng-template #singleAdminValue>
+                        <p class="note-text" [class.changed]="transaction()?.sellerConditions?.[group.groupID] !== transaction()?.adminConditions?.[group.groupID]">
+                          {{ transaction()?.adminConditions?.[group.groupID] }}
+                        </p>
+                      </ng-template>
+                    </ng-container>
+                    <ng-template #showSellerAsConfirmed>
+                      <!-- No admin value = admin confirmed seller's value (no change, so gray) -->
+                      <ng-container *ngIf="transaction()?.sellerConditions?.[group.groupID]; else noValue">
+                        <ul class="condition-list" *ngIf="Array.isArray(transaction()?.sellerConditions?.[group.groupID]); else singleSellerValue2">
                           <li *ngFor="let condition of transaction()?.sellerConditions?.[group.groupID]" class="condition-item">
                             <span class="check-icon-circle" *ngIf="group.question_type === 'checkbox'">
                               <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
@@ -258,261 +334,247 @@
                             <span class="condition-text">{{ condition }}</span>
                           </li>
                         </ul>
-                        <ng-template #singleSellerValue>
+                        <ng-template #singleSellerValue2>
                           <p class="note-text">{{ transaction()?.sellerConditions?.[group.groupID] }}</p>
                         </ng-template>
                       </ng-container>
-                      <ng-template #noSellerValue>
+                      <ng-template #noValue>
                         <p class="note-text empty">N/A</p>
                       </ng-template>
-                    </div>
+                    </ng-template>
+                  </div>
+                </div>
+              </div>
 
-                    <!-- After (Admin's review) - Only show if admin has reviewed -->
-                    <div class="column-content" *ngIf="hasAdminConditions()">
-                      <ng-container *ngIf="transaction()?.adminConditions?.[group.groupID]; else showSellerAsConfirmed">
-                        <!-- Check if array (checkbox) or string (radio/dropdown/image) -->
-                        <ul class="condition-list" *ngIf="Array.isArray(transaction()?.adminConditions?.[group.groupID]); else singleAdminValue">
-                          <li *ngFor="let condition of transaction()?.adminConditions?.[group.groupID]" class="condition-item">
-                            <span class="check-icon-circle" *ngIf="group.question_type === 'checkbox'">
-                              <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-                                <circle cx="10" cy="10" r="10" [attr.fill]="isCheckboxItemAdded(group.groupID, condition) ? '#48bb78' : '#718096'"/>
-                                <path d="M6 10l3 3 5-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                              </svg>
-                            </span>
-                            <span class="condition-text">{{ condition }}</span>
-                          </li>
-                        </ul>
-                        <ng-template #singleAdminValue>
-                          <p class="note-text" [class.changed]="transaction()?.sellerConditions?.[group.groupID] !== transaction()?.adminConditions?.[group.groupID]">
-                            {{ transaction()?.adminConditions?.[group.groupID] }}
-                          </p>
-                        </ng-template>
-                      </ng-container>
-                      <ng-template #showSellerAsConfirmed>
-                        <!-- No admin value = admin confirmed seller's value (no change, so gray) -->
-                        <ng-container *ngIf="transaction()?.sellerConditions?.[group.groupID]; else noValue">
-                          <ul class="condition-list" *ngIf="Array.isArray(transaction()?.sellerConditions?.[group.groupID]); else singleSellerValue2">
-                            <li *ngFor="let condition of transaction()?.sellerConditions?.[group.groupID]" class="condition-item">
-                              <span class="check-icon-circle" *ngIf="group.question_type === 'checkbox'">
-                                <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-                                  <circle cx="10" cy="10" r="10" fill="#718096"/>
-                                  <path d="M6 10l3 3 5-6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
-                              </span>
-                              <span class="condition-text">{{ condition }}</span>
-                            </li>
-                          </ul>
-                          <ng-template #singleSellerValue2>
-                            <p class="note-text">{{ transaction()?.sellerConditions?.[group.groupID] }}</p>
-                          </ng-template>
-                        </ng-container>
-                        <ng-template #noValue>
-                          <p class="note-text empty">N/A</p>
-                        </ng-template>
-                      </ng-template>
-                    </div>
+              <!-- Textarea type groups (Notes) -->
+              <div class="inspection-item" *ngIf="group.question_type === 'textarea'">
+                <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
+                <div class="inspection-columns">
+                  <div class="column-content">
+                    <p class="note-text">{{ transaction()?.sellerConditions?.[group.groupID] || 'N/A' }}</p>
+                  </div>
+                  <div class="column-content">
+                    <p class="note-text" [class.changed]="transaction()?.adminConditions?.[group.groupID] && transaction()?.adminConditions?.[group.groupID] !== transaction()?.sellerConditions?.[group.groupID]">
+                      {{ transaction()?.adminConditions?.[group.groupID] || transaction()?.sellerConditions?.[group.groupID] || 'N/A' }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- File upload type groups (Photos) -->
+              <div class="inspection-item full-width-photo-section" *ngIf="group.question_type === 'file_upload'">
+                <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
+
+                <!-- Two Column Layout with Tab Headers -->
+                <div class="inspection-columns">
+                  <!-- Seller's Tab -->
+                  <div class="column-content">
+                    <button class="photo-column-tab"
+                            [class.active]="photoViewTab === 'seller'"
+                            (click)="photoViewTab = 'seller'">
+                      SELLER'S PHOTO
+                    </button>
+                  </div>
+
+                  <!-- Admin's Tab -->
+                  <div class="column-content">
+                    <button class="photo-column-tab"
+                            [class.active]="photoViewTab === 'admin'"
+                            (click)="photoViewTab = 'admin'">
+                      ADMIN'S PHOTO
+                    </button>
                   </div>
                 </div>
 
-                <!-- Textarea type groups (Notes) -->
-                <div class="inspection-item" *ngIf="group.question_type === 'textarea'">
-                  <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
-                  <div class="inspection-columns" [class.single-column]="!hasAdminConditions()">
-                    <div class="column-content">
-                      <p class="note-text">{{ transaction()?.sellerConditions?.[group.groupID] || 'N/A' }}</p>
-                    </div>
-                    <div class="column-content" *ngIf="hasAdminConditions()">
-                      <p class="note-text" [class.changed]="transaction()?.adminConditions?.[group.groupID] && transaction()?.adminConditions?.[group.groupID] !== transaction()?.sellerConditions?.[group.groupID]">
-                        {{ transaction()?.adminConditions?.[group.groupID] || transaction()?.sellerConditions?.[group.groupID] || 'N/A' }}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <!-- Single Photo Display Area (shown below tabs) -->
+                <div class="single-photo-section">
+                  <!-- Seller's Photos -->
+                  <div *ngIf="photoViewTab === 'seller'">
+                    <ng-container *ngIf="getSellerPhotosForGroup(group.groupID)?.length; else noSellerPhotos">
+                      <div class="single-photo-display">
+                        <!-- Main Photo -->
+                        <div class="single-photo-container" (click)="openPhotoLightbox(getSellerPhotosForGroup(group.groupID), sellerPhotoIndex)">
+                          <img [src]="getSellerPhotosForGroup(group.groupID)[sellerPhotoIndex]"
+                               [alt]="'Seller photo ' + (sellerPhotoIndex + 1)"
+                               class="single-photo-image">
 
-                <!-- File upload type groups (Photos) -->
-                <div class="inspection-item full-width-photo-section" *ngIf="group.question_type === 'file_upload'">
-                  <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
+                          <!-- Navigation Arrows -->
+                          <button *ngIf="getSellerPhotosForGroup(group.groupID).length > 1"
+                                  class="photo-nav-btn prev"
+                                  (click)="prevSellerPhoto($event)"
+                                  title="Previous photo">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M15 18l-6-6 6-6"/>
+                            </svg>
+                          </button>
 
-                  <!-- Two Column Layout with Tab Headers -->
-                  <div class="inspection-columns" [class.single-column]="!hasAdminConditions()">
-                    <!-- Seller's Tab -->
-                    <div class="column-content">
-                      <button class="photo-column-tab"
-                              [class.active]="photoViewTab === 'seller'"
-                              (click)="photoViewTab = 'seller'">
-                        SELLER'S PHOTO
-                      </button>
-                    </div>
-
-                    <!-- Admin's Tab -->
-                    <div class="column-content" *ngIf="hasAdminConditions()">
-                      <button class="photo-column-tab"
-                              [class.active]="photoViewTab === 'admin'"
-                              (click)="photoViewTab = 'admin'">
-                        ADMIN'S PHOTO
-                      </button>
-                    </div>
-                  </div>
-
-                  <!-- Single Photo Display Area (shown below tabs) -->
-                  <div class="single-photo-section">
-                    <!-- Seller's Photos -->
-                    <div *ngIf="photoViewTab === 'seller' || !hasAdminConditions()">
-                      <ng-container *ngIf="getSellerPhotosForGroup(group.groupID)?.length; else noSellerPhotos">
-                        <div class="single-photo-display">
-                          <!-- Main Photo -->
-                          <div class="single-photo-container" (click)="openPhotoLightbox(getSellerPhotosForGroup(group.groupID), sellerPhotoIndex)">
-                            <img [src]="getSellerPhotosForGroup(group.groupID)[sellerPhotoIndex]"
-                                 [alt]="'Seller photo ' + (sellerPhotoIndex + 1)"
-                                 class="single-photo-image">
-
-                            <!-- Navigation Arrows -->
-                            <button *ngIf="getSellerPhotosForGroup(group.groupID).length > 1"
-                                    class="photo-nav-btn prev"
-                                    (click)="prevSellerPhoto($event)"
-                                    title="Previous photo">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M15 18l-6-6 6-6"/>
-                              </svg>
-                            </button>
-
-                            <button *ngIf="getSellerPhotosForGroup(group.groupID).length > 1"
-                                    class="photo-nav-btn next"
-                                    (click)="nextSellerPhoto($event)"
-                                    title="Next photo">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M9 18l6-6-6-6"/>
-                              </svg>
-                            </button>
-                          </div>
-
-                          <!-- Photo Counter -->
-                          <div *ngIf="getSellerPhotosForGroup(group.groupID).length > 1" class="photo-counter">
-                            Photo {{ sellerPhotoIndex + 1 }} of {{ getSellerPhotosForGroup(group.groupID).length }}
-                          </div>
+                          <button *ngIf="getSellerPhotosForGroup(group.groupID).length > 1"
+                                  class="photo-nav-btn next"
+                                  (click)="nextSellerPhoto($event)"
+                                  title="Next photo">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M9 18l6-6-6-6"/>
+                            </svg>
+                          </button>
                         </div>
-                      </ng-container>
-                      <ng-template #noSellerPhotos>
-                        <p class="note-text empty">No photos</p>
-                      </ng-template>
-                    </div>
 
-                    <!-- Admin's Photos -->
-                    <div *ngIf="photoViewTab === 'admin' && hasAdminConditions()">
-                      <ng-container *ngIf="getAdminPhotosForGroup(group.groupID)?.length; else noAdminPhotos">
-                        <div class="single-photo-display">
-                          <!-- Main Photo -->
-                          <div class="single-photo-container" (click)="openPhotoLightbox(getAdminPhotosForGroup(group.groupID), adminPhotoIndex)">
-                            <img [src]="getAdminPhotosForGroup(group.groupID)[adminPhotoIndex]"
-                                 [alt]="'Admin photo ' + (adminPhotoIndex + 1)"
-                                 class="single-photo-image">
-
-                            <!-- Navigation Arrows -->
-                            <button *ngIf="getAdminPhotosForGroup(group.groupID).length > 1"
-                                    class="photo-nav-btn prev"
-                                    (click)="prevAdminPhoto($event)"
-                                    title="Previous photo">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M15 18l-6-6 6-6"/>
-                              </svg>
-                            </button>
-
-                            <button *ngIf="getAdminPhotosForGroup(group.groupID).length > 1"
-                                    class="photo-nav-btn next"
-                                    (click)="nextAdminPhoto($event)"
-                                    title="Next photo">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M9 18l6-6-6-6"/>
-                              </svg>
-                            </button>
-                          </div>
-
-                          <!-- Photo Counter -->
-                          <div *ngIf="getAdminPhotosForGroup(group.groupID).length > 1" class="photo-counter">
-                            Photo {{ adminPhotoIndex + 1 }} of {{ getAdminPhotosForGroup(group.groupID).length }}
-                          </div>
+                        <!-- Photo Counter -->
+                        <div *ngIf="getSellerPhotosForGroup(group.groupID).length > 1" class="photo-counter">
+                          Photo {{ sellerPhotoIndex + 1 }} of {{ getSellerPhotosForGroup(group.groupID).length }}
                         </div>
-                      </ng-container>
-                      <ng-template #noAdminPhotos>
-                        <p class="note-text empty">No photos</p>
-                      </ng-template>
-                    </div>
-                  </div>
-                </div>
-              </ng-container>
-            </ng-container>
-
-            <!-- EDIT MODE: Admin can modify values -->
-            <ng-container *ngIf="editMode()">
-              <!-- All Dynamic Condition Groups in display_order -->
-              <ng-container *ngFor="let group of conditionGroups">
-                <!-- Radio/Dropdown/Image type (single selection) -->
-                <div class="inspection-item-edit" *ngIf="group.question_type === 'radio' || group.question_type === 'dropdown' || group.question_type === 'image'">
-                    <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
-                    <select class="edit-select" [(ngModel)]="selectedConditions[group.groupID]">
-                      <option value="">Select {{ group.criteriaName }}</option>
-                      <option *ngFor="let option of group.options" [value]="option.description">
-                        {{ option.description }}
-                      </option>
-                    </select>
-                  </div>
-
-                  <!-- Checkbox type (multiple choice) -->
-                  <div class="inspection-item-edit full-width" *ngIf="group.question_type === 'checkbox'">
-                    <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
-                    <div class="checkbox-options">
-                      <label *ngFor="let option of group.options" class="checkbox-option">
-                        <input type="checkbox"
-                               [checked]="isCheckboxOptionSelected(group.groupID, option.description)"
-                               (change)="toggleCheckboxOption(group.groupID, option.description)">
-                        <span class="checkbox-label">{{ option.description }}</span>
-                      </label>
-                    </div>
-                  </div>
-
-                <!-- Textarea type condition groups (e.g., Notes) -->
-                <div class="inspection-item-edit full-width" *ngIf="group.question_type === 'textarea'">
-                  <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
-                  <textarea class="edit-textarea" [(ngModel)]="selectedConditions[group.groupID]"
-                            rows="3" [placeholder]="'Enter ' + group.criteriaName.toLowerCase() + '...'"></textarea>
-                </div>
-
-                <!-- File Upload type condition groups -->
-                <div class="inspection-item-edit full-width" *ngIf="group.question_type === 'file_upload'">
-                  <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
-                  <div class="file-upload-container">
-                    <input type="file" [id]="'file-' + group.groupID" multiple accept="image/*"
-                           (change)="onFileSelected($event, group.groupID)" class="file-input">
-                    <label [for]="'file-' + group.groupID" class="file-upload-btn">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                        <polyline points="17 8 12 3 7 8"/>
-                        <line x1="12" y1="3" x2="12" y2="15"/>
-                      </svg>
-                      Upload Photos
-                    </label>
-                    <!-- Preview uploaded files -->
-                    <div class="uploaded-previews" *ngIf="(uploadedFilePreviews[group.groupID]?.length ?? 0) > 0">
-                      <div *ngFor="let preview of (uploadedFilePreviews[group.groupID] ?? []); let i = index" class="preview-item">
-                        <img [src]="preview" alt="Preview">
-                        <button type="button" class="remove-preview" (click)="removeUploadedFile(group.groupID, i)">
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M18 6L6 18M6 6l12 12"/>
-                          </svg>
-                        </button>
                       </div>
+                    </ng-container>
+                    <ng-template #noSellerPhotos>
+                      <p class="note-text empty">No photos</p>
+                    </ng-template>
+                  </div>
+
+                  <!-- Admin's Photos -->
+                  <div *ngIf="photoViewTab === 'admin'">
+                    <ng-container *ngIf="getAdminPhotosForGroup(group.groupID)?.length; else noAdminPhotos">
+                      <div class="single-photo-display">
+                        <!-- Main Photo -->
+                        <div class="single-photo-container" (click)="openPhotoLightbox(getAdminPhotosForGroup(group.groupID), adminPhotoIndex)">
+                          <img [src]="getAdminPhotosForGroup(group.groupID)[adminPhotoIndex]"
+                               [alt]="'Admin photo ' + (adminPhotoIndex + 1)"
+                               class="single-photo-image">
+
+                          <!-- Navigation Arrows -->
+                          <button *ngIf="getAdminPhotosForGroup(group.groupID).length > 1"
+                                  class="photo-nav-btn prev"
+                                  (click)="prevAdminPhoto($event)"
+                                  title="Previous photo">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M15 18l-6-6 6-6"/>
+                            </svg>
+                          </button>
+
+                          <button *ngIf="getAdminPhotosForGroup(group.groupID).length > 1"
+                                  class="photo-nav-btn next"
+                                  (click)="nextAdminPhoto($event)"
+                                  title="Next photo">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                              <path d="M9 18l6-6-6-6"/>
+                            </svg>
+                          </button>
+                        </div>
+
+                        <!-- Photo Counter -->
+                        <div *ngIf="getAdminPhotosForGroup(group.groupID).length > 1" class="photo-counter">
+                          Photo {{ adminPhotoIndex + 1 }} of {{ getAdminPhotosForGroup(group.groupID).length }}
+                        </div>
+                      </div>
+                    </ng-container>
+                    <ng-template #noAdminPhotos>
+                      <p class="note-text empty">No photos</p>
+                    </ng-template>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+          </ng-container>
+
+          <!-- EDIT MODE: Admin can modify values -->
+          <ng-container *ngIf="editMode()">
+            <h3 class="section-title">Edit Appliance Information</h3>
+            <div class="details-grid">
+              <div class="detail-item">
+                <h4 class="detail-label">CATEGORY</h4>
+                <select class="edit-select" [(ngModel)]="selectedCategoryId" (ngModelChange)="onCategoryChange()">
+                  <option [ngValue]="null">Select category</option>
+                  <option *ngFor="let cat of categories" [ngValue]="cat.categoryID">{{ cat.categoryName }}</option>
+                </select>
+              </div>
+              <div class="detail-item">
+                <h4 class="detail-label">BRAND</h4>
+                <select class="edit-select" [(ngModel)]="selectedBrandId" (ngModelChange)="onBrandChange()">
+                  <option [ngValue]="null">Select brand</option>
+                  <option *ngFor="let brand of brands" [ngValue]="brand.brandID">{{ brand.brandName }}</option>
+                </select>
+              </div>
+              <div class="detail-item">
+                <h4 class="detail-label">MODEL NAME</h4>
+                <select class="edit-select" [(ngModel)]="selectedApplianceId" (ngModelChange)="onApplianceChange()">
+                  <option [ngValue]="null">Select model name</option>
+                  <option *ngFor="let appliance of filteredAppliances" [ngValue]="appliance.applianceID">
+                    {{ appliance.modelName }}
+                  </option>
+                </select>
+              </div>
+              <div class="detail-item">
+                <h4 class="detail-label">MODEL CODE</h4>
+                <p class="detail-value">{{ getSelectedModelCode() || transaction()?.finalModel || transaction()?.model || 'N/A' }}</p>
+              </div>
+            </div>
+            
+            <!-- All Dynamic Condition Groups in display_order -->
+            <ng-container *ngFor="let group of conditionGroups">
+              <!-- Radio/Dropdown/Image type (single selection) -->
+              <div class="inspection-item-edit" *ngIf="group.question_type === 'radio' || group.question_type === 'dropdown' || group.question_type === 'image'">
+                <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
+                <select class="edit-select" [(ngModel)]="selectedConditions[group.groupID]">
+                  <option value="">Select {{ group.criteriaName }}</option>
+                  <option *ngFor="let option of group.options" [value]="option.description">
+                    {{ option.description }}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Checkbox type (multiple choice) -->
+              <div class="inspection-item-edit full-width" *ngIf="group.question_type === 'checkbox'">
+                <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
+                <div class="checkbox-options">
+                  <label *ngFor="let option of group.options" class="checkbox-option">
+                    <input type="checkbox"
+                           [checked]="isCheckboxOptionSelected(group.groupID, option.description)"
+                           (change)="toggleCheckboxOption(group.groupID, option.description)">
+                    <span class="checkbox-label">{{ option.description }}</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Textarea type condition groups (e.g., Notes) -->
+              <div class="inspection-item-edit full-width" *ngIf="group.question_type === 'textarea'">
+                <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
+                <textarea class="edit-textarea" [(ngModel)]="selectedConditions[group.groupID]"
+                          rows="3" [placeholder]="'Enter ' + group.criteriaName.toLowerCase() + '...'"></textarea>
+              </div>
+
+              <!-- File Upload type condition groups -->
+              <div class="inspection-item-edit full-width" *ngIf="group.question_type === 'file_upload'">
+                <h4 class="inspection-label">{{ group.criteriaName | uppercase }}</h4>
+                <div class="file-upload-container">
+                  <input type="file" [id]="'file-' + group.groupID" multiple accept="image/*"
+                         (change)="onFileSelected($event, group.groupID)" class="file-input">
+                  <label [for]="'file-' + group.groupID" class="file-upload-btn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                      <polyline points="17 8 12 3 7 8"/>
+                      <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    Upload Photos
+                  </label>
+                  <!-- Preview uploaded files -->
+                  <div class="uploaded-previews" *ngIf="(uploadedFilePreviews[group.groupID]?.length ?? 0) > 0">
+                    <div *ngFor="let preview of (uploadedFilePreviews[group.groupID] ?? []); let i = index" class="preview-item">
+                      <img [src]="preview" alt="Preview">
+                      <button type="button" class="remove-preview" (click)="removeUploadedFile(group.groupID, i)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M18 6L6 18M6 6l12 12"/>
+                        </svg>
+                      </button>
                     </div>
                   </div>
                 </div>
-              </ng-container>
+              </div>
             </ng-container>
-          </div>
+          </ng-container>
+        </div>
 
-          <!-- Note - VIEW MODE only (from transaction data, not dynamic groups) -->
-          <div class="note-section" *ngIf="transaction()?.note && !editMode()">
-            <h4 class="note-label">NOTE</h4>
-            <p class="note-value">{{ transaction()?.note }}</p>
-          </div>
+        <!-- Note Section (if needed) -->
+        <div class="note-section" *ngIf="transaction()?.note && !editMode()">
+          <h4 class="note-label">NOTE</h4>
+          <p class="note-value">{{ transaction()?.note }}</p>
         </div>
       </div>
     </div>

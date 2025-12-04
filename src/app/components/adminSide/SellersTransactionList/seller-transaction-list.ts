@@ -27,6 +27,10 @@ export class SellerTransactionListComponent implements OnInit {
 
   selectedCategory: string = '';
   selectedBrand: string = '';
+  selectedTransactionStatus: string = '';
+  selectedItemStatus: string = ''; 
+  transactionStatuses: string[] = [];      // Add this
+  itemStatuses: string[] = [];   
   searchQuery: string = '';
 
   currentPage: number = 1;
@@ -75,6 +79,8 @@ export class SellerTransactionListComponent implements OnInit {
         // Extract unique categories and brands
         this.extractCategories();
         this.extractBrands();
+        this.extractTransactionStatuses();  // Add this
+        this.extractItemStatuses();
 
         this.applyFilters();
         this.loading = false;
@@ -97,6 +103,16 @@ export class SellerTransactionListComponent implements OnInit {
     this.brands = Array.from(brandSet).sort();
   }
 
+  extractTransactionStatuses(): void {
+    const statusSet = new Set(this.transactions.map(t => t.transactionStatus).filter(s => s && s.trim() !== ''));
+    this.transactionStatuses = Array.from(statusSet).sort();
+  }
+
+  extractItemStatuses(): void {
+    const statusSet = new Set(this.transactions.map(t => t.itemStatus).filter(s => s && s.trim() !== ''));
+    this.itemStatuses = Array.from(statusSet).sort();
+  }
+
   applyFilters(): void {
     let filtered = [...this.transactions];
 
@@ -108,6 +124,16 @@ export class SellerTransactionListComponent implements OnInit {
     // Filter by brand
     if (this.selectedBrand) {
       filtered = filtered.filter(t => t.brand === this.selectedBrand);
+    }
+
+    // Filter by transaction status
+    if (this.selectedTransactionStatus) {
+      filtered = filtered.filter(t => t.transactionStatus === this.selectedTransactionStatus);
+    }
+
+    // Filter by item status
+    if (this.selectedItemStatus) {
+      filtered = filtered.filter(t => t.itemStatus === this.selectedItemStatus);
     }
 
     // Filter by search query
@@ -137,6 +163,16 @@ export class SellerTransactionListComponent implements OnInit {
     if (this.currentPage > this.totalPages && this.totalPages > 0) {
       this.currentPage = 1;
     }
+  }
+  
+  onTransactionStatusChange(): void {
+    this.currentPage = 1;
+    this.applyFilters();
+  }
+
+  onItemStatusChange(): void {
+    this.currentPage = 1;
+    this.applyFilters();
   }
 
   sortBy(column: string): void {
