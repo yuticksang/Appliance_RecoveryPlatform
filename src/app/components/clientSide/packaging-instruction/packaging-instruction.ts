@@ -41,7 +41,12 @@ export class PackagingInstruction implements OnInit {
     }
   }
 
-    ngOnInit(): void {
+  ngOnInit(): void {
+    this.setupBreadcrumbs();
+    this.loadPackagingInstructions();
+  }
+
+  private setupBreadcrumbs(): void {
     if (this.fromTransactionId) {
       // Set breadcrumbs with clickable Transaction Detail link
       this.breadcrumbService.setBreadcrumbs([
@@ -56,8 +61,6 @@ export class PackagingInstruction implements OnInit {
         { label: 'Packaging Guide' }
       ]);
     }
-  ngOnInit(): void {
-    this.loadPackagingInstructions();
   }
 
   private loadPackagingInstructions(): void {
