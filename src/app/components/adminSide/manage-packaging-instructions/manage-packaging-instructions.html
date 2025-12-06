@@ -10,6 +10,19 @@
       <button class="btn-primary" (click)="openCreateModal()">+ NEW INSTRUCTION</button>
 
       <div class="toolbar-right">
+        <!-- Search Bar -->
+        <div class="search-wrapper">
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Search instructions, sections, categories..."
+            [ngModel]="searchQuery()"
+            (ngModelChange)="onSearchChange($event)">
+          @if (searchQuery()) {
+            <button class="clear-search-btn" (click)="clearSearch()" title="Clear search">×</button>
+          }
+        </div>
+
         <!-- Category Filter -->
         <div class="select-wrapper">
           <select [ngModel]="selectedCategoryFilter()" (ngModelChange)="onCategoryFilterChange($event)">
@@ -30,7 +43,7 @@
           </select>
         </div>
 
-        <button class="btn-secondary" (click)="clearFilters()">Clear Filters</button>
+        <button class="btn-secondary" (click)="clearFilters()">Clear All</button>
       </div>
     </div>
 
@@ -151,16 +164,38 @@
 
       <div class="modal-body">
         <form>
-          <!-- Category Selection -->
-          <div class="form-group">
-            <label for="categoryId">Category <span class="required">*</span></label>
-            <select id="categoryId" [(ngModel)]="formData.categoryId" name="categoryId" required>
-              @for (category of categories(); track category.id) {
-                <option [ngValue]="category.id.toString()">{{ category.name }}</option>
-              }
-            </select>
-            <small class="help-text">Select a category for the packaging instructions</small>
-          </div>
+          <!-- Category Selection - Multiple for Create, Single for Edit -->
+          @if (modalMode() === 'create') {
+            <div class="form-group">
+              <label>Categories <span class="required">*</span></label>
+              <div class="category-select-actions">
+                <button type="button" class="select-action-btn" (click)="selectAllCategories()">Select All</button>
+                <button type="button" class="select-action-btn" (click)="deselectAllCategories()">Clear All</button>
+              </div>
+              <div class="category-checkbox-group">
+                @for (category of categories(); track category.id) {
+                  <label class="category-checkbox-label">
+                    <input
+                      type="checkbox"
+                      [checked]="isCategorySelected(category.id.toString())"
+                      (change)="toggleCategorySelection(category.id.toString())">
+                    <span>{{ category.name }}</span>
+                  </label>
+                }
+              </div>
+              <small class="help-text">Select one or more categories to apply this instruction to</small>
+            </div>
+          } @else {
+            <div class="form-group">
+              <label for="categoryId">Category <span class="required">*</span></label>
+              <select id="categoryId" [(ngModel)]="formData.categoryId" name="categoryId" required>
+                @for (category of categories(); track category.id) {
+                  <option [ngValue]="category.id.toString()">{{ category.name }}</option>
+                }
+              </select>
+              <small class="help-text">Select a category for the packaging instructions</small>
+            </div>
+          }
 
           <!-- Display Order -->
           <div class="form-group">
@@ -196,13 +231,34 @@
               <span>Active (visible to users)</span>
             </label>
           </div>
+
+          <!-- Changes Summary (Edit Mode Only) -->
+          @if (modalMode() === 'edit' && hasChanges) {
+            <div class="changes-summary">
+              <h4>Changes to be saved:</h4>
+              <ul>
+                @for (change of getChangedFields(); track change.field) {
+                  <li>
+                    <strong>{{ change.field }}:</strong>
+                    <span class="change-before">"{{ change.before }}"</span>
+                    <span class="change-arrow">→</span>
+                    <span class="change-after">"{{ change.after }}"</span>
+                  </li>
+                }
+              </ul>
+            </div>
+          }
         </form>
       </div>
 
       <div class="modal-footer">
         <button class="btn-cancel" (click)="closeModal()">Cancel</button>
-        <button class="btn-confirm" (click)="saveInstruction()">
-          {{ modalMode() === 'create' ? 'Create' : 'Update' }}
+        <button
+          class="btn-confirm"
+          (click)="saveInstruction()"
+          [disabled]="modalMode() === 'edit' && !hasChanges"
+          [title]="modalMode() === 'edit' && !hasChanges ? 'No changes to save' : ''">
+          {{ modalMode() === 'create' ? 'Create' : (hasChanges ? 'Save Changes' : 'No Changes') }}
         </button>
       </div>
     </div>
