@@ -281,9 +281,10 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
     return canCancel;
   }
 
-  // Check if item is in Awaiting Pick Up status (editable)
+  // Check if item is in Awaiting Pick Up status and not cancelled (editable)
   get isAwaitingPickUp(): boolean {
-    return this.transaction?.itemStatus === 'Awaiting Pick Up';
+    return this.transaction?.itemStatus === 'Awaiting Pick Up'
+      && this.transaction?.transactionStatus !== 'Cancelled';
   }
 
   // Get the currently selected photo
