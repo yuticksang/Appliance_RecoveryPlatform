@@ -333,6 +333,28 @@ CREATE TABLE "ConditionSelected" (
 
 CREATE INDEX idx_condition_selected_submittedApplianceID ON "ConditionSelected"("submittedApplianceID");
 
+-- =====================================================
+-- STEP 18: Create Packaging Instruction table
+-- =====================================================
+CREATE TABLE "PackagingInstruction" (
+    "instructionID" VARCHAR(10) PRIMARY KEY DEFAULT ('PI' || LPAD(nextval('packaging_instruction_id_seq')::text, 3, '0')),
+    "categoryID" VARCHAR(20) NOT NULL, -- Changed to VARCHAR to match Category table
+    "stepNumber" INTEGER NOT NULL,
+    "sectionName" VARCHAR(100) NOT NULL, -- e.g., "Safety First", "Preparation Steps"
+    "instruction" TEXT NOT NULL,
+    "icon" VARCHAR(50), -- Optional icon identifier for UI
+    "isActive" BOOLEAN DEFAULT true,
+    "displayOrder" INTEGER NOT NULL, -- Order within the section
+    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    -- Removed foreign key constraint to allow categoryID = '0' for default instructions
+    CONSTRAINT unique_category_step UNIQUE ("categoryID", "stepNumber")
+);
+
+-- Step 5: Create indexes for faster lookups
+CREATE INDEX idx_packaging_category ON "PackagingInstruction"("categoryID");
+CREATE INDEX idx_packaging_active ON "PackagingInstruction"("isActive");
+CREATE INDEX idx_packaging_section ON "PackagingInstruction"("sectionName");
 
 
 -- =====================================================
