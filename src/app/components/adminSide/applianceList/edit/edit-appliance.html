@@ -68,10 +68,17 @@
         <label for="image">Appliance Image</label>
         <div class="image-upload-container">
           <div class="image-preview">
+            <button type="button" class="remove-btn"
+              (click)="onRemoveImage()"
+              [disabled]="!applianceData.image_url && !selectedImageFile"
+              aria-label="Remove image">
+              ×
+            </button>
             <img [src]="imagePreview" alt="Appliance preview" class="preview-img">
           </div>
-          <input type="file" id="image" accept="image/*" (change)="onImageSelected($event)" class="file-input">
-          <label for="image" class="file-label">Change Image</label>
+          <div class="file-input-wrap">
+            <input type="file" id="image" accept="image/*" (change)="onImageSelected($event)">
+          </div>
         </div>
       </div>
 
@@ -96,6 +103,9 @@
           </li>
           <li *ngIf="selectedImageFile">
             Image: Will be updated (new image selected)
+          </li>
+          <li *ngIf="removeImage">
+            Image: Will be removed
           </li>
         </ul>
       </div>

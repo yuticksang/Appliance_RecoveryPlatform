@@ -1324,5 +1324,52 @@ export class TransactionDetailComponent implements OnInit, OnDestroy {
   isPaymentDueDateApproaching(): boolean {
     return this.daysUntilPaymentDue <= 3 && !this.isPaymentDueDateExpired();
   }
+
+  // ---------- Difference helpers ----------
+  isConditionChanged(groupId: string): boolean {
+    const sellerSet = new Set(this.normalizeConditionArray(this.sellerConditions[groupId]));
+    const adminSet = new Set(this.normalizeConditionArray(this.adminConditions[groupId]));
+    if (sellerSet.size !== adminSet.size) return true;
+    for (const v of adminSet) {
+      if (!sellerSet.has(v)) return true;
+    }
+    return false;
+  }
+
+  isAfterFieldChanged(field: keyof typeof this.afterReview): boolean {
+    return (this.afterReview as any)[field] !== (this.beforeReview as any)[field];
+  }
+
+  isConditionAdded(groupId: string, value: string): boolean {
+    const sellerArr = this.normalizeConditionArray(this.sellerConditions[groupId]);
+    const adminArr = this.normalizeConditionArray(this.adminConditions[groupId]);
+    if (!adminArr.length) return false;
+    if (!sellerArr.length) return true;
+    return !sellerArr.includes(value.trim());
+  }
+
+  isConditionUnchanged(groupId: string, value: string): boolean {
+    const sellerArr = this.normalizeConditionArray(this.sellerConditions[groupId]);
+    const adminArr = this.normalizeConditionArray(this.adminConditions[groupId]);
+    if (!adminArr.length || !sellerArr.length) return false;
+    const val = value.trim();
+    return sellerArr.includes(val);
+  }
+
+  private normalizeConditionValue(val: any): string | string[] | null {
+    if (Array.isArray(val)) {
+      return [...val].map(v => String(v).trim()).sort((a, b) => a.localeCompare(b));
+    }
+    if (val === undefined || val === null || val === '') return null;
+    return String(val).trim();
+  }
+
+  private normalizeConditionArray(val: any): string[] {
+    if (Array.isArray(val)) {
+      return [...val].map(v => String(v).trim());
+    }
+    if (val === undefined || val === null || val === '') return [];
+    return [String(val).trim()];
+  }
 }
 

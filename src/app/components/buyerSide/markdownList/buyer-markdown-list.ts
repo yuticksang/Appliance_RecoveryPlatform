@@ -288,6 +288,12 @@ export class BuyerMarkdownListComponent implements OnInit {
         let aVal = a[sortField];
         let bVal = b[sortField];
 
+        // Force "None" to the top regardless of sort field/direction
+        const aIsNone = this.isNoneOption(a.conditionID);
+        const bIsNone = this.isNoneOption(b.conditionID);
+        if (aIsNone && !bIsNone) return -1;
+        if (!aIsNone && bIsNone) return 1;
+
         if (aVal == null) aVal = '';
         if (bVal == null) bVal = '';
 

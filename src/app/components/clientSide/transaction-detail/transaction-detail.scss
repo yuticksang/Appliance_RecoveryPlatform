@@ -648,7 +648,7 @@ $Space: 'Space Grotesk', sans-serif;
 
   .price-label,
   .price-value {
-    color: #48bb78;
+    color: #2d3748;
   }
 }
 
@@ -801,14 +801,14 @@ $Space: 'Space Grotesk', sans-serif;
 .price-label {
   font-size: 1.5rem;
   font-weight: 600;
-  color: #48bb78;
+  color: #2d3748;
   margin-right: 0.5rem;
 }
 
 .price-value {
   font-size: 3rem;
   font-weight: 700;
-  color: #48bb78;
+  color: #2d3748;
 }
 
 /* Details Grid */
@@ -2133,6 +2133,12 @@ $Space: 'Space Grotesk', sans-serif;
   p:last-child {
     margin-bottom: 0;
   }
+}
+
+/* Highlight changed values */
+.changed {
+  color: #16a34a !important;
+  font-weight: 700;
 }
 
 // Responsive design

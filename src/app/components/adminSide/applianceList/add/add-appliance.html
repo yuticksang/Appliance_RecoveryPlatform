@@ -68,10 +68,17 @@
         <label for="image">Appliance Image</label>
         <div class="image-upload-container">
           <div class="image-preview" *ngIf="imagePreview">
+            <button type="button" class="remove-btn"
+              (click)="onRemoveImage()"
+              [disabled]="!selectedImageFile && removeImage"
+              aria-label="Remove image">
+              ×
+            </button>
             <img [src]="imagePreview" alt="Appliance preview" class="preview-img">
           </div>
-          <input type="file" id="image" accept="image/*" (change)="onImageSelected($event)" class="file-input">
-          <label for="image" class="file-label">Choose Image</label>
+          <div class="file-input-wrap">
+            <input type="file" id="image" accept="image/*" (change)="onImageSelected($event)">
+          </div>
         </div>
       </div>
 

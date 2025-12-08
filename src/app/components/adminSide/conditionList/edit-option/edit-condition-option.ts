@@ -47,7 +47,6 @@ export class EditConditionOptionComponent implements OnInit {
   selectedFileName: string = '';
   currentImageUrl: string = '';
   imagePreviewUrl: string = '';
-  removeCurrentImage: boolean = false;
   originalData: ConditionOption | null = null;
 
   constructor(private fb: FormBuilder) {
@@ -128,7 +127,7 @@ export class EditConditionOptionComponent implements OnInit {
     if (!this.originalData) return false;
 
     const categoriesChanged = !this.areSetsEqual(this.selectedCategories, this.originalSelectedCategories);
-    const imageChanged = this.selectedFile !== null || this.removeCurrentImage;
+    const imageChanged = this.selectedFile !== null;
 
     return (
       this.description?.value !== (this.originalData.description || '') ||
@@ -157,7 +156,6 @@ export class EditConditionOptionComponent implements OnInit {
     if (file) {
       this.selectedFile = file;
       this.selectedFileName = file.name;
-      this.removeCurrentImage = false; // Cancel any removal if new file selected
 
       // Create preview URL
       const reader = new FileReader();
@@ -165,24 +163,6 @@ export class EditConditionOptionComponent implements OnInit {
         this.imagePreviewUrl = e.target.result;
       };
       reader.readAsDataURL(file);
-    }
-  }
-
-  removeImage() {
-    if (this.imagePreviewUrl) {
-      // If there's a new file selected, just remove that and show original
-      this.selectedFile = null;
-      this.selectedFileName = '';
-      this.imagePreviewUrl = '';
-      // Clear the file input
-      const fileInput = document.getElementById('image') as HTMLInputElement;
-      if (fileInput) {
-        fileInput.value = '';
-      }
-    } else {
-      // If removing the original image, mark it for removal
-      this.removeCurrentImage = true;
-      this.currentImageUrl = '';
     }
   }
 
@@ -204,9 +184,6 @@ export class EditConditionOptionComponent implements OnInit {
       if (this.selectedFile) {
         // New file selected
         imageValue = this.selectedFile;
-      } else if (this.removeCurrentImage) {
-        // User explicitly removed the image
-        imageValue = null;
       } else {
         // Keep current image
         imageValue = this.currentImageUrl || null;
