@@ -9,18 +9,9 @@
     <div class="stat-footer">
       <div class="stat-label">Total Recovered</div>
       <div class="stat-change">
-        <span
-          class="change-badge"
-          [ngClass]="isPositiveChange(appliancesChange()) ? 'positive' : 'negative'"
-        >
-          {{ formatChange(appliancesChange()) }}
-          <i
-            class="bi"
-            [ngClass]="
-              isPositiveChange(appliancesChange()) ? 'bi-arrow-up-right' : 'bi-arrow-down-right'
-            "
-            style="font-size: 10px"
-          ></i>
+        <span class="change-badge" [ngClass]="getTrendClass(appliancesData())">
+          {{ formatSmartChange(appliancesData()) }}
+          <i class="bi" [ngClass]="getTrendIcon(appliancesData())" style="font-size: 10px"></i>
         </span>
         <span class="change-suffix">From last month</span>
       </div>
@@ -32,18 +23,9 @@
     <div class="stat-footer">
       <div class="stat-label">Total Payouts</div>
       <div class="stat-change">
-        <span
-          class="change-badge"
-          [ngClass]="isPositiveChange(payoutChange()) ? 'positive' : 'negative'"
-        >
-          {{ formatChange(payoutChange()) }}
-          <i
-            class="bi"
-            [ngClass]="
-              isPositiveChange(payoutChange()) ? 'bi-arrow-up-right' : 'bi-arrow-down-right'
-            "
-            style="font-size: 10px"
-          ></i>
+        <span class="change-badge" [ngClass]="getTrendClass(payoutData())">
+          {{ formatSmartChange(payoutData(), true) }}
+          <i class="bi" [ngClass]="getTrendIcon(payoutData())" style="font-size: 10px"></i>
         </span>
         <span class="change-suffix">From last month</span>
       </div>
@@ -55,18 +37,9 @@
     <div class="stat-footer">
       <div class="stat-label">Active Transactions</div>
       <div class="stat-change">
-        <span
-          class="change-badge"
-          [ngClass]="isPositiveChange(transactionsChange()) ? 'positive' : 'negative'"
-        >
-          {{ formatChange(transactionsChange()) }}
-          <i
-            class="bi"
-            [ngClass]="
-              isPositiveChange(transactionsChange()) ? 'bi-arrow-up-right' : 'bi-arrow-down-right'
-            "
-            style="font-size: 10px"
-          ></i>
+        <span class="change-badge" [ngClass]="getTrendClass(transactionsData())">
+          {{ formatSmartChange(transactionsData()) }}
+          <i class="bi" [ngClass]="getTrendIcon(transactionsData())" style="font-size: 10px"></i>
         </span>
         <span class="change-suffix">From last month</span>
       </div>

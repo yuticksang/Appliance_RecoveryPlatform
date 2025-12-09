@@ -74,11 +74,10 @@ export class BuyerDashboardComponent implements OnInit {
   totalActiveTransactions = signal<number>(0);
   totalPayout = signal<number>(0);
   totalAppliancesRecovered = signal<number>(0);
-  // percentage change signals
-  appliancesChange = signal<number>(0);
-  payoutChange = signal<number>(0);
-  transactionsChange = signal<number>(0);
-  usersChange = signal<number>(0);
+  // Store full response data for smart change display
+  appliancesData = signal<any>(null);
+  payoutData = signal<any>(null);
+  transactionsData = signal<any>(null);
 
   //charts state
   activeGraphTab: string = 'appliance';
@@ -130,8 +129,8 @@ export class BuyerDashboardComponent implements OnInit {
     this.dashboardService.getTotalPayout(buyerId).subscribe({
       next: (response) => {
         if (response.success) {
-          this.totalPayout.set(response.data.totalValue);
-          this.payoutChange.set(response.data.percentageChange ?? 0);
+          this.payoutData.set(response.data);
+          this.totalPayout.set(parseFloat(response.data.totalValue) || 0);
         }
       },
       error: (err) => {
@@ -142,8 +141,8 @@ export class BuyerDashboardComponent implements OnInit {
     this.dashboardService.getAppliancesRecovered(buyerId).subscribe({
       next: (response) => {
         if (response.success) {
-          this.totalAppliancesRecovered.set(response.data.totalCount);
-          this.appliancesChange.set(response.data.percentageChange ?? 0);
+          this.appliancesData.set(response.data);
+          this.totalAppliancesRecovered.set(parseInt(response.data.totalCount) || 0);
         }
       },
       error: (err) => {
@@ -154,8 +153,8 @@ export class BuyerDashboardComponent implements OnInit {
     this.dashboardService.getActiveTransactions(buyerId).subscribe({
       next: (response) => {
         if (response.success) {
-          this.totalActiveTransactions.set(response.data.totalCount);
-          this.transactionsChange.set(response.data.percentageChange ?? 0);
+          this.transactionsData.set(response.data);
+          this.totalActiveTransactions.set(parseInt(response.data.totalCount) || 0);
         }
       },
       error: (err) => {
@@ -324,21 +323,49 @@ export class BuyerDashboardComponent implements OnInit {
     return `${currency === 'MYR' ? 'RM' : '$'} ${numAmount.toFixed(2)}`;
   }
 
-  formatChange(value: number | string | null | undefined): string {
-    if (value === null || value === undefined) {
-      return '+0.00%';
+  formatSmartChange(data: any, isCurrency: boolean = false): string {
+    if (!data) return '0';
+
+    const displayMode = data.displayMode || 'percentage';
+    const trend = data.trend || 'stable';
+    const absoluteChange = parseFloat(data.absoluteChange) || 0;
+    const percentageChange = parseFloat(data.percentageChange) || 0;
+
+    // No change
+    if (displayMode === 'none' || (absoluteChange === 0 && percentageChange === 0)) {
+      return '0';
     }
 
-    const numValue = typeof value === 'string' ? parseFloat(value) : value;
-
-    if (isNaN(numValue)) {
-      return '+0.00%';
+    // Use absolute change for small samples
+    if (displayMode === 'absolute') {
+      const prefix = absoluteChange > 0 ? '+' : '';
+      if (isCurrency) {
+        return `${prefix}RM ${Math.abs(absoluteChange).toFixed(2)}`;
+      }
+      return `${prefix}${absoluteChange}`;
     }
 
-    if (numValue >= 0) {
-      return `+${numValue.toFixed(2)}%`;
-    }
-    return `${numValue.toFixed(2)}%`;
+    // Use percentage for larger samples
+    const prefix = percentageChange > 0 ? '+' : '';
+    return `${prefix}${percentageChange.toFixed(2)}%`;
+  }
+
+  getTrendClass(data: any): string {
+    if (!data) return 'neutral';
+
+    const trend = data.trend || 'stable';
+    if (trend === 'up') return 'positive';
+    if (trend === 'down') return 'negative';
+    return 'neutral';
+  }
+
+  getTrendIcon(data: any): string {
+    if (!data) return 'bi-dash';
+
+    const trend = data.trend || 'stable';
+    if (trend === 'up') return 'bi-arrow-up-right';
+    if (trend === 'down') return 'bi-arrow-down-right';
+    return 'bi-dash';
   }
 
   formatPercentage(value: number | string): string {
@@ -356,19 +383,7 @@ export class BuyerDashboardComponent implements OnInit {
     });
   }
 
-  isPositiveChange(value: number | string | null | undefined): boolean {
-    if (value === null || value === undefined) {
-      return true;
-    }
 
-    const numValue = typeof value === 'string' ? parseFloat(value) : value;
-
-    if (isNaN(numValue)) {
-      return true;
-    }
-
-    return numValue >= 0;
-  }
 
   getStatusClass(status: string): string {
     return `status-${status.toLowerCase().replace(/\s+/g, '-')}`;

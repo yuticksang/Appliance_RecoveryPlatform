@@ -62,15 +62,14 @@ interface ConditionData {
   condition: string;
   percentage: number;
   count: number;
-  
 }
 
-interface getTop5RecoveredModel{
+interface getTop5RecoveredModel {
   modelName: string;
   applianceRecovered: number;
 }
 
-interface Order{
+interface Order {
   transactionID: string;
   modelName: string;
   buyerID: string;
@@ -78,8 +77,6 @@ interface Order{
   createdAt: string;
   transactionStatus: string;
 }
-
-
 
 @Component({
   selector: 'app-dashboard',
@@ -96,11 +93,11 @@ export class Dashboard implements OnInit {
   totalPayout = signal<number>(0);
   totalAppliancesRecovered = signal<number>(0);
   // percentage change signals
-  appliancesChange = signal<number>(0);
-  payoutChange = signal<number>(0);
-  transactionsChange = signal<number>(0);
-  usersChange = signal<number>(0);
-  
+  appliancesData = signal<any>(null);
+  payoutData = signal<any>(null);
+  usersData = signal<any>(null);
+  transactionsData = signal<any>(null);
+
   //charts state
   activeGraphTab: string = 'appliance';
   activeBarTab: string = 'category';
@@ -115,13 +112,13 @@ export class Dashboard implements OnInit {
   avgScore = signal<number>(0);
   brandData = signal<BrandRecoveredData[]>([]);
   conditionData = signal<ConditionData[]>([]);
-  conditionColors = signal<{[key:string]: string}>({});
+  conditionColors = signal<{ [key: string]: string }>({});
 
   //top 5 recovered models data
   top5RecoveredModels = signal<getTop5RecoveredModel[]>([]);
 
   constructor(@Inject(PLATFORM_ID) private platformId: Object) {
-      this.isBrowser = isPlatformBrowser(this.platformId);
+    this.isBrowser = isPlatformBrowser(this.platformId);
   }
 
   private alertService = inject(AlertService);
@@ -129,8 +126,8 @@ export class Dashboard implements OnInit {
   private router = inject(Router);
 
   barChartColors = {
-    category: '#4ECDC4',  // Teal for category
-    brand: '#E8B3E8'      // Purple for brand
+    category: '#4ECDC4', // Teal for category
+    brand: '#E8B3E8', // Purple for brand
   };
 
   ngOnInit(): void {
@@ -148,105 +145,92 @@ export class Dashboard implements OnInit {
   }
 
   loadMetrics(): void {
-
-    this.dashboardService.getTotalPayout().subscribe({
-      next: (response) =>{
+    this.dashboardService.getAppliancesRecovered().subscribe({
+      next: (response) => {
         if (response.success) {
-          this.totalPayout.set(response.data.totalValue);
-          this.payoutChange.set(response.data.percentageChange ?? 0);
+          this.appliancesData.set(response.data);
+          this.totalAppliancesRecovered.set(parseInt(response.data.totalCount) || 0);
         }
       },
       error: (err) => {
-          console.error('Error loading payout:', err);
-      }
+        console.error('Error loading payout:', err);
+      },
     });
 
-    this.dashboardService.getAppliancesRecovered().subscribe({
-      next: (response) =>{
+    this.dashboardService.getTotalPayout().subscribe({
+      next: (response) => {
         if (response.success) {
-          this.totalAppliancesRecovered.set(response.data.totalCount);
-          this.appliancesChange.set(response.data.percentageChange ?? 0);
+          this.payoutData.set(response.data);
+          this.totalPayout.set(parseFloat(response.data.totalValue) || 0);
         }
-      },      
-      error: (err) => {
-          console.error('Error loading appliances recovered:', err);
-      }
+      },
+      error: (err) => console.error('Error loading payout:', err),
     });
 
     this.dashboardService.getActiveUsers().subscribe({
-      next: (response) =>{
+      next: (response) => {
         if (response.success) {
-          this.totalActiveUsers.set(response.data.totalCount);
-          this.usersChange.set(response.data.percentageChange ?? 0);
+          this.usersData.set(response.data);
+          this.totalActiveUsers.set(parseInt(response.data.totalCount) || 0);
         }
-      },      
-      error: (err) => {
-          console.error('Error loading active users:', err);
-      }
+      },
+      error: (err) => console.error('Error loading users:', err),
     });
 
     this.dashboardService.getActiveTransactions().subscribe({
-      next: (response) =>{
-        if (response.success) { 
-          this.totalActiveTransactions.set(response.data.totalCount);
-          this.transactionsChange.set(response.data.percentageChange ?? 0);
+      next: (response) => {
+        if (response.success) {
+          this.transactionsData.set(response.data);
+          this.totalActiveTransactions.set(parseInt(response.data.totalCount) || 0);
         }
-      },      
-      error: (err) => {
-          console.error('Error loading active transactions:', err);
-      }
+      },
+      error: (err) => console.error('Error loading transactions:', err),
     });
-   
-  
   }
 
   loadTimeSeriesData(): void {
     this.dashboardService.getRecoveryTimeSeries(this.activeTimeRange).subscribe({
       next: (response) => {
-        if (response.success) { 
+        if (response.success) {
           this.timeSeriesData.set(response.data);
           this.updateLineChart();
         }
       },
       error: (err) => {
         console.error('Error loading recovery time series:', err);
-      }
+      },
     });
   }
 
   loadCategoryandBrandData(): void {
-
     this.dashboardService.getCategoryRecoveryData().subscribe({
       next: (response) => {
-        if (response.success) { 
+        if (response.success) {
           this.categoryData.set(response.data);
           this.updateBarChart();
         }
-      }
+      },
     });
 
     this.dashboardService.getBrandRecoveryData().subscribe({
       next: (response) => {
-        if (response.success) { 
+        if (response.success) {
           this.brandData.set(response.data);
           this.updateBarChart();
         }
-      }
+      },
     });
-
   }
 
   loadConditionData(): void {
     this.dashboardService.getConditionScoreData().subscribe({
       next: (response) => {
-
-        if (response.success) { 
+        if (response.success) {
           this.conditionData.set(response.data);
           this.avgScore.set(response.averageScore);
           this.updatePieChart();
-        } 
-
-      }
+        }
+      },
     });
   }
 
@@ -256,28 +240,30 @@ export class Dashboard implements OnInit {
         if (response.success) {
           this.top5RecoveredModels.set(response.data);
         }
-      }
+      },
     });
   }
 
-  loadCurrentOrder() : void{
+  loadCurrentOrder(): void {
     this.dashboardService.getCurrentTransactions().subscribe({
       next: (response) => {
         if (response.success) {
           this.recentOrders.set(response.data);
         }
       },
-        error: (err) => {
-          console.error('Error loading transactions:', err);
-        }
+      error: (err) => {
+        console.error('Error loading transactions:', err);
+      },
     });
   }
 
   public lineChartData: ChartConfiguration<'line'>['data'] = {
-      labels: [],
-      datasets: [{
+    labels: [],
+    datasets: [
+      {
         data: [],
-      }]
+      },
+    ],
   };
 
   public lineChartOptions: ChartOptions<'line'> = {
@@ -285,9 +271,9 @@ export class Dashboard implements OnInit {
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        display: false
-      }
-    }
+        display: false,
+      },
+    },
   };
 
   public lineChartType: ChartType = 'line';
@@ -295,21 +281,22 @@ export class Dashboard implements OnInit {
   // Bar chart Data
   barChartData: ChartConfiguration<'bar'>['data'] = {
     labels: [],
-     datasets: [{
-      data: [],
-      backgroundColor: '#4ECDC4',
-      borderRadius: 8,
-      barThickness: 40
-    }]
+    datasets: [
+      {
+        data: [],
+        backgroundColor: '#4ECDC4',
+        borderRadius: 8,
+        barThickness: 40,
+      },
+    ],
   };
 
-   barChartOptions: ChartOptions<'bar'> = {
+  barChartOptions: ChartOptions<'bar'> = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { display: false }
-    }
-    
+      legend: { display: false },
+    },
   };
 
   // Pie chart Data
@@ -320,15 +307,15 @@ export class Dashboard implements OnInit {
         data: [],
         backgroundColor: [],
         borderWidth: 0,
-        hoverOffset: 10
-      }
-    ]
+        hoverOffset: 10,
+      },
+    ],
   };
 
   pieChartOptions: ChartOptions<'doughnut'> = {
     responsive: true,
     maintainAspectRatio: false,
-     plugins: {
+    plugins: {
       legend: {
         display: false,
       },
@@ -338,19 +325,18 @@ export class Dashboard implements OnInit {
         left: 10,
         right: 40,
         top: 10,
-        bottom: 10
-      }
+        bottom: 10,
+      },
     },
-    cutout: '60%'
+    cutout: '60%',
   };
 
-  updateLineChart() : void {
+  updateLineChart(): void {
     const timeData = this.timeSeriesData();
-    const dataKey: keyof TimeSeriesData = this.activeGraphTab === 'appliance' 
-      ? 'applianceRecovered' 
-      : 'recoveryValue';
+    const dataKey: keyof TimeSeriesData =
+      this.activeGraphTab === 'appliance' ? 'applianceRecovered' : 'recoveryValue';
     const label = this.activeGraphTab === 'appliance' ? 'Appliance Recovered' : 'Recovery Value';
-    
+
     if (this.activeGraphTab === 'appliance') {
       this.lineChartOptions = {
         ...this.lineChartOptions,
@@ -360,18 +346,18 @@ export class Dashboard implements OnInit {
             beginAtZero: true,
             ticks: {
               stepSize: 1,
-              callback: function(value) {
+              callback: function (value) {
                 if (Number.isInteger(value)) {
                   return value;
                 }
                 return null;
-              }
+              },
             },
             grid: {
-              color: '#f5f5f5'
-            }
-          }
-        }
+              color: '#f5f5f5',
+            },
+          },
+        },
       };
     } else {
       // Recovery Value - use automatic scaling with currency format
@@ -382,101 +368,106 @@ export class Dashboard implements OnInit {
           y: {
             beginAtZero: true,
             ticks: {
-              callback: function(value) {
-                return  value.toLocaleString();
-              }
+              callback: function (value) {
+                return value.toLocaleString();
+              },
             },
             grid: {
-              color: '#f5f5f5'
-            }
-          }
-        }
+              color: '#f5f5f5',
+            },
+          },
+        },
       };
     }
 
-     this.lineChartData = {
-      labels: timeData.map(d => d.period),
-      datasets: [{
-        data: timeData.map(d => d[dataKey]),
-        label: label,
-        fill: false,
-        tension: 0.5,
-        borderColor: '#E8B3E8',
-        backgroundColor: '#333',
-        pointBackgroundColor: '#333',
-        pointBorderColor: '#fff',
-        pointHoverBackgroundColor: '#fff',
-        pointHoverBorderColor: '#333'
-      }]
+    this.lineChartData = {
+      labels: timeData.map((d) => d.period),
+      datasets: [
+        {
+          data: timeData.map((d) => d[dataKey]),
+          label: label,
+          fill: false,
+          tension: 0.5,
+          borderColor: '#E8B3E8',
+          backgroundColor: '#333',
+          pointBackgroundColor: '#333',
+          pointBorderColor: '#fff',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: '#333',
+        },
+      ],
     };
-    
   }
 
   updateBarChart(): void {
-
     const barData = this.activeBarTab === 'category' ? this.categoryData() : this.brandData();
     const color = this.barChartColors[this.activeBarTab as 'category' | 'brand'];
 
-    const labels = this.activeBarTab === 'category' 
-      ? this.categoryData().map(c => c.categoryName)
-      : this.brandData().map(b => b.brandName);
-    
-    const data = this.activeBarTab === 'category'
-      ? this.categoryData().map(c => Number(c.applianceRecovered))
-      : this.brandData().map(b => Number(b.applianceRecovered));
+    const labels =
+      this.activeBarTab === 'category'
+        ? this.categoryData().map((c) => c.categoryName)
+        : this.brandData().map((b) => b.brandName);
 
-    this.barChartOptions ={
+    const data =
+      this.activeBarTab === 'category'
+        ? this.categoryData().map((c) => Number(c.applianceRecovered))
+        : this.brandData().map((b) => Number(b.applianceRecovered));
+
+    this.barChartOptions = {
       ...this.barChartOptions,
       scales: {
         ...this.barChartOptions.scales,
-         y: {
-            beginAtZero: true,
-            ticks: {
+        y: {
+          beginAtZero: true,
+          ticks: {
             stepSize: 1,
-            callback: function(value) {
+            callback: function (value) {
               if (Number.isInteger(value)) {
                 return value;
               }
               return null;
-            }
             },
-            grid: {
-              color: '#f5f5f5'
-            }
-          }
-      }
-
+          },
+          grid: {
+            color: '#f5f5f5',
+          },
+        },
+      },
     };
     this.barChartData = {
       labels: labels,
-      datasets: [{
-        data: data,
-        backgroundColor: color,
-        borderRadius: 8,
-        barThickness: 40
-      }]
+      datasets: [
+        {
+          data: data,
+          backgroundColor: color,
+          borderRadius: 8,
+          barThickness: 40,
+        },
+      ],
     };
   }
 
   updatePieChart(): void {
     const conditionColors: { [key: string]: string } = {
-      'Excellent': '#93C5FD',  // Blue
-      'Good': '#4ECDC4',       // Teal
-      'Fair': '#FFD93D',       // Yellow
-      'Poor': '#FF6B6B'        // Red
+      Excellent: '#93C5FD', // Blue
+      Good: '#4ECDC4', // Teal
+      Fair: '#FFD93D', // Yellow
+      Poor: '#FF6B6B', // Red
     };
     const conditions = this.conditionData();
     this.conditionColors.set(conditionColors);
 
-    const backgroundColor = conditions.map(c => this.conditionColors()[c.condition] || '#CCCCCC');
+    const backgroundColor = conditions.map((c) => this.conditionColors()[c.condition] || '#CCCCCC');
     this.pieChartData = {
-    labels: conditions.map(item => item.condition),
-    datasets: [{
-      data: conditions.map(item => item.percentage),
-      backgroundColor: backgroundColor,
-      borderWidth: 0
-    }]
-  };
+      labels: conditions.map((item) => item.condition),
+      datasets: [
+        {
+          data: conditions.map((item) => item.percentage),
+          backgroundColor: backgroundColor,
+          borderWidth: 0,
+        },
+      ],
+    };
   }
 
   goToTransactionsPage(): void {
@@ -503,24 +494,52 @@ export class Dashboard implements OnInit {
     const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
     if (isNaN(numAmount)) return `${currency === 'MYR' ? 'RM' : '$'} 0.00`;
     return `${currency === 'MYR' ? 'RM' : '$'} ${numAmount.toFixed(2)}`;
-    
   }
 
-  formatChange(value: number | string | null | undefined): string {
-   if (value === null || value === undefined) {
-    return '+0.00%';
+  formatSmartChange(data: any, isCurrency: boolean = false): string {
+    if (!data) return '0';
+
+    const displayMode = data.displayMode || 'percentage';
+    const trend = data.trend || 'stable';
+    const absoluteChange = parseFloat(data.absoluteChange) || 0;
+    const percentageChange = parseFloat(data.percentageChange) || 0;
+
+    // No change
+    if (displayMode === 'none' || (absoluteChange === 0 && percentageChange === 0)) {
+      return '0';
     }
-    
-    const numValue = typeof value === 'string' ? parseFloat(value) : value;
-    
-    if (isNaN(numValue)) {
-      return '+0.00%';
+
+    // Use absolute change for small samples
+    if (displayMode === 'absolute') {
+      const prefix = absoluteChange > 0 ? '+' : '';
+      if (isCurrency) {
+        return `${prefix}RM ${Math.abs(absoluteChange).toFixed(2)}`;
+      }
+      return `${prefix}${absoluteChange}`;
     }
-    
-    if (numValue >= 0) {
-      return `+${numValue.toFixed(2)}%`;
-    }
-    return `${numValue.toFixed(2)}%`;
+
+    // Use percentage for larger samples
+    const prefix = percentageChange > 0 ? '+' : '';
+    return `${prefix}${percentageChange.toFixed(2)}%`;
+  }
+
+  getTrendClass(data: any): string {
+    if (!data) return 'neutral';
+
+    const trend = data.trend || 'stable';
+    if (trend === 'up') return 'positive';
+    if (trend === 'down') return 'negative';
+    return 'neutral';
+  }
+
+  // Get trend icon
+  getTrendIcon(data: any): string {
+    if (!data) return 'bi-dash';
+
+    const trend = data.trend || 'stable';
+    if (trend === 'up') return 'bi-arrow-up-right';
+    if (trend === 'down') return 'bi-arrow-down-right';
+    return 'bi-dash';
   }
 
   formatPercentage(value: number | string): string {
@@ -529,13 +548,12 @@ export class Dashboard implements OnInit {
     return `${numPercentage.toFixed(2)}%`;
   }
 
-
   formatDate(dateString: string | Date): string {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
     });
   }
 
@@ -543,34 +561,33 @@ export class Dashboard implements OnInit {
     if (value === null || value === undefined) {
       return true;
     }
-    
+
     const numValue = typeof value === 'string' ? parseFloat(value) : value;
-    
+
     if (isNaN(numValue)) {
       return true;
     }
-    
+
     return numValue >= 0;
-}
+  }
 
   getStatusClass(status: string): string {
     return `status-${status.toLowerCase().replace(/\s+/g, '-')}`;
   }
-  
+
   getTimeRangeLabel(): string {
-      return this.activeTimeRange.charAt(0).toUpperCase() + this.activeTimeRange.slice(1);
+    return this.activeTimeRange.charAt(0).toUpperCase() + this.activeTimeRange.slice(1);
   }
 
   getBarTabLabel(): string {
-      return this.activeBarTab.charAt(0).toUpperCase() + this.activeBarTab.slice(1);
+    return this.activeBarTab.charAt(0).toUpperCase() + this.activeBarTab.slice(1);
   }
 
-  getConditionColor(condition: string){
+  getConditionColor(condition: string) {
     return this.conditionColors()[condition] || '#CCCCCC';
   }
 
   getTotalItems(): number {
     return this.conditionData().reduce((sum, item) => sum + (item.count || 0), 0);
   }
-
 }

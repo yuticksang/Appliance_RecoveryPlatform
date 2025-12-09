@@ -1,69 +1,97 @@
-
 <div class="modal-overlay" (click)="onClose()">
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
-      <h3>Edit Weight Percentage</h3>
-      <button class="close-btn" (click)="onClose()">×</button>
+      <h2>Edit Weight Percentages</h2>
+      <button class="close-btn" (click)="onClose()">
+        <i class="ri-close-line"></i>
+      </button>
     </div>
 
-    <form (ngSubmit)="onSubmit()">
-
-      <div class="form-row">
-        <div class="form-group half-width">
-          <label for="Criteria">Criteria</label>
-          <input
-            id="Criteria"
-            type="text"
-            [value]="criteriaName()"
-            readonly
-            class="readonly-input">
-        </div>
-
-        <div class="form-group half-width">
-          <label for="category">Appliance Category</label>
-          <input
-            id="category"
-            type="text"
-            [value]="categoryName"
-            readonly
-            class="readonly-input">
-        </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Category</label>
+        <input type="text" [value]="categoryName" disabled class="form-control disabled" />
       </div>
 
-      <div class="form-row">
-        
-        <div class="form-group half-width">
-          <label for="scoreValue">Weight Percentage <span class="required">*</span></label>
-          <input
-            id="weightPercentage"
-            type="text"
-            [ngModel]="weightPercentage()"
-            (ngModelChange)="onWeightPercentageChange($event)"
-            name="weightPercentage"
-            required
-            placeholder="Enter weight percentage"
-            [class.invalid-input]="!isValidWeightPercentage()">
+      <!-- <div class="quick-actions">
+        <button type="button" class="btn btn-outline" (click)="distributeEvenly()">
+          <i class="ri-scales-line"></i> Distribute Evenly
+        </button>
+        <button type="button" class="btn btn-outline" (click)="resetToOriginal()">
+          <i class="ri-refresh-line"></i> Reset
+        </button>
+      </div> -->
 
-         <div class="error-message" *ngIf="errorMessage()">
-            <small>{{ errorMessage() }}</small>
+      <div class="weights-container">
+        <div class="weights-header">
+          <span>Criteria</span>
+          <span>Weight (%)</span>
+        </div>
+
+        @for (group of conditionGroupWeight(); track group.groupID) {
+          <div class="weight-row" 
+               [class.error]="getError(group.groupID)" 
+               [class.changed]="isChanged(group.groupID)">
+            <div class="weight-label">
+              <span class="criteria-name">{{ group.criteriaName }}</span>
+              @if (isChanged(group.groupID)) {
+                <span class="original-value">(was {{ getOriginalWeight(group.groupID) }}%)</span>
+              }
+            </div>
+            <div class="weight-input-wrapper">
+              <input
+                type="number"
+                [value]="group.weightPercentage"
+                (input)="onWeightChange(group.groupID, $any($event.target).value)"
+                class="weight-input"
+                [class.error]="getError(group.groupID)"
+                min="0"
+                max="100"
+              />
+              <span class="percent-sign">%</span>
+            </div>
+            @if (getError(group.groupID)) {
+              <span class="error-message">{{ getError(group.groupID) }}</span>
+            }
           </div>
-          <small class="help-text">Only numbers 0-100 are allowed.</small>
+        }
+      </div>
+
+      <div class="total-summary" [class.valid]="isTotalValid()" [class.invalid]="!isTotalValid()">
+        <div class="total-row">
+          <span class="total-label">Total</span>
+          <span class="total-value">{{ totalWeight() }}%</span>
         </div>
+        @if (!isTotalValid()) {
+          <div class="total-warning">
+            <i class="ri-error-warning-line"></i>
+            @if (remainingWeight() > 0) {
+              <span>{{ remainingWeight() }}% remaining</span>
+            } @else {
+              <span>{{ -remainingWeight() }}% over</span>
+            }
+          </div>
+        } @else {
+          <div class="total-success">
+            <i class="ri-checkbox-circle-line"></i>
+            <span>Weights balanced</span>
+          </div>
+        }
       </div>
 
+      @if (errorMessage()) {
+        <div class="global-error">
+          <i class="ri-error-warning-fill"></i>
+          {{ errorMessage() }}
+        </div>
+      }
+    </div>
 
-
-      <div class="changes-summary" *ngIf="hasChanges() && isValidWeightPercentage()">
-        <h4>Changes to be saved:</h4>
-        <ul>
-         <li>Weight Percentage: {{ originalWeightPercentage() }} → {{ weightPercentage() }}</li>
-        </ul>
-      </div>
-
-      <div class="form-actions">
-        <button type="button" class="btn-secondary" (click)="onClose()">Cancel</button>
-        <button type="submit" class="btn-success"  [disabled]="!hasChanges() || isSaving()" title="Save changes">Save Changes</button>
-      </div>
-    </form>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="onClose()">Cancel</button>
+      <button class="btn btn-primary" (click)="onSubmit()" [disabled]="!canSubmit() || isSaving()">
+        {{ isSaving() ? 'Saving...' : 'Save Changes' }}
+      </button>
+    </div>
   </div>
 </div>

@@ -91,13 +91,26 @@ export const getAllAppliancesRecovered = async (req: Request, res: Response) => 
                 t.appliances_recovered AS "totalCount",
                 cm.count AS "currentCount",
                 pm.count AS "previousCount",
+                (cm.count - pm.count) AS "absoluteChange",
                 CASE
-                    WHEN pm.count = 0 THEN 0  
-                    WHEN cm.count <= 10 THEN
-                        ROUND(((cm.count - pm.count)::DECIMAL / GREATEST(pm.count, 10)) * 100,2)
-                    ELSE
+                    WHEN pm.count = 0 AND cm.count = 0 THEN 0
+                    WHEN pm.count = 0 THEN NULL
+                    WHEN pm.count < 10 THEN 
                         ROUND(((cm.count - pm.count)::DECIMAL / pm.count) * 100, 2)
-                END AS "percentageChange"
+                    ELSE 
+                        ROUND(((cm.count - pm.count)::DECIMAL / pm.count) * 100, 2)
+                END AS "percentageChange",
+                CASE
+                    WHEN pm.count = 0 AND cm.count = 0 THEN 'none'
+                    WHEN pm.count = 0 THEN 'absolute'
+                    WHEN pm.count < 10 THEN 'absolute'
+                    ELSE 'percentage'
+                END AS "displayMode",
+                CASE
+                    WHEN cm.count > pm.count THEN 'up'
+                    WHEN cm.count < pm.count THEN 'down'
+                    ELSE 'stable'
+                END AS "trend"
             FROM total t, current_month cm, previous_month pm
             
             `, [buyerId]);
@@ -161,13 +174,26 @@ export const getTotalPayout = async (req: Request, res: Response) => {
                 t.recoveryValue AS "totalValue",
                 cm.value AS "currentMonthValue",
                 pm.value AS "previousMonthValue",
-                CASE 
-                    WHEN pm.value = 0 THEN 0  
-                    WHEN cm.value <= 10 THEN
-                        ROUND(((cm.value - pm.value)::DECIMAL / GREATEST(pm.value, 10)) * 100,2)
-                    ELSE
-                        ROUND(((cm.value - pm.value)::DECIMAL / pm.value) * 100, 2)
-                END AS "percentageChange"
+                (cm.value - pm.value) AS "absoluteChange",
+                CASE
+                    WHEN pm.value = 0 AND cm.value = 0 THEN 0
+                    WHEN pm.value = 0 THEN NULL
+                    WHEN pm.value < 1000 THEN 
+                        ROUND(((cm.value - pm.value) / pm.value) * 100, 2)
+                    ELSE 
+                        ROUND(((cm.value - pm.value) / pm.value) * 100, 2)
+                END AS "percentageChange",
+                CASE
+                    WHEN pm.value = 0 AND cm.value = 0 THEN 'none'
+                    WHEN pm.value = 0 THEN 'absolute'
+                    WHEN pm.value < 1000 THEN 'absolute'
+                    ELSE 'percentage'
+                END AS "displayMode",
+                CASE
+                    WHEN cm.value > pm.value THEN 'up'
+                    WHEN cm.value < pm.value THEN 'down'
+                    ELSE 'stable'
+                END AS "trend"
             FROM total t, current_month cm, previous_month pm
             `, [buyerId]);
         return res.status(200).json({
@@ -227,13 +253,26 @@ export const getActiveTransactions = async (req: Request, res: Response) => {
                 t.active_transactions AS "totalCount",
                 cm.count AS "currentMonthCount",
                 pm.count AS "previousMonthCount",
-                CASE 
-                    WHEN pm.count = 0 THEN 0  
-                    WHEN pm.count <= 10 THEN
-                        ROUND(((cm.count - pm.count)::DECIMAL / GREATEST(pm.count, 10)) * 100,2)
-                    ELSE
+                (cm.count - pm.count) AS "absoluteChange",
+                CASE
+                    WHEN pm.count = 0 AND cm.count = 0 THEN 0
+                    WHEN pm.count = 0 THEN NULL
+                    WHEN pm.count < 10 THEN 
                         ROUND(((cm.count - pm.count)::DECIMAL / pm.count) * 100, 2)
-                END AS "percentageChange"
+                    ELSE 
+                        ROUND(((cm.count - pm.count)::DECIMAL / pm.count) * 100, 2)
+                END AS "percentageChange",
+                CASE
+                    WHEN pm.count = 0 AND cm.count = 0 THEN 'none'
+                    WHEN pm.count = 0 THEN 'absolute'
+                    WHEN pm.count < 10 THEN 'absolute'
+                    ELSE 'percentage'
+                END AS "displayMode",
+                CASE
+                    WHEN cm.count > pm.count THEN 'up'
+                    WHEN cm.count < pm.count THEN 'down'
+                    ELSE 'stable'
+                END AS "trend"
             FROM total t, current_month cm, previous_month pm
             `, [buyerId]);
         return res.status(200).json({
