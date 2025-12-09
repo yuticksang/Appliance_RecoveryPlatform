@@ -41,6 +41,7 @@ export class ManagePackagingInstructionsComponent implements OnInit {
   // Filters
   selectedCategoryFilter = signal<string | null>(null);
   selectedSectionFilter = signal<string>('');
+  searchQuery = signal<string>('');
 
   // Pagination
   currentPage = signal<number>(1);
@@ -51,6 +52,7 @@ export class ManagePackagingInstructionsComponent implements OnInit {
   showModal = signal<boolean>(false);
   modalMode = signal<'create' | 'edit'>('create');
   editingInstruction = signal<PackagingInstruction | null>(null);
+  originalData: PackagingInstruction | null = null;
 
   // Delete confirmation modal
   showDeleteModal = signal<boolean>(false);
@@ -63,6 +65,7 @@ export class ManagePackagingInstructionsComponent implements OnInit {
   // Form data
   formData = {
     categoryId: '0',
+    categoryIds: [] as string[], // For multiple category selection
     sectionName: '',
     instruction: '',
     displayOrder: 1,
@@ -131,6 +134,16 @@ export class ManagePackagingInstructionsComponent implements OnInit {
   // Computed: Get filtered instructions (without pagination)
   get filteredInstructions(): PackagingInstruction[] {
     let filtered = this.instructions();
+
+    // Filter by search query
+    if (this.searchQuery()) {
+      const query = this.searchQuery().toLowerCase().trim();
+      filtered = filtered.filter(i =>
+        i.instruction.toLowerCase().includes(query) ||
+        i.sectionName.toLowerCase().includes(query) ||
+        i.categoryName.toLowerCase().includes(query)
+      );
+    }
 
     // Filter by category
     if (this.selectedCategoryFilter() !== null) {
@@ -247,9 +260,13 @@ export class ManagePackagingInstructionsComponent implements OnInit {
     this.modalMode.set('edit');
     this.editingInstruction.set(instruction);
 
+    // Store original data for comparison
+    this.originalData = { ...instruction };
+
     // Populate form with existing data
     this.formData = {
       categoryId: instruction.categoryID,
+      categoryIds: [], // Not used in edit mode
       sectionName: instruction.sectionName,
       instruction: instruction.instruction,
       displayOrder: instruction.displayOrder,
@@ -264,6 +281,7 @@ export class ManagePackagingInstructionsComponent implements OnInit {
     this.showModal.set(false);
     this.resetForm();
     this.editingInstruction.set(null);
+    this.originalData = null;
   }
 
   // Reset form
@@ -275,6 +293,7 @@ export class ManagePackagingInstructionsComponent implements OnInit {
 
     this.formData = {
       categoryId: firstCategoryId,
+      categoryIds: [],
       sectionName: '',
       instruction: '',
       displayOrder: 1,
@@ -284,9 +303,18 @@ export class ManagePackagingInstructionsComponent implements OnInit {
 
   // Validate form
   private validateForm(): boolean {
-    if (!this.formData.categoryId || this.formData.categoryId === null || this.formData.categoryId === undefined) {
-      this.alertService.error('Please select a category');
-      return false;
+    // For create mode, check if at least one category is selected
+    if (this.modalMode() === 'create') {
+      if (!this.formData.categoryIds || this.formData.categoryIds.length === 0) {
+        this.alertService.error('Please select at least one category');
+        return false;
+      }
+    } else {
+      // For edit mode, check single category
+      if (!this.formData.categoryId || this.formData.categoryId === null || this.formData.categoryId === undefined) {
+        this.alertService.error('Please select a category');
+        return false;
+      }
     }
     if (!this.formData.sectionName.trim()) {
       this.alertService.error('Section name is required');
@@ -316,23 +344,52 @@ export class ManagePackagingInstructionsComponent implements OnInit {
 
   // Create new instruction
   private createInstruction(): void {
-    // Add stepNumber (use displayOrder as the value for backend compatibility)
-    const payload = {
-      ...this.formData,
-      stepNumber: this.formData.displayOrder
-    };
+    const selectedCategories = this.formData.categoryIds;
+    let completedCount = 0;
+    let errorCount = 0;
 
-    this.packagingService.createPackagingInstruction(payload).subscribe({
-      next: (created) => {
-        this.alertService.success('Packaging instruction created successfully');
-        this.loadInstructions();
-        this.closeModal();
-      },
-      error: (err) => {
-        console.error('Failed to create instruction:', err);
-        const message = err.error?.message || 'Failed to create packaging instruction';
-        this.alertService.error(message);
-      }
+    // Create instruction for each selected category
+    selectedCategories.forEach((categoryId) => {
+      const payload = {
+        categoryId: categoryId,
+        sectionName: this.formData.sectionName,
+        instruction: this.formData.instruction,
+        displayOrder: this.formData.displayOrder,
+        isActive: this.formData.isActive,
+        stepNumber: this.formData.displayOrder
+      };
+
+      this.packagingService.createPackagingInstruction(payload).subscribe({
+        next: () => {
+          completedCount++;
+
+          // Check if all requests are completed
+          if (completedCount + errorCount === selectedCategories.length) {
+            if (errorCount === 0) {
+              this.alertService.success(`Packaging instruction created successfully for ${completedCount} categor${completedCount > 1 ? 'ies' : 'y'}`);
+            } else {
+              this.alertService.success(`Created for ${completedCount} categor${completedCount > 1 ? 'ies' : 'y'}, failed for ${errorCount}`);
+            }
+            this.loadInstructions();
+            this.closeModal();
+          }
+        },
+        error: (err) => {
+          console.error('Failed to create instruction:', err);
+          errorCount++;
+
+          // Check if all requests are completed
+          if (completedCount + errorCount === selectedCategories.length) {
+            if (completedCount === 0) {
+              this.alertService.error('Failed to create packaging instruction for all categories');
+            } else {
+              this.alertService.success(`Created for ${completedCount} categor${completedCount > 1 ? 'ies' : 'y'}, failed for ${errorCount}`);
+            }
+            this.loadInstructions();
+            this.closeModal();
+          }
+        }
+      });
     });
   }
 
@@ -422,10 +479,23 @@ export class ManagePackagingInstructionsComponent implements OnInit {
     this.currentPage.set(1); // Reset to first page when filter changes
   }
 
+  // Handle search input change
+  onSearchChange(query: string): void {
+    this.searchQuery.set(query);
+    this.currentPage.set(1); // Reset to first page when search changes
+  }
+
+  // Clear search
+  clearSearch(): void {
+    this.searchQuery.set('');
+    this.currentPage.set(1);
+  }
+
   // Clear filters
   clearFilters(): void {
     this.selectedCategoryFilter.set(null);
     this.selectedSectionFilter.set('');
+    this.searchQuery.set('');
     this.currentPage.set(1); // Reset to first page when clearing filters
   }
 
@@ -446,5 +516,92 @@ export class ManagePackagingInstructionsComponent implements OnInit {
   getSortIcon(column: string): string {
     if (this.sortColumn() !== column) return '';
     return this.sortDirection() === 'asc' ? '↑' : '↓';
+  }
+
+  // Toggle category selection for multi-select
+  toggleCategorySelection(categoryId: string): void {
+    const index = this.formData.categoryIds.indexOf(categoryId);
+    if (index === -1) {
+      this.formData.categoryIds.push(categoryId);
+    } else {
+      this.formData.categoryIds.splice(index, 1);
+    }
+  }
+
+  // Check if category is selected
+  isCategorySelected(categoryId: string): boolean {
+    return this.formData.categoryIds.includes(categoryId);
+  }
+
+  // Select all categories
+  selectAllCategories(): void {
+    this.formData.categoryIds = this.categories().map(c => c.id.toString());
+  }
+
+  // Deselect all categories
+  deselectAllCategories(): void {
+    this.formData.categoryIds = [];
+  }
+
+  // Check if any field has changed (for edit mode)
+  get hasChanges(): boolean {
+    if (!this.originalData || this.modalMode() !== 'edit') return false;
+
+    return (
+      this.formData.categoryId !== this.originalData.categoryID ||
+      this.formData.sectionName !== this.originalData.sectionName ||
+      this.formData.instruction !== this.originalData.instruction ||
+      this.formData.displayOrder !== this.originalData.displayOrder ||
+      this.formData.isActive !== this.originalData.isActive
+    );
+  }
+
+  // Get list of changed fields for display
+  getChangedFields(): Array<{field: string, before: any, after: any}> {
+    if (!this.originalData) return [];
+
+    const changes: Array<{field: string, before: any, after: any}> = [];
+
+    if (this.formData.categoryId !== this.originalData.categoryID) {
+      changes.push({
+        field: 'Category',
+        before: this.getCategoryName(this.originalData.categoryID),
+        after: this.getCategoryName(this.formData.categoryId)
+      });
+    }
+
+    if (this.formData.sectionName !== this.originalData.sectionName) {
+      changes.push({
+        field: 'Section Name',
+        before: this.originalData.sectionName,
+        after: this.formData.sectionName
+      });
+    }
+
+    if (this.formData.instruction !== this.originalData.instruction) {
+      changes.push({
+        field: 'Instruction',
+        before: this.originalData.instruction,
+        after: this.formData.instruction
+      });
+    }
+
+    if (this.formData.displayOrder !== this.originalData.displayOrder) {
+      changes.push({
+        field: 'Display Order',
+        before: this.originalData.displayOrder,
+        after: this.formData.displayOrder
+      });
+    }
+
+    if (this.formData.isActive !== this.originalData.isActive) {
+      changes.push({
+        field: 'Status',
+        before: this.originalData.isActive ? 'Active' : 'Inactive',
+        after: this.formData.isActive ? 'Active' : 'Inactive'
+      });
+    }
+
+    return changes;
   }
 }
