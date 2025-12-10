@@ -56,10 +56,11 @@
   </div>
   
   @if (loading()) {
-    <div class="loading-container">
-        <p>Generating report...</p>
-    </div>
-    }
+    <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading transactions...</p>
+      </div>
+  }
 
     <!-- Error State -->
     @if (error()) {
