@@ -38,8 +38,6 @@ $ink: #111827;
 
 .stat-card {
   background: white;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   padding: 24px;
   border-radius: 12px;
   transition: all 0.3s ease;
@@ -163,7 +161,6 @@ $ink: #111827;
 .panel {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   padding-left: 22px;
 }
 
@@ -207,7 +204,6 @@ $ink: #111827;
   align-items: center;
   justify-content: space-between;
   padding: 12px 0;
-  border-bottom: 1px solid #f5f5f5;
 
   &:last-child {
     border-bottom: none;
@@ -355,7 +351,6 @@ $ink: #111827;
 .bar-chart {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   padding: 24px;
 }
 
@@ -389,9 +384,7 @@ $ink: #111827;
 .pie-chart {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   padding: 24px;
-  border: 1px solid #e5e7eb; /* Matches the new card style */
   min-height: 380px; /* Ensure consistent height */
   display: flex;
   flex-direction: column;
@@ -552,7 +545,6 @@ $ink: #111827;
 .recent-orders-card {
   background: white;
   border-radius: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   padding: 24px;
 }
 
@@ -616,7 +608,6 @@ $ink: #111827;
 }
 
 .orders-table thead {
-  background-color: #f8f9fa;
   border-radius: 8px;
 }
 
@@ -630,7 +621,6 @@ $ink: #111827;
 }
 
 .orders-table tbody tr {
-  border-bottom: 1px solid #f0f0f0;
   transition: background-color 0.2s ease;
 }
 
