@@ -13,7 +13,7 @@ import { BreadcrumbComponent } from '../../../shared/breadcrumb/breadcrumb';
 import { AlertService } from '../../../services/alert.service';
 import { ConfigService } from '../../../services/config.service';
 
-type SortKey = 'adminId' | 'score';
+type SortKey = 'code' | 'scoreValue';
 type SortDir = 'asc' | 'desc';
 
 @Component({
@@ -42,7 +42,7 @@ export class ScoringConfiguration implements OnInit {
   itemsPerPage = signal<number>(3);
   currentPage = signal<{ [groupID: string]: number }>({});
 
-  sortKey = signal<SortKey>('adminId');
+  sortKey = signal<SortKey>('code');
   sortDir = signal<SortDir>('asc');
   search = signal<string>('');
 
@@ -75,9 +75,18 @@ export class ScoringConfiguration implements OnInit {
             group.criteriaName.toLowerCase().includes(q)
         );
 
-        filteredConditions.sort((a: any, b: any) => {
-          const av = (a[key] ?? '').toString().toLowerCase();
-          const bv = (b[key] ?? '').toString().toLowerCase();
+        filteredConditions.sort((a, b) => {
+           let av: string | number;
+           let bv: string | number;
+
+          if (key === 'scoreValue'){
+            av = a.scoreValue;
+            bv = b.scoreValue;
+            return dir === 'asc' ? av - bv : bv - av;
+          }
+
+          av = (a[key] ?? '').toString().toLowerCase();
+          bv = (b[key] ?? '').toString().toLowerCase();
           if (av < bv) return dir === 'asc' ? -1 : 1;
           if (av > bv) return dir === 'asc' ? 1 : -1;
           return 0;
@@ -93,6 +102,15 @@ export class ScoringConfiguration implements OnInit {
 
   ngOnInit() {
     this.loadCategories();
+  }
+
+  onSort(col: SortKey) {
+    if (this.sortKey() === col) {
+      this.sortDir.set(this.sortDir() === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.sortKey.set(col);
+      this.sortDir.set('asc');
+    }
   }
 
   loadCategories(): void {

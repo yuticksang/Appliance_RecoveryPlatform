@@ -6,6 +6,17 @@ import { AuthService } from './auth-service';
  * Auth guard to check if user is logged in
  * Redirects to appropriate login page if not authenticated
  */
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const expiry = payload.exp * 1000; // Convert to milliseconds
+    return Date.now() > expiry;
+  } catch {
+    return true; // If can't decode, consider expired
+  }
+}
+
+
 export const authGuard: CanActivateFn = (route, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
@@ -30,9 +41,17 @@ export const superAdminGuard: CanActivateFn = (route, state) => {
   const router = inject(Router);
 
   const user = authService.user();
+  const token = localStorage.getItem('admin_token');
 
   // Check if user is logged in
-  if (!user) {
+  if (!user || !token) {
+    router.navigate(['/admin-login']);
+    return false;
+  }
+
+  // Check if token is expired
+  if (isTokenExpired(token)) {
+    authService.clearUser(); // Clear auth data
     router.navigate(['/admin-login']);
     return false;
   }
@@ -56,8 +75,17 @@ export const adminGuard: CanActivateFn = (route, state) => {
   const router = inject(Router);
 
   const user = authService.user();
+  const token = localStorage.getItem('admin_token');
 
-  if (!user) {
+   if (!user || !token) {
+    router.navigate(['/admin-login']);
+    return false;
+  }
+
+  // Check if token is expired
+  if (isTokenExpired(token)) {
+    // Clear expired auth data
+    authService.clearUser();
     router.navigate(['/admin-login']);
     return false;
   }
@@ -72,6 +100,8 @@ export const adminGuard: CanActivateFn = (route, state) => {
   }
 
   return true;
+
+
 };
 
 /**
@@ -82,8 +112,16 @@ export const buyerGuard: CanActivateFn = (route, state) => {
   const router = inject(Router);
 
   const user = authService.user();
+  const token = localStorage.getItem('buyer_token');
 
-  if (!user) {
+  if (!user || !token) {
+    router.navigate(['/buyer-login']);
+    return false;
+  }
+
+  // Check if token is expired
+  if (isTokenExpired(token)) {
+    authService.clearUser();
     router.navigate(['/buyer-login']);
     return false;
   }
