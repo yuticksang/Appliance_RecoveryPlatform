@@ -165,7 +165,7 @@ export class SummaryReportComponent implements OnInit {
     const end = this.endDate();
 
     if (!start || !end) {
-      alert("Please select both a start and end date.");
+      this.alertService.error("Please select both a start and end date.");
       return;
     }
 

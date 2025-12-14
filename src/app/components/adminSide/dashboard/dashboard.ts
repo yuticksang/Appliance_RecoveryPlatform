@@ -132,8 +132,7 @@ export class Dashboard implements OnInit {
 
   ngOnInit(): void {
     if (this.isBrowser) {
-      // TODO: Replace with API call
-      // this.loadDashboardData();
+     
 
       this.loadMetrics();
       this.loadTimeSeriesData();
