@@ -12,6 +12,7 @@ interface ConditionOption {
   groupID: string;
   code: string;
   description?: string;
+  displayCode?: string;
   image: string | null;
   status: string;
   question: string | null;
