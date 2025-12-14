@@ -1,4 +1,4 @@
-import { Component, computed, signal, OnInit, inject } from '@angular/core';
+﻿import { Component, computed, signal, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
@@ -11,6 +11,7 @@ interface ConditionOption {
   conditionID: string;
   groupID: string;
   code: string;
+  displayCode?: string;
   description?: string;
   image: string | null;
   status: string;
@@ -103,7 +104,7 @@ export class BuyerMarkdownListComponent implements OnInit {
             g.question_type === 'checkbox' ||
             g.question_type === 'image'
           );
-          console.log('📂 Buyer condition groups (filtered):', filteredGroups);
+          console.log('Buyer condition groups (filtered):', filteredGroups);
           this.conditionGroups.set(filteredGroups);
           this.loading.set(false);
         },
@@ -124,7 +125,7 @@ export class BuyerMarkdownListComponent implements OnInit {
     this.http.get<ConditionOption[]>(`${this.apiUrl}/buyer/condition-options`, { headers })
       .subscribe({
         next: (options) => {
-          console.log('📂 Buyer condition options:', options);
+          console.log('Buyer condition options:', options);
           this.conditionOptions.set(options);
         },
         error: (err) => {
@@ -164,7 +165,7 @@ export class BuyerMarkdownListComponent implements OnInit {
             markdownMap.set(m.conditionID, m.markdownPercentage);
           });
           this.buyerMarkdowns.set(markdownMap);
-          console.log('📂 Loaded buyer markdowns:', markdowns.length);
+          console.log('Loaded buyer markdowns:', markdowns.length);
 
           // Ensure "None" option has 0% markdown after loading
           this.ensureNoneMarkdown();
@@ -193,7 +194,7 @@ export class BuyerMarkdownListComponent implements OnInit {
             const updatedMarkdowns = new Map(markdowns);
             updatedMarkdowns.set(noneConditionID, 0);
             this.buyerMarkdowns.set(updatedMarkdowns);
-            console.log('✅ Auto-set "None" option to 0% markdown');
+            console.log('Auto-set "None" option to 0% markdown');
           },
           error: (err) => {
             console.error('Failed to auto-set None markdown:', err);
