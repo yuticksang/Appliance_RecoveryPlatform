@@ -13,6 +13,7 @@ interface ConditionOption {
   code: string;
   displayCode?: string;
   description?: string;
+  displayCode?: string;
   image: string | null;
   status: string;
   question: string | null;
