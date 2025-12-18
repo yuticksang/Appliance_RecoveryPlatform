@@ -97,7 +97,7 @@
             <td class="narrow">{{ getRowNumber(i) }}</td>
             <td class="image-col">
               <div class="image-cell">
-                <img [src]="getImageSrc(item.image_url)" [alt]="item.modelName" class="appliance-image">
+                <img [src]="getImageSrc(item.image_url, item.categoryName)" [alt]="item.modelName" class="appliance-image">
               </div>
             </td>
             <td>{{ item.modelCode }}</td>

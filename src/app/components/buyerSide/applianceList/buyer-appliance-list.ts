@@ -198,7 +198,8 @@ export class BuyerApplianceListComponent implements OnInit {
     const brandFilter = this.filterBrand();
     const priceMin = this.filterPriceMin();
     const priceMax = this.filterPriceMax();
-    let filtered = this.buyerAppliances();
+    // Work on a copy so sorting never mutates the source signal
+    let filtered = [...this.buyerAppliances()];
 
     // Apply search filter
     if (search) {
@@ -232,7 +233,7 @@ export class BuyerApplianceListComponent implements OnInit {
     // Apply sorting
     const key = this.sortKey();
     const dir = this.sortDir();
-    filtered.sort((a: any, b: any) => {
+    filtered = filtered.sort((a: any, b: any) => {
       // Handle created_at as date for "latest" ordering
       if (key === 'created_at') {
         const at = new Date(a.created_at || a.createdAt || 0).getTime();
@@ -587,8 +588,9 @@ export class BuyerApplianceListComponent implements OnInit {
     return (this.currentPage() - 1) * this.itemsPerPage() + index + 1;
   }
 
-  getImageSrc(image: string | undefined): string {
-    return image || 'assets/image/appliance_sample.png';
+  getImageSrc(image: string | undefined, categoryName?: string): string {
+    if (image) return image;
+    return this.getDefaultImageForCategory(categoryName);
   }
 
   getToggleIconSrc(status: string): string {
@@ -601,5 +603,22 @@ export class BuyerApplianceListComponent implements OnInit {
 
   statusClass(status: string): string {
     return status === 'ACTIVE' ? 'badge-active' : 'badge-inactive';
+  }
+
+  private getDefaultImageForCategory(categoryName?: string): string {
+    const resolvedName = (categoryName || '').toLowerCase();
+
+    const categoryImageMap: { keywords: string[]; src: string }[] = [
+      { keywords: ['air conditioner', 'aircon'], src: 'assets/image/appliances/air-conditioner-default.png' },
+      { keywords: ['microwave'], src: 'assets/image/appliances/microwave-default.png' },
+      { keywords: ['fridge', 'refrigerator'], src: 'assets/image/appliances/refrigerator-default.png' },
+      { keywords: ['washing machine', 'washer'], src: 'assets/image/appliances/washing-machine-default.png' }
+    ];
+
+    const match = categoryImageMap.find(entry =>
+      entry.keywords.some(keyword => resolvedName.includes(keyword))
+    );
+
+    return match?.src || 'assets/image/appliances/washing-machine-default.png';
   }
 }
