@@ -346,6 +346,11 @@ export class ApplianceListComponent implements OnInit {
       formData.append('imageUrl', updatedAppliance.imageUrl);
     }
 
+    if (updatedAppliance.removeImage && !updatedAppliance.imageFile) {
+      formData.append('removeImage', 'true');
+      formData.delete('imageUrl');
+    }
+
     this.http.put(`${this.apiUrl}/admin/appliances/${updatedAppliance.applianceID}`, formData)
       .subscribe({
         next: () => {
@@ -365,8 +370,9 @@ export class ApplianceListComponent implements OnInit {
     return this.sortDir() === 'asc' ? '↑' : '↓';
   }
 
-  getImageSrc(image: string | undefined): string {
-    return image || 'assets/image/appliance_sample.png';
+  getImageSrc(image: string | undefined, categoryID?: string, categoryName?: string): string {
+    if (image) return image;
+    return this.getDefaultImageForCategory(categoryID, categoryName);
   }
 
   statusClass(s: ApplianceStatus) {
@@ -379,5 +385,32 @@ export class ApplianceListComponent implements OnInit {
 
   getToggleTitle(status: string): string {
     return status === 'ACTIVE' ? 'Deactivate Appliance' : 'Activate Appliance';
+  }
+
+  private getDefaultImageForCategory(categoryID?: string, categoryName?: string): string {
+    const resolvedName = this.resolveCategoryName(categoryID, categoryName).toLowerCase();
+
+    const categoryImageMap: { keywords: string[]; src: string }[] = [
+      { keywords: ['air conditioners'], src: 'assets/image/appliances/air-conditioner-default.png' },
+      { keywords: ['microwave'], src: 'assets/image/appliances/microwave-default.png' },
+      { keywords: ['refrigerator'], src: 'assets/image/appliances/refrigerator-default.png' },
+      { keywords: ['washing machine'], src: 'assets/image/appliances/washing-machine-default.png' }
+    ];
+
+    const match = categoryImageMap.find(entry =>
+      entry.keywords.some(keyword => resolvedName.includes(keyword))
+    );
+
+    return match?.src || 'assets/image/appliances/washing-machine-default.png';
+  }
+
+  private resolveCategoryName(categoryID?: string, categoryName?: string): string {
+    if (categoryID) {
+      const matchedCategory = this.categories().find(c => c.categoryID === categoryID);
+      if (matchedCategory?.categoryName) {
+        return matchedCategory.categoryName;
+      }
+    }
+    return categoryName || '';
   }
 }

@@ -30,7 +30,7 @@ interface Appliance {
 }
 
 type ApplianceStatus = 'ACTIVE' | 'INACTIVE';
-type SortKey = 'applianceID' | 'modelCode' | 'modelName' | 'categoryName' | 'brandName' | 'basePrice' | 'status';
+type SortKey = 'applianceID' | 'modelCode' | 'modelName' | 'categoryName' | 'brandName' | 'basePrice' | 'status' | 'created_at';
 type SortDir = 'asc' | 'desc';
 
 interface BuyerAppliance {
@@ -43,6 +43,7 @@ interface BuyerAppliance {
   modelName?: string;
   image_url?: string;
   status?: ApplianceStatus;
+  created_at?: string;
 }
 
 @Component({
@@ -92,8 +93,8 @@ export class BuyerApplianceListComponent implements OnInit {
   search = signal<string>('');
 
   // Sorting
-  sortKey = signal<SortKey>('modelCode');
-  sortDir = signal<SortDir>('asc');
+  sortKey = signal<SortKey>('created_at');
+  sortDir = signal<SortDir>('desc');
 
   ngOnInit() {
     this.breadcrumbService.setBreadcrumbs([
@@ -232,6 +233,15 @@ export class BuyerApplianceListComponent implements OnInit {
     const key = this.sortKey();
     const dir = this.sortDir();
     filtered.sort((a: any, b: any) => {
+      // Handle created_at as date for "latest" ordering
+      if (key === 'created_at') {
+        const at = new Date(a.created_at || a.createdAt || 0).getTime();
+        const bt = new Date(b.created_at || b.createdAt || 0).getTime();
+        if (at < bt) return dir === 'asc' ? -1 : 1;
+        if (at > bt) return dir === 'asc' ? 1 : -1;
+        return 0;
+      }
+
       let av = a[key] ?? '';
       let bv = b[key] ?? '';
 

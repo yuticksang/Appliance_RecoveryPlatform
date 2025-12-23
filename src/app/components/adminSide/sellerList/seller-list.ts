@@ -37,7 +37,7 @@ export class SellerListComponent implements OnInit {
   // -------- state ----------
   rows = signal<SellerRow[]>([]);
   search = signal<string>('');
-  sortKey = signal<SortKey>('fullName');
+  sortKey = signal<SortKey>('sellerId');
   sortDir = signal<SortDir>('asc');
   loading = signal<boolean>(false);
   error = signal<string>('');
@@ -116,6 +116,15 @@ export class SellerListComponent implements OnInit {
     const key = this.sortKey();
     const dir = this.sortDir();
     list.sort((a: any, b: any) => {
+      // Special handling for sellerId to sort by numeric suffix
+      if (key === 'sellerId') {
+        const anum = parseInt((a.sellerId || '').replace(/\D/g, ''), 10) || 0;
+        const bnum = parseInt((b.sellerId || '').replace(/\D/g, ''), 10) || 0;
+        if (anum < bnum) return dir === 'asc' ? -1 : 1;
+        if (anum > bnum) return dir === 'asc' ? 1 : -1;
+        return 0;
+      }
+
       const av = (a[key] ?? '').toString().toLowerCase();
       const bv = (b[key] ?? '').toString().toLowerCase();
       if (av < bv) return dir === 'asc' ? -1 : 1;

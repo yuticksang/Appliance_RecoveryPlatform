@@ -499,28 +499,28 @@
             <h3 class="review-title after">AFTER REVIEW</h3>
             <div class="price-section after">
               <span class="price-label">RM</span>
-              <span class="price-value">{{ afterReview.estimatedPrice }}</span>
+              <span class="price-value" [class.changed]="isAfterFieldChanged('estimatedPrice')">{{ afterReview.estimatedPrice }}</span>
             </div>
             <!-- Appliance Details -->
             <div class="condition-group">
               <h4 class="condition-group-label">BRAND</h4>
-              <p class="condition-value">{{ afterReview.brand }}</p>
+              <p class="condition-value" [class.changed]="isAfterFieldChanged('brand')">{{ afterReview.brand }}</p>
             </div>
             <div class="condition-group">
               <h4 class="condition-group-label">MODEL</h4>
-              <p class="condition-value">{{ afterReview.model }}</p>
+              <p class="condition-value" [class.changed]="isAfterFieldChanged('model')">{{ afterReview.model }}</p>
             </div>
             <div class="condition-group">
               <h4 class="condition-group-label">CATEGORY</h4>
-              <p class="condition-value">{{ afterReview.category }}</p>
+              <p class="condition-value" [class.changed]="isAfterFieldChanged('category')">{{ afterReview.category }}</p>
             </div>
             <div class="condition-group">
               <h4 class="condition-group-label">MODEL NAME</h4>
-              <p class="condition-value">{{ afterReview.modelName || 'N/A' }}</p>
+              <p class="condition-value" [class.changed]="isAfterFieldChanged('modelName')">{{ afterReview.modelName || 'N/A' }}</p>
             </div>
             <div class="condition-group">
               <h4 class="condition-group-label">SCORE</h4>
-              <p class="condition-value">{{ afterReview.score }}</p>
+              <p class="condition-value" [class.changed]="isAfterFieldChanged('score')">{{ afterReview.score }}</p>
             </div>
 
             <!-- Dynamic Condition Groups - Admin's Review -->
@@ -620,13 +620,14 @@
 
                 <!-- If value is an array (checkbox) - not file upload -->
                 <ul class="condition-list" *ngIf="Array.isArray(adminConditions[groupId]) && !isFileUploadGroup(groupId)">
-                  <li *ngFor="let condition of $any(adminConditions[groupId])" class="condition-item">
+                  <li *ngFor="let condition of $any(adminConditions[groupId])" class="condition-item" [class.changed]="isConditionAdded(groupId, condition)">
                     <span class="check-icon">✓</span> {{ condition }}
                   </li>
                 </ul>
 
                 <!-- If value is a string (radio/dropdown/textarea) -->
-                <p class="condition-value" *ngIf="!Array.isArray(adminConditions[groupId]) && adminConditions[groupId] && !isFileUploadGroup(groupId)">
+                <p class="condition-value" *ngIf="!Array.isArray(adminConditions[groupId]) && adminConditions[groupId] && !isFileUploadGroup(groupId)"
+                  [class.changed]="isConditionChanged(groupId)">
                   {{ adminConditions[groupId] }}
                 </p>
 
