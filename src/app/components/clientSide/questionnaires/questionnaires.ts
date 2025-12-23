@@ -956,12 +956,16 @@ export class QuestionnairesComponent implements OnInit{
     }
 
     if (this.currentStep === 5) {
-      if (!this.defaultAddress) {
-        alert('Set a pickup address.');
+      if (!this.defaultAddress()) {
+        this.alertService.error('Please select a pickup address.');
         return;
       }
-      if (!this.pickupDate || !this.pickupTime) {
-        alert('Select pickup date and time slot.');
+      if (!this.pickupDate) {
+        this.alertService.error('Please select a pickup date.');
+        return;
+      }
+      if (!this.pickupTime) {
+        this.alertService.error('Please select a pickup time slot.');
         return;
       }
     }
